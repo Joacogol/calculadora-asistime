@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2113">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">function calcularAhorro() {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Obtener valores ingresados</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let leadsDiarios = parseInt(document.getElementById("leadsDiarios").value);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let costoHora = parseFloat(document.getElementById("costoHora").value);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let tiempoPorLead = 15; // Minutos por lead</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let diasLaborales = 22;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Calcular tiempo perdido sin IA</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let tiempoDiario = (leadsDiarios * tiempoPorLead) / 60; // en horas</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let tiempoMensual = tiempoDiario * diasLaborales; // en horas</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Calcular costo mensual sin IA</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let costoMensual = tiempoMensual * costoHora;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Mostrar resultados</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById("resultado").innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;&lt;strong&gt;Tiempo perdido sin IA:&lt;/strong&gt; ${tiempoMensual.toFixed(2)} horas/mes&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;&lt;strong&gt;Costo mensual en sueldos por calificación manual:&lt;/strong&gt; $${costoMensual.toFixed(2)} UYU&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;&lt;strong&gt;Tiempo ahorrado con Asistime:&lt;/strong&gt; ${tiempoMensual.toFixed(2)} horas/mes&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;&lt;strong&gt;Dinero ahorrado con Asistime:&lt;/strong&gt; $${costoMensual.toFixed(2)} UYU/mes&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// HTML para la calculadora</p>
+<p class="p1">document.write(`</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style='max-width: 400px; margin: auto; font-family: Arial, sans-serif;'&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;Calculadora de Ahorro con IA&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;Cantidad de leads diarios:&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="number" id="leadsDiarios" value="40" style='width: 100%; padding: 5px; margin-bottom: 10px;'&gt;&lt;br&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;Costo por hora del comercial (UYU):&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="number" id="costoHora" value="500" style='width: 100%; padding: 5px; margin-bottom: 10px;'&gt;&lt;br&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button onclick="calcularAhorro()" style='padding: 10px; background-color: blue; color: white; border: none; cursor: pointer; width: 100%;'&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>Calcular Ahorro</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="resultado" style='margin-top: 20px;'&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1">`);</p>
+</body>
+</html>
