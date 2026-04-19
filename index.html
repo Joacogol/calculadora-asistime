@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Carrusel Instagram — 5 conceptos de IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'DM Sans', sans-serif; }
+  * { box-sizing: border-box; }
+
+  /* Tweaks panel */
+  #tweaks-panel {
+    position: fixed; bottom: 24px; right: 24px; width: 320px;
+    background: #fff; border: 1px solid #e5e0d5; border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    padding: 20px; z-index: 9999; font-family: Inter, sans-serif;
+    display: none; max-height: calc(100vh - 48px); overflow-y: auto;
+  }
+  #tweaks-panel.visible { display: block; }
+  #tweaks-panel h3 {
+    margin: 0 0 16px; font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px; color: #666;
+  }
+  #tweaks-panel label {
+    display: block; font-size: 12px; font-weight: 500; color: #444;
+    margin-bottom: 6px; margin-top: 14px;
+  }
+  #tweaks-panel input[type=text], #tweaks-panel textarea, #tweaks-panel select {
+    width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  #tweaks-panel textarea { resize: vertical; min-height: 60px; }
+  #tweaks-panel .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+<div id="tweaks-panel">
+  <h3>Tweaks</h3>
+  <div id="tweaks-content"></div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="laib-brand.jsx"></script>
+<script type="text/babel" src="slides.jsx"></script>
+<script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
+
+<script type="text/babel">
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "title": "5 conceptos de IA",
+    "subtitle": "que todos deberían entender",
+    "handle": "@laib",
+    "accent": "#f52525",
+    "useGradient": true,
+    "c1_title": "Modelo",
+    "c1_desc": "Un sistema entrenado con datos para hacer predicciones. No \"piensa\": reconoce patrones.",
+    "c1_tag": "fundamento",
+    "c2_title": "Prompt",
+    "c2_desc": "La instrucción que le das a una IA. Cuanto más clara, mejor la respuesta.",
+    "c2_tag": "interacción",
+    "c3_title": "Alucinación",
+    "c3_desc": "Cuando la IA inventa información con confianza. Siempre verificá los datos críticos.",
+    "c3_tag": "límites"
+  }/*EDITMODE-END*/;
+
+  function App() {
+    const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+    const [editMode, setEditMode] = React.useState(false);
+
+    // Build content from tweaks
+    const content = React.useMemo(() => ({
+      title: tweaks.title,
+      subtitle: tweaks.subtitle,
+      author: 'Aprendé IA',
+      concepts: [
+        { num: '01', title: tweaks.c1_title, desc: tweaks.c1_desc, tag: tweaks.c1_tag },
+        { num: '02', title: tweaks.c2_title, desc: tweaks.c2_desc, tag: tweaks.c2_tag },
+        { num: '03', title: tweaks.c3_title, desc: tweaks.c3_desc, tag: tweaks.c3_tag },
+      ],
+      cta: {
+        title: 'Seguí aprendiendo',
+        desc: 'Nuevos posts cada semana sobre IA aplicada, herramientas y buenas prácticas.',
+        handle: tweaks.handle,
+      },
+    }), [tweaks]);
+
+    // Edit mode protocol
+    React.useEffect(() => {
+      const handler = (e) => {
+        if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+        if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+      };
+      window.addEventListener('message', handler);
+      window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+      return () => window.removeEventListener('message', handler);
+    }, []);
+
+    // Toggle panel visibility & render fields
+    React.useEffect(() => {
+      const panel = document.getElementById('tweaks-panel');
+      const content = document.getElementById('tweaks-content');
+      if (!panel || !content) return;
+      panel.classList.toggle('visible', editMode);
+      if (!editMode) return;
+
+      const fields = [
+        { key: 'title', label: 'Título', type: 'text' },
+        { key: 'subtitle', label: 'Subtítulo', type: 'text' },
+        { key: 'handle', label: 'Usuario / handle', type: 'text' },
+        { key: 'c1_title', label: 'Concepto 1 — Título', type: 'text' },
+        { key: 'c1_tag', label: 'Concepto 1 — Tag', type: 'text' },
+        { key: 'c1_desc', label: 'Concepto 1 — Descripción', type: 'textarea' },
+        { key: 'c2_title', label: 'Concepto 2 — Título', type: 'text' },
+        { key: 'c2_tag', label: 'Concepto 2 — Tag', type: 'text' },
+        { key: 'c2_desc', label: 'Concepto 2 — Descripción', type: 'textarea' },
+        { key: 'c3_title', label: 'Concepto 3 — Título', type: 'text' },
+        { key: 'c3_tag', label: 'Concepto 3 — Tag', type: 'text' },
+        { key: 'c3_desc', label: 'Concepto 3 — Descripción', type: 'textarea' },
+        { key: 'accent', label: 'Acento (rojo LAiB)', type: 'color' },
+      ];
+
+      content.innerHTML = fields.map(f => {
+        const v = tweaks[f.key] ?? '';
+        if (f.type === 'textarea') {
+          return `<label>${f.label}</label><textarea data-key="${f.key}">${v}</textarea>`;
+        }
+        if (f.type === 'color') {
+          return `<label>${f.label}</label><input type="color" data-key="${f.key}" value="${v}" style="width:100%;height:36px;border:1px solid #ddd;border-radius:4px;padding:2px;">`;
+        }
+        return `<label>${f.label}</label><input type="text" data-key="${f.key}" value="${v.replace(/"/g,'&quot;')}">`;
+      }).join('');
+
+      content.querySelectorAll('[data-key]').forEach(el => {
+        el.addEventListener('input', (e) => {
+          const key = el.dataset.key;
+          const val = el.value;
+          setTweaks(prev => ({ ...prev, [key]: val }));
+          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+        });
+      });
+    }, [editMode, tweaks]);
+
+    const variations = [
+      { key: 'editorial', label: 'V1 — Editorial', subtitle: 'DM Sans · números grandes · CTA con gradiente LAiB', Comp: window.EditorialSlide },
+      { key: 'swiss', label: 'V2 — Swiss Grid', subtitle: 'DM Sans · retícula estricta · mucho blanco · rojo LAiB', Comp: window.SwissSlide },
+      { key: 'bold', label: 'V3 — Tipográfico Bold', subtitle: 'DM Sans ExtraBold · fondos intensos · mariposa de fondo', Comp: window.BoldSlide },
+      { key: 'mono', label: 'V4 — Mono / Técnico', subtitle: 'Roboto Mono (tipografía del logo) · estética de código', Comp: window.MonoSlide },
+    ];
+
+    const slideLabels = ['01 · Portada', '02 · Modelo', '03 · Prompt', '04 · Alucinación', '05 · CTA'];
+    const slideFilenames = ['01-portada', '02-modelo', '03-prompt', '04-alucinacion', '05-cta'];
+
+    const [downloading, setDownloading] = React.useState(null);
+
+    async function downloadSlide(variationKey, slideIndex) {
+      const id = `${variationKey}-${slideIndex}`;
+      setDownloading(id);
+      try {
+        const wrapper = document.querySelector(`[data-export-id="${id}"] .slide-native`);
+        if (!wrapper) throw new Error('node not found');
+        // Temporarily remove the display scale so html-to-image captures the native 1080×1080
+        const prevTransform = wrapper.style.transform;
+        wrapper.style.transform = 'scale(1)';
+        let dataUrl;
+        try {
+          dataUrl = await window.htmlToImage.toPng(wrapper, {
+            width: 1080, height: 1080,
+            pixelRatio: 1,
+            canvasWidth: 1080, canvasHeight: 1080,
+          });
+        } finally {
+          wrapper.style.transform = prevTransform;
+        }
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `laib-${variationKey}-${slideFilenames[slideIndex]}.png`;
+        a.click();
+      } catch (err) {
+        console.error('Download failed', err);
+        alert('No se pudo descargar. Abrí la consola para ver el error.');
+      } finally {
+        setDownloading(null);
+      }
+    }
+
+    async function downloadVariation(variationKey) {
+      for (let i = 0; i < 5; i++) {
+        await downloadSlide(variationKey, i);
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+
+    return (
+      <DesignCanvas>
+        {/* Header block */}
+        <div style={{ padding: '0 60px 60px', display: 'flex', alignItems: 'center', gap: 32 }}>
+          {window.LaibSymbol && <window.LaibSymbol size={72} color="#f52525" />}
+          <div>
+            <div style={{ fontSize: 36, fontWeight: 700, color: '#000', letterSpacing: -0.5, marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+              Carrusel Instagram · LAiB
+            </div>
+            <div style={{ fontSize: 16, color: '#666', maxWidth: 720, lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
+              4 variaciones aplicando la identidad LAiB: DM Sans + Roboto Mono, paleta negro/blanco/rojo, símbolo mariposa y gradiente naranja→violeta. 5 slides cada una (1080×1080). Activá <b>Tweaks</b> para editar el copy.
+            </div>
+          </div>
+        </div>
+
+        {variations.map(v => (
+          <DCSection key={v.key} title={v.label} subtitle={v.subtitle}
+            action={
+              <button
+                onClick={() => downloadVariation(v.key)}
+                disabled={!!downloading}
+                style={{
+                  padding: '8px 16px', background: '#000', color: '#fff',
+                  border: 'none', borderRadius: 4, fontFamily: 'DM Sans, sans-serif',
+                  fontSize: 13, fontWeight: 600, cursor: downloading ? 'wait' : 'pointer',
+                  letterSpacing: 0.3,
+                }}>
+                {downloading?.startsWith(v.key) ? 'Descargando…' : '↓ Descargar los 5'}
+              </button>
+            }
+          >
+            {slideLabels.map((label, i) => {
+              const id = `${v.key}-${i}`;
+              const isDl = downloading === id;
+              return (
+                <div key={i} style={{ position: 'relative' }} data-export-id={id}>
+                  <DCArtboard label={label} width={420} height={420}>
+                    <div className="slide-inner" style={{ width: '100%', height: '100%' }}>
+                      <v.Comp index={i} content={content} />
+                    </div>
+                  </DCArtboard>
+                  <button
+                    onClick={() => downloadSlide(v.key, i)}
+                    disabled={!!downloading}
+                    title="Descargar este slide como PNG 1080×1080"
+                    style={{
+                      position: 'absolute', top: 8, right: 8, zIndex: 10,
+                      width: 36, height: 36, borderRadius: 4,
+                      background: isDl ? '#f52525' : 'rgba(0,0,0,0.85)',
+                      color: '#fff', border: 'none',
+                      fontFamily: 'DM Sans, sans-serif', fontSize: 16, fontWeight: 600,
+                      cursor: downloading ? 'wait' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                    }}>
+                    {isDl ? '…' : '↓'}
+                  </button>
+                </div>
+              );
+            })}
+          </DCSection>
+        ))}
+
+        {/* Attribution postit */}
+        <div style={{ padding: '40px 60px 0', position: 'relative', minHeight: 140 }}>
+          <DCPostIt top={0} left={80} rotate={-3} width={260}>
+            Marca LAiB aplicada: DM Sans + Roboto Mono, rojo #f52525 como acento, gradiente LAiB en slides de cierre.
+          </DCPostIt>
+          <DCPostIt top={20} left={380} rotate={2} width={240}>
+            El símbolo es la mariposa de 4 círculos (aproximación). Si me pasás el SVG exacto, lo reemplazo.
+          </DCPostIt>
+          <DCPostIt top={0} left={680} rotate={-2} width={240}>
+            Cada slide tiene un botón ↓ para descargar como PNG 1080×1080. O desde el título, bajá los 5 de una variación de una.
+          </DCPostIt>
+        </div>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
