@@ -48,14 +48,27 @@ log = logging.getLogger(__name__)
 #: Una plantilla se escribe una vez y se usa cien: conviene el modelo bueno.
 #: Va aparte de MODELO_COMPLEJO a propósito — que alguien baje el modelo de las
 #: piezas para ahorrar no tiene por qué bajar el de las plantillas.
+#:
+#: Se corrió la MISMA plantilla con los dos, cambiando sólo esto. Sonnet costó
+#: un tercio y sacó una pieza correcta, pero donde el problema era difícil
+#: —el nombre del día que no entra— lo aceptó como límite y lo anotó; Opus lo
+#: resolvió calculando el cuerpo tipográfico según el ancho del texto, y dejó
+#: dos campos opcionales como los deja el resto de la marca. Esa diferencia se
+#: paga una vez y queda en las cien piezas siguientes.
 MODELO = os.environ.get("MODELO_PLANTILLERO", "claude-opus-5")
+
+#: Corregir es otro trabajo: la plantilla ya existe, el contrato ya está
+#: decidido y el cambio es acotado. Ahí el modelo bueno no compra nada, así que
+#: el default es el barato.
+MODELO_CORRECCION = os.environ.get("MODELO_CORRECTOR", "claude-sonnet-5")
 
 BORRADOR = "_borrador"
 
-#: Cuántas plantillas del catálogo se le muestran como referencia. Con tres
-#: alcanza para que agarre el idioma de la marca; con las catorce, el prompt se
-#: va a 40.000 tokens y el 79% del costo ya es contexto.
-REFERENCIAS = 3
+#: Cuántas plantillas del catálogo se le muestran como referencia. Con dos
+#: alcanza para que agarre el idioma de la marca. Cada una que abre no se lee
+#: una vez: se queda en el contexto y se relee en los cuarenta turnos que
+#: siguen, así que la tercera cuesta bastante más de lo que enseña.
+REFERENCIAS = 2
 
 
 PROMPT = """Escribí una PLANTILLA nueva para {marca}.
@@ -68,16 +81,21 @@ quede bien.
 
 {pedido}
 
+## El idioma de la marca
+
+{vocabulario}
+
 ## Dónde estás
 
 La marca vive en `{skill}`. Ahí adentro:
 
-- `plantillas/` — las plantillas que ya existen. **Leé dos o tres antes de
-  escribir nada**: son el idioma de esta marca, y lo que escribas tiene que
-  sonar igual. Empezá por {referencias}.
+- `plantillas/` — las plantillas que ya existen. **Leé dos antes de escribir
+  nada**: son el idioma de esta marca en uso, y lo que escribas tiene que sonar
+  igual. Empezá por {referencias}. Con dos alcanza — cada una que abrís se
+  queda en el contexto y se relee en todos los turnos que siguen.
 - `assets/` y `fonts/` — las fotos y las tipografías. Se referencian con rutas
   relativas: `assets/loquesea.jpg`.
-- `referencias/marca.md` — el manual técnico de la marca.
+- `referencias/marca.md` — el manual técnico, si te falta algo puntual.
 
 ## Qué tenés que dejar
 
@@ -147,23 +165,29 @@ Escribir el HTML es la parte fácil. Lo que hace buena a una plantilla es
 mirarla:
 
 ```
-python3 herramientas/previsualizar-borrador.py {nombre_marca} {borrador}
+python3 herramientas/previsualizar-borrador.py {nombre_marca} {borrador} post story
 ```
 
-Deja `preview-post.png`, `preview-story.png`… **en la misma carpeta. Abrilos
-con Read.** Y mirá tres cosas concretas:
+**Mientras iterás, dibujá sólo `post` y `story`.** Son los dos que revelan los
+problemas: uno es el más apretado y el otro el más alto. `vert` y `reel` se
+parecen a esos dos, y cada preview que abrís se queda en el contexto y se
+relee en todos los turnos que siguen. Los cuatro, una sola vez, al final.
+
+Deja los PNG **en la misma carpeta. Abrilos con Read.** Y mirá tres cosas:
 
 - ¿el titular entra, o desborda y se corta?
 - ¿el texto contrasta con lo que tiene atrás?
 - ¿algo queda pisado, o pegado a un borde?
 
-Corregí y volvé a dibujar. **Hacelo al menos dos veces**, y en más de un
-formato: casi siempre lo que entra en `post` no entra en `story`.
+**Escribí el `ejemplo.json` de caso límite ANTES de la primera ronda**, no
+después de descubrir que hace falta. Va en la carpeta del borrador y lleva los
+datos que rompen: el nombre más largo que se te ocurra, el día con tres
+palabras, la sede con nombre compuesto, la lista con ocho ítems. Si la
+plantilla aguanta eso, aguanta lo normal — al revés no.
 
-Para probar casos límite —un titular largo, una lista de ocho ítems, una sede
-con nombre de tres palabras— dejá un `ejemplo.json` en la carpeta del borrador
-con esos datos y volvé a dibujar. Los casos que rompen una plantilla no son los
-del ejemplo.
+Con el caso límite puesto de entrada, **dos rondas alcanzan**: una para ver qué
+se rompe y otra para verificar el arreglo. Si necesitás una tercera, que sea
+porque encontraste algo, no porque no habías probado el borde.
 
 ## Al terminar
 
@@ -172,6 +196,77 @@ referencia, qué campos pusiste requeridos y cuáles no, y qué mirar cuando se
 use. Eso es lo que va a leer la persona que decide si la publica.
 
 {manual}"""
+
+
+def _vocabulario(carpeta: Path) -> str:
+    """El idioma de la marca, en unos cientos de tokens en vez de veintitrés mil.
+
+    Se genera del propio módulo de marca y no se escribe a mano, así que no
+    puede quedar viejo: si mañana entra un color nuevo, aparece acá solo. Es lo
+    que reemplaza a cargarle el SKILL.md entero — de cuyas 1.049 líneas al que
+    escribe una plantilla le sirven unas quince.
+    """
+    import sys
+    sys.path.insert(0, str(carpeta))
+    sys.path.insert(0, str(config.RAIZ))
+    marca = importlib.import_module("marca")
+
+    colores = " · ".join(f"`c.{k}` {v}" for k, v in marca.C.items())
+    formatos = " · ".join(f"`{k}` {w}×{h}" for k, (w, h) in marca.FORMATOS.items())
+    # Las clases de texto que ya existen. Salen de la hoja base y no de una
+    # lista escrita a mano por lo mismo: una clase nueva aparece sola.
+    clases = sorted(set(re.findall(r"^\.([a-z][a-z-]*)\s*\{", marca.BASE_CSS,
+                                   flags=re.M)))
+    return (f"**Colores.** {colores}\n\n"
+            f"**Formatos.** {formatos}\n\n"
+            f"**Clases de texto que ya existen** (usá éstas, no inventes "
+            f"tipografías): {', '.join('`' + c + '`' for c in clases)}")
+
+
+PROMPT_CORRECCION = """Corregí la plantilla `{slug}` de {marca}.
+
+## Lo que piden
+
+{pedido}
+
+## Lo que hay hoy
+
+La plantilla está en `plantillas/{borrador}/` — su `plantilla.html` y su
+`plantilla.json`, tal como se usan ahora. **Editala. No la reescribas.**
+
+Es una corrección, no una plantilla nueva: mantené el `id`, los campos que ya
+tiene y los nombres de todo. Alguien que la usa hoy no tiene por qué enterarse
+de que la tocaste, salvo en lo que pidieron.
+
+Sacá un campo sólo si el pedido lo dice con todas las letras. Un campo que
+desaparece rompe las piezas que ya lo mandaban.
+
+## El idioma de la marca
+
+{vocabulario}
+
+Adentro del HTML tenés `{{{{ d.campo }}}}`, `{{{{ m.medida }}}}`, `{{{{ c.lima }}}}`,
+`{{{{ ac }}}}`, `{{{{ fmt }}}}`, y los helpers `{{{{ logo() }}}}` `{{{{ aros() }}}}`
+`{{{{ blob() }}}}` `{{{{ plan_titular(...) }}}}`.
+
+## Cómo verificás
+
+```
+python3 herramientas/previsualizar-borrador.py {nombre_marca} {borrador} post story
+```
+
+Abrí los PNG con Read. **Acá dibujás para verificar, no para descubrir**: la
+plantilla ya funcionaba, así que una ronda alcanza si el cambio salió bien.
+Mirá que lo que pidieron esté, y que no se haya roto nada de lo que ya andaba.
+
+Si el cambio toca algo que depende del alto —un cuerpo tipográfico, un
+margen— dibujá también `story`, que es donde se nota.
+
+## Al terminar
+
+Contá en dos líneas qué cambiaste y qué mirar. Si algo del pedido no lo
+pudiste hacer sin romper otra cosa, decilo: es más útil que hacerlo igual.
+"""
 
 
 def _pendientes(cli, limite: int = 2) -> list[dict]:
@@ -184,7 +279,7 @@ def _pendientes(cli, limite: int = 2) -> list[dict]:
         cli._url("plantilla_pedidos"), headers=cli._cab(), timeout=30,
         params={"estado": "eq.pendiente", "order": "creado_en.asc",
                 "limit": str(limite),
-                "select": "id,mensaje,quien,creado_en"})
+                "select": "id,mensaje,quien,corrige,creado_en"})
     if r.status_code in (400, 404):
         return []           # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -227,6 +322,18 @@ def _guardar(cli, slug: str, html: str, contrato: dict, etiqueta: str,
               "p_publicar": False})
     r.raise_for_status()
     return r.json()["version"]
+
+
+def _bajar_publicada(cli, slug: str) -> tuple[str, dict] | None:
+    """La versión en uso de una plantilla, para editarla en vez de rehacerla."""
+    r = requests.get(
+        cli._url("plantillas"), headers=cli._cab(), timeout=30,
+        params={"plantilla": f"eq.{slug}", "publicada": "is.true",
+                "select": "html,contrato", "limit": "1"})
+    if r.status_code != 200 or not r.json():
+        return None
+    f = r.json()[0]
+    return f["html"], f["contrato"]
 
 
 def _skill(marca: str) -> Path:
@@ -341,14 +448,22 @@ def _ejemplo(contrato: dict, carpeta: Path) -> dict:
     return d
 
 
-async def _correr(prompt: str, marca: str) -> tuple[str, dict]:
+async def _correr(prompt: str, marca: str,
+                  modelo: str = MODELO) -> tuple[str, dict]:
     """Una pasada del agente. Devuelve (último texto, métricas)."""
+    # SIN `skills=[marca]`, y es la diferencia más grande de costo que tiene
+    # este módulo. El SKILL.md de Boss pesa 23.324 tokens y de eso al que
+    # escribe una plantilla le sirven 590: el resto son reels, carruseles,
+    # video, el banco de fotos y las reglas de publicación. Cargarlo entero
+    # cuesta releerlo en CADA turno — cuarenta y tres veces en la primera
+    # corrida medida.
+    #
+    # Lo que necesita se lo da el prompt, y lo que le falte lo abre con Read.
     opciones = ClaudeAgentOptions(
         cwd=str(config.RAIZ),
-        model=MODELO,
+        model=modelo,
         setting_sources=["project"],
-        skills=[marca],
-        allowed_tools=["Read", "Write", "Edit", "Bash", "Glob", "Grep", "Skill"],
+        allowed_tools=["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
         permission_mode="dontAsk",
         max_turns=60,
     )
@@ -366,7 +481,7 @@ async def _correr(prompt: str, marca: str) -> tuple[str, dict]:
         # Igual que en el diseñador: el agente puede cortar habiendo dejado los
         # archivos hechos. Preferimos revisar qué dejó antes de descartar todo.
         log.warning("el plantillero cortó con error (%s); reviso qué dejó", e)
-    return ultimo, (_metricas(resultado, MODELO) or {})
+    return ultimo, (_metricas(resultado, modelo) or {})
 
 
 async def atender(cli, pedido: dict) -> bool:
@@ -384,17 +499,43 @@ async def atender(cli, pedido: dict) -> bool:
     try:
         from . import manual
         texto_manual, _ = manual.leer(cli.marca)
-        prompt = PROMPT.format(
-            marca=getattr(config, "NOMBRE_MARCA", cli.nombre),
-            nombre_marca=cli.marca,
-            pedido=pedido["mensaje"],
-            skill=carpeta,
-            borrador=BORRADOR,
-            referencias=", ".join(f"`{r}`" for r in _referencias(carpeta)),
-            manual=("\n## El criterio de la marca\n\nManda sobre todo lo de "
-                    f"arriba.\n\n{texto_manual}" if texto_manual else ""))
+        nombre = getattr(config, "NOMBRE_MARCA", cli.nombre)
 
-        ultimo, met = await _correr(prompt, cli.marca)
+        # Corregir y escribir de cero son dos trabajos distintos y cuestan
+        # distinto. Rehacer una plantilla para mover un número de tamaño son
+        # cuarenta y tres turnos y US$3,50 medidos; editarla son cuatro. La
+        # diferencia no es el prompt: es que el que corrige no lee
+        # referencias, no inventa el contrato, y dibuja para verificar en vez
+        # de para descubrir.
+        anterior = _bajar_publicada(cli, pedido["corrige"]) if pedido.get("corrige") else None
+        modelo = MODELO
+        if anterior:
+            modelo = MODELO_CORRECCION
+            (borrador / "plantilla.html").write_text(anterior[0], encoding="utf-8")
+            (borrador / "plantilla.json").write_text(
+                json.dumps(anterior[1], ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+            prompt = PROMPT_CORRECCION.format(
+                slug=pedido["corrige"], marca=nombre, nombre_marca=cli.marca,
+                pedido=pedido["mensaje"], borrador=BORRADOR,
+                vocabulario=_vocabulario(carpeta))
+            log.info("[%s] corrijo «%s» en vez de armar una nueva",
+                     cli.marca, pedido["corrige"])
+        else:
+            if pedido.get("corrige"):
+                # Pidieron corregir algo que no está publicado. Se arma de
+                # nuevo y se dice, en vez de fallar: el pedido es válido.
+                log.warning("[%s] «%s» no está publicada: la armo de cero",
+                            cli.marca, pedido["corrige"])
+            prompt = PROMPT.format(
+                marca=nombre, nombre_marca=cli.marca,
+                pedido=pedido["mensaje"], skill=carpeta, borrador=BORRADOR,
+                referencias=", ".join(f"`{r}`" for r in _referencias(carpeta)),
+                vocabulario=_vocabulario(carpeta),
+                manual=("\n## El criterio de la marca\n\nManda sobre todo lo de "
+                        f"arriba.\n\n{texto_manual}" if texto_manual else ""))
+
+        ultimo, met = await _correr(prompt, cli.marca, modelo)
         html, contrato = _leer_borrador(carpeta)
         previews = _dibujar(cli.marca, carpeta, html, contrato)
 

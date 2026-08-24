@@ -4,6 +4,17 @@
 // confirmar. Lo que cambia es el objeto — ahí se pide una pieza, acá se pide la
 // plantilla con la que después se hacen muchas piezas.
 //
+// ── `corrige` ────────────────────────────────────────────────────────────
+//
+// El mismo endpoint sirve para las dos cosas que le van a pedir: «quiero una
+// plantilla para X» y «a la de torneos hacele el título más grande». Se
+// distinguen por un campo: si viene `corrige` con el id de una plantilla que
+// ya existe, el worker baja la versión publicada y la EDITA.
+//
+// Podría haber sido otro endpoint. Es un campo porque desde el chat las dos
+// frases llegan iguales, y lo único que cambia es si nombran una plantilla que
+// ya está. Que sea un campo hace que agregarlo no cambie a quien ya llamaba.
+//
 // ── Por qué usa la MISMA clave que api-disenos ───────────────────────────
 //
 // Porque una clave más sería una deuda más. `API_CLAVE` ya está expuesta en el
@@ -114,7 +125,7 @@ Deno.serve(async (req) => {
 
     const r = await fetch(
       `${base}/rest/v1/plantilla_pedidos?id=eq.${encodeURIComponent(id)}` +
-      `&select=id,estado,plantilla,version,preview,notas,mensaje_agente,creado_en`,
+      `&select=id,estado,plantilla,version,preview,notas,mensaje_agente,corrige,creado_en`,
       { headers: cab });
     if (!r.ok) return json({ error: "no pude consultar el pedido" }, 500);
 
@@ -148,6 +159,7 @@ Deno.serve(async (req) => {
       esperando_seg: esperando,
       plantilla: p.plantilla,
       version: p.version,
+      corrige: p.corrige,
       preview: p.preview || [],
       campos,
       notas: p.notas,
@@ -161,6 +173,7 @@ Deno.serve(async (req) => {
     try { cuerpo = await req.json(); } catch { /* queda vacío */ }
 
     const mensaje = String(cuerpo.mensaje || "").trim();
+    const corrige = String(cuerpo.corrige || "").trim() || null;
     if (mensaje.length < 10) {
       return json({
         error: "Todavía no tengo qué tiene que resolver la plantilla. " +
@@ -187,7 +200,7 @@ Deno.serve(async (req) => {
     const r = await fetch(`${base}/rest/v1/plantilla_pedidos`, {
       method: "POST",
       headers: { ...cab, Prefer: "return=representation" },
-      body: JSON.stringify({ mensaje, quien: cuerpo.quien || "Asistime" }),
+      body: JSON.stringify({ mensaje, corrige, quien: cuerpo.quien || "Asistime" }),
     });
     if (!r.ok) {
       const detalle = await r.text();
@@ -198,9 +211,12 @@ Deno.serve(async (req) => {
     return json({
       id: fila.id,
       estado: fila.estado,
+      corrige: fila.corrige,
       // Armar una plantilla lleva más que una pieza: se escribe, se renderiza,
       // se mira y se corrige. Decirlo acá evita que el chat prometa un minuto.
-      demora_estimada_seg: 300,
+      // Corregir una que ya existe es bastante más rápido: no hay que inventar
+      // el contrato ni descubrir el diseño, sólo cambiar lo que pidieron.
+      demora_estimada_seg: corrige ? 120 : 300,
     }, 201);
   }
 

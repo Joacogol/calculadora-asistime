@@ -20,6 +20,10 @@ byte por byte idénticos** a los de antes.
 | `app/chat.py` | dos líneas: `plantillas.limpiar()` en el ciclo y `plantillas.sincronizar()` antes de diseñar |
 | `herramientas/sembrar-plantillas.py` | **nuevo** — sube las plantillas del disco a la base y las publica |
 | `estudio/` | **nuevo** — el editor con preview real. Ver [estudio/LEEME.md](estudio/LEEME.md) |
+| `plantilla-pedidos.sql` | **nuevo** — la cola de pedidos de plantilla, para la base de cada cliente |
+| `funciones/api-plantillas/` | **nuevo** — la Edge Function por donde Asistime pide y consulta |
+| `app/plantillero.py` | **nuevo** — atiende un pedido: escribe la plantilla, la dibuja, la mira y la corrige |
+| `herramientas/previsualizar-borrador.py` | **nuevo** — dibuja un borrador; es lo que le deja al plantillero **ver** lo que escribió |
 
 Nada de `motor/` se toca fuera de agregar un archivo. El bucle de render, el
 video, los efectos, los carruseles y las presentaciones quedan igual.
@@ -156,3 +160,75 @@ Detalle de despliegue: es un servicio, no un job — escucha en `$PORT` y no
 termina. Va como un Cloud Run **service** aparte, con la misma imagen del worker.
 
 Lo que hace y lo que todavía no, en `estudio/LEEME.md`.
+
+
+## El plantillero: pedir una plantilla desde el chat
+
+`app/plantillero.py` corre en la misma corrida que el diseñador, atiende hasta
+dos pedidos por vuelta, y deja el resultado **sin publicar**. La cola es
+`plantilla_pedidos` y la puerta es la Edge Function `api-plantillas`.
+
+```bash
+# 1 · la cola, en el SQL Editor del Supabase del cliente
+#     (pegá plantilla-pedidos.sql — trae el `add column if not exists`, así
+#      que también sirve para una base que ya tenía la tabla sin `corrige`)
+
+# 2 · la puerta
+supabase functions deploy api-plantillas --no-verify-jwt
+```
+
+Usa la misma `API_CLAVE` que `api-disenos`, así que no hay secreto nuevo que
+configurar. En Boss ya está desplegada (v2, con `corrige`).
+
+### Los dos pedidos que sabe atender
+
+| El chat manda | El plantillero hace |
+|---|---|
+| sólo `mensaje` | escribe una plantilla nueva de cero |
+| `mensaje` + `corrige: "torneo"` | baja la versión publicada de `torneo` y la **edita** |
+
+La diferencia no es cosmética. Rehacer una plantilla para mover un número de
+tamaño la reemplaza por otra parecida: se pierden los campos que alguien ya
+mandaba y las decisiones que nadie escribió. Corrigiendo, la plantilla que la
+gente usa sigue siendo la misma con el cambio pedido.
+
+### Lo que cuesta, y por qué
+
+La primera corrida real —una plantilla nueva, medida— dio **US$3,50 y 486 s**.
+Se fue en tres cosas, y las tres están arregladas:
+
+| Se iba en | Ahora |
+|---|---|
+| el `SKILL.md` entero cargado como skill: 23.324 tokens releídos en los 43 turnos, de los que servían 590 | `_vocabulario()` arma los colores, los formatos y las clases desde el módulo de marca: 523 caracteres, y no puede quedar viejo porque se genera |
+| tres plantillas de referencia, cada una releída en todos los turnos siguientes | dos |
+| cuatro formatos por ronda × cuatro rondas = 43.184 tokens de imagen | `post` y `story` mientras itera, los cuatro una vez al final; y el `ejemplo.json` de caso límite **antes** de la primera ronda, que es lo que baja las rondas de cuatro a dos |
+
+Corregir arranca además sin nada de eso: no lee referencias, no inventa el
+contrato, y dibuja para verificar en vez de para descubrir.
+
+### El modelo
+
+```
+MODELO_PLANTILLERO   claude-opus-5      plantilla nueva
+MODELO_CORRECTOR     claude-sonnet-5    corrección
+```
+
+Se corrió **la misma plantilla con los dos**, cambiando sólo esa variable:
+
+| | Opus 5 | Sonnet 5 |
+|---|---|---|
+| Costo | US$3,50 | US$1,19 |
+| Tiempo | 486 s | 323 s |
+| Turnos | 43 | 47 |
+
+Las dos piezas salieron correctas y on-brand. Donde se separaron fue en el
+problema difícil —el nombre del día que no entra en una línea—: Sonnet lo
+aceptó como límite y lo dejó anotado en el contrato; Opus lo resolvió
+calculando el cuerpo tipográfico según el ancho del texto, y además dejó dos
+campos opcionales como los deja el resto de la marca.
+
+Por eso el default se parte en dos: una plantilla se escribe una vez y se usa
+cien, así que ahí el modelo bueno se paga solo; una corrección es un cambio
+acotado sobre algo que ya funciona, y ahí no compra nada. Cualquiera de los dos
+se cambia por variable de entorno sin tocar código.
+

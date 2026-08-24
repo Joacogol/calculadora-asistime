@@ -247,7 +247,72 @@ desde acá por no tener la `service_role`.
   `claude-sonnet-4-5` y `claude-opus-4-5`. No los toqué. Al plantillero le puse
   `claude-opus-5` en su propia variable, porque una plantilla se escribe una
   vez y se usa cien.
-- **US$ 3,50 por plantilla** es caro comparado con los US$ 0,70 de una pieza, y
-  barato comparado con el molde que queda. Si molesta, la palanca es bajar
-  `MODELO_PLANTILLERO` — pero medí antes: casi todo el costo fue lectura de
-  caché de las plantillas de referencia.
+- **El modelo del plantillero.** Está medido, abajo — con los dos, con la misma
+  plantilla. El default quedó partido: Opus para escribir una nueva, Sonnet
+  para corregir una que ya existe.
+
+## Los US$ 3,50, medidos y bajados
+
+La primera corrida costó eso y no estaba claro en qué. Se midió antes de tocar
+nada, y las tres cosas que lo explicaban se arreglaron:
+
+| Se iba en | Cuánto | Qué se hizo |
+|---|---|---|
+| el `SKILL.md` de Boss cargado entero como skill | 23.324 tokens releídos en los 43 turnos, de los que servían **590** | se sacó. `_vocabulario()` arma colores, formatos y clases desde el módulo de marca: 523 caracteres, y no puede quedar viejo porque se genera |
+| las plantillas de referencia | tres, cada una releída en todos los turnos siguientes | dos |
+| los previews | cuatro formatos × cuatro rondas = 43.184 tokens de imagen | `post` y `story` mientras itera; y el `ejemplo.json` de caso límite **antes** de la primera ronda, que es lo que baja las rondas de cuatro a dos |
+
+La lectura de caché era el 53% de la factura, y era eso: el skill entero y las
+tres referencias, releídos cuarenta y tres veces.
+
+### El modelo, con la pieza delante
+
+Se corrió **la misma plantilla con los dos**, cambiando sólo esa variable:
+
+| | Opus 5 | Sonnet 5 |
+|---|---|---|
+| Costo | US$ 3,50 | US$ 1,19 |
+| Tiempo | 486 s | 323 s |
+| Turnos | 43 | 47 |
+
+Las dos piezas salieron correctas y on-brand. Se separaron en el problema
+difícil —el nombre del día que no entra en una línea—: Sonnet lo aceptó como
+límite y lo anotó en el contrato («si el día es una lista larga, la hora puede
+pasar a una línea propia debajo… es intencional»); Opus lo resolvió calculando
+el cuerpo tipográfico según el ancho del texto, y además dejó `nivel` y
+`precio` opcionales, como los deja `americano`.
+
+Por eso el default quedó así, y cada uno se cambia por variable de entorno:
+
+```
+MODELO_PLANTILLERO   claude-opus-5      plantilla nueva
+MODELO_CORRECTOR     claude-sonnet-5    corrección
+```
+
+Una plantilla se escribe una vez y se usa cien: ahí el modelo bueno se paga
+solo. Una corrección es un cambio acotado sobre algo que ya funciona: ahí no
+compra nada.
+
+## Corregir, que era lo que faltaba
+
+Hasta acá el sistema sabía hacer plantillas nuevas y nada más. Pero la mitad de
+lo que le van a pedir es «a la de torneos hacele el título más grande», y
+rehacerla para eso la **reemplaza** por otra parecida: se pierden los campos que
+alguien ya mandaba y las decisiones que nadie escribió.
+
+Ahora `crear_plantilla` acepta `corrige` con el id de una plantilla del
+catálogo. El worker baja la versión publicada, la deja en el borrador y le pide
+que la **edite**: no lee referencias, no inventa el contrato, y dibuja para
+verificar en vez de para descubrir.
+
+| El chat manda | Qué pasa |
+|---|---|
+| sólo `mensaje` | plantilla nueva, de cero, con Opus |
+| `mensaje` + `corrige: "torneo"` | se edita la publicada, con Sonnet |
+| `corrige` con un id que no está publicado | se arma de cero y queda en el log — el pedido es válido igual |
+
+Está de punta a punta: columna en la base, campo en la Edge Function (v2,
+desplegada), parámetro en la tool 2055, y la rama en `plantillero.atender()`.
+Probado con un POST real contra la función: el pedido entra con su `corrige` y
+vuelve con él al consultar.
+

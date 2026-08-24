@@ -11,6 +11,12 @@ create table if not exists public.plantilla_pedidos (
   mensaje        text not null,
   quien          text,
   estado         text not null default 'pendiente',
+  -- Si viene con el id de una plantilla que ya existe, el pedido es una
+  -- CORRECCIÓN y no una plantilla nueva: el worker baja la versión publicada y
+  -- la edita, en vez de escribir una de cero. Es la diferencia entre cuatro
+  -- turnos y cuarenta, y sobre todo es la diferencia entre corregir la
+  -- plantilla que la gente usa y reemplazarla por otra parecida.
+  corrige        text,
   -- lo que sale
   plantilla      text,
   version        int,
@@ -22,6 +28,9 @@ create table if not exists public.plantilla_pedidos (
     check (estado in ('pendiente','generando','listo','error')),
   constraint pedido_no_vacio check (length(trim(mensaje)) >= 10)
 );
+
+alter table public.plantilla_pedidos
+  add column if not exists corrige text;
 
 create index if not exists plantilla_pedidos_estado_idx
   on public.plantilla_pedidos (estado, creado_en);
