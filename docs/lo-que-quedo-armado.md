@@ -197,7 +197,56 @@ que usa el worker.
 
 ---
 
-## 6. Lo que falta
+## 6. El estudio · la pantalla existe y anda
+
+Un servicio chico al lado del worker. Tres paneles: las plantillas de la marca,
+el diseño, y la pieza — con los cuatro formatos a un clic.
+
+**El preview es la pieza. No se le parece: es la misma.**
+`motor.plantillas.compilar()` —la función que usa el estudio— es literalmente la
+que arma la pieza que sale a Instagram. Para que eso no fuera una promesa que
+alguien tiene que mantener, el motor se refactorizó: hay **una sola función** que
+arma una página, y la usan las dos.
+
+Medido: las 12 plantillas en sus 4 formatos, renderizadas por el estudio y por
+el motor de producción con los mismos datos, comparadas por MD5.
+
+```
+48 / 48 idénticos
+```
+
+Un preview que dibuja por otro lado se ve bien en el editor y sale distinto en
+la pieza. A partir de ahí nadie vuelve a confiar en lo que ve, que es lo único
+que hace que un editor sirva para decidir.
+
+### Tres cosas que salieron de mirar cómo se trabaja
+
+**Los datos de prueba se llenan solos**, del contrato. Pedirle al diseñador que
+invente doce campos antes de ver nada es la forma más rápida de que cierre la
+pestaña. Y un campo cuyo valor por defecto es vacío **se muestra vacío**:
+`contacto` en `torneo` es justo eso —la marca dice que el teléfono no va salvo
+que lo pidan— y un preview que lo inventa enseña lo contrario de lo que hay que
+aprender.
+
+**Romper algo es el estado normal** mientras alguien edita, no una excepción. El
+error vuelve como texto legible al lado del preview, con el número de línea
+cuando Jinja lo sabe, en vez de un 500 que deja la pantalla en blanco.
+
+**Publicar pide una etiqueta.** No es burocracia: es lo que se va a leer dentro
+de seis meses cuando haya que entender por qué la pieza salió así.
+
+### Un error que valía la pena cometer
+
+La primera versión guardaba el navegador con un candado alrededor. Falló con
+«Cannot switch to a different thread»: Playwright ata el navegador al hilo que
+lo creó, y el servidor atiende cada pedido en uno distinto. Un candado no
+alcanzaba porque el problema no era que entraran dos a la vez, era que entrara
+*otro*. Ahora el navegador vive en su propio hilo y recibe trabajo por una cola
+— que además da gratis lo que el candado buscaba.
+
+---
+
+## 7. Lo que falta
 
 ### La primitiva de grilla
 
@@ -220,7 +269,7 @@ urgente del proyecto y no lo resuelve nada de lo que se hizo hoy.
 
 ---
 
-## 7. Cómo probarlo
+## 8. Cómo probarlo
 
 Simulador → agente **Diseñador Boss Padel**. Ojo con lo de siempre: el simulador
 no simula las herramientas, las ejecuta. Un pedido de diseño genera y cobra una

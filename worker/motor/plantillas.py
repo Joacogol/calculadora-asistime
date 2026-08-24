@@ -87,20 +87,14 @@ def _completar(contrato, data):
     return d
 
 
-def cargar(raiz, marca):
-    """Las plantillas-dato de una marca, como funciones(data, formato) -> html.
+def _ayudas(marca, raiz):
+    """Lo que una plantilla puede usar dentro del HTML.
 
-    `raiz` es la carpeta de la marca; `marca` el módulo que expone C, FORMATOS,
-    BASE_CSS y los helpers gráficos (logo, aros, blob).
+    Todo lo que la marca ofrece y nada más: una plantilla no puede inventar un
+    color ni una tipografía, compone con el vocabulario que ya existe. Eso es
+    lo que la mantiene on-brand aunque la haya escrito alguien que nunca vio el
+    manual.
     """
-    raiz = pathlib.Path(raiz)
-    contratos = _contratos(raiz)
-    if not contratos:
-        return {}
-
-    # Todo lo que la marca ofrece queda disponible dentro del HTML. Una
-    # plantilla nueva no puede inventar un color ni una tipografía: compone
-    # con el vocabulario que ya existe, que es lo que la mantiene on-brand.
     ayudas = {n: getattr(marca, n)
               for n in ("logo", "aros", "blob", "escudo", "marco", "cinta")
               if hasattr(marca, n)}
@@ -115,32 +109,52 @@ def cargar(raiz, marca):
         """
         ruta = pathlib.Path(foto)
         if not ruta.is_absolute():
-            ruta = raiz / ruta
+            ruta = pathlib.Path(raiz) / ruta
         return legibilidad.plan_titular(str(ruta), acento, oscuro=oscuro,
                                         zona=tuple(zona))
 
     ayudas["plan_titular"] = _plan_titular
+    return ayudas
+
+
+def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
+    """El HTML completo de una pieza. El único lugar donde se arma una."""
+    if fmt not in contrato["medidas"]:
+        raise PlantillaIncompleta(
+            f"la plantilla «{contrato.get('id', '?')}» no tiene formato "
+            f"«{fmt}». Tiene: {', '.join(contrato['medidas'])}")
+    d = _completar(contrato, data)
+    m = contrato["medidas"][fmt]
+    cuerpo = compilada.render(
+        d=d, m=m, fmt=fmt, t=contrato,
+        c=marca.C,
+        ac=marca.C[d.get("acento") or contrato.get("acento_por_defecto", "lima")],
+        raiz=str(raiz),
+        **ayudas)
+    return (f'<!doctype html><html><head><meta charset="utf-8">'
+            f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
+            f'</style></head><body>\n'
+            f'<div class="canvas">{cuerpo}</div></body></html>')
+
+
+def cargar(raiz, marca):
+    """Las plantillas-dato de una marca, como funciones(data, formato) -> html.
+
+    `raiz` es la carpeta de la marca; `marca` el módulo que expone C, FORMATOS,
+    BASE_CSS y los helpers gráficos (logo, aros, blob).
+    """
+    raiz = pathlib.Path(raiz)
+    contratos = _contratos(raiz)
+    if not contratos:
+        return {}
+
+    ayudas = _ayudas(marca, raiz)
 
     def _hacer(contrato):
-        plantilla = _ENTORNO.from_string(contrato["_html"])
+        compilada = _ENTORNO.from_string(contrato["_html"])
 
         def dibujar(data, fmt="post"):
-            if fmt not in contrato["medidas"]:
-                raise PlantillaIncompleta(
-                    f"la plantilla «{contrato['id']}» no tiene formato «{fmt}». "
-                    f"Tiene: {', '.join(contrato['medidas'])}")
-            d = _completar(contrato, data)
-            m = contrato["medidas"][fmt]
-            cuerpo = plantilla.render(
-                d=d, m=m, fmt=fmt, t=contrato,
-                c=marca.C,
-                ac=marca.C[d.get("acento") or contrato.get("acento_por_defecto", "lima")],
-                raiz=str(raiz),
-                **ayudas)
-            return (f'<!doctype html><html><head><meta charset="utf-8">'
-                    f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
-                    f'</style></head><body>\n'
-                    f'<div class="canvas">{cuerpo}</div></body></html>')
+            return _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt)
 
         dibujar.__name__ = contrato["id"]
         dibujar.__doc__ = contrato.get("descripcion", "")
@@ -148,6 +162,23 @@ def cargar(raiz, marca):
         return dibujar
 
     return {cid: _hacer(c) for cid, c in contratos.items()}
+
+
+def compilar(marca, raiz, contrato, html, data, fmt="post"):
+    """El HTML de una pieza a partir de una plantilla que todavía no se guardó.
+
+    Es lo que usa el estudio para previsualizar. Pasa por exactamente el mismo
+    camino que una plantilla publicada —misma hoja de estilo, mismos helpers,
+    mismos valores por defecto, mismas medidas— y eso no es una coincidencia
+    que haya que mantener: es la misma función.
+
+    Un preview que dibuja por otro lado deja de servir para decidir. Se ve bien
+    en el editor y sale distinto en la pieza, y a partir de ahí nadie confía en
+    lo que ve.
+    """
+    raiz = pathlib.Path(raiz)
+    return _pagina(marca, raiz, _ayudas(marca, raiz), contrato,
+                   _ENTORNO.from_string(html), data, fmt)
 
 
 def catalogo(raiz, escritas_en_python=()):

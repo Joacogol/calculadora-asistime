@@ -19,6 +19,7 @@ byte por byte idénticos** a los de antes.
 | `app/plantillas.py` | **nuevo** — baja las plantillas publicadas al skill en cada corrida |
 | `app/chat.py` | dos líneas: `plantillas.limpiar()` en el ciclo y `plantillas.sincronizar()` antes de diseñar |
 | `herramientas/sembrar-plantillas.py` | **nuevo** — sube las plantillas del disco a la base y las publica |
+| `estudio/` | **nuevo** — el editor con preview real. Ver [estudio/LEEME.md](estudio/LEEME.md) |
 
 Nada de `motor/` se toca fuera de agregar un archivo. El bucle de render, el
 video, los efectos, los carruseles y las presentaciones quedan igual.
@@ -139,3 +140,19 @@ mismo contenido con las claves en otro orden. El render es idéntico —está
 probado— y `sembrar-plantillas.py` compara los datos, no el texto, así que no
 vuelve a subir una plantilla por eso. Lo único que pasa es que el archivo se
 reescribe una vez después del primer despliegue y después queda estable.
+
+
+## El estudio
+
+```bash
+python3 -m estudio.servidor boss-padel-disenos     # http://localhost:8080
+```
+
+Levanta un Chromium y no vuelve a cerrarlo, así que el primer arranque tarda
+unos segundos y después cada preview sale en menos de un segundo. Usa las mismas
+claves que el worker para publicar.
+
+Detalle de despliegue: es un servicio, no un job — escucha en `$PORT` y no
+termina. Va como un Cloud Run **service** aparte, con la misma imagen del worker.
+
+Lo que hace y lo que todavía no, en `estudio/LEEME.md`.
