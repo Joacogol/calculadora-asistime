@@ -56,6 +56,13 @@ def _contratos(raiz: pathlib.Path):
         return {}
     salida = {}
     for carpeta in sorted(base.iterdir()):
+        # Una carpeta que empieza con guión bajo es un borrador: alguien la
+        # está escribiendo y todavía no la revisó nadie. El motor no la carga,
+        # así que no puede salir en una pieza por accidente mientras se arma.
+        # Es una regla de una línea que hace imposible un error que si no
+        # dependería de acordarse.
+        if carpeta.name.startswith("_") or not carpeta.is_dir():
+            continue
         json_ = carpeta / "plantilla.json"
         html = carpeta / "plantilla.html"
         if not (json_.exists() and html.exists()):

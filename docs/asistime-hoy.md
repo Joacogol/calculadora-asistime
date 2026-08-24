@@ -201,16 +201,53 @@ editando el documento, porque el documento se regenera entero en cada
 despliegue: lo que se escriba a mano allá se pierde en el siguiente. Entra
 cuando corras `publicar-catalogo.py`.
 
-## Lo único que falta
+## El que escribe la plantilla — corrido y verificado
 
-**El que escribe la plantilla.** `app/plantillero.py` en el worker: toma el
-pedido, arma la plantilla con el vocabulario de la marca y el catálogo
-delante, **la renderiza con el motor de producción, la mira y la corrige**, y
-guarda el borrador con su preview.
+`app/plantillero.py`. Se probó con el pedido real: **486 s, 43 turnos, cuatro
+rondas de dibujo, US$ 3,50.** La plantilla que salió está en
+[`worker/plantilla-generada/`](../worker/plantilla-generada/) con sus previews.
 
-Hoy un pedido entra y queda en `pendiente` para siempre, porque no hay quien lo
-atienda. Todo lo que está antes y después de ese paso ya funciona.
+Lo que importa no es que escribiera HTML: es lo que arregló **después de
+mirarlo**. Tres cosas, ninguna visible leyendo el código —el día largo que se
+partía en tres líneas en `story`, la mitad de arriba vacía cuando no hay foto,
+y el nombre de 14 caracteres pegado al margen—. Para la primera se armó una
+solución del mismo tipo que usa `horarios`: calcular el cuerpo tipográfico del
+texto en vez de sacarlo de una tabla de formatos.
 
-Es un llamado al Agent SDK, igual que `disenador.py`. No lo escribí porque no
-lo puedo correr sin la clave de Anthropic, y este proyecto ya aprendió lo que
-cuesta dar por hecho código que nunca se ejecutó.
+Eso es exactamente lo que un agente de Asistime no puede hacer, y por lo que
+este paso vive en el worker.
+
+### Las defensas, probadas una por una
+
+El worker **no confía** en que el agente haya verificado: renderiza todos los
+formatos del contrato antes de guardar nada.
+
+| Si el contrato… | Qué pasa |
+|---|---|
+| declara un formato que la marca no tiene | rechazado, con la lista de los que sí |
+| trae un `id` que no es un slug | rechazado |
+| no declara ningún campo | rechazado |
+| no dibuja | rechazado — y el motivo va en castellano al chat |
+
+Y una regla de una línea que hace imposible un error entero: **una carpeta que
+empieza con guión bajo no la carga el motor.** El borrador vive en
+`plantillas/_borrador/` mientras se escribe, así que no puede salir en una
+pieza a medio hacer. Se borra al terminar: lo que vale queda en la base.
+
+## Lo que falta
+
+**Desplegar.** El pedido `cf49f0af` sigue pendiente en la base de Boss a
+propósito: cuando el worker corra con el código nuevo, lo atiende de verdad —
+incluida la subida del preview, que es lo único de la cadena que no pude hacer
+desde acá por no tener la `service_role`.
+
+**Y dos cosas para decidir vos:**
+
+- Los **modelos del worker** están dos generaciones atrás: `config.py` tiene
+  `claude-sonnet-4-5` y `claude-opus-4-5`. No los toqué. Al plantillero le puse
+  `claude-opus-5` en su propia variable, porque una plantilla se escribe una
+  vez y se usa cien.
+- **US$ 3,50 por plantilla** es caro comparado con los US$ 0,70 de una pieza, y
+  barato comparado con el molde que queda. Si molesta, la palanca es bajar
+  `MODELO_PLANTILLERO` — pero medí antes: casi todo el costo fue lectura de
+  caché de las plantillas de referencia.

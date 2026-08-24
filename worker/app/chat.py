@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import banco, cobro, config, manual, plantillas, publicador
+from . import banco, cobro, config, manual, plantillas, plantillero, publicador
 from .supa import Cliente
 from .disenador import disenar
 
@@ -227,7 +227,7 @@ async def ciclo():
     # texto viejo cacheado para la siguiente.
     manual.limpiar()
     plantillas.limpiar()
-    hechos = subidos = 0
+    hechos = subidos = plantillas_nuevas = 0
     for datos in config.clientes():
         cli = Cliente(**datos)
         if not cli.configurado:
@@ -244,18 +244,27 @@ async def ciclo():
         # puede impedir que se generen los diseños del día, y una pieza que
         # falló al generarse no tiene por qué frenar la publicación de otra
         # que ya estaba programada desde ayer.
+        # Los pedidos de plantilla van en su propio try y DESPUÉS de las
+        # piezas. Son dos trabajos que comparten la corrida: armar una
+        # plantilla lleva minutos, y no puede retrasar las piezas del día —
+        # que es lo que el club está esperando ahora.
+        try:
+            plantillas_nuevas += await plantillero.atender_todos(cli)
+        except Exception:
+            log.exception("[%s] falló la cola de plantillas", cli.marca)
+
         if config.PUBLICAR:
             try:
                 subidos += publicador.atender(cli)
             except Exception:
                 log.exception("[%s] falló la cola de publicación", cli.marca)
 
-    if not hechos and not subidos:
-        log.info("sin diseños pendientes ni publicaciones en cola")
+    if not hechos and not subidos and not plantillas_nuevas:
+        log.info("sin diseños pendientes, plantillas ni publicaciones en cola")
         return
     dur = (datetime.now(timezone.utc) - inicio).total_seconds()
-    log.info("ciclo terminado en %.0fs · %d diseños · %d publicaciones",
-             dur, hechos, subidos)
+    log.info("ciclo terminado en %.0fs · %d diseños · %d plantillas · "
+             "%d publicaciones", dur, hechos, plantillas_nuevas, subidos)
 
 
 async def main():

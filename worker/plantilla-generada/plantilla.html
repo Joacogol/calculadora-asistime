@@ -1,0 +1,54 @@
+
+{%- set plan = plan_titular(d.foto, ac, c.negro, [0.52, 1.0]) if d.foto else none -%}
+{%- set piso = [plan.velo if plan else 0, 0.88 if (plan and plan.modo == 'bloque') else 0.72] | max -%}
+{%- set L = (d.profe | replace('<br>', ' ')) | length -%}
+{%- set nom_fs = m.nombre_fs if L <= 13 else ((m.nombre_fs * 0.80) | int if L <= 22 else (m.nombre_fs * 0.64) | int) -%}
+{#- El día y la hora comparten renglón y el ancho útil es siempre 928px, así que
+    el cuerpo sale del texto y no del formato: «LUNES, MIÉRCOLES Y VIERNES» no
+    entra a ningún tamaño de tabla. Los coeficientes son el ancho medio de
+    Archivo bold y light medido sobre las piezas. -#}
+{%- set cupo = ((928 - 26) / (0.60 * (d.dia | length) + 0.55 * (d.hora | length) + 0.01)) | int -%}
+{%- set dato_fs = [m.dato_fs, [cupo, (m.dato_fs * 0.55) | int] | max] | min -%}
+{% if d.foto %}<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,{{ '%.2f' % (piso * 0.46) }}) 0%,rgba(10,10,10,{{ '%.2f' % (piso * 0.12) }}) 30%,rgba(10,10,10,{{ '%.2f' % piso }}) 62%,rgba(10,10,10,{{ '%.2f' % ([piso + 0.06, 0.97] | min) }}) 100%)"></div>
+{% else %}<div class="scrim" style="background:linear-gradient(155deg,{{ d.fondo or c.azul_deep }} 0%,#0A0A0A 112%)"></div>
+<div style="position:absolute;bottom:-140px;right:-200px;opacity:.24">{{ aros(420,'#FAFAFA',2.6) }}</div>{% endif %}
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px;z-index:2">
+  <div class="row">
+    <div class="kicker" style="color:{{ ac }};font-size:30px;letter-spacing:.34em;max-width:560px;line-height:1.5">{{ d.kicker }}</div>
+    {{ logo(1.2) }}
+  </div>
+  {#- Con foto el bloque se apoya abajo, que es donde el degradé tapa y donde no
+      le come la cara al profe. Sin foto no hay nada arriba que sostenerlo: se
+      centra, si no la pieza queda con medio metro de azul vacío. -#}
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:{{ 'flex-end' if d.foto else 'center' }};min-height:0">
+    <div class="eyebrow" style="color:#FAFAFA;opacity:.62;font-size:26px;letter-spacing:.22em;margin-bottom:12px">CON</div>
+    <div class="disp-b" style="color:#FAFAFA;font-size:{{ nom_fs }}px;line-height:.94;letter-spacing:-.015em">{{ d.profe }}</div>
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 26px;margin-top:{{ (m.dato_fs * 0.42) | int }}px;padding-top:{{ (m.dato_fs * 0.34) | int }}px;border-top:2px solid {{ ac }}">
+      <div class="disp-b" style="color:#FAFAFA;font-size:{{ dato_fs }}px;line-height:1.04;letter-spacing:-.01em">{{ d.dia }}</div>
+      <div class="disp" style="color:{{ ac }};font-size:{{ dato_fs }}px;line-height:1.04">{{ d.hora }}</div>
+    </div>
+    <div style="margin-top:{{ (m.fila_fs * 0.62) | int }}px">
+      <div style="display:flex;align-items:baseline;gap:24px;padding:{{ (m.fila_fs * 0.34) | int }}px 0;border-top:1px solid rgba(250,250,250,.16)">
+        <div class="kicker" style="color:{{ ac }};font-size:{{ m.fila_fs - 10 }}px;letter-spacing:.24em;width:{{ m.rotulo_w }}px;flex:0 0 auto">SEDE</div>
+        <div class="body" style="color:#FAFAFA;font-weight:600;font-size:{{ m.fila_fs }}px;line-height:1.16;flex:1">{{ d.sede }}</div>
+      </div>
+      {% if d.nivel %}<div style="display:flex;align-items:baseline;gap:24px;padding:{{ (m.fila_fs * 0.34) | int }}px 0;border-top:1px solid rgba(250,250,250,.16)">
+        <div class="kicker" style="color:{{ ac }};font-size:{{ m.fila_fs - 10 }}px;letter-spacing:.24em;width:{{ m.rotulo_w }}px;flex:0 0 auto">NIVEL</div>
+        <div class="body" style="color:#FAFAFA;font-weight:600;font-size:{{ m.fila_fs }}px;line-height:1.16;flex:1">[{{ d.nivel }}]</div>
+      </div>{% endif %}
+      {% if d.precio %}<div style="display:flex;align-items:baseline;gap:24px;padding:{{ (m.fila_fs * 0.34) | int }}px 0;border-top:1px solid rgba(250,250,250,.16)">
+        <div class="kicker" style="color:{{ ac }};font-size:{{ m.fila_fs - 10 }}px;letter-spacing:.24em;width:{{ m.rotulo_w }}px;flex:0 0 auto">PRECIO</div>
+        <div style="display:flex;align-items:baseline;gap:12px;flex:1">
+          <div class="disp-b" style="color:#FAFAFA;font-size:{{ (m.fila_fs * 1.30) | int }}px;line-height:1">${{ d.precio }}</div>
+          {% if d.unidad %}<div class="eyebrow" style="color:#FAFAFA;opacity:.66;font-size:{{ m.fila_fs - 8 }}px">{{ d.unidad }}</div>{% endif %}
+        </div>
+      </div>{% endif %}
+    </div>
+  </div>
+  {% if d.cta or d.contacto %}<div style="margin-top:{{ (m.fila_fs * 0.90) | int }}px">
+    {% if d.cta %}<div style="display:inline-block;background:{{ ac }};color:#0A0A0A;padding:20px 38px">
+      <span class="eyebrow" style="font-weight:700;font-size:30px;letter-spacing:.16em">{{ d.cta }}</span></div>{% endif %}
+    {% if d.contacto %}<div class="body" style="color:#FAFAFA;opacity:.7;font-size:26px;margin-top:18px;letter-spacing:.06em">{{ d.contacto }}</div>{% endif %}
+  </div>{% endif %}
+</div>
