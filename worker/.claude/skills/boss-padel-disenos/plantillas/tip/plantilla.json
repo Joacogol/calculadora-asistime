@@ -1,0 +1,71 @@
+{
+  "id": "tip",
+  "nombre": "Tip",
+  "descripcion": "contenido educativo",
+  "cuando_usarla": "Consejo de juego, regla, explicación. Sin foto: el texto es el contenido.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "requerido": true,
+      "ejemplo": "TIP BOSS"
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true
+    },
+    {
+      "id": "cuerpo",
+      "tipo": "texto_largo",
+      "etiqueta": "Cuerpo",
+      "requerido": true
+    },
+    {
+      "id": "firma",
+      "tipo": "texto",
+      "etiqueta": "Firma",
+      "default": ""
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+
+<div class="scrim" style="background:linear-gradient(160deg,{{ d.fondo or c.azul }} 0%,#0A0A0A 118%)"></div>
+<div style="position:absolute;bottom:-120px;left:-190px;opacity:.28">{{ aros(420,'#FAFAFA',2.6) }}</div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px">
+  <div class="row">{{ logo(1.35, align='left') }}
+    <div class="kicker" style="color:{{ ac }};font-size:28px;text-align:right">{{ d.kicker }}</div></div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center">
+    <div class="disp-b" style="color:#FAFAFA;font-size:96px;line-height:.96">{{ d.titulo }}</div>
+    {% if d.precio %}<div style="display:flex;align-items:baseline;gap:12px;margin:18px 0 26px">
+        <div class="disp" style="color:{{ ac }};font-size:44px">$</div>
+        <div class="disp-b" style="color:{{ ac }};font-size:150px;line-height:.9;letter-spacing:-.02em">{{ d.precio }}</div>
+        <div class="eyebrow" style="color:#FAFAFA;opacity:.7;font-size:30px">{{ d.unidad }}</div></div>{% endif %}{% for b in d.bullets %}<div class="body" style="color:#FAFAFA;font-size:32px;line-height:1.9;letter-spacing:.02em"><span style="color:{{ ac }};margin-right:16px">—</span>{{ b }}</div>{% endfor %}
+  </div>
+  <div>
+    <div style="display:inline-block;background:{{ ac }};color:#0A0A0A;padding:22px 42px">
+      <span class="eyebrow" style="font-weight:700;font-size:32px;letter-spacing:.16em">{{ d.cta }}</span></div>
+    <div class="body" style="color:#FAFAFA;opacity:.7;font-size:26px;margin-top:20px;letter-spacing:.06em">{{ d.contacto }}</div>
+  </div>
+</div>

@@ -1,0 +1,122 @@
+{
+  "id": "torneo",
+  "nombre": "Torneo",
+  "descripcion": "la placa insignia del club",
+  "cuando_usarla": "Torneo de varios días con categorías. Para una fecha suelta de un jueves usá `americano`.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "titular": 194,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "titular": 232,
+      "pad_top": 84,
+      "pad_bot": 84
+    },
+    "story": {
+      "alto": 1920,
+      "titular": 286,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "titular": 286,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "fecha_l1",
+      "tipo": "texto",
+      "etiqueta": "Fecha · primera línea",
+      "requerido": true,
+      "ejemplo": "28, 29 Y 30 DE"
+    },
+    {
+      "id": "fecha_l2",
+      "tipo": "texto",
+      "etiqueta": "Fecha · segunda línea",
+      "requerido": true,
+      "ejemplo": "AGOSTO"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true,
+      "ejemplo": "CARRASCO"
+    },
+    {
+      "id": "cats_libres",
+      "tipo": "texto",
+      "etiqueta": "Categorías libres",
+      "requerido": true,
+      "ejemplo": "2DA, 3RA, 4TA, 5TA, 6TA"
+    },
+    {
+      "id": "cats_fem",
+      "tipo": "texto",
+      "etiqueta": "Categorías femeninas",
+      "requerido": true,
+      "ejemplo": "3RA, 4TA, 5TA"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "requerido": true
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre de la foto",
+      "default": "50% 50%",
+      "nota": "Copiá el `foco` que trae referencias/fotos.json. No lo improvises."
+    },
+    {
+      "id": "contacto",
+      "tipo": "texto",
+      "etiqueta": "Teléfono",
+      "default": "",
+      "nota": "Vacío por defecto. El rótulo «CONTACTANOS AL» aparece y desaparece con el número."
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "INSCRIPCIONES<br>ABIERTAS"
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    },
+    {
+      "id": "blob",
+      "tipo": "si_no",
+      "etiqueta": "Salpicón en la esquina",
+      "default": true
+    },
+    {
+      "id": "blob_color",
+      "tipo": "opcion",
+      "etiqueta": "Color del salpicón",
+      "opciones": [
+        "naranja",
+        "lima"
+      ],
+      "default": "naranja"
+    }
+  ],
+  "notas": "`fecha_l2` va con tracking más abierto que `fecha_l1` — es la firma tipográfica del club. El salpicón naranja siempre en la esquina superior derecha, detrás del logo."
+}

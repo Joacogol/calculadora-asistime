@@ -1,0 +1,105 @@
+{
+  "id": "socio",
+  "nombre": "Socio",
+  "descripcion": "el jugador de la semana",
+  "cuando_usarla": "Una persona del club. Es la pieza más barata de alcance: el protagonista la manda a su grupo.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "base": 104,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "base": 116,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "base": 128,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "base": 128,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "nombre",
+      "tipo": "texto",
+      "etiqueta": "Nombre",
+      "requerido": true,
+      "ejemplo": "Delfina Methol"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto",
+      "requerido": true
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 30%"
+    },
+    {
+      "id": "rotulo",
+      "tipo": "texto",
+      "etiqueta": "Rótulo",
+      "default": "JUGADOR DE LA SEMANA"
+    },
+    {
+      "id": "categoria",
+      "tipo": "texto",
+      "etiqueta": "Categoría",
+      "default": ""
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "default": ""
+    },
+    {
+      "id": "datos",
+      "tipo": "lista",
+      "etiqueta": "Datos",
+      "default": [],
+      "max": 3,
+      "columnas": [
+        {
+          "id": "cifra",
+          "etiqueta": "Cifra"
+        },
+        {
+          "id": "rotulo",
+          "etiqueta": "Qué es"
+        }
+      ]
+    },
+    {
+      "id": "frase",
+      "tipo": "texto_largo",
+      "etiqueta": "Frase",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ],
+  "notas": "Los datos son opcionales pero cambian la pieza: sin números es una foto con un nombre; con números es un perfil. Se muestran los tres primeros.\n\nEl nombre se achica solo — un apellido compuesto desbordaba el ancho y salía cortado."
+}

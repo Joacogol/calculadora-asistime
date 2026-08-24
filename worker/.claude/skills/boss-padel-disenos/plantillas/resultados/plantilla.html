@@ -1,0 +1,17 @@
+
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,.30),rgba(10,10,10,.62) 42%,rgba(10,10,10,.93))"></div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px">
+  <div class="row">{{ logo(1.35, align='left') }}
+    <div class="kicker" style="color:{{ ac }};font-size:30px;text-align:right;line-height:1.5">{{ d.sede }}</div></div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center">
+    <div class="kicker" style="color:{{ ac }};font-size:40px;letter-spacing:.34em;margin-bottom:30px">{{ d.titulo }}</div>
+    <div>{% for p, n, cat in d.podio %}
+      <div style="display:flex;align-items:baseline;gap:26px;padding:20px 0;border-bottom:1px solid rgba(250,250,250,.16)">
+        <div class="disp" style="color:{{ ac }};font-size:44px;width:86px">{{ p }}</div>
+        <div class="body" style="color:#FAFAFA;font-weight:600;font-size:40px;flex:1;letter-spacing:.01em">{{ n }}</div>
+        <div class="eyebrow" style="color:#FAFAFA;opacity:.6;font-size:24px">{{ cat }}</div>
+      </div>{% endfor %}</div>
+  </div>
+  <div class="sponsors">{% for s in d.sponsors %}<span>{{ s }}</span>{% endfor %}</div>
+</div>

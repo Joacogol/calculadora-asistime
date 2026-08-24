@@ -1,0 +1,16 @@
+
+{%- set zona = [0.05, 0.45] if d.pos == 'top' else [0.55, 0.95] -%}
+{%- set plan = plan_titular(d.foto, ac, c.negro, zona) -%}
+{%- if plan.modo == 'bloque' -%}
+{%- set l2 %}<span style="background:{{ ac }};color:{{ plan.tinta }};padding:.02em .16em .08em;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.22">{{ d.linea2 }}</span>{% endset -%}
+{%- else -%}{%- set l2 = d.linea2 -%}{%- endif %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:{% if d.pos == 'top' %}linear-gradient(180deg,rgba(10,10,10,.78),rgba(10,10,10,.05) 55%,rgba(10,10,10,.35)){% else %}linear-gradient(0deg,rgba(10,10,10,.85),rgba(10,10,10,.05) 55%,rgba(10,10,10,.35)){% endif %}"></div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px;justify-content:{{ 'flex-start' if d.pos == 'top' else 'flex-end' }};text-align:center;align-items:center">
+  <div>
+    <div class="disp" style="color:#FAFAFA;font-size:{{ m.fs }}px;line-height:1.02;letter-spacing:.01em">{{ d.linea1 }}</div>
+    <div class="disp-b" style="color:{{ ac }};font-size:{{ m.fs2 }}px;line-height:1.0;margin-top:4px">{{ l2 }}</div>
+    {% if d.pie %}<div class="body" style="color:#FAFAFA;opacity:.85;font-size:30px;letter-spacing:.06em;margin-top:22px">{{ d.pie }}</div>{% endif %}
+  </div>
+</div>
+<div style="position:absolute;{{ 'bottom' if d.pos == 'top' else 'top' }}:{{ m.pad_top }}px;left:50%;transform:translateX(-50%)">{{ logo(1.15, align='center') }}</div>

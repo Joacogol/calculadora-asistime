@@ -1,0 +1,92 @@
+{
+  "id": "titular",
+  "nombre": "Titular",
+  "descripcion": "foto full + titular de dos pesos",
+  "cuando_usarla": "Clases, comunidad, lifestyle. Una idea, una foto, ningún dato duro.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "fs": 78,
+      "fs2": 104,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "fs": 86,
+      "fs2": 115,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "fs": 96,
+      "fs2": 128,
+      "pad_top": 200,
+      "pad_bot": 260
+    },
+    "reel": {
+      "alto": 1920,
+      "fs": 104,
+      "fs2": 139,
+      "pad_top": 200,
+      "pad_bot": 260
+    }
+  },
+  "campos": [
+    {
+      "id": "linea1",
+      "tipo": "texto",
+      "etiqueta": "Primera línea",
+      "requerido": true,
+      "ejemplo": "Mucho más que"
+    },
+    {
+      "id": "linea2",
+      "tipo": "texto",
+      "etiqueta": "Segunda línea",
+      "requerido": true,
+      "ejemplo": "PÁDEL"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "requerido": true
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Pie",
+      "default": ""
+    },
+    {
+      "id": "pos",
+      "tipo": "opcion",
+      "etiqueta": "Posición del titular",
+      "opciones": [
+        "top",
+        "bottom"
+      ],
+      "default": "top"
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "blanco",
+        "lima",
+        "naranja"
+      ],
+      "default": "blanco"
+    }
+  ],
+  "notas": "`linea1` va en Light, `linea2` en Bold. **Nunca las dos en el mismo peso.**\n\n`linea2` va en el color de acento ENCIMA de una foto, que es justo el caso donde un acento de luminancia media desaparece. Se mide la franja donde cae el titular con `plan_titular`; si no llega al contraste, la línea sale en bloque sólido. El razonamiento largo está en `motor/ALTA-DE-MARCA.md`."
+}

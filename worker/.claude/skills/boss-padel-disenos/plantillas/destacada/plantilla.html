@@ -1,0 +1,12 @@
+
+{%- set cuerpo = t.iconos.get(d.icono, '') -%}
+<div class="scrim" style="background:{{ d.fondo or c.negro_puro }}"></div>
+<div class="pad" style="align-items:center;justify-content:center;padding:0">
+  <div style="width:700px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center">
+    {% if cuerpo %}<svg width="272" height="272" viewBox="0 0 24 24" fill="none" stroke="{{ ac }}" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">{{ cuerpo | replace('CURRENT', ac) }}</svg>{% else %}{{ aros(186, ac, 3.0, n=4) }}{% endif %}
+    <div class="kicker" style="color:#FAFAFA;font-size:74px;letter-spacing:.20em;
+      margin-top:56px;line-height:1.22">{{ d.titulo }}</div>
+    <div style="width:130px;height:6px;background:{{ ac }};margin-top:38px"></div>
+  </div>
+</div>

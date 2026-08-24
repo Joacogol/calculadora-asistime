@@ -1,0 +1,180 @@
+# -*- coding: utf-8 -*-
+"""Plantillas que son datos, no código.
+
+Una plantilla vive en una carpeta con dos archivos:
+
+    plantillas/<id>/plantilla.html   el diseño, con {{ campos }}
+    plantillas/<id>/plantilla.json   el contrato: formatos, medidas, campos, notas
+
+`cargar(carpeta, marca)` devuelve un dict `{id: función(data, formato) -> html}`
+con **la misma firma que las plantillas escritas en Python**. Por eso una marca
+puede tener las dos cosas conviviendo y el resto del motor no se entera:
+
+    PLANTILLAS = {"horarios": horarios}                     # las que son programas
+    PLANTILLAS.update(plantillas.cargar(AQUI, sys.modules[__name__]))
+
+## Por qué existe
+
+Agregar o corregir una plantilla dejaba de ser trabajo de diseño y pasaba a ser
+trabajo de despliegue. Con la plantilla como dato, se edita, se previsualiza y
+se publica sin tocar código — y el contrato de campos alcanza para dos cosas al
+mismo tiempo: el formulario que ve una persona y el catálogo que lee el agente.
+
+## Lo que NO viene acá
+
+Las plantillas que no son un diseño con variables sino un programa: `horarios`
+elige cuerpo tipográfico y cantidad de columnas según cuántas horas entran,
+`duelo` mide la foto y arma su propia estructura. Forzarlas a plantilla sería
+inventar un lenguaje de programación adentro del HTML. Se quedan en Python, y
+lo que tienen de reutilizable se sube a `motor/`.
+"""
+import json
+import pathlib
+
+import jinja2
+
+from motor import legibilidad
+
+CARPETA = "plantillas"
+_ENTORNO = jinja2.Environment(
+    # Crudo, como las f-strings de hoy: varios campos traen `<br>` a propósito
+    # y los helpers devuelven HTML. Escapar acá rompería las 14 plantillas.
+    # Lo que entra por un pedido de chat lo escapa quien arma el `data`.
+    autoescape=False,
+    undefined=jinja2.StrictUndefined,
+    keep_trailing_newline=True,
+)
+
+
+class PlantillaIncompleta(Exception):
+    pass
+
+
+def _contratos(raiz: pathlib.Path):
+    base = raiz / CARPETA
+    if not base.is_dir():
+        return {}
+    salida = {}
+    for carpeta in sorted(base.iterdir()):
+        json_ = carpeta / "plantilla.json"
+        html = carpeta / "plantilla.html"
+        if not (json_.exists() and html.exists()):
+            continue
+        contrato = json.loads(json_.read_text(encoding="utf-8"))
+        contrato["_html"] = html.read_text(encoding="utf-8")
+        salida[contrato.get("id", carpeta.name)] = contrato
+    return salida
+
+
+def _completar(contrato, data):
+    """Aplica los valores por defecto y falla claro si falta algo requerido."""
+    d = dict(data or {})
+    faltan = []
+    for campo in contrato["campos"]:
+        cid = campo["id"]
+        vacio = cid not in d or d[cid] is None or d[cid] == ""
+        if vacio:
+            if "default" in campo:
+                d[cid] = campo["default"]
+            elif campo.get("requerido"):
+                faltan.append(f"{cid} ({campo.get('etiqueta', '')})")
+            else:
+                d.setdefault(cid, "")
+    if faltan:
+        raise PlantillaIncompleta(
+            f"la plantilla «{contrato['id']}» necesita:\n  · "
+            + "\n  · ".join(faltan))
+    return d
+
+
+def cargar(raiz, marca):
+    """Las plantillas-dato de una marca, como funciones(data, formato) -> html.
+
+    `raiz` es la carpeta de la marca; `marca` el módulo que expone C, FORMATOS,
+    BASE_CSS y los helpers gráficos (logo, aros, blob).
+    """
+    raiz = pathlib.Path(raiz)
+    contratos = _contratos(raiz)
+    if not contratos:
+        return {}
+
+    # Todo lo que la marca ofrece queda disponible dentro del HTML. Una
+    # plantilla nueva no puede inventar un color ni una tipografía: compone
+    # con el vocabulario que ya existe, que es lo que la mantiene on-brand.
+    ayudas = {n: getattr(marca, n)
+              for n in ("logo", "aros", "blob", "escudo", "marco", "cinta")
+              if hasattr(marca, n)}
+
+    def _plan_titular(foto, acento, oscuro, zona):
+        """Cuánto contraste hay en la franja donde cae el titular.
+
+        Vive acá y no en la plantilla porque medir una foto le sirve a
+        cualquier marca. La plantilla decide qué hacer con la respuesta; el
+        motor la calcula. Las rutas del spec son relativas a la carpeta de la
+        marca, así que se resuelven contra `raiz`.
+        """
+        ruta = pathlib.Path(foto)
+        if not ruta.is_absolute():
+            ruta = raiz / ruta
+        return legibilidad.plan_titular(str(ruta), acento, oscuro=oscuro,
+                                        zona=tuple(zona))
+
+    ayudas["plan_titular"] = _plan_titular
+
+    def _hacer(contrato):
+        plantilla = _ENTORNO.from_string(contrato["_html"])
+
+        def dibujar(data, fmt="post"):
+            if fmt not in contrato["medidas"]:
+                raise PlantillaIncompleta(
+                    f"la plantilla «{contrato['id']}» no tiene formato «{fmt}». "
+                    f"Tiene: {', '.join(contrato['medidas'])}")
+            d = _completar(contrato, data)
+            m = contrato["medidas"][fmt]
+            cuerpo = plantilla.render(
+                d=d, m=m, fmt=fmt, t=contrato,
+                c=marca.C,
+                ac=marca.C[d.get("acento") or contrato.get("acento_por_defecto", "lima")],
+                raiz=str(raiz),
+                **ayudas)
+            return (f'<!doctype html><html><head><meta charset="utf-8">'
+                    f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
+                    f'</style></head><body>\n'
+                    f'<div class="canvas">{cuerpo}</div></body></html>')
+
+        dibujar.__name__ = contrato["id"]
+        dibujar.__doc__ = contrato.get("descripcion", "")
+        dibujar.contrato = contrato
+        return dibujar
+
+    return {cid: _hacer(c) for cid, c in contratos.items()}
+
+
+def catalogo(raiz, escritas_en_python=()):
+    """El catálogo de plantillas de una marca, generado de los contratos.
+
+    Es la mitad del punto de todo esto: el mismo archivo que dibuja el
+    formulario para una persona le describe la plantilla al agente. Una
+    plantilla publicada queda disponible en la pieza siguiente sin que nadie
+    actualice un texto a mano en otro lado.
+
+    `notas` sale del contrato y se escribe a mano: los campos se declaran, el
+    oficio se cuenta. Sin eso el catálogo pierde lo mejor del skill.
+    """
+    partes = []
+    for cid, c in sorted(_contratos(pathlib.Path(raiz)).items()):
+        campos = []
+        for campo in c["campos"]:
+            marca_ = "" if campo.get("requerido") else "?"
+            campos.append(f"{campo['id']}{marca_}")
+        partes.append(
+            f"### `{cid}` — {c.get('descripcion', '')}\n"
+            f"**Cuándo:** {c.get('cuando_usarla', '—')}\n"
+            f"**Formatos:** {', '.join(c['medidas'])}\n"
+            f"**Campos:** {', '.join(campos)}  ·  `?` = opcional\n"
+            + (f"\n{c['notas'].strip()}\n" if c.get("notas") else ""))
+    for nombre in escritas_en_python:
+        partes.append(
+            f"### `{nombre}`\nEscrita en Python — no se edita desde el estudio. "
+            f"Ver el SKILL.md.\n")
+    return "\n".join(partes)

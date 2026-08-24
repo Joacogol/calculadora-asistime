@@ -1,0 +1,95 @@
+{
+  "id": "campeones",
+  "nombre": "Campeones",
+  "descripcion": "los campeones del fin de semana, por categoría",
+  "cuando_usarla": "Cuando hay varias categorías. Para un solo podio de tres puestos es `resultados`.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "fs": 34,
+      "titulo_fs": 79,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "fs": 38,
+      "titulo_fs": 89,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "fs": 42,
+      "titulo_fs": 98,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "fs": 42,
+      "titulo_fs": 98,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true
+    },
+    {
+      "id": "filas",
+      "tipo": "lista",
+      "etiqueta": "Campeones",
+      "requerido": true,
+      "columnas": [
+        {
+          "id": "categoria",
+          "etiqueta": "Categoría"
+        },
+        {
+          "id": "dupla",
+          "etiqueta": "Dupla"
+        }
+      ]
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "default": "",
+      "nota": "Opcional: sin foto sale sobre el negro de marca."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Pie",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+
+<div class="scrim" style="background:{{ d.fondo or c.negro }}"></div>
+<div style="position:absolute;top:-90px;right:-170px;opacity:.35">{{ aros(340,'#FAFAFA',2.4) }}</div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px">
+  <div class="row">{{ logo(1.35, align='left') }}
+    <div class="kicker" style="color:{{ ac }};font-size:28px;text-align:right">{{ d.kicker }}</div></div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center">
+    <div class="disp-b" style="color:#FAFAFA;font-size:104px;line-height:.94;margin-bottom:34px">{{ d.titulo }}</div>
+    <div style="border-bottom:1px solid rgba(250,250,250,.16)">{% for dia, mes, txt, sede in d['items'] %}
+      <div style="display:flex;align-items:center;gap:30px;padding:24px 0;border-top:1px solid rgba(250,250,250,.16)">
+        <div style="width:170px;display:flex;align-items:baseline;gap:10px">
+          <div class="disp-b" style="color:#FAFAFA;font-size:70px;line-height:.9">{{ dia }}</div>
+          <div class="eyebrow" style="color:{{ ac }};font-size:28px">{{ mes }}</div></div>
+        <div style="flex:1">
+          <div class="body" style="color:#FAFAFA;font-weight:600;font-size:36px">{{ txt }}</div>
+          <div class="kicker" style="color:#FAFAFA;opacity:.55;font-size:22px;margin-top:4px">{{ sede }}</div></div>
+      </div>{% endfor %}</div>
+  </div>
+  <div class="body" style="color:#FAFAFA;opacity:.6;font-size:26px;letter-spacing:.08em">{{ d.pie }}</div>
+</div>

@@ -4,6 +4,11 @@ Proyecto para que un diseñador tenga un lugar donde **crear plantillas nuevas y
 cambiar el diseño de las que hay**, sin tocar código y sin esperar un
 despliegue. Hoy eso vive adentro del worker que corre en Google Cloud.
 
+- **[docs/lo-que-quedo-armado.md](docs/lo-que-quedo-armado.md)** — el estado real:
+  12 plantillas migradas y verificadas, el catálogo publicado en Asistime y el
+  agente Diseñador armado.
+- **[worker/](worker/)** — los archivos para aplicar al repo del worker, con
+  `APLICAR.md`.
 - **[docs/estudio-de-plantillas.md](docs/estudio-de-plantillas.md)** — el estudio donde un diseñador crea y edita plantillas sin desplegar. Empezá por acá.
 - **[docs/el-disenador-vivo.md](docs/el-disenador-vivo.md)** — el estado verificado del tenant 119 y el bucle de correcciones del agente.
 - **[docs/lectura-del-worker.md](docs/lectura-del-worker.md)** — lo que cambia del plan

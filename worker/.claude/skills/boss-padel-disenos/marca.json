@@ -1,0 +1,33 @@
+{
+  "_nota": "Los datos que el worker le pasa al agente en el prompt. Es JSON y no un módulo Python a propósito: dos marcas tienen archivos con el mismo nombre (brand.py, templates.py) y no pueden convivir importadas en el mismo proceso. Un archivo de datos no tiene ese problema.",
+  "nombre": "Boss Padel",
+  "sedes": {
+    "Carrasco": {
+      "contacto": "097 406 148",
+      "acento": "lima"
+    },
+    "Hípico": {
+      "contacto": "098 347 637",
+      "acento": "naranja"
+    },
+    "Punta del Este": {
+      "contacto": "098 238 541",
+      "acento": "lima"
+    },
+    "Todas": {
+      "contacto": "097 406 148",
+      "acento": "lima"
+    }
+  },
+  "sede_por_defecto": "Carrasco",
+  "telefono_por_defecto": false,
+  "regla_telefono": "**NO pongas el teléfono salvo que el pedido lo pida.** Una placa con un número que nadie pidió se ve a publicidad barata y ensucia la pieza. Va sólo si el pedido dice algo como «que aparezca el teléfono», «poné cómo reservar», «con los datos de contacto», o si la pieza es una convocatoria con inscripción donde el contacto es el punto. Ante la duda, dejalo afuera: agregarlo después es un pedido de treinta segundos, sacarlo obliga a rehacer la pieza.",
+  "formato_por_defecto": "post",
+  "_asistime": "Dónde vive el manual que edita el club. No es secreto: es un dato de la marca. La clave de API va en ASISTIME_CLAVE.",
+  "asistime": {
+    "tenant": 119,
+    "documento": 779,
+    "catalogo": 831,
+    "_nota": "`documento` es el manual de marca que edita el club. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue."
+  }
+}
