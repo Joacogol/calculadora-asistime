@@ -216,6 +216,26 @@ Tarda unos cinco minutos y lo que vuelve es un **borrador con su preview**:
 existe y se puede ver, pero las piezas no lo usan hasta que alguien lo publica.
 Mostráselo a la persona, y recién si le gusta, `publicar_plantilla`.
 
+## Si una de esta lista está mal
+
+Cuando lo que piden es cambiar una que ya existe —«el título de torneo se ve
+chico», «que resultados muestre también la sede»— usá **la misma
+`crear_plantilla`, pero con `corrige`** y el id de esa plantilla, tal cual
+figura arriba.
+
+Es la diferencia entre corregir la plantilla que el club usa y reemplazarla por
+otra parecida. Rehaciéndola se pierden los campos que alguien ya venía
+mandando y las decisiones que nadie escribió. Además sale en la mitad del
+tiempo.
+
+En `mensaje` va **sólo qué hay que cambiar**, con las palabras de la persona.
+No repitas para qué sirve la plantilla: eso ya está.
+
+Lo que vuelve es otra vez un borrador, y vale lo mismo: **la plantilla que se
+usa hoy no cambió** hasta que alguien publique la versión nueva.
+
+## Y si necesita código
+
 `avisar_cambio_motor` queda para lo que de verdad necesita código: el video,
 los efectos, un formato que no existe, la estructura del carrusel. Es la
 excepción, no la salida fácil.

@@ -325,15 +325,44 @@ def _guardar(cli, slug: str, html: str, contrato: dict, etiqueta: str,
 
 
 def _bajar_publicada(cli, slug: str) -> tuple[str, dict] | None:
-    """La versión en uso de una plantilla, para editarla en vez de rehacerla."""
-    r = requests.get(
-        cli._url("plantillas"), headers=cli._cab(), timeout=30,
-        params={"plantilla": f"eq.{slug}", "publicada": "is.true",
-                "select": "html,contrato", "limit": "1"})
-    if r.status_code != 200 or not r.json():
-        return None
-    f = r.json()[0]
-    return f["html"], f["contrato"]
+    """La versión EN USO de una plantilla, para editarla en vez de rehacerla.
+
+    Busca en dos lados y en este orden, que es el mismo que usa el motor para
+    decidir qué dibuja:
+
+    1. la base, donde está la versión publicada;
+    2. el disco, donde está la que trajo el despliegue.
+
+    El segundo paso no es un plan B: es el caso normal de una plantilla que
+    nadie tocó todavía. La base sólo tiene las que alguien publicó desde que
+    existe la tabla; las otras once de Boss viven en el despliegue y son
+    igual de reales. Sin este paso, pedir «a la de torneos hacele el título
+    más grande» terminaría escribiendo una plantilla nueva parecida a torneo
+    —que es exactamente lo que corregir vino a evitar— sólo porque todavía no
+    la sembró nadie.
+    """
+    try:
+        r = requests.get(
+            cli._url("plantillas"), headers=cli._cab(), timeout=30,
+            params={"plantilla": f"eq.{slug}", "publicada": "is.true",
+                    "select": "html,contrato", "limit": "1"})
+        if r.status_code == 200 and r.json():
+            f = r.json()[0]
+            return f["html"], f["contrato"]
+    except requests.RequestException as e:
+        # Que la base no conteste no tiene por qué impedir corregir: el disco
+        # tiene una versión buena. Se anota y se sigue.
+        log.warning("[%s] no pude consultar «%s» en la base (%s); voy al disco",
+                    cli.marca, slug, e)
+
+    d = _skill(cli.marca) / "plantillas" / slug
+    j, h = d / "plantilla.json", d / "plantilla.html"
+    if j.exists() and h.exists():
+        log.info("[%s] «%s» no está en la base: la tomo del despliegue",
+                 cli.marca, slug)
+        return (h.read_text(encoding="utf-8"),
+                json.loads(j.read_text(encoding="utf-8")))
+    return None
 
 
 def _skill(marca: str) -> Path:
