@@ -1,0 +1,103 @@
+{
+  "id": "americano",
+  "nombre": "Americano",
+  "descripcion": "Anuncio de un americano: día y hora grandes, precio por pareja destacado, sede y cupos en el pie. Foto de fondo con scrim.",
+  "cuando_usarla": "Convocatoria a un americano o una fecha suelta con inscripción. Para un torneo de varios días con categorías, usá 'torneo'.",
+  "formatos": [
+    "post",
+    "vert",
+    "story"
+  ],
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "dia": 128,
+      "hora": 176,
+      "precio": 134,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "dia": 148,
+      "hora": 208,
+      "precio": 152,
+      "pad_top": 84,
+      "pad_bot": 84
+    },
+    "story": {
+      "alto": 1920,
+      "dia": 168,
+      "hora": 248,
+      "precio": 168,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "modalidad",
+      "tipo": "texto",
+      "etiqueta": "Modalidad",
+      "default": "AMERICANO MIXTO",
+      "ejemplo": "AMERICANO MIXTO"
+    },
+    {
+      "id": "dia",
+      "tipo": "texto",
+      "etiqueta": "Día",
+      "requerido": true,
+      "ejemplo": "JUEVES 28"
+    },
+    {
+      "id": "hora",
+      "tipo": "texto",
+      "etiqueta": "Hora",
+      "requerido": true,
+      "ejemplo": "20:00"
+    },
+    {
+      "id": "precio_pareja",
+      "tipo": "texto",
+      "etiqueta": "Precio por pareja",
+      "requerido": true,
+      "ejemplo": "890",
+      "nota": "Obligatorio por regla de marca del 12/8/2026: en todo anuncio tiene que figurar el precio por pareja."
+    },
+    {
+      "id": "cupos",
+      "tipo": "texto",
+      "etiqueta": "Cupos",
+      "default": "CUPOS LIMITADOS"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true,
+      "ejemplo": "CARRASCO"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "requerido": true
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Color de acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    },
+    {
+      "id": "contacto",
+      "tipo": "texto",
+      "etiqueta": "Teléfono (opcional)",
+      "default": ""
+    }
+  ]
+}

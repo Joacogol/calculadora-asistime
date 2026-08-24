@@ -265,3 +265,75 @@ en esta sesión: 6 plantillas. La producción tiene 14 y un `motor/` compartido 
 no vi. La forma es la misma —función que devuelve HTML, Chromium que le saca una
 foto— así que el resultado se sostiene, pero la estimación de la etapa 1 hay que
 confirmarla con el repo del worker a la vista.
+
+---
+
+## Apéndice · La puerta principal es pedir, no editar
+
+*Agregado el 24/8 después de aclarar el pedido.*
+
+Lo de arriba describe el estudio como un editor. Está bien, pero no es la puerta
+por la que va a entrar la gente. La puerta es **pedir una plantilla nueva** y
+después irla corrigiendo. El editor queda como la salida de emergencia para
+cuando la corrección es demasiado fina para explicarla con palabras.
+
+Lo probé: `prototipo/plantillas/americano/` no salió de migrar nada. Salió de un
+pedido en castellano y quedó on-brand a la primera. No porque generar diseño sea
+fácil: porque **el vocabulario ya estaba escrito**. Los colores, las
+tipografías, las clases, el logo, los helpers y catorce plantillas de referencia
+ya están en la skill. Generar una plantilla nueva no es inventar un sistema de
+diseño, es componer con uno que existe. Ese es el motivo por el que esto
+funciona acá y no funcionaría con una marca sin skill.
+
+### Las cuatro restricciones que hacen que salga bien
+
+El generador no es lo importante. Lo importante es lo que lo rodea:
+
+1. **Los tokens de la marca.** No hay un color ni una tipografía que elegir: hay
+   `lima`, `naranja`, `Archivo`, `Barlow`, y el logo en outline.
+2. **Las plantillas que ya existen**, como referencia de oficio: los márgenes de
+   76px, el scrim sobre la foto, el logo arriba a la derecha, el pie en tres
+   columnas.
+3. **El manual de marca como restricción, no como sugerencia.** En el
+   `americano` el campo `precio_pareja` quedó **requerido**, con la nota de por
+   qué: sale de la regla del 12/8/2026. La regla del club se convirtió en algo
+   que la plantilla no te deja saltear.
+4. **El preview con el motor real.** Sin eso, todo lo anterior es una apuesta.
+
+### Las dos cosas que mejoran, y no son la misma
+
+Cuando el pedido dice «que eso se vaya mejorando», hay dos loops distintos y
+conviene no mezclarlos:
+
+**La plantilla mejora.** v1 → v2 → v3, versionada. Las tres notas que se le
+hicieron al `americano` —«no se ve la cancha», «el precio es lo que más
+preguntan», «el bloque central flota»— se aplicaron como tres cambios en el
+HTML y tres medidas en el contrato. La v2 mejora todas las piezas que se hagan
+de ahí en adelante, no sólo la que se estaba mirando.
+
+**El sistema mejora.** Cada corrección se guarda junto a la plantilla, y de ahí
+salen patrones que valen para la plantilla siguiente: si tres veces hubo que
+aliviar el scrim, el scrim por defecto estaba mal. Es lo que hace que la
+plantilla número veinte salga mejor que la número quince, y es el mismo bucle de
+correcciones del otro documento, aplicado a plantillas en vez de a piezas.
+
+Sin el segundo loop, cada plantilla nueva arranca de cero y el diseñador repite
+las mismas tres notas para siempre.
+
+### Lo que cambia en el plan
+
+La etapa 5 —«convertir en plantilla»— deja de ser lo último y pasa a ser el
+centro. El orden nuevo:
+
+| | |
+|---|---|
+| 1 | Migrar las 14 plantillas al formato de datos |
+| 2 | El motor lee de la base |
+| 3 | **Pedir una plantilla nueva**, con preview y corrección |
+| 4 | El estudio alrededor: galería, versiones, campos |
+| 5 | El editor de HTML, como salida de emergencia |
+| 6 | Los tokens de marca |
+
+La etapa 1 sigue primera y no es burocracia: es la que convierte las 14
+plantillas en los ejemplos de los que aprende el generador. Mientras sean
+funciones de Python, cada plantilla nueva se genera sin referencias.

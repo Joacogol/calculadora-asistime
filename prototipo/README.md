@@ -80,3 +80,32 @@ en la pieza siguiente, sin que nadie le explique nada.
   un pedido de chat hay que escaparlo y declarar los saltos de línea como un
   tipo de campo aparte.
 - El video y los efectos siguen en `motor/`, sin tocar.
+
+---
+
+## Tercer experimento · una plantilla nueva, pedida
+
+`plantillas/americano/` no salió de migrar nada: se creó de un pedido en
+castellano —«una plantilla para americanos: día, hora, sede, precio por pareja
+y cupos»— usando el sistema de diseño que ya está en el skill: los tokens de
+`brand.py`, las clases de `base.css`, los helpers `logo()` y `aros()`, y las
+plantillas que ya existen como referencia de oficio.
+
+Salió on-brand a la primera. No porque generar diseño sea fácil, sino porque
+**el vocabulario ya estaba escrito**: no hay que inventar una tipografía ni un
+color, hay que componer con los que hay.
+
+Un detalle que importa: el campo `precio_pareja` quedó **requerido**, con la
+nota de por qué. Sale de la regla de marca del 12/8/2026 —«en todos los
+anuncios de torneos siempre debe figurar el precio por pareja»—. La regla del
+manual se convirtió en una restricción de la plantilla: ahora no se puede
+generar la pieza sin el precio.
+
+### Y después, la corrección
+
+Tres notas de diseñador sobre la v1 —«no se ve la cancha», «el precio es lo que
+más preguntan», «el bloque central flota»— se aplicaron como tres cambios en
+`plantilla.html` y tres medidas en `plantilla.json`. Ver `CMP-americano.png`.
+
+Eso es lo que hay que versionar: no la pieza, **la plantilla**. La v2 mejora
+todas las piezas que se hagan de ahí en adelante.
