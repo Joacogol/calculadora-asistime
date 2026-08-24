@@ -28,6 +28,7 @@ Y no deja nada en el disco. El borrador vive en `plantillas/_borrador/`, que el
 motor no carga —la regla del guión bajo—, y se borra al terminar. El disco del
 contenedor se pierde en el despliegue siguiente: lo que vale queda en la base.
 """
+import asyncio
 import importlib
 import json
 import os
@@ -35,6 +36,7 @@ import logging
 import re
 import shutil
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -269,12 +271,33 @@ pudiste hacer sin romper otra cosa, decilo: es más útil que hacerlo igual.
 """
 
 
+#: Después de cuánto tiempo un pedido en `generando` se da por abandonado.
+#:
+#: Un pedido se marca `generando` cuando un worker lo toma, y vuelve a
+#: `listo` o `error` cuando termina. Si el worker se muere en el medio
+#: —Cloud Run reinicia el job, se acaba la memoria, alguien despliega— nadie
+#: lo devuelve a la cola: queda `generando` para siempre y el chat le contesta
+#: «sigue en preparación» a una persona que va a esperar de gusto.
+#:
+#: Pasó de verdad, probando: se mató el worker justo después de que tomara un
+#: pedido y quedó colgado. En Cloud Run un reinicio a mitad de corrida es
+#: normal, no excepcional.
+#:
+#: 30 minutos es cómodo: la corrida más larga medida fue de 8, y una plantilla
+#: que lleva media hora está rota igual.
+ABANDONADO_MIN = 30
+
+
 def _pendientes(cli, limite: int = 2) -> list[dict]:
     """Los pedidos de plantilla sin atender, del más viejo al más nuevo.
 
     De a dos por corrida y no más: cada uno es una corrida del agente de varios
     minutos, y el reloj vuelve a disparar dentro de uno.
+
+    Incluye los que quedaron `generando` de un worker que no volvió: mejor
+    rehacer una plantilla que dejar a alguien esperando una que no viene.
     """
+    rescatados = _rescatar(cli)
     r = requests.get(
         cli._url("plantilla_pedidos"), headers=cli._cab(), timeout=30,
         params={"estado": "eq.pendiente", "order": "creado_en.asc",
@@ -283,7 +306,35 @@ def _pendientes(cli, limite: int = 2) -> list[dict]:
     if r.status_code in (400, 404):
         return []           # esta base todavía no tiene la tabla
     r.raise_for_status()
+    if rescatados:
+        log.warning("[%s] %d pedido(s) volvieron a la cola: los tomó un worker "
+                    "que no terminó", cli.marca, rescatados)
     return r.json()
+
+
+def _rescatar(cli) -> int:
+    """Devuelve a la cola los pedidos que un worker tomó y nunca terminó.
+
+    Se hace con una condición sobre `actualizado_en` y no con un registro de
+    qué worker tomó qué: alcanza, y no hay nada que mantener. El riesgo de
+    rescatar uno que en realidad seguía vivo es rehacer una plantilla; el de
+    no rescatarlo es que nunca aparezca.
+    """
+    limite = datetime.now(timezone.utc) - timedelta(minutes=ABANDONADO_MIN)
+    try:
+        r = requests.patch(
+            cli._url("plantilla_pedidos"), headers=cli._cab({"Prefer": "return=representation"}),
+            timeout=30,
+            params={"estado": "eq.generando",
+                    "actualizado_en": f"lt.{limite.isoformat()}"},
+            json={"estado": "pendiente"})
+        if r.status_code not in (200, 204):
+            return 0
+        return len(r.json()) if r.text.strip() else 0
+    except (requests.RequestException, ValueError):
+        # Rescatar es de mejor esfuerzo: si falla, la vuelta que viene se
+        # intenta de nuevo. No vale la pena frenar la corrida por esto.
+        return 0
 
 
 def _tomar(cli, pedido_id: str) -> bool:
@@ -416,6 +467,13 @@ def _dibujar(marca_nombre: str, carpeta: Path, html: str, contrato: dict
     Es la verificación que importa, y por eso se hace acá en vez de confiar en
     que el agente la haya hecho: una plantilla que no dibuja no es una
     plantilla, y guardarla sería dejar una bomba para la pieza siguiente.
+
+    **Es sync y tiene que llamarse con `asyncio.to_thread`.** Playwright se
+    niega a correr su API sync adentro de un loop de asyncio, y `atender()` es
+    async — la corrida entera se cae acá, en el último paso, después de haber
+    escrito y dibujado la plantilla. El resto del worker no se topa con esto
+    porque nadie más llama a Playwright en proceso: el diseñador de piezas le
+    pide al agente que corra `render.py` por Bash, en otro proceso.
     """
     import sys
     sys.path.insert(0, str(carpeta))
@@ -566,7 +624,8 @@ async def atender(cli, pedido: dict) -> bool:
 
         ultimo, met = await _correr(prompt, cli.marca, modelo)
         html, contrato = _leer_borrador(carpeta)
-        previews = _dibujar(cli.marca, carpeta, html, contrato)
+        previews = await asyncio.to_thread(
+            _dibujar, cli.marca, carpeta, html, contrato)
 
         slug = contrato["id"]
         version = _guardar(cli, slug, html, contrato,
