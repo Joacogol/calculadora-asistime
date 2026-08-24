@@ -154,3 +154,63 @@ mismo que no tenerla.
 simulator contacts»*: mi clave es de aplicación, no de usuario. Puedo leer y
 escribir la configuración de los agentes; correr el simulador lo tenés que hacer
 vos. No cuentes con que lo verifiqué.
+
+
+---
+
+# Lo que ya quedó hecho
+
+Todo verificado leyendo después de escribir.
+
+## Los dos bugs vivos, cerrados
+
+**El 363 dejó de tener instrucciones para herramientas que no maneja.** Se le
+sacaron las cinco de diseño —quedó con `disponibilidad_canchas` y
+`solicitar_evento`— y su prompt (v8, publicada) perdió las dos secciones de
+diseño. En su lugar tiene una que dice a qué derivar y, sobre todo, **a qué
+no**: reservas, disponibilidad, precios de alquiler, clases, membresías,
+torneos y eventos los contesta él.
+
+De paso salió del prompt el torneo de Hípico del 14-15-16 de agosto, que ya
+pasó, con una línea que explica por qué el calendario se lee del documento:
+*«un torneo que ya pasó es peor que no contestar»*.
+
+## El camino para pedir una plantilla, andando
+
+| Pieza | Estado |
+|---|---|
+| Tabla `plantilla_pedidos` | creada en la base de Boss |
+| Edge Function `api-plantillas` | desplegada, misma `API_CLAVE` que las otras |
+| `crear_plantilla` (2055) · `estado_plantilla` (2056) · `publicar_plantilla` (2057) | creadas y asignadas al Diseñador |
+| Prompt del Diseñador v7 | publicado: ahora arma plantillas en vez de pedirlas |
+| Cierre del catálogo | corregido **en el generador**, no a mano |
+
+La función se probó de punta a punta contra la base real:
+
+```
+sin clave                  → 401
+clave de largo distinto    → 401
+pedido demasiado corto     → 400 pedido_incompleto
+pedido de verdad           → 201 con id
+consultar cómo va          → estado pendiente
+publicar sin confirmar     → 428 falta_confirmar
+```
+
+El cierre del catálogo se arregló en `motor.plantillas.catalogo()` y no
+editando el documento, porque el documento se regenera entero en cada
+despliegue: lo que se escriba a mano allá se pierde en el siguiente. Entra
+cuando corras `publicar-catalogo.py`.
+
+## Lo único que falta
+
+**El que escribe la plantilla.** `app/plantillero.py` en el worker: toma el
+pedido, arma la plantilla con el vocabulario de la marca y el catálogo
+delante, **la renderiza con el motor de producción, la mira y la corrige**, y
+guarda el borrador con su preview.
+
+Hoy un pedido entra y queda en `pendiente` para siempre, porque no hay quien lo
+atienda. Todo lo que está antes y después de ese paso ya funciona.
+
+Es un llamado al Agent SDK, igual que `disenador.py`. No lo escribí porque no
+lo puedo correr sin la clave de Anthropic, y este proyecto ya aprendió lo que
+cuesta dar por hecho código que nunca se ejecutó.

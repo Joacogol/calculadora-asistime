@@ -181,6 +181,40 @@ def compilar(marca, raiz, contrato, html, data, fmt="post"):
                    _ENTORNO.from_string(html), data, fmt)
 
 
+#: Lo que va antes y después de la lista, en el documento que lee el agente.
+#: Vive acá y no escrito a mano en Asistime porque el documento se regenera
+#: entero en cada despliegue: lo que se edite allá se pierde en el siguiente.
+ENCABEZADO = """
+Las plantillas que el motor sabe dibujar. **Este documento no se edita a mano:**
+lo genera el motor desde el contrato de cada plantilla y lo republica solo.
+
+Cada plantilla dice sus **campos**. Los marcados con `?` son opcionales: si van
+vacíos, el bloque que los contiene desaparece entero, rótulo incluido. Los que
+no tienen `?` son obligatorios y el motor rechaza la pieza sin ellos.
+
+---
+"""
+
+CIERRE = """
+---
+
+## Si falta una plantilla
+
+No improvises con la más parecida y no digas que no se puede: **armala**. Con
+`crear_plantilla` se encarga un molde nuevo — contá qué pieza tiene que
+permitir hacer, qué datos lleva cada vez, y si hay alguna de esta lista
+parecida, en qué tiene que ser distinta.
+
+Tarda unos cinco minutos y lo que vuelve es un **borrador con su preview**:
+existe y se puede ver, pero las piezas no lo usan hasta que alguien lo publica.
+Mostráselo a la persona, y recién si le gusta, `publicar_plantilla`.
+
+`avisar_cambio_motor` queda para lo que de verdad necesita código: el video,
+los efectos, un formato que no existe, la estructura del carrusel. Es la
+excepción, no la salida fácil.
+"""
+
+
 def catalogo(raiz, escritas_en_python=()):
     """El catálogo de plantillas de una marca, generado de los contratos.
 
@@ -192,7 +226,7 @@ def catalogo(raiz, escritas_en_python=()):
     `notas` sale del contrato y se escribe a mano: los campos se declaran, el
     oficio se cuenta. Sin eso el catálogo pierde lo mejor del skill.
     """
-    partes = []
+    partes = [ENCABEZADO.strip()]
     for cid, c in sorted(_contratos(pathlib.Path(raiz)).items()):
         campos = []
         for campo in c["campos"]:
@@ -208,4 +242,5 @@ def catalogo(raiz, escritas_en_python=()):
         partes.append(
             f"### `{nombre}`\nEscrita en Python — no se edita desde el estudio. "
             f"Ver el SKILL.md.\n")
+    partes.append(CIERRE.strip())
     return "\n".join(partes)
