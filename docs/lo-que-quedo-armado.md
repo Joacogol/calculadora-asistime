@@ -145,14 +145,59 @@ Quedó con sus dos documentos: Sedes y Contactos (739) y Reglas de marca (779).
 
 ---
 
-## 5. Lo que falta
+## 5. La base toma el mando · el despliegue sale del medio
 
-### El estudio
+Esta es la parte que faltaba para que «publicar una plantilla» no sea
+«desplegar el worker».
 
-Lo que hay ahora deja publicar una plantilla nueva **editando dos archivos y
-desplegando**. Falta lo que saca el despliegue del medio: que el motor lea las
-plantillas de la base en vez del disco, y la pantalla para pedirlas y
-corregirlas. Es la etapa 2 y 3 del plan, y ahora tienen sobre qué apoyarse.
+**La tabla existe en el Supabase de Boss.** `plantillas`, versionada: cada fila
+es una versión con su HTML, su contrato, quién la subió y qué cambió. Dos cosas
+que vale la pena mirar:
+
+- Un índice único parcial hace que **no puedan existir dos versiones publicadas
+  de la misma plantilla**. No es una regla que alguien tenga que recordar: es
+  imposible. Sin eso, el worker levantaría dos filas para el mismo slug y cuál
+  gana dependería del orden en que vuelvan — la clase de bug que aparece una
+  vez cada tres semanas.
+- El número de versión lo calcula la base, no quien llama. Si lo calculara el
+  cliente —leer el máximo, sumar uno, escribir— dos guardados simultáneos
+  pedirían la misma versión y uno se perdería.
+
+**El worker las baja al skill en cada corrida.** `app/plantillas.py`, en el
+mismo lugar y con la misma forma que el banco de fotos: sólo si hay algo que
+diseñar, y si falla se sigue.
+
+Escribe archivos en vez de devolver un diccionario, y eso es deliberado: el
+diseñador no es una función que reciba parámetros, es un agente con el sistema
+de archivos delante — escribe el spec, corre `render.py`, mira el PNG y lo
+corrige. Bajando los archivos, para el resto del sistema una plantilla que vino
+de la base y una que vino del despliegue son la misma cosa. Ni el agente, ni
+`render.py`, ni el generador de catálogo se enteran.
+
+**Nunca borra.** Lo que está en la base pisa lo del disco; lo que no está en la
+base se queda como vino. Si borrara, un cliente que todavía no corrió
+`plantillas.sql` se quedaría sin ninguna plantilla y sin forma de diseñar,
+cuando las del despliegue estaban ahí y andaban.
+
+### Verificado de punta a punta
+
+Contra una base de prueba —creada, usada y borrada— con el cliente HTTP real:
+
+| Prueba | Resultado |
+|---|---|
+| Borrar `tip` del disco y correr la corrida | vuelve de la base, mismo MD5 |
+| Renderizar las 14 con `tip` viniendo de la base | **56 / 56 idénticos** |
+| Correr la sincronización dos veces | la segunda no toca el disco |
+| Una base sin la tabla (el caso de Clínica) | log informativo, sigue con las del despliegue |
+| Una base que no contesta | warning, sigue con las del despliegue |
+
+En la base de Boss quedó `tip` publicada como versión 1. Las otras once las
+sube `herramientas/sembrar-plantillas.py` en un comando, con las mismas claves
+que usa el worker.
+
+---
+
+## 6. Lo que falta
 
 ### La primitiva de grilla
 
@@ -175,7 +220,7 @@ urgente del proyecto y no lo resuelve nada de lo que se hizo hoy.
 
 ---
 
-## 6. Cómo probarlo
+## 7. Cómo probarlo
 
 Simulador → agente **Diseñador Boss Padel**. Ojo con lo de siempre: el simulador
 no simula las herramientas, las ejecuta. Un pedido de diseño genera y cobra una
