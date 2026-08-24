@@ -206,6 +206,29 @@ Se fue en tres cosas, y las tres están arregladas:
 Corregir arranca además sin nada de eso: no lee referencias, no inventa el
 contrato, y dibuja para verificar en vez de para descubrir.
 
+### Un preview demasiado pesado tumbaba la corrida
+
+Apareció corriendo un pedido real y es de las que no se ven venir. El agente
+escribe los archivos, corre `previsualizar-borrador.py`, va a abrir el PNG
+—que es el único momento que importa de todo esto— y el SDK se cae:
+
+```
+Failed to decode JSON: JSON message exceeded maximum buffer size of 1048576 bytes
+```
+
+Un `story` de 1080×1920 con un fondo ruidoso pesa ~600 KB; en base64 dentro
+del mensaje se pasa del megabyte. Y como se cae **después** de escribir los
+archivos, el borrador queda: parece que salió bien y lo que sale es una pieza
+que nadie miró.
+
+`previsualizar-borrador.py` ahora achica la copia que se mira —por lado (900 px)
+y por peso (350 KB), bajando de a poco hasta que entre—. La pieza se dibuja
+siempre a tamaño real: lo que se achica es la copia, después de medir. Los
+previews que se suben y ve la persona salen de `_dibujar()` y siguen enteros.
+
+De paso baja el costo donde más pesaba: el preview de `story` pasa de 2.764 a
+607 tokens de imagen, y esos se releen en todos los turnos que siguen.
+
 ### El modelo
 
 ```

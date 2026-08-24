@@ -40,6 +40,56 @@ import sys
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
+#: Lado largo del PNG que se deja para mirar. La pieza se dibuja siempre a
+#: tamaño real —lo que se mide es el render de verdad— y recién después se
+#: achica la copia.
+#:
+#: Existe porque un `story` de 1080×1920 pesa ~600 KB, y en base64 dentro de
+#: un mensaje del SDK se pasa del megabyte que aguanta el lector: la corrida
+#: se cae justo cuando el agente va a ABRIR lo que dibujó, que es el único
+#: momento que importa. Se cae después de escribir los archivos, así que
+#: parece que salió bien y sale cualquier cosa.
+#:
+#: 900 px alcanza de sobra para lo que se mira acá —si el titular entra, si
+#: contrasta, si algo quedó pisado— y de paso baja el preview de story de
+#: 2.764 a 607 tokens de imagen, que se releen en todos los turnos que siguen.
+LADO_LARGO = 900
+
+#: Y un tope de peso, además del de lado. Los píxeles no son el problema: el
+#: problema son los bytes, y cuánto pesa un PNG depende del dibujo. Una placa
+#: tipográfica sobre negro plano comprime a 60 KB; la misma medida con un
+#: degradé ruidoso de fondo pesa siete veces más. Topar sólo el lado deja
+#: pasar justo a las que rompen.
+MAX_KB = 350
+
+
+def _achicar(png: pathlib.Path) -> pathlib.Path:
+    """Deja el PNG en un tamaño y un peso que se puedan abrir y mirar.
+
+    Achica hasta cumplir las dos cosas. Baja de a poco y con un piso: un
+    preview tan chico que no se distinga si el titular entra no sirve para
+    nada, y en ese caso es mejor devolver el que hay y que el error se vea.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return png          # sin Pillow se mira el grande y que sea lo que sea
+
+    lado = LADO_LARGO
+    while True:
+        with Image.open(png) as im:
+            ancho, alto = im.size
+            if max(ancho, alto) > lado:
+                escala = lado / max(ancho, alto)
+                im = im.resize((max(1, round(ancho * escala)),
+                                max(1, round(alto * escala))), Image.LANCZOS)
+                im.save(png, "PNG", optimize=True)
+            elif lado < LADO_LARGO:
+                im.save(png, "PNG", optimize=True)
+        if png.stat().st_size <= MAX_KB * 1024 or lado <= 450:
+            return png
+        lado = int(lado * 0.8)
+
 
 def _marca(nombre: str):
     carpeta = RAIZ / ".claude" / "skills" / nombre
@@ -122,8 +172,9 @@ def main(argv):
                 w, h = marca.FORMATOS[fmt]
                 destino = d / f"preview-{fmt}.png"
                 render._captura(pagina, cuerpo, w, h, destino, datos)
+                _achicar(destino)
                 salidas.append(destino)
-                print(f"→ {destino}")
+                print(f"→ {destino}  ({destino.stat().st_size // 1024} KB)")
         finally:
             navegador.close()
             for tmp in render._tmp:
