@@ -100,21 +100,52 @@ de leer.
 
 ---
 
-## 4. Lo que falta, y qué necesito para hacerlo
+## 4. Asistime · el circuito quedó conectado
 
-### Decisión tuya: el agente 363
+El **363 (BOSS Padel)** es el que atiende de verdad por WhatsApp. Se le hicieron
+dos cambios, los dos verificados releyendo:
 
-El **363 (BOSS Padel)** es el que atiende de verdad, por WhatsApp. Hoy sigue
-como estaba y no lo toqué, porque cambiarlo se le nota al cliente. Tres cosas
-que convendría hacerle, y las tres son tu llamada:
+**Ahora puede derivar en el Diseñador.** El vínculo 363 → 364 existía desde
+agosto pero estaba muerto: `toolName` y `toolDescription` en `null`. Ahora tiene
+nombre —`disenador`— y una descripción que dice cuándo derivar y cuándo no:
 
-1. **Que pueda delegar en el Diseñador.** El vínculo 363 → 364 existe pero está
-   muerto (`toolName` y `toolDescription` en `null`). Darle nombre y descripción
-   es lo que hace que el 363 pueda mandarle un pedido de diseño al 364.
-2. **Asociarle el manual de marca (779).** Hoy el 363 no lo lee — lo lee el
-   worker. Son dos verdades distintas para el mismo cliente.
-3. **Asignarle `anotar_regla`.** O dejarla sólo en el Diseñador, que es donde
-   más sentido tiene.
+> Derivá acá cuando alguien pide una pieza […] También cuando pide que algo
+> cambie de ahora en más: un precio o un horario nuevo, una regla de qué foto
+> usar o qué no decir, o que una plantilla se vea distinta. […] **No derives acá
+> reservas de cancha, precios de alquiler ni consultas de horarios libres: eso
+> lo contestás vos.**
+
+El sub-agente no ve la conversación, así que la descripción le pide
+explícitamente al 363 que le pase el contexto entero. Es el error más fácil de
+cometer con una delegación y el más difícil de diagnosticar después.
+
+**Ahora lee el manual de marca.** Se le asoció el documento 779, que antes sólo
+leía el worker. Era el hallazgo de la primera lectura: si el club anotaba «el
+americano sale $890», la pieza salía bien y el chat podía seguir diciendo otra
+cosa. Eso se terminó.
+
+Quedó con sus dos documentos: Sedes y Contactos (739) y Reglas de marca (779).
+
+### El circuito completo, hoy
+
+```
+  el club escribe por WhatsApp
+            ↓
+  BOSS Padel (363)  ── reservas, horarios, sedes → contesta él
+            │
+            └─ disenador ──→  Diseñador (364)
+                                ├── Catálogo de plantillas (831)  ← lo genera el motor
+                                ├── Reglas de marca (779)         ← lo edita el club
+                                │
+                                ├── crear_diseno · estado_diseno
+                                ├── publicar_diseno · estado_publicacion
+                                ├── anotar_regla         ← «qué decir o qué elegir»
+                                └── avisar_cambio_motor   ← «cómo se ve»
+```
+
+---
+
+## 5. Lo que falta
 
 ### El estudio
 
@@ -123,9 +154,43 @@ desplegando**. Falta lo que saca el despliegue del medio: que el motor lea las
 plantillas de la base en vez del disco, y la pantalla para pedirlas y
 corregirlas. Es la etapa 2 y 3 del plan, y ahora tienen sobre qué apoyarse.
 
+### La primitiva de grilla
+
+`duelo` y `horarios` vuelven a ser datos recién cuando su lógica de composición
+suba a `motor/`. Hasta entonces, esas dos se siguen cambiando con despliegue.
+
 ### El cabo suelto de `americano`
 
 `precio` desaparece si va vacío, y la regla del 12/8 dice que en los anuncios de
 torneos siempre tiene que figurar el precio por pareja. Si un americano cuenta
 como torneo, la corrección es una línea en `plantillas/americano/plantilla.json`.
 Lo tiene que decir el club.
+
+### Las claves, que siguen igual
+
+Trabajando en el tenant se vio de nuevo: la misma `API_CLAVE` está pegada en
+texto plano en el código de tres tools, y una segunda clave en el código de
+`anotar_regla`. Cualquiera que abra esa pantalla las ve. Sigue siendo lo más
+urgente del proyecto y no lo resuelve nada de lo que se hizo hoy.
+
+---
+
+## 6. Cómo probarlo
+
+Simulador → agente **Diseñador Boss Padel**. Ojo con lo de siempre: el simulador
+no simula las herramientas, las ejecuta. Un pedido de diseño genera y cobra una
+pieza de verdad (~US$0,70).
+
+Tres frases que prueban las tres puertas:
+
+| Escribí | Tiene que llamar a |
+|---|---|
+| «de ahora en más no uses la frase somospadel. No me hagas ninguna pieza ahora.» | `anotar_regla` |
+| «quiero una plantilla para las clases, con el profe y el horario. No me hagas ninguna pieza ahora.» | `avisar_cambio_motor` |
+| «¿qué plantillas tenés?» | ninguna — lo contesta leyendo el catálogo |
+
+La tercera es la que verifica que el catálogo llegó: tiene que nombrar las 14 y
+no inventar ninguna.
+
+Y desde el 363, para probar la derivación: «necesito una placa para el torneo
+del 28 en Carrasco» tiene que pasar por `disenador`, no resolverse ahí.
