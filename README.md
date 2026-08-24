@@ -1,10 +1,13 @@
-# Diseños automáticos — el diseñador vivo
+# Diseños automáticos — el estudio de plantillas
 
-Proyecto para que el agente diseñador que hoy corre en Google Cloud se pueda
-**entrenar desde Asistime**, y no sólo llamar para que genere una pieza.
+Proyecto para que un diseñador tenga un lugar donde **crear plantillas nuevas y
+cambiar el diseño de las que hay**, sin tocar código y sin esperar un
+despliegue. Hoy eso vive adentro del worker que corre en Google Cloud.
 
-- **[docs/el-disenador-vivo.md](docs/el-disenador-vivo.md)** — el diagnóstico,
-  la arquitectura propuesta y el plan por etapas. Empezá por acá.
+- **[docs/estudio-de-plantillas.md](docs/estudio-de-plantillas.md)** — el estudio donde un diseñador crea y edita plantillas sin desplegar. Empezá por acá.
+- **[docs/el-disenador-vivo.md](docs/el-disenador-vivo.md)** — el estado verificado del tenant 119 y el bucle de correcciones del agente.
+- **[prototipo/](prototipo/)** — la prueba corrida: una plantilla real fuera del
+  código, con el PNG byte por byte idéntico.
 
 ## Contexto previo
 

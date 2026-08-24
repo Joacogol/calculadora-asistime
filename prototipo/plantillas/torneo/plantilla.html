@@ -1,0 +1,32 @@
+<img class="bg" src="{{ d.foto }}">
+<div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,.50) 0%,rgba(10,10,10,.14) 34%,rgba(10,10,10,.42) 68%,rgba(10,10,10,.86) 100%)"></div>
+<div style="position:absolute;top:-206px;right:-196px;width:600px;height:600px;z-index:1">{% if d.blob %}{{ blob(c[d.blob_color], 620, 0, 1) }}{% endif %}</div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px;z-index:2">
+  <div class="row">
+    <div class="kicker" style="color:{{ ac }};font-size:56px;line-height:1.16">
+      <div>{{ d.fecha_l1 }}</div>
+      <div style="letter-spacing:.52em">{{ d.fecha_l2 }}</div>
+    </div>
+    {{ logo(1.48) }}
+  </div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;padding-bottom:30px;min-height:0">
+    <div class="disp" style="color:#FAFAFA;font-size:{{ m.titular }}px;line-height:.90">TO<br>RN<br>EO</div>
+    <div class="kicker" style="color:{{ ac }};font-size:44px;letter-spacing:.56em;margin-top:26px">{{ d.sede }}</div>
+  </div>
+  <div class="row" style="align-items:flex-end">
+    <div style="display:flex;gap:56px">
+      <div>
+        <div class="eyebrow" style="color:#FAFAFA;font-size:31px;line-height:1.22">CATEGORÍAS<br>LIBRES</div>
+        <div class="body" style="color:#FAFAFA;opacity:.72;font-size:23px;margin-top:8px;letter-spacing:.05em">[{{ d.cats_libres }}]</div>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:#FAFAFA;font-size:31px;line-height:1.22">CATEGORÍAS<br>FEMENINAS</div>
+        <div class="body" style="color:#FAFAFA;opacity:.72;font-size:23px;margin-top:8px;letter-spacing:.05em">[{{ d.cats_fem }}]</div>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:{{ ac }};font-size:31px;line-height:1.22">{{ d.cta }}</div>
+        <div class="body" style="color:#FAFAFA;opacity:.72;font-size:23px;margin-top:8px;letter-spacing:.05em">CONTACTANOS<br>AL {{ d.contacto }}</div>
+      </div>
+    </div>
+  </div>
+</div>
