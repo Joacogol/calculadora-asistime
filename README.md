@@ -6,6 +6,8 @@ despliegue. Hoy eso vive adentro del worker que corre en Google Cloud.
 
 - **[docs/estudio-de-plantillas.md](docs/estudio-de-plantillas.md)** — el estudio donde un diseñador crea y edita plantillas sin desplegar. Empezá por acá.
 - **[docs/el-disenador-vivo.md](docs/el-disenador-vivo.md)** — el estado verificado del tenant 119 y el bucle de correcciones del agente.
+- **[docs/lectura-del-worker.md](docs/lectura-del-worker.md)** — lo que cambia del plan
+  despues de leer el repo real: 12 de 14 plantillas son datos, dos son programas.
 - **[prototipo/](prototipo/)** — la prueba corrida: una plantilla real fuera del
   código, con el PNG byte por byte idéntico.
 

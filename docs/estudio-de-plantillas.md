@@ -327,7 +327,7 @@ centro. El orden nuevo:
 
 | | |
 |---|---|
-| 1 | Migrar las 14 plantillas al formato de datos |
+| 1 | Migrar las 12 plantillas que son datos, y llevar `duelo` y `horarios` a una primitiva de `motor/` — ver [lectura-del-worker.md](lectura-del-worker.md) |
 | 2 | El motor lee de la base |
 | 3 | **Pedir una plantilla nueva**, con preview y corrección |
 | 4 | El estudio alrededor: galería, versiones, campos |
