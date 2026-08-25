@@ -1,0 +1,43 @@
+{#- La plantilla que parece que no hace nada, y es la más usada.
+
+    En 24 posts del feed de Stadium, más de la mitad son producto sin una sola
+    letra encima. La tentación de "aprovechar" y meterle un rótulo, una
+    pastilla o el logo es exactamente lo que haría que la pieza NO se parezca a
+    lo que publican. Lo que aporta esta plantilla es el encuadre al formato y
+    el foco: nada más, y alcanza.
+
+    Por eso `nombre` y `firma` vienen vacíos/apagados por defecto. -#}
+
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+
+{% if d.nombre or d.logo_socio or d.firma %}
+{#- Sólo si hay algo que poner se calcula el velo. Y se calcula, no se fija:
+    `plan_titular` mide ESTA foto y devuelve la opacidad mínima para que el
+    texto blanco se lea. Sobre una foto de catálogo en fondo claro un velo fijo
+    se queda corto y el nombre desaparece. -#}
+{%- set plan = plan_titular(d.foto, ac, c.negro, (0.72, 1.0), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade(plan.velo * 0.85, 0.34) }}"></div>
+
+<div class="pad" style="padding:{{ m.pad }}px">
+  <div class="grow"></div>
+  <div class="row" style="align-items:flex-end">
+    <div>
+      {% if d.nombre %}
+      <div class="disp" style="color:{{ c.blanco }};font-size:{{ m.nombre }}px;
+        max-width:640px">{{ d.nombre }}</div>
+      {% endif %}
+      {% if d.firma %}
+      <div style="margin-top:{{ m.nombre * 0.55 }}px">{{ logo(m.logo, c.blanco) }}</div>
+      {% endif %}
+    </div>
+
+    {% if d.logo_socio %}
+    {#- El logo del socio NO se dibuja, se encaja: caja de alto fijo con
+        `contain`, así nunca se deforma venga como venga el archivo. -#}
+    <img src="{{ d.logo_socio }}" style="height:{{ m.socio }}px;
+      max-width:{{ m.socio * 4.5 }}px;object-fit:contain;object-position:right bottom;
+      display:block;flex:none">
+    {% endif %}
+  </div>
+</div>
+{% endif %}

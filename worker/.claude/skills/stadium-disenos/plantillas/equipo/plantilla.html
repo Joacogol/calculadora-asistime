@@ -1,0 +1,48 @@
+{#- El retrato de alguien de la casa.
+
+    Formato propio de Stadium: en la campaña de Día del Padre los protagonistas
+    no son modelos, son sus empleados, cada uno con su nombre y su área. La
+    chapita blanca abajo es lo que hace la pieza — sin ella es un retrato
+    cualquiera.
+
+    Dos decisiones que vienen del feed:
+    · El título va en una ESQUINA y se elige cuál, porque la que sirve depende
+      de dónde quedó la cabeza en ESA foto. Un título centrado a ciegas le pasa
+      por encima a la persona la mitad de las veces.
+    · NO hay velo sobre el retrato. Los fondos son lisos (kraft, estudio) y un
+      velo los ensucia. Si la foto es oscura, se elige tinta clara. -#}
+
+{%- set pal = paleta(d.estilo, tinta=d.tinta) -%}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 26 else (m.titulo * 0.78 if t <= 46 else m.titulo * 0.62) -%}
+{%- set der = d.esquina == 'arriba-derecha' -%}
+{%- set cen = d.esquina == 'arriba-centro' -%}
+
+<img class="bg" src="{{ d.foto }}" style="object-position:50% 40%">
+
+<div class="pad" style="padding:{{ m.pad }}px">
+  {% if d.titulo %}
+  <div style="display:flex;justify-content:{{ 'center' if cen else ('flex-end' if der else 'flex-start') }}">
+    <div style="text-align:{{ 'center' if cen else ('right' if der else 'left') }}">
+      <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
+        white-space:pre-line">{{ d.titulo }}</div>
+      {% if pal.subrayado %}
+      <div style="margin-top:{{ cuerpo * 0.10 }}px;display:flex;
+        justify-content:{{ 'center' if cen else ('flex-end' if der else 'flex-start') }}">
+        {{ subrayado(pal.tinta, ancho=cuerpo / 130, grosor=cuerpo / 140) }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  {#- La chapita se pega al BORDE de la pieza, no al padding: así se lee como
+      una etiqueta aplicada encima de la foto y no como un bloque de texto
+      más. Por eso el margen negativo. -#}
+  <div style="display:flex;justify-content:{{ 'flex-end' if d.lado_etiqueta == 'derecha' else 'flex-start' }};
+    margin:0 -{{ m.pad }}px -{{ m.pad }}px">
+    {{ etiqueta_persona(d.nombre, d.area, cuerpo=m.etiqueta) }}
+  </div>
+</div>

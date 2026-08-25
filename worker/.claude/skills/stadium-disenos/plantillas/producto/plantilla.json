@@ -1,0 +1,27 @@
+{
+  "id": "producto",
+  "nombre": "Producto",
+  "descripcion": "la foto del producto sola, sin texto encima",
+  "cuando_usarla": "La que más se usa y la que menos hace: más de la mitad del feed de Stadium son fotos de producto SIN una sola letra encima. El mensaje va en el epígrafe, no en la imagen. Usala siempre que la pieza sea «mostrá estas zapatillas»: un modelo que llegó, un color nuevo, un detalle. Si hay que decir algo ARRIBA de la foto, no es esta: es `campana`.",
+  "acento_por_defecto": "naranja",
+  "medidas": {
+    "post":  {"alto": 1080, "pad": 56, "nombre": 34, "socio": 40, "logo": 0.52},
+    "vert":  {"alto": 1350, "pad": 60, "nombre": 36, "socio": 44, "logo": 0.55},
+    "story": {"alto": 1920, "pad": 72, "nombre": 42, "socio": 52, "logo": 0.66},
+    "reel":  {"alto": 1920, "pad": 72, "nombre": 42, "socio": 52, "logo": 0.66}
+  },
+  "campos": [
+    {"id": "foto", "tipo": "imagen", "etiqueta": "Foto del producto", "requerido": true,
+     "nota": "Ocupa toda la pieza y sale tal como está: sin velo, sin marco, sin filtro. Si la foto no se banca sola, la pieza tampoco."},
+    {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%",
+     "nota": "Qué parte se conserva al recortar al formato. `50% 50%` es el centro; `50% 65%` baja el encuadre."},
+    {"id": "nombre", "tipo": "texto", "etiqueta": "Nombre del producto", "default": "",
+     "ejemplo": "New Balance 530",
+     "nota": "OPCIONAL y vacío por defecto, a propósito: en el feed real estas fotos no llevan texto. Ponelo sólo si el pedido lo pide."},
+    {"id": "logo_socio", "tipo": "imagen", "etiqueta": "Logo de la marca", "default": "",
+     "nota": "Opcional, chico y abajo a la derecha, que es como lo usa Stadium. Sólo con el archivo que mande la marca: no se saca de internet."},
+    {"id": "firma", "tipo": "si_no", "etiqueta": "¿Firmar con el logo de Stadium?", "default": false,
+     "nota": "Por defecto NO. En el feed estas piezas no llevan logo: la cuenta ya dice de quién son. Prendelo si la foto va a circular fuera de Instagram."},
+    {"id": "acento", "tipo": "opcion", "etiqueta": "Acento", "opciones": ["naranja", "blanco"], "default": "naranja"}
+  ]
+}

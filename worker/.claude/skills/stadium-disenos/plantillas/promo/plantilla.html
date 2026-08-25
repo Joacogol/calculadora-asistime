@@ -1,0 +1,64 @@
+{#- La única pieza donde el naranja de Stadium es el protagonista.
+
+    En el feed aparece 1 vez cada 24 posts, y siempre para lo mismo: una
+    mecánica —sorteo, descuento, acción con socios—. Ese es su lugar. Usarlo
+    como fondo de una pieza de producto sería inventarle a la marca un color
+    que no usa.
+
+    La letra chica es OBLIGATORIA en el contrato, y es la única plantilla del
+    set donde lo es. Una promo sin condiciones escritas termina discutiéndose
+    en la caja de una tienda. -#}
+
+{%- set pal = paleta(d.estilo, fondo=d.fondo, tinta=d.tinta) -%}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 10 else (m.titulo * 0.68 if t <= 18 else m.titulo * 0.48) -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+
+{#- La S de agua, del propio logotipo. Textura sin agregar un elemento que la
+    marca no tenga: es su propia letra, gigante y al 8%. -#}
+<div style="position:absolute;right:-{{ m.alto * 0.10 }}px;bottom:-{{ m.alto * 0.08 }}px;
+  opacity:.09">{{ iso(m.alto / 96 * 0.44, pal.tinta) }}</div>
+
+<div class="pad" style="padding:{{ m.pad }}px;text-align:center;align-items:center">
+  {#- Sin foto el bloque se centra: si no, el título queda arriba, la letra
+      chica abajo y media pieza naranja vacía en el medio. -#}
+  {% if not d.foto %}<div class="grow"></div>{% endif %}
+  {{ logo(m.logo, pal.tinta, align='center') }}
+
+  <div style="margin-top:{{ m.pad * 0.7 }}px">
+    <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px">{{ d.titulo }}</div>
+  </div>
+
+  {% if d.descuento %}
+  <div style="margin-top:{{ m.bajada * 0.9 }}px;display:flex;justify-content:center">
+    {{ descuento(d.descuento, cuerpo=m.descuento, color=pal.tinta) }}
+  </div>
+  {% endif %}
+
+  {% if d.logo_socio_1 or d.logo_socio_2 or d.logo_socio_3 %}
+  <div style="margin-top:{{ m.bajada * 1.1 }}px;display:flex;justify-content:center">
+    {{ fila_logos([d.logo_socio_1, d.logo_socio_2, d.logo_socio_3]|select|list,
+                  alto=m.socio, color=pal.tinta) }}
+  </div>
+  {% endif %}
+
+  {% if d.bajada %}
+  <div class="body" style="color:{{ pal.tinta }};opacity:.92;font-size:{{ m.bajada }}px;
+    margin-top:{{ m.bajada * 1.2 }}px;max-width:720px">{{ d.bajada }}</div>
+  {% endif %}
+
+  {% if d.foto %}
+  {#- La foto NO se recorta: `contain` sobre un alto propio. En una promo la
+      foto suele venir de un catálogo de un tercero y recortarla le corta el
+      producto. -#}
+  <div class="grow" style="width:100%;min-height:0;padding:{{ m.pad * 0.5 }}px 0 0">
+    <img class="prod" src="{{ d.foto }}">
+  </div>
+  {% else %}
+  <div class="grow"></div>
+  {% endif %}
+
+  <div class="legal" style="color:{{ pal.tinta }};opacity:.72;font-size:{{ m.legal }}px;
+    max-width:820px;margin-top:{{ m.legal }}px">{{ d.pie }}</div>
+</div>

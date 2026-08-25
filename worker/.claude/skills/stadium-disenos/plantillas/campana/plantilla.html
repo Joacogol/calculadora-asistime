@@ -1,0 +1,101 @@
+{#- La plantilla donde la CAMPAÑA manda sobre la marca.
+
+    Ésta es la corrección más grande que trajo mirar el feed. Stadium no
+    comunica siempre con su naranja: cada campaña trae su propia paleta y su
+    propia tipografía, y mientras dura, gana ella. Día del Padre es celeste
+    sobre kraft con una condensada de póster; Día de la Madre es marrón sobre
+    crema con una serif. Bajo el mismo logo conviven marcas distintas.
+
+    Por eso acá no hay "el" color de Stadium clavado en ningún lado: la paleta
+    entra por `estilo` y se puede pisar campo por campo con `fondo` y `tinta`.
+
+    El salto de línea del título se RESPETA (`white-space: pre-line`). En las
+    piezas reales el corte no cae donde quiera el navegador —«CON PAPÁ /
+    SIEMPRE HAY / EQUIPO»— y quien pide la pieza sabe mejor que el motor dónde
+    quiere que corte. -#}
+
+{%- set pal = paleta(d.estilo, fondo=d.fondo, tinta=d.tinta, voz=d.voz) -%}
+{#- SOBRE FOTO, EL TÍTULO VA BLANCO salvo que pidan otra cosa. Es lo que hace
+    la marca —«FERIA DE BOTAS EN STADIUM» va blanco sobre el video, no en el
+    color de la campaña— y además es lo único que funciona: el celeste de Día
+    del Padre sobre una foto de catálogo en fondo blanco no llega a contraste
+    ni con el velo al máximo, y la pieza sale gris y lavada. El color de la
+    campaña se queda para los fondos planos, que es donde luce. -#}
+{%- if d.foto and not d.tinta -%}
+  {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco) -%}
+{%- endif -%}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 26 else (m.titulo * 0.76 if t <= 48 else m.titulo * 0.58) -%}
+{%- set centrado = d.alineacion == 'centro' -%}
+
+{% if d.foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{#- El velo se MIDE contra esta foto y este color de título, no se fija. Una
+    campaña con tinta celeste clara necesita mucho más velo que una con tinta
+    blanca, y un valor fijo se rompe con la primera foto distinta. -#}
+{%- set plan = plan_titular(d.foto, pal.tinta, c.negro, (0.0, 0.62), 4.5, 4.5) -%}
+<div class="scrim" style="background:{{ degrade(plan.velo, 0.55) }};transform:rotate(180deg)"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+{#- Sin foto, la pieza se centra sola. `posicion: arriba` existe para dejarle
+    lugar abajo al producto o a la persona; cuando no hay ninguno de los dos,
+    respetarla al pie de la letra deja media pieza vacía y el logo solo al
+    fondo. Eso no es una pieza de Stadium, es una pieza sin terminar. -#}
+{%- set pos = d.posicion if d.foto else ('abajo' if d.posicion == 'abajo' else 'centro') -%}
+{#- El alto se reparte con espaciadores y NO con \`justify-content\`: abajo hay
+    un bloque fijo (logo y letra chica) que tiene que quedar pegado al borde,
+    y en cuanto uno de estos espaciadores existe, \`justify-content\` deja de
+    hacer efecto. Con dos espaciadores el título queda donde se pidió y el pie
+    no se mueve nunca. -#}
+<div class="pad" style="padding:{{ m.pad }}px;
+  align-items:{{ 'center' if centrado else 'flex-start' }};
+  text-align:{{ 'center' if centrado else 'left' }}">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div style="max-width:{{ '100%' if centrado else '92%' }}">
+    {% if d.kicker %}
+    <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 0.9 }}px">{{ d.kicker }}</div>
+    {% endif %}
+
+    {#- Título y subrayado van juntos en un bloque `inline-block`, que se
+        encoge hasta el ancho del texto. Así el trazo mide LO QUE MIDE EL
+        TÍTULO. Antes estaba atado al cuerpo de letra y con un título largo
+        —que baja de cuerpo y ocupa más ancho— el subrayado salía corto y
+        descolgado, como si sobrara. -#}
+    <div style="display:inline-block;max-width:100%">
+      <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
+        white-space:pre-line">{{ d.titulo }}</div>
+      {% if pal.subrayado %}
+      <div style="margin-top:{{ cuerpo * 0.08 }}px;width:100%;
+        height:{{ cuerpo * 0.20 }}px">{{ subrayado(pal.tinta) }}</div>
+      {% endif %}
+    </div>
+
+    {% if d.bajada %}
+    <div class="body" style="color:{{ pal.tinta }};opacity:.86;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 1.1 }}px;max-width:760px;
+      {{ 'margin-left:auto;margin-right:auto' if centrado else '' }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  <div class="row" style="width:100%;align-items:flex-end">
+    <div style="text-align:left">
+      {{ logo(m.logo, pal.tinta) }}
+      {% if d.pie %}
+      <div class="legal" style="color:{{ pal.tinta }};opacity:.6;font-size:{{ m.legal }}px;
+        margin-top:{{ m.legal * 0.7 }}px;max-width:600px">{{ d.pie }}</div>
+      {% endif %}
+    </div>
+    {% if d.logo_socio %}
+    <img src="{{ d.logo_socio }}" style="height:{{ m.socio }}px;
+      max-width:{{ m.socio * 4.5 }}px;object-fit:contain;object-position:right bottom;
+      display:block;flex:none">
+    {% endif %}
+  </div>
+</div>
