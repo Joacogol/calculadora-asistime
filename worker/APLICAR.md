@@ -50,17 +50,35 @@ python3 herramientas/verificar-motor.py boss-padel-disenos --grabar
 python3 herramientas/verificar-motor.py boss-padel-disenos --comparar
 ```
 
-Dibuja las 12 plantillas-dato en los 4 formatos —48 piezas, ~60 segundos— y
-dice cuáles se movieron. Sale con **1 si algo cambió y 0 si no**, así que entra
-tal cual en `desplegar-chat.sh` o en cualquier chequeo automático.
+Dibuja cada plantilla-dato varias veces y dice cuáles se movieron —**120
+piezas, ~150 segundos** en Boss—. Sale con **1 si algo cambió y 0 si no**, así
+que entra tal cual en `desplegar-chat.sh` o en cualquier chequeo automático.
+
+**Por qué 120 y no 48.** Cada plantilla se dibuja con el ejemplo del contrato,
+con un caso límite, y con un dato de cada largo que la plantilla trata distinto.
+Ese último es el que importa: `socio` achica el nombre en escalones de 14 y 22
+caracteres, y con un solo juego de datos —el ejemplo, de 14 justos— mover ese
+escalón a 16 pasaba la prueba **sin que se moviera un píxel**. Está medido: con
+48 piezas daba 48/48; con los bordes puestos, marca `socio-post-b15` y sus tres
+formatos.
+
+Los bordes salen del propio HTML: se leen los números de las comparaciones
+contra el largo del texto y se prueba cada uno con el valor justo y los dos de
+al lado. Una plantilla que no tiene umbrales no suma piezas.
+
+Esto **no prueba equivalencia** —eso sería demostrar que dos programas hacen lo
+mismo— pero cubre la clase de bug que estas plantillas de verdad tienen: un
+umbral sobre el largo de un texto. Si movés un umbral a propósito, van a
+aparecer `FALTA` de los bordes viejos y piezas nuevas de los nuevos: es correcto
+y quiere decir que cambiaron los casos, no que se rompió algo.
 
 Lo que devuelve se lee en una línea:
 
 | Dice | Significa |
 |---|---|
-| `48 / 48 idénticas` | el cambio no tocó nada de lo que ya andaba: es seguro |
-| `DISTINTA tip-post.png` | esa pieza se movió — mirala antes de seguir |
-| `FALTA tip-post.png` | dejó de dibujarse, que es peor que moverse |
+| `120 / 120 idénticas` | el cambio no tocó nada de lo que ya andaba: es seguro |
+| `DISTINTA tip-post-normal.png` | esa pieza se movió — mirala antes de seguir |
+| `FALTA tip-post-b15.png` | dejó de dibujarse: o se rompió, o moviste un umbral a propósito |
 | `nueva …` | apareció una que no estaba: eso está bien si era lo que buscabas |
 
 Cuando algo cambia, los PNG de las dos corridas quedan en
@@ -75,8 +93,10 @@ comparan dos corridas del mismo lugar.
 `duelo` y `horarios` quedan afuera —son programas, no tienen contrato— y el
 comando lo dice cada vez en vez de dar a entender que las probó.
 
-Probado: sin cambios da 48/48 y sale 0; subiendo dos píxeles el cuerpo del pie
-de `tip` marca sus 4 formatos y ninguno más, y sale 1.
+Probado de tres formas: sin cambios da 120/120 y sale 0; subiendo dos píxeles
+el cuerpo del pie de `tip` marca sus formatos y ninguno más; y moviendo el
+escalón de `socio` de 14 a 16 —el cambio que la versión de 48 piezas dejaba
+pasar— marca `b15` en los cuatro formatos y sale 1.
 
 ## Una vez, para que la base tome el mando
 

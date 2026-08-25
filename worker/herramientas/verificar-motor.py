@@ -10,6 +10,10 @@ La primera corrida guarda el MD5 de cada PNG. La segunda vuelve a dibujar y
 dice qué cambió. Sale con código 0 si todo dio igual y 1 si algo se movió, así
 que sirve tal cual en un script de despliegue.
 
+Dibuja cada plantilla DOS veces: con el ejemplo del contrato y con un caso
+límite —textos largos, listas de ocho, opcionales llenos—. Ver la nota de
+`JUEGOS`: con uno solo la prueba dice bastante menos de lo que parece.
+
 ## Por qué existe
 
 La regla que gobierna cualquier cambio en `motor/` es una sola: **si el PNG no
@@ -58,23 +62,92 @@ def _marca(nombre: str):
     return importlib.import_module("marca"), carpeta
 
 
-def _datos(contrato: dict, carpeta: pathlib.Path) -> dict:
+#: Los juegos de datos con los que se dibuja cada plantilla.
+#:
+#: `normal` usa el ejemplo del contrato. `limite` empuja todo al borde: textos
+#: largos, listas de ocho, opcionales llenos.
+#:
+#: **Y con esos dos no alcanza.** Lo encontró un agente tocando `socio`, que
+#: achica el nombre en escalones de 14 y 22 caracteres: el ejemplo tiene 14
+#: justos y el límite genera 29, así que la banda del medio no la dibujaba
+#: nadie. Se probó: cambiar el escalón de 14 a 16 pasaba las 96 sin que se
+#: moviera un píxel.
+#:
+#: Los bordes no están en el contrato — están en la lógica de cada plantilla.
+#: Pero los NÚMEROS están escritos ahí, a la vista, y eso alcanza:
+#: `_bordes()` los saca del HTML y arma un juego a cada lado de cada uno. Una
+#: plantilla que dice `L <= 14` se dibuja con 13, 14 y 15 caracteres, y ahí sí
+#: un cambio en ese escalón mueve un PNG.
+#:
+#: No prueba equivalencia —eso sería demostrar que dos programas hacen lo
+#: mismo—, pero cubre la clase de bug que estas plantillas de verdad tienen:
+#: un umbral sobre el largo de un texto.
+JUEGOS = ("normal", "limite")
+
+#: Cuánto se estira un texto en el juego límite. Suficiente para pasarse de
+#: cualquier caja de una placa, sin llegar a un absurdo que nadie va a mandar.
+LARGO = 46
+
+#: Cuántos bordes se prueban como mucho. Una plantilla con veinte números
+#: sueltos en el CSS no puede multiplicar la corrida por veinte.
+MAX_BORDES = 6
+
+
+def _bordes(html: str) -> list[int]:
+    """Los largos de texto que la plantilla trata distinto.
+
+    Saca los números de las comparaciones contra `|length` y devuelve, para
+    cada uno, el valor justo y el de al lado. Un escalón en 14 se prueba con
+    13, 14 y 15: si alguien lo mueve a 16, el de 15 cambia y el PNG lo dice.
+    """
+    import re
+    nums = set()
+    # `L <= 14`, `d.nombre|length > 22`, `largo < 8`… Se busca la comparación,
+    # no la variable, porque cada plantilla la llama distinto.
+    for m in re.finditer(r"(?:length|\bL\b|largo)\s*[<>]=?\s*(\d{1,3})", html):
+        nums.add(int(m.group(1)))
+    for m in re.finditer(r"(\d{1,3})\s*[<>]=?\s*(?:length|\bL\b|largo)", html):
+        nums.add(int(m.group(1)))
+    salida = []
+    for n in sorted(nums)[:MAX_BORDES]:
+        salida.extend([n - 1, n, n + 1])
+    return sorted({n for n in salida if 0 < n <= 120})
+
+
+def _datos(contrato: dict, carpeta: pathlib.Path, juego: str = "normal",
+           largo: int | None = None) -> dict:
     """Datos fijos para dibujar, sacados del contrato.
 
     Tienen que ser los MISMOS en las dos corridas o la comparación no dice
     nada. Por eso salen del contrato y no de nada aleatorio, y por eso las
     listas se arman con un largo fijo.
+
+    `juego` elige entre el caso normal y el límite. Ver la nota de `JUEGOS`.
     """
+    limite = juego == "limite" or largo is not None
     muestra = {"texto": "Texto de ejemplo",
                "texto_largo": ("Un párrafo de ejemplo, lo bastante largo como "
                                "para que se vea cómo cae el texto."),
                "si_no": True}
+    tope = largo if largo is not None else LARGO
+    if limite:
+        # Un texto del largo exacto que se quiere probar. Se rellena con
+        # palabras y no con una letra repetida: un nombre real tiene espacios,
+        # y el espacio es donde el texto puede cortar de línea.
+        relleno = "Paletero Térmico Bullpadel Hack Pro Edición Limitada Extra"
+        muestra["texto"] = relleno[:tope]
+        muestra["texto_largo"] = (muestra["texto_largo"] * 3 if largo is None
+                                  else relleno[:tope])
     fotos = sorted((carpeta / "assets").glob("*.jpg"))
     d = {}
     for campo in contrato.get("campos", []):
         cid, tipo = campo["id"], campo.get("tipo", "texto")
         if "ejemplo" in campo:
-            d[cid] = campo["ejemplo"]
+            # En el límite el ejemplo del contrato se estira: es justo el que
+            # el que escribió la plantilla eligió para que entre bien.
+            e = campo["ejemplo"]
+            d[cid] = (muestra["texto"] if limite and isinstance(e, str) and e
+                      else e)
         elif tipo == "imagen":
             d[cid] = f"assets/{fotos[0].name}" if fotos else ""
         elif tipo == "opcion":
@@ -83,11 +156,17 @@ def _datos(contrato: dict, carpeta: pathlib.Path) -> dict:
             cols = campo.get("columnas") or [{"id": "texto"}]
             rot = (lambda c: c if isinstance(c, str)
                    else c.get("etiqueta", c["id"]))
-            d[cid] = [[rot(c) for c in cols] for _ in range(3)]
+            fila = [rot(c) for c in cols]
+            if limite:
+                fila = [f"{v} {v}"[:tope] for v in fila]
+            d[cid] = [fila for _ in range(8 if limite else 3)]
         elif "default" in campo:
             d[cid] = campo["default"]
-        elif campo.get("requerido"):
-            d[cid] = muestra.get(tipo, "Texto de ejemplo")
+        elif campo.get("requerido") or limite:
+            # En el límite los OPCIONALES también se llenan: un campo que
+            # aparece sólo a veces es un campo que casi nunca se dibuja, y por
+            # eso es donde se esconden los desbordes.
+            d[cid] = muestra.get(tipo, muestra["texto"])
         else:
             d[cid] = ""
     return d
@@ -117,17 +196,20 @@ def dibujar_todo(nombre_marca: str, salida: pathlib.Path) -> dict[str, str]:
         try:
             for cid in sorted(contratos):
                 contrato = contratos[cid]
-                datos = _datos(contrato, carpeta)
-                for fmt in contrato["medidas"]:
-                    if fmt not in marca.FORMATOS:
-                        continue
-                    cuerpo = mp.compilar(marca, carpeta, contrato,
-                                         contrato["_html"], datos, fmt)
-                    w, h = marca.FORMATOS[fmt]
-                    destino = salida / f"{cid}-{fmt}.png"
-                    render._captura(pg, cuerpo, w, h, destino, datos)
-                    huella[destino.name] = hashlib.md5(
-                        destino.read_bytes()).hexdigest()
+                planes = [(j, None) for j in JUEGOS]
+                planes += [(f"b{n}", n) for n in _bordes(contrato["_html"])]
+                for juego, largo in planes:
+                    datos = _datos(contrato, carpeta, juego, largo)
+                    for fmt in contrato["medidas"]:
+                        if fmt not in marca.FORMATOS:
+                            continue
+                        cuerpo = mp.compilar(marca, carpeta, contrato,
+                                             contrato["_html"], datos, fmt)
+                        w, h = marca.FORMATOS[fmt]
+                        destino = salida / f"{cid}-{fmt}-{juego}.png"
+                        render._captura(pg, cuerpo, w, h, destino, datos)
+                        huella[destino.name] = hashlib.md5(
+                            destino.read_bytes()).hexdigest()
             saltadas = solo_python
         finally:
             nav.close()
