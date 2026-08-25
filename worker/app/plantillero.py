@@ -82,7 +82,7 @@ quede bien.
 ## El pedido
 
 {pedido}
-
+{fotos}
 ## El idioma de la marca
 
 {vocabulario}
@@ -230,7 +230,7 @@ PROMPT_CORRECCION = """Corregí la plantilla `{slug}` de {marca}.
 ## Lo que piden
 
 {pedido}
-
+{fotos}
 ## Lo que hay hoy
 
 La plantilla está en `plantillas/{borrador}/` — su `plantilla.html` y su
@@ -302,7 +302,7 @@ def _pendientes(cli, limite: int = 2) -> list[dict]:
         cli._url("plantilla_pedidos"), headers=cli._cab(), timeout=30,
         params={"estado": "eq.pendiente", "order": "creado_en.asc",
                 "limit": str(limite),
-                "select": "id,mensaje,quien,corrige,creado_en"})
+                "select": "id,mensaje,quien,corrige,adjuntos,creado_en"})
     if r.status_code in (400, 404):
         return []           # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -429,6 +429,57 @@ def _ultima(cli, slug: str) -> tuple[str, dict] | None:
         return (h.read_text(encoding="utf-8"),
                 json.loads(j.read_text(encoding="utf-8")))
     return None
+
+
+def _bajar_adjuntos(pedido: dict, borrador: Path) -> str:
+    """Deja en el borrador las fotos que mandó la persona, y las describe.
+
+    Devuelve el trozo de prompt que se las cuenta al agente, o "" si no vino
+    ninguna. Las fotos van al disco para que las pueda **mirar** con Read —una
+    foto que no se ve no sirve para decidir un fondo— pero lo que se le dice de
+    usar en el HTML es la URL, no el archivo.
+
+    Esa diferencia importa y por eso está dicha en el prompt: el borrador se
+    borra al terminar la corrida y el disco del contenedor se pierde en el
+    despliegue siguiente. Una plantilla que apunta a `referencia-1.jpg`
+    funciona hoy y mañana dibuja un hueco. La URL del Storage sobrevive, y es
+    lo único de las dos cosas que sigue existiendo cuando la plantilla se use
+    de verdad.
+    """
+    adjuntos = pedido.get("adjuntos") or []
+    if not adjuntos:
+        return ""
+    lineas, bajadas = [], 0
+    for a in adjuntos:
+        nombre, url = a.get("nombre"), a.get("url")
+        if not (nombre and url):
+            continue
+        try:
+            r = requests.get(url, timeout=30)
+            r.raise_for_status()
+            (borrador / nombre).write_bytes(r.content)
+            bajadas += 1
+            lineas.append(f"- `{nombre}` — en la carpeta del borrador para que "
+                          f"la mires. En el HTML va como `{url}`")
+        except requests.RequestException as e:
+            # Una foto que no se puede bajar no frena la plantilla: se dice y
+            # el agente decide. Mejor una plantilla sin la foto que ninguna.
+            log.warning("no pude bajar el adjunto %s: %s", nombre, e)
+    if not bajadas:
+        return ""
+    return (
+        "\n## Las fotos que mandaron\n\n"
+        + "\n".join(lineas)
+        + "\n\n**Abrilas con Read antes de decidir nada.** Te las mandaron "
+        "para que las uses, así que mirá qué son y qué zona sirve de fondo.\n\n"
+        "En el HTML referenciá la **URL**, nunca el archivo local: el borrador "
+        "se borra al terminar y el disco del contenedor se pierde en el "
+        "despliegue siguiente. Una plantilla que apunta al archivo dibuja un "
+        "hueco la semana que viene.\n\n"
+        "Y pensá si la foto va fija o va como campo. Si la pieza siempre se ve "
+        "igual —como el fondo de `tactica`— va fija en el HTML. Si cada uso "
+        "puede querer otra, va como campo `imagen` con ésta de `default`: así "
+        "sirve tal cual hoy y se puede cambiar sin tocar la plantilla.\n")
 
 
 def _skill(marca: str) -> Path:
@@ -603,6 +654,10 @@ async def atender(cli, pedido: dict) -> bool:
         texto_manual, _ = manual.leer(cli.marca)
         nombre = getattr(config, "NOMBRE_MARCA", cli.nombre)
 
+        # Las fotos van al borrador antes de armar el prompt: los dos caminos
+        # —plantilla nueva y corrección— las necesitan igual.
+        fotos = _bajar_adjuntos(pedido, borrador)
+
         # Corregir y escribir de cero son dos trabajos distintos y cuestan
         # distinto. Rehacer una plantilla para mover un número de tamaño son
         # cuarenta y tres turnos y US$3,50 medidos; editarla son cuatro. La
@@ -620,7 +675,7 @@ async def atender(cli, pedido: dict) -> bool:
             prompt = PROMPT_CORRECCION.format(
                 slug=pedido["corrige"], marca=nombre, nombre_marca=cli.marca,
                 pedido=pedido["mensaje"], borrador=BORRADOR,
-                vocabulario=_vocabulario(carpeta))
+                fotos=fotos, vocabulario=_vocabulario(carpeta))
             log.info("[%s] corrijo «%s» en vez de armar una nueva",
                      cli.marca, pedido["corrige"])
         else:
@@ -636,7 +691,7 @@ async def atender(cli, pedido: dict) -> bool:
                 marca=nombre, nombre_marca=cli.marca,
                 pedido=pedido["mensaje"], skill=carpeta, borrador=BORRADOR,
                 referencias=", ".join(f"`{r}`" for r in _referencias(carpeta)),
-                vocabulario=_vocabulario(carpeta),
+                fotos=fotos, vocabulario=_vocabulario(carpeta),
                 manual=("\n## El criterio de la marca\n\nManda sobre todo lo de "
                         f"arriba.\n\n{texto_manual}" if texto_manual else ""))
 

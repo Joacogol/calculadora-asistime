@@ -17,6 +17,12 @@ create table if not exists public.plantilla_pedidos (
   -- turnos y cuarenta, y sobre todo es la diferencia entre corregir la
   -- plantilla que la gente usa y reemplazarla por otra parecida.
   corrige        text,
+  -- Las fotos que la persona mandó en el chat junto con el pedido: «poné
+  -- como fondo esta». Mismo nombre y misma forma que en `disenos`
+  -- —[{url, nombre}]— porque es el mismo objeto y lo copia el mismo código.
+  -- Un segundo nombre para lo mismo es una manera de que dentro de seis meses
+  -- alguien arregle uno y no el otro.
+  adjuntos       jsonb not null default '[]'::jsonb,
   -- lo que sale
   plantilla      text,
   version        int,
@@ -31,6 +37,9 @@ create table if not exists public.plantilla_pedidos (
 
 alter table public.plantilla_pedidos
   add column if not exists corrige text;
+
+alter table public.plantilla_pedidos
+  add column if not exists adjuntos jsonb not null default '[]'::jsonb;
 
 create index if not exists plantilla_pedidos_estado_idx
   on public.plantilla_pedidos (estado, creado_en);
