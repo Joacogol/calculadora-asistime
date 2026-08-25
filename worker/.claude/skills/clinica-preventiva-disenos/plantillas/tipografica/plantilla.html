@@ -1,0 +1,15 @@
+
+<div class="scrim" style="background:{{ c.blanco }}"></div>
+<div style="position:absolute;right:-40px;top:-40px;opacity:.26">{{ puntos(360, 300) }}</div>
+<div style="position:absolute;left:56px;bottom:{{ m.puntos_bottom }}px;opacity:.20">{{ puntos(200, 160) }}</div>
+<div style="position:absolute;left:0;top:0;bottom:0;width:14px;background:{{ c.rojo }}"></div>
+<div class="pad" style="padding:58px 66px {{ m.pad_bottom }}px 74px;z-index:2">
+  {{ logo(1.05) }}
+  <div class="grow"></div>
+  {{ '<div style="margin-bottom:22px">' ~ pastilla(d.kicker) ~ '</div>' if d.kicker else '' }}
+  {{ titular(d.titulo, d.destacado, m.cuerpo) }}
+  {{ '<div class="body" style="font-size:29px;color:' ~ c.tinta ~ ';margin-top:24px;max-width:830px">\n    ' ~ d.texto ~ '</div>' if d.texto else '' }}
+  {{ '<div style="margin-top:38px;max-width:900px">' ~ sedes(d.sedes, fmt) ~ '</div>' if d.sedes else '' }}
+  <div class="grow"></div>
+</div>
+{{ pie(True, d.tel, d.web, m.alto_pie) }}

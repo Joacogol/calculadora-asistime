@@ -1,0 +1,109 @@
+{
+  "id": "tipografica",
+  "nombre": "Tipográfica",
+  "descripcion": "sólo texto sobre blanco, con trama de puntos y barra roja",
+  "cuando_usarla": "Avisos, cambios de horario y datos de salud pública, donde una foto de banco no aporta nada y encima ensucia.",
+  "acento_por_defecto": "rojo",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "cuerpo": 74,
+      "alto_pie": 86,
+      "puntos_bottom": 126,
+      "pad_bottom": 136
+    },
+    "vert": {
+      "alto": 1350,
+      "cuerpo": 86,
+      "alto_pie": 86,
+      "puntos_bottom": 126,
+      "pad_bottom": 136
+    },
+    "story": {
+      "alto": 1920,
+      "cuerpo": 100,
+      "alto_pie": 150,
+      "puntos_bottom": 190,
+      "pad_bottom": 200
+    },
+    "reel": {
+      "alto": 1920,
+      "cuerpo": 100,
+      "alto_pie": 150,
+      "puntos_bottom": 190,
+      "pad_bottom": 200
+    }
+  },
+  "campos": [
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "requerido": false,
+      "ejemplo": "AVISO"
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "Cambio de horario"
+    },
+    {
+      "id": "destacado",
+      "tipo": "texto",
+      "etiqueta": "Destacado",
+      "requerido": false,
+      "ejemplo": "desde el lunes",
+      "ayuda": "Va en rojo, en la línea de abajo del título. Es la firma de la marca."
+    },
+    {
+      "id": "texto",
+      "tipo": "texto",
+      "etiqueta": "Texto",
+      "requerido": false,
+      "ejemplo": "La sede de Ciudad de la Costa abre a las 7:00.<br>Sábados sin cambios."
+    },
+    {
+      "id": "sedes",
+      "tipo": "lista",
+      "etiqueta": "Sedes",
+      "requerido": false,
+      "ayuda": "Cada sede lleva nombre, dirección y hasta dos líneas de horario.",
+      "columnas": [
+        {"id": "nombre", "etiqueta": "Sede"},
+        {"id": "direccion", "etiqueta": "Dirección"},
+        {"id": "horario", "etiqueta": "Horario"},
+        {"id": "horario2", "etiqueta": "Horario 2"}
+      ],
+      "ejemplo": [
+        {
+          "nombre": "Montevideo",
+          "direccion": "Gral. Flores 3131 esq. Bvar. Artigas",
+          "horario": "L-V 7:00-16:45",
+          "horario2": "Sáb 8:00-11:45"
+        },
+        {
+          "nombre": "Ciudad de la Costa",
+          "direccion": "Costa Urbana Shopping, Local 208",
+          "horario": "L-V 7:00-18:45",
+          "horario2": "Sáb 8:00-11:45"
+        }
+      ]
+    },
+    {
+      "id": "tel",
+      "tipo": "texto",
+      "etiqueta": "WhatsApp del pie",
+      "requerido": false,
+      "default": "092 566 967"
+    },
+    {
+      "id": "web",
+      "tipo": "texto",
+      "etiqueta": "Web del pie",
+      "requerido": false,
+      "default": "www.clinicapreventiva.com"
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "id": "lateral",
+  "nombre": "Lateral",
+  "descripcion": "foto a la izquierda, panel blanco a la derecha",
+  "cuando_usarla": "La plantilla de servicio: la que se usa cuando hay un precio y una promesa de plazo, que es el argumento de venta más repetido de la clínica. Carné de salud, libreta de conducir, análisis.",
+  "acento_por_defecto": "rojo",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "ancho_foto": 44,
+      "ancho_panel": 56,
+      "cuerpo": 76,
+      "cuerpo_precio": 77,
+      "alto_pie": 86
+    },
+    "vert": {
+      "alto": 1350,
+      "ancho_foto": 40,
+      "ancho_panel": 60,
+      "cuerpo": 88,
+      "cuerpo_precio": 89,
+      "alto_pie": 86
+    },
+    "story": {
+      "alto": 1920,
+      "ancho_foto": 40,
+      "ancho_panel": 60,
+      "cuerpo": 104,
+      "cuerpo_precio": 106,
+      "alto_pie": 150
+    },
+    "reel": {
+      "alto": 1920,
+      "ancho_foto": 40,
+      "ancho_panel": 60,
+      "cuerpo": 104,
+      "cuerpo_precio": 106,
+      "alto_pie": 150
+    }
+  },
+  "campos": [
+    {
+      "id": "foto",
+      "tipo": "foto",
+      "etiqueta": "Foto",
+      "requerido": true,
+      "ejemplo": "assets/marcador-claro.jpg"
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Foco de la foto",
+      "requerido": false,
+      "default": "50% 40%",
+      "ayuda": "Qué parte de la foto se ve cuando se recorta. «50% 40%» es el centro, un poco arriba."
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "requerido": false,
+      "ejemplo": "CARNÉ DE SALUD"
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "En el día",
+      "ayuda": "Si es largo se achica solo, pero conviene que entre en una línea."
+    },
+    {
+      "id": "destacado",
+      "tipo": "texto",
+      "etiqueta": "Destacado",
+      "requerido": false,
+      "ejemplo": "SIN TURNO",
+      "ayuda": "Va en una caja roja debajo del título. Para el argumento más fuerte."
+    },
+    {
+      "id": "texto",
+      "tipo": "texto",
+      "etiqueta": "Texto",
+      "requerido": false,
+      "ejemplo": "Examen médico, odontológico y análisis de laboratorio.<br>Certificado habilitado por el MSP."
+    },
+    {
+      "id": "sello",
+      "tipo": "texto",
+      "etiqueta": "Sello",
+      "requerido": false,
+      "ejemplo": "Autorizada por el MSP"
+    },
+    {
+      "id": "precio",
+      "tipo": "texto",
+      "etiqueta": "Precio",
+      "requerido": false,
+      "ejemplo": "$ 1.290"
+    },
+    {
+      "id": "precio_pie",
+      "tipo": "texto",
+      "etiqueta": "Aclaración del precio",
+      "requerido": false,
+      "default": "IVA incluido"
+    },
+    {
+      "id": "tel",
+      "tipo": "texto",
+      "etiqueta": "WhatsApp del pie",
+      "requerido": false,
+      "default": "092 566 967"
+    },
+    {
+      "id": "web",
+      "tipo": "texto",
+      "etiqueta": "Web del pie",
+      "requerido": false,
+      "default": "www.clinicapreventiva.com"
+    }
+  ]
+}
