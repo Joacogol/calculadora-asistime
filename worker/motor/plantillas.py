@@ -36,6 +36,11 @@ import jinja2
 from motor import legibilidad
 
 CARPETA = "plantillas"
+
+#: Los nombres que el motor ya usa al renderizar. Una marca que llame `c` o
+#: `fmt` a un ayudante suyo pisaría la paleta o el formato y la plantilla
+#: saldría mal sin error, así que esos no se toman del módulo de marca.
+RESERVADAS = frozenset(("d", "m", "fmt", "t", "c", "ac", "raiz", "plan_titular"))
 _ENTORNO = jinja2.Environment(
     # Crudo, como las f-strings de hoy: varios campos traen `<br>` a propósito
     # y los helpers devuelven HTML. Escapar acá rompería las 14 plantillas.
@@ -101,10 +106,22 @@ def _ayudas(marca, raiz):
     color ni una tipografía, compone con el vocabulario que ya existe. Eso es
     lo que la mantiene on-brand aunque la haya escrito alguien que nunca vio el
     manual.
+
+    Los nombres salen del módulo de marca, no de una lista escrita acá. La
+    lista fija llevaba los de Boss —`aros`, `blob`, `escudo`— y por eso una
+    plantilla-dato de otra marca no podía usar su propio vocabulario: Clínica
+    dibuja con `puntos`, `pastilla` y `sello`, y ninguno de los tres existía
+    para el motor. Peor que no funcionar: fallaba en silencio, porque el
+    `hasattr` los descartaba sin decir nada.
+
+    La convención del proyecto alcanza para separarlos sin una lista: los
+    ayudantes de dibujo son funciones en minúscula, y lo que va en MAYÚSCULA
+    es registro o dato (`PLANTILLAS`, `FORMATOS`, `CATALOGO`, `PRESENTACION`).
     """
-    ayudas = {n: getattr(marca, n)
-              for n in ("logo", "aros", "blob", "escudo", "marco", "cinta")
-              if hasattr(marca, n)}
+    ayudas = {n: getattr(marca, n) for n in dir(marca)
+              if not n.startswith("_") and n.islower()
+              and n not in RESERVADAS
+              and callable(getattr(marca, n, None))}
 
     def _plan_titular(foto, acento, oscuro, zona):
         """Cuánto contraste hay en la franja donde cae el titular.
@@ -135,7 +152,12 @@ def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
     cuerpo = compilada.render(
         d=d, m=m, fmt=fmt, t=contrato,
         c=marca.C,
-        ac=marca.C[d.get("acento") or contrato.get("acento_por_defecto", "lima")],
+        # El acento por defecto lo pone la marca, no el motor. Estaba escrito
+        # `"lima"` acá —el verde de Boss—, y como ninguno de sus doce contratos
+        # lo declara, los doce dependían de esa constante. Para Clínica habría
+        # sido un KeyError en la primera pieza: su paleta no tiene «lima».
+        ac=marca.C[d.get("acento") or contrato.get("acento_por_defecto")
+                   or marca.ACENTO_POR_DEFECTO],
         raiz=str(raiz),
         **ayudas)
     return (f'<!doctype html><html><head><meta charset="utf-8">'
