@@ -181,38 +181,60 @@ volvió, mirá el log del job.
 
 ## Clínica Preventiva — poner su lado a la par
 
-Boss Padel ya tiene todo esto andando. Clínica no, y estos son los pasos que
-faltan. Lo de Asistime **ya está hecho** —agente, herramientas, catálogo— así
-que acá sólo queda su Supabase y sus plantillas.
+**Clínica ya está andando.** Esta sección queda como registro de qué se hizo, y
+como receta para el cliente siguiente. Lo que está hecho:
 
-Sus tablas (`plantillas`, `plantilla_pedidos`, `motor_pedidos`) **ya están
-creadas**. No hay que correr los `.sql` para ella.
+| | |
+|---|---|
+| Sus tablas (`plantillas`, `plantilla_pedidos`, `motor_pedidos`) | ✅ |
+| `API_CLAVE` en los secretos de sus Edge Functions | ✅ |
+| `api-plantillas` (nueva) y `api-disenos` (v7, con el arreglo de WebP) | ✅ |
+| Sus 4 plantillas sembradas y publicadas | ✅ |
+| Su clave de Asistime en `asistime-api-clinica` | ✅ |
+| Catálogo publicado, agente y 6 herramientas | ✅ |
+
+Lo que sigue es cómo se hizo cada paso.
 
 ### 1 · Su clave de API
 
-Las Edge Functions leen `API_CLAVE` de un secreto del proyecto, así que Clínica
-tiene **la suya, distinta de la de Boss**. Está escrita en el código de sus seis
-herramientas de Asistime; se puede leer desde ahí. **No la pongas en este repo.**
+Las Edge Functions leen `API_CLAVE` de un secreto del proyecto, así que cada
+cliente tiene **la suya**. Está escrita en el código de sus herramientas de
+Asistime; se puede leer desde ahí. **No la pongas en este repo.**
 
-En el panel de Supabase de Clínica → *Project Settings* → *Edge Functions* →
-*Secrets*, agregá `API_CLAVE` con ese valor.
+En el panel de Supabase del cliente → *Edge Functions* → *Secrets*, agregá
+`API_CLAVE` con ese valor.
 
 > Sin este paso las funciones contestan `500 falta configurar API_CLAVE` y el
 > chat no puede pedir nada. Es el único paso que no se puede hacer por comando.
+>
+> Ojo con el formulario: el campo de arriba es el **nombre** (`API_CLAVE`) y el
+> de abajo el **valor**. Cruzarlos deja un secreto llamado como la clave, que
+> la función no encuentra.
 
 ### 2 · Sus Edge Functions
 
 ```bash
 cd ~/worker
-npx supabase link --project-ref jejohzzxxnhktdxpdqpy
+npx supabase link --project-ref <ref-del-proyecto>
 npx supabase functions deploy api-plantillas --no-verify-jwt
 npx supabase functions deploy api-disenos    --no-verify-jwt
 ```
 
-`api-plantillas` no existe todavía en su proyecto. `api-disenos` sí, pero está
-en la **v3** y le falta el arreglo de WebP —el que hacía que una foto con
-metadatos se rechazara entera y el diseño saliera sin mirarla—. Las dos van del
-mismo archivo que ya tenés en `funciones/`.
+Las dos salen del mismo archivo que está en `funciones/`: no tienen nada
+específico de un cliente, leen todo de variables de entorno.
+
+Después conviene probarlas sin gastar un diseño — con la clave del cliente:
+
+```bash
+U=https://<ref>.supabase.co/functions/v1/api-plantillas
+curl -s -o /dev/null -w "%{http_code}\n" "$U?id=x"                    # 401
+curl -s -o /dev/null -w "%{http_code}\n" -H "x-api-clave: $CLAVE" \
+     "$U?id=00000000-0000-0000-0000-000000000000"                     # 404
+```
+
+Ese par prueba las tres cosas juntas: la clave, el enrutado y que la función
+llega a la base. Un `500 falta configurar API_CLAVE` significa que el paso 1 no
+está; un `401` con la clave buena, que se coló un salto de línea al pegarla.
 
 ### 3 · Sembrarle sus plantillas
 
