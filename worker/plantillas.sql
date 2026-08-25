@@ -114,7 +114,24 @@ create policy "ver lo publicado" on public.plantillas
 -- Publicar una plantilla cambia todas las piezas que se hagan de ahí en
 -- adelante. Eso pasa por el estudio, que sabe quién lo pidió y deja registro,
 -- no por una llamada suelta desde el navegador de cualquiera.
+-- Las dos funciones son SECURITY DEFINER: corren con los permisos de quien las
+-- creó, no de quien las llama. Así que quién puede llamarlas es TODA la
+-- seguridad que tienen.
+--
+-- Acá había un `revoke ... from anon, authenticated` que no hacía nada, y es
+-- un error fácil de repetir: Postgres le da EXECUTE a PUBLIC en cada función
+-- nueva, y `anon` y `authenticated` heredan de PUBLIC. Sacarles el permiso
+-- directo —que nunca tuvieron— deja el heredado intacto.
+--
+-- El agujero era real: con la anon key, que vive en el código del navegador y
+-- no es secreta, cualquiera podía llamar a `/rest/v1/rpc/guardar_plantilla`
+-- con el HTML que quisiera y `p_publicar => true`. La pieza siguiente del
+-- cliente salía con eso. `publicar_plantilla` sola alcanzaba para volver a
+-- poner en vivo una versión vieja.
+--
+-- `service_role` tiene EXECUTE por un grant propio, así que el worker y las
+-- Edge Functions no se enteran de esto.
 revoke execute on function public.guardar_plantilla(text, text, jsonb, text, text, boolean)
-  from anon, authenticated;
+  from public, anon, authenticated;
 revoke execute on function public.publicar_plantilla(text, int)
-  from anon, authenticated;
+  from public, anon, authenticated;
