@@ -342,6 +342,21 @@ formulario: arriba el **nombre**, abajo el **valor**.
 
 ```bash
 cd ~/worker
+
+# El CLI de Supabase busca las funciones en `supabase/functions/<nombre>/` y en
+# este repo viven en `funciones/`. Sin estos enlaces el deploy falla con
+# «entrypoint path does not exist», que no dice en ningún lado que el problema
+# es dónde está el archivo. Se hace una sola vez por máquina.
+mkdir -p supabase/functions
+for F in api-disenos api-plantillas api-reels; do
+  ln -sfn "$PWD/funciones/$F" "supabase/functions/$F"
+done
+
+# Y el CLI necesita un token de tu cuenta, que NO es ninguna de las claves de
+# los clientes: se saca de supabase.com/dashboard/account/tokens.
+read -rs -p "Pegá el token de Supabase y Enter (no se ve): " T
+export SUPABASE_ACCESS_TOKEN="$T"; unset T; echo
+
 npx supabase link --project-ref heajbidxysjxxegqemka
 npx supabase functions deploy api-plantillas --no-verify-jwt
 npx supabase functions deploy api-disenos    --no-verify-jwt
