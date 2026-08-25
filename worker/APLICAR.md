@@ -24,6 +24,9 @@ byte por byte idénticos** a los de antes.
 | `funciones/api-plantillas/` | **nuevo** — la Edge Function por donde Asistime pide y consulta |
 | `app/plantillero.py` | **nuevo** — atiende un pedido: escribe la plantilla, la dibuja, la mira y la corrige |
 | `herramientas/previsualizar-borrador.py` | **nuevo** — dibuja un borrador; es lo que le deja al plantillero **ver** lo que escribió |
+| `herramientas/verificar-motor.py` | **nuevo** — dibuja las 48 y compara contra una huella. La regla del MD5, hecha comando |
+| `motor-pedidos.sql` | **nuevo** — la lista de pedidos que necesitan código, para poder contarlos |
+| `funciones/api-disenos/` | ahora versionada acá; traía un bug de WebP que vivía sólo desplegado |
 
 Nada de `motor/` se toca fuera de agregar un archivo. El bucle de render, el
 video, los efectos, los carruseles y las presentaciones quedan igual.
@@ -38,20 +41,42 @@ pip install jinja2
 
 ## Verificar antes de desplegar
 
-La regla es una sola: **si el PNG no da el mismo MD5, no está migrada.**
+La regla es una sola: **si el PNG no da el mismo MD5, no está migrada.** Ahora
+es un comando en vez de un procedimiento:
 
 ```bash
-cd .claude/skills/boss-padel-disenos
-git stash                       # el motor de antes
-python3 render.py ejemplo-spec.json /tmp/base
-git stash pop                   # el motor de ahora
-python3 render.py ejemplo-spec.json /tmp/nuevo
-for f in /tmp/base/*.png; do
-  n=$(basename $f)
-  [ "$(md5sum $f|cut -d' ' -f1)" = "$(md5sum /tmp/nuevo/$n|cut -d' ' -f1)" ] \
-    && echo "OK $n" || echo "DISTINTO $n"
-done
+python3 herramientas/verificar-motor.py boss-padel-disenos --grabar
+#   …hacé el cambio…
+python3 herramientas/verificar-motor.py boss-padel-disenos --comparar
 ```
+
+Dibuja las 12 plantillas-dato en los 4 formatos —48 piezas, ~60 segundos— y
+dice cuáles se movieron. Sale con **1 si algo cambió y 0 si no**, así que entra
+tal cual en `desplegar-chat.sh` o en cualquier chequeo automático.
+
+Lo que devuelve se lee en una línea:
+
+| Dice | Significa |
+|---|---|
+| `48 / 48 idénticas` | el cambio no tocó nada de lo que ya andaba: es seguro |
+| `DISTINTA tip-post.png` | esa pieza se movió — mirala antes de seguir |
+| `FALTA tip-post.png` | dejó de dibujarse, que es peor que moverse |
+| `nueva …` | apareció una que no estaba: eso está bien si era lo que buscabas |
+
+Cuando algo cambia, los PNG de las dos corridas quedan en
+`/tmp/verificar-motor/antes/` y `/despues/` para poder mirarlos en vez de
+discutir sobre un hash.
+
+**La huella no se guarda en el repo, y es a propósito:** el MD5 de un PNG
+depende de la versión de Chromium que lo dibujó, así que una huella grabada en
+una máquina no coincide con la de otra aunque el código sea idéntico. Se
+comparan dos corridas del mismo lugar.
+
+`duelo` y `horarios` quedan afuera —son programas, no tienen contrato— y el
+comando lo dice cada vez en vez de dar a entender que las probó.
+
+Probado: sin cambios da 48/48 y sale 0; subiendo dos píxeles el cuerpo del pie
+de `tip` marca sus 4 formatos y ninguno más, y sale 1.
 
 ## Una vez, para que la base tome el mando
 
