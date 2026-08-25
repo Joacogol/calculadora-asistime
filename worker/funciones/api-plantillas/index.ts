@@ -25,6 +25,19 @@
 // resuelto ahí. Escribir una segunda versión sería garantizar que dentro de
 // seis meses alguien arregle una y no la otra.
 //
+// ── Por qué también recibe los pedidos de motor ──────────────────────────
+//
+// `POST /motor` anota un pedido que NO se resuelve con una plantilla: el video,
+// un formato que no existe, la estructura del carrusel. Antes eso era un mail y
+// nada más — y un mail que nadie lee es un pedido perdido, además de un pedido
+// que no se puede contar.
+//
+// Vive acá y no en una quinta función porque es la misma puerta conceptual: lo
+// que entra por este endpoint son pedidos de cambiar QUÉ SABE HACER el sistema
+// de diseño. Que una parte se resuelva sola —la plantilla— y la otra necesite
+// código es una diferencia de implementación, no de naturaleza. Y no suma otro
+// secreto que rotar.
+//
 // ── Por qué usa la MISMA clave que api-disenos ───────────────────────────
 //
 // Porque una clave más sería una deuda más. `API_CLAVE` ya está expuesta en el
@@ -285,6 +298,45 @@ Deno.serve(async (req) => {
       volver_atras: "Se puede volver a la versión anterior publicándola de nuevo: " +
                     "las versiones quedan todas guardadas.",
     });
+  }
+
+  // ── Anotar un pedido que necesita tocar el motor ───────────────────────
+  if (req.method === "POST" && url.pathname.endsWith("/motor")) {
+    let cuerpo: Record<string, unknown> = {};
+    try { cuerpo = await req.json(); } catch { /* queda vacío */ }
+
+    const resumen = String(cuerpo.resumen || "").trim();
+    if (resumen.length < 10) {
+      return json({
+        error: "Todavía no tengo qué están pidiendo. Escribí en dos o tres " +
+               "frases el cambio, con lo que ya dijo la persona — tiene que " +
+               "alcanzar para que alguien que no vio el chat lo entienda.",
+        codigo: "pedido_incompleto",
+      }, 400);
+    }
+
+    const r = await fetch(`${base}/rest/v1/motor_pedidos`, {
+      method: "POST",
+      headers: { ...cab, Prefer: "return=representation" },
+      body: JSON.stringify({
+        resumen: resumen.slice(0, 4000),
+        parte: String(cuerpo.parte || "").trim().slice(0, 300) || null,
+        quien: String(cuerpo.quien || "Asistime").slice(0, 120),
+      }),
+    });
+    if (!r.ok) {
+      const detalle = await r.text();
+      // Que la tabla no exista todavía no puede hacer fallar al chat: el aviso
+      // por mail sigue saliendo igual, que es lo que había antes de esto.
+      console.error("motor", r.status, detalle.slice(0, 300));
+      return json({
+        anotado: false,
+        error: "no pude anotar el pedido en la base",
+        detalle: detalle.slice(0, 300),
+      }, 500);
+    }
+    const fila = (await r.json())[0];
+    return json({ anotado: true, id: fila.id, estado: fila.estado }, 201);
   }
 
   // ── Cómo va un pedido ──────────────────────────────────────────────────
