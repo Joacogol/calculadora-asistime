@@ -41,5 +41,22 @@
     "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
   },
   "_campanas": "Stadium arma campañas con identidad propia —su color y su tipografía— que mientras duran mandan sobre el naranja de la marca. Las de acá abajo son las que se vieron en el feed. Cuando arranque una nueva, se suma acá y se le arma su paleta en brand.py.",
-  "regla_naranja": "**El naranja no es el color de todas las piezas.** Es el del logo y el de las promos. En el feed real aparece en 1 de cada 24 posts: la grilla es beige, tan, kraft, gris y blanco. Una pieza de producto o de campaña con fondo naranja no se parece a lo que publica Stadium."
+  "regla_naranja": "**El naranja no es el color de todas las piezas.** Es el del logo y el de las promos. En el feed real aparece en 1 de cada 24 posts: la grilla es beige, tan, kraft, gris y blanco. Una pieza de producto o de campaña con fondo naranja no se parece a lo que publica Stadium.",
+  "_reels": "Qué se le pide a Magnific cuando alguien manda una foto de producto y pide un reel. Los precios están MEDIDOS con el estimador el 25/8/2026, no publicados: si Magnific los cambia, esto queda viejo sin avisar y lo que protege de verdad son los topes.",
+  "reels": {
+    "resolucion": "720p",
+    "duracion": 6,
+    "creditos_maximos": 3000,
+    "creditos_maximos_mes": 20000,
+    "_costo": "720p a 6 segundos son 2.640 créditos. Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y el worker lo estira a 1080×1920 — 2,7 veces. En 480p costaría 1.200 pero estiraría 4 veces y se vería blando; en 1080p costaría 4.740.",
+    "_topes": "`creditos_maximos` es por pieza y tiene que ser MAYOR que el costo por defecto o se rechaza todo. 3.000 deja pasar los 2.640 y frena un 1080p de ocho segundos (6.320). `creditos_maximos_mes` corta el mes: con 20.000 son siete reels.",
+    "musica": [
+      {
+        "clave": "street",
+        "descripcion": "Comercial de calle: batería de hip-hop, bajo profundo, sintetizador brillante. Unos 100 BPM. Para producto urbano — championes, buzos, mochilas."
+      }
+    ],
+    "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una y duran 30 segundos, así que de una pista salen cinco reels de seis segundos. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. Los archivos viven en el bucket bajo `musica/`.",
+    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
+  }
 }

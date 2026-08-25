@@ -3,16 +3,24 @@
 
 ## Por qué esto vive en el worker y no en una tool de Asistime
 
-Una tool de `custom_code` se corta a los **5 segundos**. Generar el video tarda
-**cuatro minutos**. No hay forma de que la tool haga el trabajo: se cortaría 235
-segundos antes de que Magnific conteste.
+Una tool de Asistime tiene un timeout configurable, y las de Stadium están
+entre 60 y 120 segundos —`estado_diseno` incluso espera adentro hasta 75—. O
+sea que sí puede esperar un rato: no es cierto que se corte a los pocos
+segundos.
+
+Lo que no puede es esperar **cuatro minutos**, que es lo que tarda generar el
+video. Y aunque se pudiera subir el timeout, no convendría: la tool corre
+dentro del turno del agente, así que el chat se queda mudo todo ese rato y si
+la conversación se corta en el medio, el pedido se pierde con ella.
+
+Por eso el reel sigue el mismo camino que ya sigue un diseño.
 
 Así que el reel sigue el mismo camino que ya sigue un diseño:
 
     el agente anota la fila  →  el worker la levanta y la trabaja
 
-`crear_reel` escribe en `reels` y contesta en menos de un segundo. Este módulo
-hace el resto.
+`crear_reel` escribe en `reels` y contesta al instante. Este módulo hace el
+resto, repartido en los ciclos que hagan falta.
 
 ## El estado tiene que sobrevivir a que el worker se muera
 
@@ -60,10 +68,21 @@ API = "https://api.magnific.com/v1/ai/video"
 #: queda acotado por `creditos_maximos`.
 PRECIO_POR_SEGUNDO = {"480p": 200, "720p": 440, "1080p": 790}
 
-#: Lo que se le pide a Magnific si la marca no dice otra cosa. 480p es
-#: deliberado: a 8 segundos sale 1.600 contra 6.320 de 1080p, y la pieza se
-#: escala después. Una marca que quiera más nitidez lo sube en su `marca.json`.
-POR_DEFECTO = {"resolucion": "480p", "duracion": 8, "relacion": "social_story_9_16"}
+#: Lo que se le pide a Magnific si la marca no dice otra cosa.
+#:
+#: **720p y seis segundos: 2.640 créditos.** Es una decisión de compromiso y
+#: conviene entender las dos puntas antes de moverla.
+#:
+#: Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y hay
+#: que estirarlo a 1080×1920 — 2,7 veces. En 480p serían 270×480, o sea 4
+#: veces, y a esa altura el video se ve blando. En 1080p sale 608×1080 y estira
+#: 1,8, pero cuesta 4.740 por los mismos seis segundos.
+#:
+#: La duración es el otro cursor, y es lineal: cada segundo de 720p son 440
+#: créditos. Seis alcanzan para los tres tiempos de un reel de producto
+#: (producto quieto, la persona entra, la caminata). Menos de cinco y el tercer
+#: tiempo no llega a leerse.
+POR_DEFECTO = {"resolucion": "720p", "duracion": 6, "relacion": "social_story_9_16"}
 
 
 def precio(resolucion: str, duracion: int) -> int:
@@ -282,7 +301,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir) -> int:
     bucket. Los dos entran por parámetro y no por import para que este módulo
     se pueda probar sin levantar el motor entero.
     """
-    tope_pieza = int(ficha.get("creditos_maximos") or 2000)
+    # El tope por pieza tiene que ser MAYOR que lo que cuesta el default, o
+    # todo se rechaza y nadie entiende por qué. 3.000 deja pasar los 2.640 de
+    # 720p/6s y frena un 1080p de ocho segundos (6.320), que es exactamente la
+    # línea que se quiso poner.
+    tope_pieza = int(ficha.get("creditos_maximos") or 3000)
     tope_mes = int(ficha.get("creditos_maximos_mes") or 20000)
     res = ficha.get("resolucion") or POR_DEFECTO["resolucion"]
     dur = int(ficha.get("duracion") or POR_DEFECTO["duracion"])
