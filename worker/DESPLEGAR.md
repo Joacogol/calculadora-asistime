@@ -231,20 +231,49 @@ Tienen que ser **cuatro**: `lateral`, `sangre`, `recorte` y `tipografica`.
 diseño con variables sino un programa. Se puede usar para hacer piezas; no se
 puede corregir desde el chat.
 
-### 4 · Publicarle el catálogo
+### 4 · Su clave de Asistime — y por qué no puede ser la de Boss
+
+**La clave de Asistime está atada a un tenant.** Se probó: la de Boss contra un
+documento de Clínica contesta `403`. Así que Clínica necesita la suya.
+
+Ya tiene la aplicación creada en su tenant —«Worker de disenos», con los mismos
+cuatro permisos de documento que la de Boss— pero **sin ninguna clave todavía**.
+Hay que generarla desde Asistime y guardarla:
 
 ```bash
-ASISTIME_CLAVE="$(gcloud secrets versions access latest --secret=asistime-api-boss)" \
+read -rs -p "Pegá la clave de Asistime de Clínica y Enter (no se ve): " K; echo
+printf '%s' "$K" | gcloud secrets create asistime-api-clinica --data-file=-
+gcloud secrets add-iam-policy-binding asistime-api-clinica \
+  --member="serviceAccount:worker-boss-padel@boss-padel-disenos.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" --quiet
+unset K
+```
+
+> ⚠️ **`desplegar-chat.sh` todavía no sabe de esta clave.** Tiene el nombre del
+> secreto escrito a mano (`asistime-api-boss`) y le pasa al job una sola
+> variable. Mientras eso siga así, hay que agregarla al job aparte:
+>
+> ```bash
+> gcloud run jobs update boss-chat --region southamerica-east1 \
+>   --update-secrets ASISTIME_CLAVE_CLINICA=asistime-api-clinica:latest
+> ```
+>
+> Y **repetirlo después de cada `./desplegar-chat.sh`**, porque el despliegue la
+> pisa. El arreglo de fondo es que el script recorra los clientes para esto
+> igual que ya hace con las claves de Supabase; hasta que eso se haga, esta
+> línea es la red.
+
+### 5 · Publicarle el catálogo
+
+```bash
+ASISTIME_CLAVE_CLINICA="$(gcloud secrets versions access latest --secret=asistime-api-clinica)" \
   python3 herramientas/publicar-catalogo.py clinica-preventiva-disenos --probar
 ```
 
-Sacale el `--probar` si lo que lista tiene sentido.
+Sacale el `--probar` si lo que lista tiene sentido. El nombre de la variable no
+es libre: lo declara `marca.json` de cada marca en `asistime.clave_env`.
 
-> **Ojo con la clave de Asistime.** Hoy hay una sola (`asistime-api-boss`) y
-> sirve para las dos marcas porque el tenant lo decide `marca.json`, no la
-> clave. Si algún día se separan, este comando cambia.
-
-### 5 · La prueba, desde el chat de Clínica
+### 6 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
 
