@@ -179,6 +179,84 @@ volvió, mirá el log del job.
 
 ---
 
+## Clínica Preventiva — poner su lado a la par
+
+Boss Padel ya tiene todo esto andando. Clínica no, y estos son los pasos que
+faltan. Lo de Asistime **ya está hecho** —agente, herramientas, catálogo— así
+que acá sólo queda su Supabase y sus plantillas.
+
+Sus tablas (`plantillas`, `plantilla_pedidos`, `motor_pedidos`) **ya están
+creadas**. No hay que correr los `.sql` para ella.
+
+### 1 · Su clave de API
+
+Las Edge Functions leen `API_CLAVE` de un secreto del proyecto, así que Clínica
+tiene **la suya, distinta de la de Boss**. Está escrita en el código de sus seis
+herramientas de Asistime; se puede leer desde ahí. **No la pongas en este repo.**
+
+En el panel de Supabase de Clínica → *Project Settings* → *Edge Functions* →
+*Secrets*, agregá `API_CLAVE` con ese valor.
+
+> Sin este paso las funciones contestan `500 falta configurar API_CLAVE` y el
+> chat no puede pedir nada. Es el único paso que no se puede hacer por comando.
+
+### 2 · Sus Edge Functions
+
+```bash
+cd ~/worker
+npx supabase link --project-ref jejohzzxxnhktdxpdqpy
+npx supabase functions deploy api-plantillas --no-verify-jwt
+npx supabase functions deploy api-disenos    --no-verify-jwt
+```
+
+`api-plantillas` no existe todavía en su proyecto. `api-disenos` sí, pero está
+en la **v3** y le falta el arreglo de WebP —el que hacía que una foto con
+metadatos se rechazara entera y el diseño saliera sin mirarla—. Las dos van del
+mismo archivo que ya tenés en `funciones/`.
+
+### 3 · Sembrarle sus plantillas
+
+```bash
+export MARCA=clinica-preventiva-disenos
+export BUCKET=disenos
+export SUPABASE_URL=https://jejohzzxxnhktdxpdqpy.supabase.co
+export SUPABASE_KEY="$(gcloud secrets versions access latest --secret=supabase-key-clinica)"
+
+python3 herramientas/sembrar-plantillas.py clinica-preventiva-disenos --probar
+python3 herramientas/sembrar-plantillas.py clinica-preventiva-disenos
+```
+
+Tienen que ser **cuatro**: `lateral`, `sangre`, `recorte` y `tipografica`.
+`convenio` no aparece y está bien: se quedó escrita en Python porque no es un
+diseño con variables sino un programa. Se puede usar para hacer piezas; no se
+puede corregir desde el chat.
+
+### 4 · Publicarle el catálogo
+
+```bash
+ASISTIME_CLAVE="$(gcloud secrets versions access latest --secret=asistime-api-boss)" \
+  python3 herramientas/publicar-catalogo.py clinica-preventiva-disenos --probar
+```
+
+Sacale el `--probar` si lo que lista tiene sentido.
+
+> **Ojo con la clave de Asistime.** Hoy hay una sola (`asistime-api-boss`) y
+> sirve para las dos marcas porque el tenant lo decide `marca.json`, no la
+> clave. Si algún día se separan, este comando cambia.
+
+### 5 · La prueba, desde el chat de Clínica
+
+El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
+
+> «Una placa para el carné de salud común a $1490, con resultado en 24 horas.»
+
+> «En la plantilla lateral el precio se ve chico al lado del título, agrandalo.»
+
+La primera tiene que volver con una pieza en dos o tres minutos; la segunda con
+un preview de una versión nueva, en borrador, en unos dos.
+
+---
+
 ## Lo que NO hace este despliegue
 
 - **No publica ninguna plantilla.** Las que se armen quedan como borrador hasta
