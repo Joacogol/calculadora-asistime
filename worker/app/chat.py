@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import banco, cobro, config, manual, plantillas, plantillero, publicador
+from . import banco, cobro, config, manual, motorista, plantillas, plantillero, publicador
 from .supa import Cliente
 from .disenador import disenar
 
@@ -227,7 +227,7 @@ async def ciclo():
     # texto viejo cacheado para la siguiente.
     manual.limpiar()
     plantillas.limpiar()
-    hechos = subidos = plantillas_nuevas = 0
+    hechos = subidos = plantillas_nuevas = propuestas = 0
     for datos in config.clientes():
         cli = Cliente(**datos)
         if not cli.configurado:
@@ -253,18 +253,28 @@ async def ciclo():
         except Exception:
             log.exception("[%s] falló la cola de plantillas", cli.marca)
 
+        # Los pedidos de motor van al final y apagados por defecto
+        # (MOTORISTA=1 los prende). Lo que dejan es una PROPUESTA para que
+        # alguien mire: no despliegan nada. Van últimos porque son lo menos
+        # urgente de la corrida — nadie está esperando en un chat.
+        try:
+            propuestas += await motorista.atender_todos(cli)
+        except Exception:
+            log.exception("[%s] falló la cola de motor", cli.marca)
+
         if config.PUBLICAR:
             try:
                 subidos += publicador.atender(cli)
             except Exception:
                 log.exception("[%s] falló la cola de publicación", cli.marca)
 
-    if not hechos and not subidos and not plantillas_nuevas:
+    if not (hechos or subidos or plantillas_nuevas or propuestas):
         log.info("sin diseños pendientes, plantillas ni publicaciones en cola")
         return
     dur = (datetime.now(timezone.utc) - inicio).total_seconds()
     log.info("ciclo terminado en %.0fs · %d diseños · %d plantillas · "
-             "%d publicaciones", dur, hechos, plantillas_nuevas, subidos)
+             "%d publicaciones · %d propuestas de motor",
+             dur, hechos, plantillas_nuevas, subidos, propuestas)
 
 
 async def main():
