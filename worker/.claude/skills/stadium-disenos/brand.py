@@ -315,3 +315,39 @@ def fila_logos(logos, alto=52, color=None, separador=True):
             f'object-fit:contain;display:block">')
     return (f'<div style="display:flex;align-items:center;'
             f'gap:{alto * 0.42:.0f}px;flex-wrap:wrap">' + "".join(piezas) + '</div>')
+
+
+def sombra_texto(fuerza=1.0):
+    """La sombra que hace que el texto blanco sobreviva a una mancha clara.
+
+    El velo sobre la foto se calcula con el brillo PROMEDIO de una zona, y un
+    promedio esconde lo que importa: la mancha clara —una paleta blanca, un
+    reflejo, el césped al sol— que se cruza con tres letras y se las come. Se
+    midió en una pieza real: la mediana del contraste daba 8,85:1 y el peor
+    punto 1,98:1, con 4,5 de objetivo. El texto se veía «un poco perdido»
+    justo ahí y en ningún otro lado.
+
+    Subir el velo hasta que ese peor punto pase no sirve: para tapar la mancha
+    hay que oscurecer TODA la foto, y entonces se pierde la foto.
+
+    La sombra en cambio es local: viaja pegada a cada letra, así que protege
+    donde hace falta y no toca el resto de la imagen.
+
+    Son tres capas y no una a propósito:
+      · una pegada y chica, que define el borde de la letra;
+      · una media, que le da cuerpo;
+      · una grande y difusa, que separa el bloque entero del fondo.
+    Todas CON DESENFOQUE. Una sombra dura sobre una foto se lee como un
+    segundo texto gris corrido, que es peor que no tener sombra.
+    Devuelve la declaración CERRADA CON PUNTO Y COMA. No es un detalle de
+    estilo: esto se inserta en medio de un `style=""`, y sin el `;` el
+    navegador sigue leyendo lo que viene después —`margin-top`, `max-width`—
+    como parte del valor de la sombra, no entiende nada y TIRA LA DECLARACIÓN
+    ENTERA. Se perdían la sombra y los márgenes a la vez, sin ningún error: la
+    bajada medía exactamente lo mismo antes y después de "arreglarla".
+    """
+    f = max(0.0, min(float(fuerza), 2.0))
+    return ("text-shadow:"
+            f"0 1px 2px rgba(0,0,0,{.42 * f:.2f}),"
+            f"0 2px 10px rgba(0,0,0,{.40 * f:.2f}),"
+            f"0 4px 30px rgba(0,0,0,{.34 * f:.2f});")

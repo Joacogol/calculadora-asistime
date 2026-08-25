@@ -5,34 +5,120 @@
   "cuando_usarla": "Cuando la protagonista es una persona de la casa: la campaña de Día del Padre con los papás que trabajan en Stadium, una presentación del equipo de una tienda, alguien contando algo. Lo que la define es la chapita con el nombre y el área («Jorge Colina - Logística»): eso es lo que convierte un retrato cualquiera en una pieza de Stadium. Si la persona es una modelo y no alguien de la casa, usá `campana`.",
   "acento_por_defecto": "naranja",
   "medidas": {
-    "post":  {"alto": 1080, "pad": 68, "titulo": 76, "etiqueta": 26, "logo": 0.6},
-    "vert":  {"alto": 1350, "pad": 72, "titulo": 86, "etiqueta": 28, "logo": 0.64},
-    "story": {"alto": 1920, "pad": 84, "titulo": 108, "etiqueta": 33, "logo": 0.78},
-    "reel":  {"alto": 1920, "pad": 84, "titulo": 108, "etiqueta": 33, "logo": 0.78}
+    "post": {
+      "alto": 1080,
+      "pad": 68,
+      "titulo": 76,
+      "etiqueta": 26,
+      "logo": 0.6
+    },
+    "vert": {
+      "alto": 1350,
+      "pad": 72,
+      "titulo": 86,
+      "etiqueta": 28,
+      "logo": 0.64
+    },
+    "story": {
+      "alto": 1920,
+      "pad": 84,
+      "titulo": 108,
+      "etiqueta": 33,
+      "logo": 0.78
+    },
+    "reel": {
+      "alto": 1920,
+      "pad": 84,
+      "titulo": 108,
+      "etiqueta": 33,
+      "logo": 0.78
+    }
   },
   "campos": [
-    {"id": "foto", "tipo": "imagen", "etiqueta": "Retrato", "requerido": true,
-     "nota": "La persona, a sangre. En las piezas reales el fondo es liso —kraft o estudio blanco— y la persona está de cuerpo entero o sentada. Una foto con fondo cargado pelea con el título."},
-    {"id": "nombre", "tipo": "texto", "etiqueta": "Nombre y apellido", "requerido": true,
-     "ejemplo": "Jorge Colina",
-     "nota": "Como quiera que le guste que la nombren. Es una persona real de la casa: si no estás seguro de cómo se escribe, preguntá antes de publicar."},
-    {"id": "area", "tipo": "texto", "etiqueta": "Área", "default": "",
-     "ejemplo": "Logística",
-     "nota": "El sector donde trabaja. Va abajo del nombre, más chico."},
-    {"id": "titulo", "tipo": "texto_largo", "etiqueta": "Título de la campaña", "default": "",
-     "ejemplo": "Con papá siempre hay equipo",
-     "nota": "El mismo de la campaña. Podés cortar la línea vos con saltos de línea."},
-    {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta de la campaña",
-     "opciones": ["stadium", "papa", "papa_estudio", "madre", "promo", "oscura"],
-     "default": "papa_estudio",
-     "nota": "Los colores de las campañas son aproximaciones sacadas del feed. Si la campaña trae los suyos, pasalos en `tinta`."},
-    {"id": "tinta", "tipo": "color", "etiqueta": "Color del título (pisa la paleta)", "default": ""},
-    {"id": "esquina", "tipo": "opcion", "etiqueta": "Esquina del título",
-     "opciones": ["arriba-izquierda", "arriba-derecha", "arriba-centro"],
-     "default": "arriba-izquierda",
-     "nota": "Mandalo a la esquina LIBRE de la foto, la que no tiene la cabeza."},
-    {"id": "lado_etiqueta", "tipo": "opcion", "etiqueta": "Lado de la chapita",
-     "opciones": ["izquierda", "derecha"], "default": "izquierda"},
-    {"id": "acento", "tipo": "opcion", "etiqueta": "Acento", "opciones": ["naranja", "blanco"], "default": "naranja"}
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Retrato",
+      "requerido": true,
+      "nota": "La persona, a sangre. **El fondo detrás del título tiene que ser PLANO** —kraft, estudio blanco, una pared—: así son todas las piezas reales. Sobre una foto con claros y oscuros el título celeste se pierde donde el fondo tiene su mismo brillo, y eso no se arregla con sombra. Si la única foto que hay es movida, poné `tinta` en blanco."
+    },
+    {
+      "id": "nombre",
+      "tipo": "texto",
+      "etiqueta": "Nombre y apellido",
+      "requerido": true,
+      "ejemplo": "Jorge Colina",
+      "nota": "Como quiera que le guste que la nombren. Es una persona real de la casa: si no estás seguro de cómo se escribe, preguntá antes de publicar."
+    },
+    {
+      "id": "area",
+      "tipo": "texto",
+      "etiqueta": "Área",
+      "default": "",
+      "ejemplo": "Logística",
+      "nota": "El sector donde trabaja. Va abajo del nombre, más chico."
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto_largo",
+      "etiqueta": "Título de la campaña",
+      "default": "",
+      "ejemplo": "Con papá siempre hay equipo",
+      "nota": "El mismo de la campaña. Podés cortar la línea vos con saltos de línea."
+    },
+    {
+      "id": "estilo",
+      "tipo": "opcion",
+      "etiqueta": "Paleta de la campaña",
+      "opciones": [
+        "stadium",
+        "papa",
+        "papa_estudio",
+        "madre",
+        "promo",
+        "oscura"
+      ],
+      "default": "papa_estudio",
+      "nota": "Los colores de las campañas son aproximaciones sacadas del feed. Si la campaña trae los suyos, pasalos en `tinta`."
+    },
+    {
+      "id": "tinta",
+      "tipo": "color",
+      "etiqueta": "Color del título (pisa la paleta)",
+      "default": "",
+      "nota": "Vacío = el de la paleta. Ponelo en blanco (#FFFFFF) cuando el retrato NO tenga fondo plano: el celeste de campaña es un tono medio y sobre foto movida desaparece."
+    },
+    {
+      "id": "esquina",
+      "tipo": "opcion",
+      "etiqueta": "Esquina del título",
+      "opciones": [
+        "arriba-izquierda",
+        "arriba-derecha",
+        "arriba-centro"
+      ],
+      "default": "arriba-izquierda",
+      "nota": "Mandalo a la esquina LIBRE de la foto, la que no tiene la cabeza."
+    },
+    {
+      "id": "lado_etiqueta",
+      "tipo": "opcion",
+      "etiqueta": "Lado de la chapita",
+      "opciones": [
+        "izquierda",
+        "derecha"
+      ],
+      "default": "izquierda"
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "naranja",
+        "blanco"
+      ],
+      "default": "naranja"
+    }
   ]
 }

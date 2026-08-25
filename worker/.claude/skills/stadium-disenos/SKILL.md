@@ -123,6 +123,56 @@ pide un carrusel, que es mejor que un carrusel que sale mal.
 los subtítulos quemados— y el motor hoy sólo arma reels de rótulos sobre
 imagen. Existe un pack de edición de reels hablados que resuelve justo eso.
 
+## Que el texto se lea: lo que se midió
+
+Sobre foto, el texto blanco «se perdía un poco». Medido con
+`herramientas/medir-contraste.py`, el problema quedó en un renglón: la
+**mediana** del contraste daba 8,85:1 y el **peor punto** 1,98:1. O sea, el 90%
+del texto estaba perfecto y se moría justo donde cruzaba la paleta blanca de la
+foto.
+
+La causa: el velo se calcula con el brillo **promedio** de una franja, y un
+promedio nunca ve una mancha. En esa pieza `plan_titular` devolvió velo **cero**
+—el bolso y el fondo eran oscuros— mientras la paleta blanca del medio se comía
+las letras.
+
+Tres cosas lo arreglaron, y las tres siguen puestas:
+
+| | |
+|---|---|
+| **Sombra en el texto** (`sombra_texto`) | Es local: viaja con cada letra, así que protege donde hace falta sin tocar el resto de la foto. Tres capas, todas con desenfoque. |
+| **Piso al velo** | Con foto siempre hay algo de velo aunque el cálculo diga que no. |
+| **El velo llega hasta el 78%** | Antes cortaba en 55% y la bajada quedaba afuera. |
+
+Resultado: peor punto **4,68:1** en post y **9,49:1** en story, con 4,5 de
+objetivo. Antes: 1,98:1.
+
+### Dos cosas que NO se arreglan con sombra, y hay que saberlas
+
+**Un color de tono medio sobre foto.** El celeste de campaña da 3,3:1 contra
+blanco y 6,4:1 contra negro, pero **1:1 contra un gris de su mismo brillo**.
+Oscurecer el fondo lo ACERCA a ese brillo antes de alejarlo: subir la sombra de
+0,55 a 1,6 movió el número de 1,20 a 1,30. Por eso `campana` cambia sola a
+blanco cuando hay foto, y por eso `equipo` exige **fondo plano** detrás del
+título.
+
+**Blanco sobre el naranja de la marca: 2,94:1.** No llega ni al 3 de texto
+grande. No se cambió porque es el par de la marca y está así en su sorteo real
+—pero si alguna vez hay que corregirlo, el camino es tinta oscura para el texto
+chico, que sobre ese naranja da 5,2:1.
+
+### Cómo medirlo de nuevo
+
+```bash
+python3 herramientas/medir-contraste.py pieza.html 1080 1920
+```
+
+Mira el **percentil 90** del fondo y no el promedio, y calcula el contraste
+entre los **dos colores reales** —no contra blanco—. Las dos decisiones salieron
+de errores: la primera versión promediaba y no veía nada; la segunda asumía
+texto blanco y reportaba «1,00:1» en una chapita de texto oscuro sobre fondo
+blanco, que en realidad da 15,9:1.
+
 ## Una advertencia sobre la verificación
 
 Boss y Clínica tienen una red que Stadium no: sus plantillas ya existían, así

@@ -10,7 +10,24 @@
       de dónde quedó la cabeza en ESA foto. Un título centrado a ciegas le pasa
       por encima a la persona la mitad de las veces.
     · NO hay velo sobre el retrato. Los fondos son lisos (kraft, estudio) y un
-      velo los ensucia. Si la foto es oscura, se elige tinta clara. -#}
+      velo los ensucia.
+
+    Y de ahí sale la regla que más importa acá: **el fondo detrás del título
+    tiene que ser PLANO.** No es una preferencia estética. El celeste de la
+    campaña es un tono medio: contra blanco da 3,3:1 y contra negro 6,4:1,
+    pero contra un gris de su mismo brillo da 1:1. Sobre una foto con zonas
+    claras y oscuras, en algún punto el fondo va a tener justo ese brillo y
+    ahí el título desaparece — se midió 1,20:1 en un retrato de prueba.
+
+    Y no se arregla con sombra: la sombra oscurece el fondo, y oscurecer un
+    fondo claro lo ACERCA al brillo del celeste antes de alejarlo. Subir la
+    sombra de 0,55 a 1,6 movió el número de 1,20 a 1,30. Nada.
+
+    Lo que sí lo arregla es cambiar la tinta: sobre foto movida, el título va
+    blanco (campo `tinta`). Por eso `campana` cambia sola a blanco cuando hay
+    foto. Acá NO se cambia sola, porque el caso normal de esta plantilla es un
+    retrato de estudio contra fondo liso, donde el celeste es correcto y es lo
+    que hace la marca. -#}
 
 {%- set pal = paleta(d.estilo, tinta=d.tinta) -%}
 {%- set t = d.titulo|length -%}
@@ -25,7 +42,7 @@
   <div style="display:flex;justify-content:{{ 'center' if cen else ('flex-end' if der else 'flex-start') }}">
     <div style="text-align:{{ 'center' if cen else ('right' if der else 'left') }}">
       <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
-        white-space:pre-line">{{ d.titulo }}</div>
+        white-space:pre-line;{{ sombra_texto(0.8) }}">{{ d.titulo }}</div>
       {% if pal.subrayado %}
       <div style="margin-top:{{ cuerpo * 0.10 }}px;display:flex;
         justify-content:{{ 'center' if cen else ('flex-end' if der else 'flex-start') }}">

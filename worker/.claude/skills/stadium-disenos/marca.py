@@ -29,7 +29,8 @@ import sys as _sys
 from brand import (C, FORMATOS, FONT_CSS, BASE_CSS, NARANJA_WEB,   # noqa: F401
                    VOCES, PALETAS,                                 # noqa: F401
                    logo, iso, pastilla, descuento, barra,          # noqa: F401
-                   paleta, subrayado, etiqueta_persona, fila_logos)  # noqa: F401
+                   paleta, subrayado, etiqueta_persona, fila_logos,  # noqa: F401
+                   sombra_texto)                                   # noqa: F401
 
 from motor import plantillas as _plantillas
 

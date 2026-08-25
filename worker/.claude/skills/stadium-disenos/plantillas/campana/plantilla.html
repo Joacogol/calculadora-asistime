@@ -24,6 +24,18 @@
 {%- if d.foto and not d.tinta -%}
   {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco) -%}
 {%- endif -%}
+{#- Sobre foto, además del velo va sombra en el texto. El velo se calcula con
+    el brillo PROMEDIO de la zona y por eso no ve la mancha clara puntual —una
+    paleta blanca, un reflejo— que se come tres letras. Medido en una pieza
+    real: mediana 8,85:1, peor punto 1,98:1. La sombra es local y arregla ese
+    peor punto sin oscurecer la foto entera. Sobre fondo plano NO va: ahí no
+    hay nada de qué defenderse y se notaría. -#}
+{%- set sombra = sombra_texto() if d.foto else '' -%}
+{#- El texto chico lleva MÁS sombra, no menos. La sombra se dibuja alrededor
+    del trazo, así que a 104 px de titular tapa un halo ancho y a 32 px de
+    bajada tapa una línea fina: al mismo valor, el texto chico queda mucho más
+    desprotegido justo cuando es el que más contraste necesita (4,5 contra 3). -#}
+{%- set sombra_chica = sombra_texto(1.6) if d.foto else '' -%}
 {%- set t = d.titulo|length -%}
 {%- set cuerpo = m.titulo if t <= 26 else (m.titulo * 0.76 if t <= 48 else m.titulo * 0.58) -%}
 {%- set centrado = d.alineacion == 'centro' -%}
@@ -33,8 +45,19 @@
 {#- El velo se MIDE contra esta foto y este color de título, no se fija. Una
     campaña con tinta celeste clara necesita mucho más velo que una con tinta
     blanca, y un valor fijo se rompe con la primera foto distinta. -#}
-{%- set plan = plan_titular(d.foto, pal.tinta, c.negro, (0.0, 0.62), 4.5, 4.5) -%}
-<div class="scrim" style="background:{{ degrade(plan.velo, 0.55) }};transform:rotate(180deg)"></div>
+{#- El velo se mide sobre la franja donde REALMENTE cae el texto y llega
+    hasta el 78%, no hasta el 55%. Con el corte en 55% la bajada —que va
+    debajo del título— quedaba ya fuera del velo: medía 2,08:1 contra 4,5 de
+    objetivo mientras el título, doce centímetros más arriba, daba 4,10. -#}
+{%- set plan = plan_titular(d.foto, pal.tinta, c.negro, (0.0, 0.55), 4.5, 4.5) -%}
+{#- PISO AL VELO. `plan_titular` mide el promedio de la franja y con esta foto
+    devolvió CERO —el bolso y el fondo son oscuros, así que el promedio dice
+    que no hace falta nada— mientras la paleta blanca del medio, que es la que
+    se come el texto, ni la ve. Un promedio nunca la va a ver. Así que cuando
+    hay foto siempre hay algo de velo, aunque el cálculo diga que no: es la
+    diferencia entre 2,48:1 y 4,9:1 en la bajada, y no se nota en la foto. -#}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.36]|max, 0.78) }};
+  transform:rotate(180deg)"></div>
 {% else %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% endif %}
@@ -58,7 +81,7 @@
   <div style="max-width:{{ '100%' if centrado else '92%' }}">
     {% if d.kicker %}
     <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;
-      margin-bottom:{{ m.kicker * 0.9 }}px">{{ d.kicker }}</div>
+      margin-bottom:{{ m.kicker * 0.9 }}px;{{ sombra_chica }}">{{ d.kicker }}</div>
     {% endif %}
 
     {#- Título y subrayado van juntos en un bloque `inline-block`, que se
@@ -68,7 +91,7 @@
         descolgado, como si sobrara. -#}
     <div style="display:inline-block;max-width:100%">
       <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
-        white-space:pre-line">{{ d.titulo }}</div>
+        white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
       {% if pal.subrayado %}
       <div style="margin-top:{{ cuerpo * 0.08 }}px;width:100%;
         height:{{ cuerpo * 0.20 }}px">{{ subrayado(pal.tinta) }}</div>
@@ -76,7 +99,7 @@
     </div>
 
     {% if d.bajada %}
-    <div class="body" style="color:{{ pal.tinta }};opacity:.86;font-size:{{ m.bajada }}px;
+    <div class="body" style="color:{{ pal.tinta }};opacity:.92;font-size:{{ m.bajada }}px;{{ sombra_chica }}
       margin-top:{{ m.bajada * 1.1 }}px;max-width:760px;
       {{ 'margin-left:auto;margin-right:auto' if centrado else '' }}">{{ d.bajada }}</div>
     {% endif %}
@@ -88,7 +111,7 @@
     <div style="text-align:left">
       {{ logo(m.logo, pal.tinta) }}
       {% if d.pie %}
-      <div class="legal" style="color:{{ pal.tinta }};opacity:.6;font-size:{{ m.legal }}px;
+      <div class="legal" style="color:{{ pal.tinta }};opacity:.72;font-size:{{ m.legal }}px;{{ sombra_chica }}
         margin-top:{{ m.legal * 0.7 }}px;max-width:600px">{{ d.pie }}</div>
       {% endif %}
     </div>
