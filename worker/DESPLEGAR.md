@@ -23,13 +23,43 @@ minutos** — sin que nadie toque código ni despliegue nada.
 
 ---
 
-## 1 · Traer el código y verificar que no rompe nada
+## 1 · Traer el código
+
+**Son dos repos distintos.** El código nuevo vive en `calculadora-asistime`, no
+en el repo del worker. Hay que traerlo y copiarlo:
 
 ```bash
+# 1. traer el código nuevo, a donde sea
+git clone https://github.com/Joacogol/calculadora-asistime /tmp/nuevo
+cd /tmp/nuevo
+git checkout claude/asistime-auto-designs-agent-waais0
+
+# 2. copiarlo sobre el repo del worker
 cd /ruta/al/repo/del/worker
-git pull
+cp -r /tmp/nuevo/worker/.claude  .
+cp -r /tmp/nuevo/worker/app      .
+cp -r /tmp/nuevo/worker/motor    .
+cp -r /tmp/nuevo/worker/herramientas .
+cp -r /tmp/nuevo/worker/funciones    .
+cp -r /tmp/nuevo/worker/estudio      .
+cp    /tmp/nuevo/worker/*.sql /tmp/nuevo/worker/*.md .
+cp    /tmp/nuevo/worker/requirements.txt .
+
 pip install jinja2
 ```
+
+`plantilla-generada/` **no se copia**: es documentación —una plantilla de
+ejemplo con sus previews— y no forma parte del worker.
+
+Antes de seguir, mirá qué cambió:
+
+```bash
+git status
+git diff --stat
+```
+
+Tiene que tocar `app/`, `motor/`, `herramientas/`, `.claude/skills/`, y agregar
+los `.sql`. **Si toca algo que no reconocés, pará y avisá.**
 
 ### Sobre la verificación
 
