@@ -44,6 +44,7 @@ reel saldría cinco veces, cobrado cinco veces.
     error      → algo falló; `notas` dice qué
 """
 import json
+import logging
 import os
 import pathlib
 import subprocess
@@ -51,6 +52,8 @@ import tempfile
 import urllib.request
 
 import requests
+
+log = logging.getLogger(__name__)
 
 API = "https://api.magnific.com/v1/ai/video"
 
@@ -196,7 +199,15 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path, musica: pathlib.Path | None
       los pasos y el viento le compiten a la música y suena a video casero.
     · `loudnorm=I=-14` al final. Es el nivel de redes; sin eso el reel suena
       más bajo que todo lo demás del feed.
+
+    Y una cuarta que se agregó después: **no se da por hecho que el clip traiga
+    audio**. Seedance devuelve sonido casi siempre, pero no siempre, y
+    `[0:a]volume=0.28` contra un clip mudo no es un video sin ambiente: es un
+    ffmpeg que aborta. Ahí se pierde el montaje entero de un video que ya se
+    pagó —2.640 créditos— y la fila termina en `error` con un mensaje de ffmpeg
+    que no explica nada. Por eso se pregunta antes.
     """
+    ambiente = _tiene_audio(clip)
     filtro = [
         f"[0:v]scale=1080:1920:flags=lanczos,fade=t=out:st={dur-0.5:.2f}:d=0.5[base]",
         f"[1:v]format=rgba,fade=t=in:st=0.3:d=0.5:alpha=1,"
@@ -206,26 +217,55 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path, musica: pathlib.Path | None
     orden = ["-i", str(clip), "-loop", "1", "-t", f"{dur+0.1:.2f}", "-i", str(rotulo)]
     if musica:
         orden += ["-i", str(musica)]
-        filtro += [
-            "[0:a]volume=0.28[amb]",
+        filtro.append(
             f"[2:a]atrim=0:{dur:.2f},afade=t=in:st=0:d=0.3,"
-            f"afade=t=out:st={dur-0.7:.2f}:d=0.7[mus]",
-            "[mus][amb]amix=inputs=2:duration=first:dropout_transition=0,"
-            "loudnorm=I=-14:TP=-1:LRA=11[aout]",
-        ]
-    else:
-        filtro += ["[0:a]loudnorm=I=-14:TP=-1:LRA=11[aout]"]
+            f"afade=t=out:st={dur-0.7:.2f}:d=0.7[mus]")
+        if ambiente:
+            filtro += [
+                "[0:a]volume=0.28[amb]",
+                "[mus][amb]amix=inputs=2:duration=first:dropout_transition=0,"
+                "loudnorm=I=-14:TP=-1:LRA=11[aout]",
+            ]
+        else:
+            filtro.append("[mus]loudnorm=I=-14:TP=-1:LRA=11[aout]")
+    elif ambiente:
+        filtro.append("[0:a]loudnorm=I=-14:TP=-1:LRA=11[aout]")
+
+    # Sin música y sin ambiente el reel sale mudo, y hay que decírselo a ffmpeg
+    # con `-an`: mapear un `[aout]` que ningún filtro creó es un error, no un
+    # silencio.
+    audio = ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
+    if not (musica or ambiente):
+        audio = ["-an"]
 
     subprocess.run(
         ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *orden,
          "-filter_complex", ";".join(filtro),
-         "-map", "[vout]", "-map", "[aout]",
+         "-map", "[vout]", *audio,
          "-c:v", "libx264", "-preset", "slow", "-crf", "18",
          "-pix_fmt", "yuv420p", "-r", "24",
-         "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
          "-movflags", "+faststart", str(salida)],
         check=True)
     return salida
+
+
+def _tiene_audio(clip: pathlib.Path) -> bool:
+    """¿El clip trae pista de audio? Barato de preguntar, caro de suponer.
+
+    Si `ffprobe` no está, contesta que NO, y esa elección tiene una razón: de
+    los dos errores posibles, uno cuesta el ambiente del clip —que va al 0.28
+    debajo de la música y casi no se nota— y el otro cuesta el montaje entero
+    de un video ya pagado. Se elige el barato.
+    """
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a",
+             "-show_entries", "stream=index", "-of", "csv=p=0", str(clip)],
+            capture_output=True, text=True)
+    except FileNotFoundError:
+        log.warning("no encontré ffprobe: monto el reel sin el ambiente del clip")
+        return False
+    return bool(r.stdout.strip())
 
 
 def bajar(url: str, destino: pathlib.Path) -> pathlib.Path:
@@ -242,8 +282,9 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
         cli._url("reels"), headers=cli._cab(), timeout=30,
         params={"estado": f"eq.{estado}", "order": "creado_en.asc",
                 "limit": str(limite),
-                "select": "id,mensaje,foto,titulo,kicker,bajada,musica,"
-                          "tarea,resolucion,duracion,clip_url,quien,metricas"})
+                "select": "id,creado_en,mensaje,foto,titulo,kicker,bajada,"
+                          "musica,tarea,resolucion,duracion,clip_url,quien,"
+                          "metricas"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -274,6 +315,31 @@ def _marcar(cli, rid: str, estado: str, **campos):
         data=json.dumps({"estado": estado, **campos}), timeout=30).raise_for_status()
 
 
+#: Cuánto se le aguanta a una tarea antes de darla por perdida. Un video de
+#: seis segundos sale en unos cuatro minutos; cuarenta es diez veces eso.
+TOPE_GENERANDO = 40 * 60
+
+
+def _colgada(fila: dict) -> bool:
+    """¿Esta fila lleva demasiado esperando?
+
+    Se mide contra `creado_en` —cuándo se pidió el reel— y no contra el momento
+    en que pasó a `generando`, que la fila no guarda. La diferencia son los
+    segundos que estuvo en `pendiente`, y no cambian nada a esta escala.
+    """
+    from datetime import datetime, timezone
+    crudo = fila.get("creado_en")
+    if not crudo:
+        return False
+    try:
+        cuando = datetime.fromisoformat(crudo.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if cuando.tzinfo is None:
+        cuando = cuando.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - cuando).total_seconds() > TOPE_GENERANDO
+
+
 def _gastado_este_mes(cli) -> int:
     """Lo que ya se comprometió este mes, para el tope mensual.
 
@@ -293,13 +359,19 @@ def _gastado_este_mes(cli) -> int:
     return sum((f.get("creditos_estimados") or 0) for f in r.json())
 
 
-def atender_todos(cli, ficha: dict, armar_rotulo, subir) -> int:
+def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     """Un ciclo. Devuelve cuántas filas movió.
 
-    `armar_rotulo(fila) -> Path` dibuja el PNG transparente con la plantilla
-    `campana` en modo `sobre_video`. `subir(Path, nombre) -> url` lo sube al
-    bucket. Los dos entran por parámetro y no por import para que este módulo
-    se pueda probar sin levantar el motor entero.
+    `armar_rotulo(fila, destino) -> Path` dibuja el PNG transparente con la
+    plantilla `campana` en modo `sobre_video`. `subir(Path, nombre) -> url` lo
+    sube al bucket. `musica_de_fila(fila) -> url | None` decide qué pista lleva.
+    Los tres entran por parámetro y no por import para que este módulo se pueda
+    probar sin levantar el motor entero.
+
+    El destino lo elige ESTA función y no el que dibuja, porque el PNG tiene que
+    vivir dentro del `TemporaryDirectory` de la fila: si el que dibuja se hace
+    su propio temporal, nadie lo borra y cada reel deja un archivo de 1080×1920
+    tirado en el disco del job.
     """
     # El tope por pieza tiene que ser MAYOR que lo que cuesta el default, o
     # todo se rechaza y nadie entiende por qué. 3.000 deja pasar los 2.640 de
@@ -312,23 +384,47 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir) -> int:
     movidas = 0
 
     # --- a) recién anotados: ¿cuánto sale? ----------------------------------
-    for fila in _pendientes(cli, "pendiente"):
+    nuevos = _pendientes(cli, "pendiente")
+
+    # La clave se mira ANTES de tocar una fila, y por eso está acá y no adentro
+    # del for. Si faltara, `pedir_clip` reventaría con la fila ya movida a
+    # `estimando` — un estado que nadie vuelve a levantar—: el pedido quedaría
+    # trabado para siempre y el día que aparezca el secreto no se destrabaría
+    # solo. Así, en cambio, las filas se quedan quietas en `pendiente`, el log
+    # dice qué falta, y salen solas en la primera corrida después del secreto.
+    if nuevos and not (os.environ.get("MAGNIFIC_CLAVE") or "").strip():
+        log.warning("[%s] %d reel(s) esperando: falta MAGNIFIC_CLAVE en el job",
+                    getattr(cli, "marca", "?"), len(nuevos))
+        nuevos = []
+
+    for fila in nuevos:
         if not _tomar(cli, fila["id"], "pendiente", "estimando"):
             continue
-        cuesta = precio(res, dur)
-        ya = _gastado_este_mes(cli)
-        if cuesta > tope_pieza:
-            _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
-                    notas=f"{cuesta} créditos supera el tope por pieza ({tope_pieza}). "
-                          f"Bajá la resolución o la duración en marca.json.")
-        elif ya + cuesta > tope_mes:
-            _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
-                    notas=f"este mes ya hay {ya} comprometidos y el tope es {tope_mes}.")
-        else:
-            tarea = pedir_clip({**fila, "foto_texto": fila.get("titulo") or "the product"},
-                               {"resolucion": res, "duracion": dur})
-            _marcar(cli, fila["id"], "generando", tarea=tarea, modelo="seedance-2-5-pro",
-                    resolucion=res, duracion=dur, creditos_estimados=cuesta)
+        try:
+            cuesta = precio(res, dur)
+            ya = _gastado_este_mes(cli)
+            if cuesta > tope_pieza:
+                _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
+                        notas=f"{cuesta} créditos supera el tope por pieza ({tope_pieza}). "
+                              f"Bajá la resolución o la duración en marca.json.")
+            elif ya + cuesta > tope_mes:
+                _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
+                        notas=f"este reel sale {cuesta} créditos, este mes ya hay "
+                              f"{ya} comprometidos y el tope mensual es {tope_mes}.")
+            else:
+                tarea = pedir_clip({**fila, "foto_texto": fila.get("titulo") or "the product"},
+                                   {"resolucion": res, "duracion": dur})
+                _marcar(cli, fila["id"], "generando", tarea=tarea, modelo="seedance-2-5-pro",
+                        resolucion=res, duracion=dur, creditos_estimados=cuesta)
+        except Exception as e:                               # noqa: BLE001
+            # A `error` y NO de vuelta a `pendiente`, aunque reintentar sería
+            # más cómodo. Si `pedir_clip` se cortó por timeout, el video puede
+            # estar pedido —y cobrado— del otro lado sin que nos haya llegado
+            # el id: devolver la fila a la cola pediría un segundo video y lo
+            # cobraría de nuevo. Un reel que hay que volver a pedir a mano
+            # cuesta un mensaje; uno cobrado dos veces cuesta plata.
+            log.exception("[%s] falló el reel %s", getattr(cli, "marca", "?"), fila["id"])
+            _marcar(cli, fila["id"], "error", notas=f"al pedir el video: {e}")
         movidas += 1
 
     # --- b) pedidos a Magnific: ¿ya está? -----------------------------------
@@ -338,12 +434,36 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir) -> int:
         if not fila.get("tarea"):
             _marcar(cli, fila["id"], "error", notas="quedó en generando sin id de tarea")
             continue
-        estado, url = estado_clip(fila["tarea"], fila.get("resolucion") or res)
+        try:
+            estado, url = estado_clip(fila["tarea"], fila.get("resolucion") or res)
+        except Exception as e:                               # noqa: BLE001
+            # Preguntar no cuesta ni cobra, así que un fallo acá no mata la
+            # fila: se deja en `generando` y se vuelve a preguntar el minuto
+            # que viene. Lo que sí importa es que el `try` esté: sin él, una
+            # tarea que contesta 401 se lleva puesto el resto de la corrida y
+            # los reels que YA estaban listos no se montan.
+            log.warning("[%s] no pude preguntar por el reel %s: %s",
+                        getattr(cli, "marca", "?"), fila["id"], e)
+            if _colgada(fila):
+                _marcar(cli, fila["id"], "error",
+                        notas=f"lleva más de {TOPE_GENERANDO // 60} minutos sin "
+                              f"respuesta de Magnific: {e}")
+                movidas += 1
+            continue
         if estado in ("FAILED", "ERROR"):
             _marcar(cli, fila["id"], "error", notas=f"Magnific devolvió {estado}")
             movidas += 1
         elif estado == "COMPLETED" and url:
             _marcar(cli, fila["id"], "montando", clip_url=url)
+            movidas += 1
+        elif _colgada(fila):
+            # Un video sale en unos cuatro minutos. Pasada media hora larga no
+            # va a salir, y dejar la fila en `generando` para siempre es
+            # dejarle al cliente un «sigue generándose» eterno: peor que un
+            # error, porque nadie sabe que hay que hacer algo.
+            _marcar(cli, fila["id"], "error",
+                    notas=f"Magnific lo dejó en «{estado}» más de "
+                          f"{TOPE_GENERANDO // 60} minutos")
             movidas += 1
         # si sigue en curso no se toca: el ciclo que viene vuelve a preguntar
 
@@ -359,17 +479,175 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir) -> int:
             t = pathlib.Path(tmp)
             try:
                 clip = bajar(fila["clip_url"], t / "clip.mp4")
-                rotulo = armar_rotulo(fila)
-                musica = None
-                if fila.get("musica"):
-                    musica = bajar(fila["musica"], t / "musica.mp3")
+                rotulo = armar_rotulo(fila, t / "rotulo.png")
+                # La pista se resuelve acá y no se lee de la fila: lo que
+                # el agente escribió en `musica` es una clave del banco
+                # (`street`), no una URL, y `bajar` necesita una URL.
+                #
+                # Y si la pista no baja, el reel sale igual, mudo. No es una
+                # concesión: en este punto el video YA está generado y pagado
+                # —2.640 créditos—, así que dejar caer el montaje por una
+                # canción que falta cambia «un reel sin música» por «ningún
+                # reel y la plata gastada». La nota queda escrita para que se
+                # pueda arreglar y volver a montar.
+                musica, falta_musica = None, ""
+                pista = musica_de_fila(fila)
+                if pista:
+                    try:
+                        musica = bajar(pista, t / "musica.mp3")
+                    except Exception as e:                   # noqa: BLE001
+                        falta_musica = f"sin música: no pude bajar {pista} ({e})"
+                        log.warning("[%s] %s", getattr(cli, "marca", "?"), falta_musica)
                 final = montar(clip, rotulo, musica, t / "reel.mp4",
                                float(fila.get("duracion") or dur))
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
-                        creditos_gastados=fila.get("creditos_estimados"))
+                        creditos_gastados=fila.get("creditos_estimados"),
+                        **({"notas": falta_musica} if falta_musica else {}))
             except Exception as e:                       # noqa: BLE001
                 _marcar(cli, fila["id"], "error", notas=f"al montar: {e}")
         movidas += 1
 
     return movidas
+
+
+# ═══ 4. El enganche con el worker ════════════════════════════════════════════
+#
+# Todo lo de arriba no sabe nada del worker a propósito: recibe `cli`, una ficha
+# y dos funciones. Lo que sigue es lo único que sí lo sabe, y está separado para
+# que el módulo se pueda probar sin levantar el motor entero.
+
+def _ficha(marca: str) -> dict:
+    """El bloque `reels` del `marca.json`, o vacío si la marca no tiene.
+
+    Que esté vacío es la señal de que esta marca NO hace reels, y con eso
+    alcanza para no tocarle la cola. Boss y Clínica no lo tienen: sus bases ni
+    siquiera tienen la tabla `reels`, y aunque `_pendientes` sabe aguantar el
+    404, preguntar cada minuto por algo que se sabe que no existe es ruido en
+    el log de dos clientes para servir a un tercero.
+    """
+    from .disenador import _ficha as ficha_de_marca
+    return (ficha_de_marca(marca) or {}).get("reels") or {}
+
+
+def musica_de(cli, ficha: dict, pedida: str | None) -> str | None:
+    """La URL de la pista, a partir de lo que haya pedido el agente.
+
+    Tres caminos para elegir la clave, y el tercero es el que importa:
+
+    · una URL https entera → se usa tal cual (sirve para probar con una pista
+      suelta sin tocar el banco);
+    · una clave del banco (`street`) → esa;
+    · **nada** → la primera pista del banco.
+
+    Ese último no es una comodidad: es la decisión de que un reel de Stadium
+    SIEMPRE lleva música. Si «sin pedido» quisiera decir «sin música», el reel
+    saldría mudo cada vez que el agente se olvide de nombrarla, y un reel mudo
+    en el feed se lee como un error, no como una elección.
+
+    Y después, dónde está el archivo: **primero en la carpeta de la marca,
+    después en el bucket**. Las dos, y en ese orden, porque resuelven cosas
+    distintas. La carpeta viaja con el despliegue: la pista está el día que se
+    despliega, sin un paso manual que alguien tiene que acordarse de hacer y
+    cuyo olvido recién se descubre al montar un video ya pagado. El bucket deja
+    agregar una pista sin desplegar nada.
+    """
+    banco = ficha.get("musica") or []
+    clave = (pedida or "").strip()
+    if clave.startswith("https://"):
+        return clave
+    if not clave or not any(p.get("clave") == clave for p in banco):
+        # Una clave inventada no se convierte en silencio: se cae al banco. El
+        # agente escribe el nombre de la pista de memoria y se equivoca.
+        if not banco:
+            return None
+        clave = banco[0]["clave"]
+
+    from . import config
+    local = config.RAIZ / ".claude" / "skills" / cli.marca / "musica" / f"{clave}.mp3"
+    if local.exists():
+        return local.as_uri()
+    return f"{cli.url.rstrip('/')}/storage/v1/object/public/disenos/musica/{clave}.mp3"
+
+
+def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path:
+    """El PNG transparente que se monta encima del clip.
+
+    Es la plantilla `campana` en modo `sobre_video`, dibujada al tamaño del
+    reel. O sea: **el rótulo de un reel se hace con el mismo molde que una
+    pieza**, no con un dibujo aparte. Si mañana cambia la tipografía de la
+    marca, cambia también acá y sin tocar este archivo.
+
+    Dos detalles que sin ellos no funciona:
+
+    · `.canvas` viene con `background:#FFFFFF` en la hoja de la marca —lo que
+      corresponde para una pieza— así que hay que pisarlo. Sin eso el
+      `omit_background` de Playwright no sirve de nada: el PNG sale con un
+      rectángulo blanco de 1080×1920 y tapa el video entero.
+    · Es **sync**. Playwright se niega a correr su API sync adentro de un loop
+      de asyncio, y el ciclo del worker es async: hay que entrar por
+      `asyncio.to_thread`, igual que el dibujo de plantillas.
+    """
+    import importlib
+    import sys
+
+    from . import config
+
+    carpeta = config.RAIZ / ".claude" / "skills" / marca
+    sys.path.insert(0, str(carpeta))
+    sys.path.insert(0, str(config.RAIZ))
+    modulo = importlib.import_module("marca")
+
+    from motor import plantillas as mp
+    from playwright.sync_api import sync_playwright
+
+    plantillas = mp.cargar(carpeta, modulo)
+    if "campana" not in plantillas:
+        raise RuntimeError(
+            f"la marca «{marca}» no tiene la plantilla `campana`, que es con la "
+            f"que se dibuja el rótulo de los reels")
+
+    html = plantillas["campana"]({
+        "titulo": fila.get("titulo") or "",
+        "kicker": fila.get("kicker") or "",
+        "bajada": fila.get("bajada") or "",
+        "sobre_video": True,
+        "posicion": "arriba",
+    }, "reel")
+    html += "<style>.canvas{background:transparent !important}</style>"
+
+    with sync_playwright() as p:
+        nav = p.chromium.launch()
+        try:
+            pg = nav.new_page(viewport={"width": 1080, "height": 1920},
+                              device_scale_factor=1)
+            # `file://` y no `set_content` pelado: la plantilla pide las fuentes
+            # y el logo por ruta relativa a la carpeta de la marca, y sin una
+            # URL base el navegador no las encuentra — el rótulo sale con la
+            # tipografía del sistema y nadie se entera hasta ver el reel.
+            tmp = carpeta / f".rotulo-{fila['id']}.html"
+            tmp.write_text(html, encoding="utf-8")
+            try:
+                pg.goto(tmp.as_uri())
+                pg.wait_for_timeout(300)          # que terminen de cargar las fuentes
+                pg.screenshot(path=str(destino), omit_background=True)
+            finally:
+                tmp.unlink(missing_ok=True)
+        finally:
+            nav.close()
+    return destino
+
+
+def atender(cli) -> int:
+    """Los reels de esta corrida para este cliente. Devuelve cuántas filas movió.
+
+    **Es sync y tiene que llamarse con `asyncio.to_thread`**, por Playwright.
+    """
+    ficha = _ficha(cli.marca)
+    if not ficha:
+        return 0
+    return atender_todos(
+        cli, ficha,
+        lambda fila, destino: rotulo(cli.marca, fila, destino),
+        cli.subir,
+        lambda fila: musica_de(cli, ficha, fila.get("musica")))

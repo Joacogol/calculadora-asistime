@@ -461,14 +461,34 @@ gcloud secrets add-iam-policy-binding magnific-api-key \
 unset K
 ```
 
-Y en el worker, enganchar `app/reelero.py:atender_todos` en el ciclo, con
-`MAGNIFIC_CLAVE` en el entorno del job.
+Y montar el secreto en el job, que es lo único que falta después de refrescar
+el código —el enganche en el ciclo ya está escrito en `app/chat.py`—:
+
+```bash
+gcloud run jobs update disenador-worker --region us-central1 \
+  --set-secrets MAGNIFIC_CLAVE=magnific-api-key:latest
+```
+
+Verificá que quedó, que es una línea y evita la peor forma de enterarse (un
+pedido que se muere recién al pedir el video):
+
+```bash
+gcloud run jobs describe disenador-worker --region us-central1 \
+  --format='value(spec.template.spec.template.spec.containers[0].env)' | tr ',' '\n' | grep -i magnific
+```
+
+La música **no hay que subirla**: la pista `street` viaja en el despliegue,
+dentro de `.claude/skills/stadium-disenos/musica/`. El worker la busca ahí
+primero y sólo si no está va al bucket. Para agregar una pista nueva sin
+desplegar, subila al bucket `disenos` bajo `musica/<clave>.mp3` y agregá la
+clave al banco de `marca.json`.
 
 > **El reel se puede probar por partes.** Con `API_CLAVE` puesta y las funciones
 > desplegadas, `crear_reel` ya anota la fila y `estado_reel` contesta
 > «pendiente»: eso prueba el camino agente → tool → función → base, que es
-> donde está casi toda la plomería. El video recién sale cuando el worker esté
-> enganchado.
+> donde está casi toda la plomería. El video recién sale cuando el job tenga
+> `MAGNIFIC_CLAVE`. Sin ella la fila queda en `pendiente` y el log dice
+> exactamente eso: no se gasta nada y no se pierde el pedido.
 
 ### 8 · La prueba
 

@@ -23,7 +23,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import banco, cobro, config, manual, motorista, plantillas, plantillero, publicador
+from . import (banco, cobro, config, manual, motorista, plantillas,
+               plantillero, publicador, reelero)
 from .supa import Cliente
 from .disenador import disenar
 
@@ -227,7 +228,7 @@ async def ciclo():
     # texto viejo cacheado para la siguiente.
     manual.limpiar()
     plantillas.limpiar()
-    hechos = subidos = plantillas_nuevas = propuestas = 0
+    hechos = subidos = plantillas_nuevas = propuestas = reels = 0
     for datos in config.clientes():
         cli = Cliente(**datos)
         if not cli.configurado:
@@ -253,6 +254,22 @@ async def ciclo():
         except Exception:
             log.exception("[%s] falló la cola de plantillas", cli.marca)
 
+        # Los reels van en su propio try y NO son un diseño más, aunque se
+        # pidan por el mismo chat. Un diseño se hace entero adentro de una
+        # corrida; un reel tarda unos cuatro minutos y este proceso vive uno,
+        # así que la fila cruza cuatro o cinco corridas y en cada una avanza un
+        # paso. Por eso acá no se espera nada: se mueve lo que se pueda mover y
+        # el ciclo termina.
+        #
+        # `to_thread` no es adorno: el rótulo se dibuja con la API sync de
+        # Playwright, que se niega a correr adentro de un loop de asyncio, y
+        # este ciclo es async. Sin esto revienta recién con el primer reel de
+        # verdad — cuando el video ya está generado y pagado.
+        try:
+            reels += await asyncio.to_thread(reelero.atender, cli)
+        except Exception:
+            log.exception("[%s] falló la cola de reels", cli.marca)
+
         # Los pedidos de motor van al final y apagados por defecto
         # (MOTORISTA=1 los prende). Lo que dejan es una PROPUESTA para que
         # alguien mire: no despliegan nada. Van últimos porque son lo menos
@@ -268,13 +285,14 @@ async def ciclo():
             except Exception:
                 log.exception("[%s] falló la cola de publicación", cli.marca)
 
-    if not (hechos or subidos or plantillas_nuevas or propuestas):
-        log.info("sin diseños pendientes, plantillas ni publicaciones en cola")
+    if not (hechos or subidos or plantillas_nuevas or propuestas or reels):
+        log.info("sin diseños pendientes, plantillas, reels ni publicaciones "
+                 "en cola")
         return
     dur = (datetime.now(timezone.utc) - inicio).total_seconds()
     log.info("ciclo terminado en %.0fs · %d diseños · %d plantillas · "
-             "%d publicaciones · %d propuestas de motor",
-             dur, hechos, plantillas_nuevas, subidos, propuestas)
+             "%d publicaciones · %d propuestas de motor · %d pasos de reel",
+             dur, hechos, plantillas_nuevas, subidos, propuestas, reels)
 
 
 async def main():

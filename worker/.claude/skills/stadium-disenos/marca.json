@@ -56,7 +56,7 @@
         "descripcion": "Comercial de calle: batería de hip-hop, bajo profundo, sintetizador brillante. Unos 100 BPM. Para producto urbano — championes, buzos, mochilas."
       }
     ],
-    "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una y duran 30 segundos, así que de una pista salen cinco reels de seis segundos. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. Los archivos viven en el bucket bajo `musica/`.",
+    "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una, así que de una pista salen muchos reels. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. El worker busca el archivo PRIMERO en `musica/` de esta carpeta —así viaja con el despliegue y está el día uno, sin un paso manual que alguien tenga que acordarse de hacer— y si no está, en el bucket bajo `musica/`, que es por donde se agrega una pista nueva sin desplegar. Si el agente no nombra ninguna, va la primera de esta lista: un reel de Stadium siempre lleva música.",
     "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
   }
 }
