@@ -1,0 +1,48 @@
+{
+  "_nota": "Los datos que el worker le pasa al agente en el prompt. Es JSON y no un módulo Python a propósito: dos marcas tienen archivos con el mismo nombre (brand.py, templates.py) y no pueden convivir importadas en el mismo proceso. Un archivo de datos no tiene ese problema.",
+  "nombre": "Stadium",
+
+  "_sedes": "Stadium tiene 34 tiendas y NO se listan acá. Esta ficha entra al prompt de CADA pieza, y 34 direcciones con horarios son unos 3 KB que se pagan en todos los diseños para algo que casi ninguna pieza usa: una placa de retail dice «en todas nuestras tiendas», no una dirección. Cuando una pieza sea de una tienda puntual, quien la pide da la dirección. La lista completa vive en stadium.com.uy/sucursales.",
+  "tiendas": 34,
+  "sedes": {
+    "Todas": {
+      "contacto": "2308 0742",
+      "acento": "naranja"
+    }
+  },
+  "sede_por_defecto": "Todas",
+
+  "telefono": "2308 0742",
+  "whatsapp": "+598 93620020",
+  "email": "atencionalcliente@stadium.com.uy",
+  "web": "www.stadium.com.uy",
+  "atencion": "Lunes a viernes de 9:00 a 17:00",
+
+  "formato_por_defecto": "post",
+  "telefono_por_defecto": false,
+  "regla_telefono": "**En la pieza no va el teléfono: va la web.** Stadium vende en 34 tiendas y online, así que el llamado a la acción es siempre `stadium.com.uy` — ya está en la barra de pie de las plantillas y no hay que repetirlo. El teléfono y el WhatsApp son de atención al cliente, no de venta: van sólo si el pedido lo pide con todas las letras.",
+
+  "_precios": "Esta cuenta publica precios y descuentos. Un precio viejo en una placa es un problema en la caja de una tienda, no un error de diseño.",
+  "regla_datos": "**No completes ningún precio, porcentaje ni fecha que no te hayan dado.** Ni el precio anterior, ni el descuento, ni hasta cuándo vale. Si falta, preguntalo. Y ojo con los precios que aparezcan en piezas anteriores: en retail cambian todas las semanas, así que una pieza vieja NO es fuente.",
+  "regla_letra_chica": "**Si el precio tiene una condición, la condición va en la pieza.** «Hasta agotar stock», «no acumulable», «válido hasta el…». Es lo primero que reclama un cliente en el mostrador y lo último que alguien se acuerda de pedir. Cuando el pedido no la traiga, preguntá si la hay antes de dar la pieza por terminada.",
+
+  "_marcas_de_terceros": "Stadium vende adidas, Nike, Umbro, Topper, Converse y otras. Sus logos son de ellas, no nuestros.",
+  "regla_marcas": "**El logo de una marca que no es Stadium sólo se usa si Stadium lo mandó para esta pieza.** No lo saques de internet ni lo redibujes: va en la plantilla `marca`, en el campo `logo_socio`, con el archivo que ellos den. Si el pedido nombra una marca pero no manda su logo, se puede escribir el nombre en texto —el campo `marca` de la plantilla `precio` es justamente para eso— pero no inventar el logo.",
+
+  "campanas": {
+    "Precios de Locos": "La campaña de descuentos recurrente. Va con la plantilla `sale` cuando anuncia la campaña, y con `precio` + el rótulo «PRECIOS DE LOCOS» cuando muestra un producto puntual.",
+    "SALE": "La liquidación de temporada.",
+    "Promo Cumple": "El descuento del mes de cumpleaños del cliente."
+  },
+
+  "_asistime": "Dónde vive el manual que edita Stadium. No es secreto: es un dato de la marca. La clave de API va en la variable que nombra `clave_env`.",
+  "asistime": {
+    "tenant": 176,
+    "documento": 835,
+    "catalogo": 834,
+    "clave_env": "ASISTIME_CLAVE_STADIUM",
+    "clave_secreto": "asistime-api-stadium",
+    "_nota": "`documento` es el manual de marca que edita Stadium. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
+  }
+}

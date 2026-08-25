@@ -127,6 +127,13 @@ En el **SQL Editor del Supabase de Boss**, pegar y ejecutar, en este orden:
 Los tres se pueden correr aunque ya existan: traen `if not exists` y
 `add column if not exists`, así que no rompen nada si se repiten.
 
+> **En un cliente nuevo va uno más, y va primero: `base-de-un-cliente.sql`.**
+> Son las cuatro tablas de las que dependen estas tres (`disenos`, `fotos`,
+> `cuentas_ig`, `publicaciones`), el bucket `disenos` y sus políticas. Boss y
+> Clínica ya las tenían de antes, por eso no aparecen acá arriba. Si se corre
+> `plantilla-pedidos.sql` sin él, falla con `function tocar_actualizado() does
+> not exist` — que es una forma rara de decir «te faltó el primer archivo».
+
 ---
 
 ## 4 · Sembrar las plantillas — una sola vez
@@ -303,6 +310,161 @@ El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
 
 La primera tiene que volver con una pieza en dos o tres minutos; la segunda con
 un preview de una versión nueva, en borrador, en unos dos.
+
+---
+
+## Stadium — el cliente nuevo, de cero
+
+Stadium es el primero que se armó **entero** con la receta, sin nada previo.
+Boss y Clínica ya tenían app, base y usuarios antes de que existiera el motor
+de plantillas; Stadium no tenía nada.
+
+Lo que está hecho —y no hay que repetir:
+
+| | |
+|---|---|
+| Proyecto de Supabase `stadium-disenos` (`heajbidxysjxxegqemka`, sa-east-1) | ✅ |
+| Las 7 tablas, el bucket `disenos` y sus políticas | ✅ |
+| Kit de marca: `brand.py`, `marca.py`, `marca.json`, logo, tipografías | ✅ |
+| 4 plantillas: `precio`, `sale`, `lanzamiento`, `marca` | ✅ |
+| Asistime: tenant 176, agente «Diseñador Stadium», 6 herramientas, 2 documentos | ✅ |
+
+Lo que falta, que es lo que necesita una máquina con `gcloud` y `npx`:
+
+### 1 · Su clave de API
+
+Igual que en Clínica: el valor está escrito en el código de sus herramientas de
+Asistime (tenant 176) y se lee desde ahí. En el panel de Supabase de Stadium →
+*Edge Functions* → *Secrets*, agregar `API_CLAVE` con ese valor. Ojo con el
+formulario: arriba el **nombre**, abajo el **valor**.
+
+### 2 · Sus Edge Functions
+
+```bash
+cd ~/worker
+npx supabase link --project-ref heajbidxysjxxegqemka
+npx supabase functions deploy api-plantillas --no-verify-jwt
+npx supabase functions deploy api-disenos    --no-verify-jwt
+```
+
+Y la prueba de siempre, que no gasta un diseño:
+
+```bash
+U=https://heajbidxysjxxegqemka.supabase.co/functions/v1/api-plantillas
+curl -s -o /dev/null -w "%{http_code}\n" "$U?id=x"                    # 401
+curl -s -o /dev/null -w "%{http_code}\n" -H "x-api-clave: $CLAVE" \
+     "$U?id=00000000-0000-0000-0000-000000000000"                     # 404
+```
+
+### 3 · Las dos claves en Secret Manager
+
+```bash
+read -rs -p "Pegá la service_role key de Stadium y Enter (no se ve): " K; echo
+printf '%s' "$K" | gcloud secrets create supabase-key-stadium --data-file=-
+unset K
+
+read -rs -p "Pegá la clave de Asistime de Stadium y Enter (no se ve): " K; echo
+printf '%s' "$K" | gcloud secrets create asistime-api-stadium --data-file=-
+unset K
+
+for S in supabase-key-stadium asistime-api-stadium; do
+  gcloud secrets add-iam-policy-binding "$S" \
+    --member="serviceAccount:worker-boss-padel@boss-padel-disenos.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" --quiet
+done
+```
+
+### 4 · Sumarlo a `clientes.json`
+
+`clientes.json` no está en este repo —tiene claves— así que se edita en
+`~/worker`. La entrada de Stadium:
+
+```json
+{
+  "marca":   "stadium-disenos",
+  "nombre":  "Stadium",
+  "url":     "https://heajbidxysjxxegqemka.supabase.co",
+  "key_env": "SUPABASE_KEY_STADIUM",
+  "secreto": "supabase-key-stadium"
+}
+```
+
+Los cinco campos son los que lee `clientes.py`, y **`nombre` no es opcional**:
+sin él, `clientes.py json` corta con un `KeyError` en medio del despliegue.
+Para comprobar que quedó bien, antes de desplegar:
+
+```bash
+python3 clientes.py marcas          # tienen que aparecer los tres
+python3 clientes.py run-secrets     # y sus tres secretos
+python3 clientes.py asistime        # una línea por cliente con su clave
+```
+
+### 5 · Sembrarle sus plantillas y publicar el catálogo
+
+```bash
+export MARCA=stadium-disenos
+export BUCKET=disenos
+export SUPABASE_URL=https://heajbidxysjxxegqemka.supabase.co
+export SUPABASE_KEY="$(gcloud secrets versions access latest --secret=supabase-key-stadium)"
+
+python3 herramientas/sembrar-plantillas.py stadium-disenos --probar
+python3 herramientas/sembrar-plantillas.py stadium-disenos
+
+ASISTIME_CLAVE_STADIUM="$(gcloud secrets versions access latest --secret=asistime-api-stadium)" \
+  python3 herramientas/publicar-catalogo.py stadium-disenos --probar
+```
+
+Tienen que ser **cuatro** plantillas. Sacale el `--probar` al último si lo que
+lista tiene sentido.
+
+### 6 · Volver a desplegar
+
+```bash
+./desplegar-chat.sh
+```
+
+Recorre los clientes solo: ve a Stadium en `clientes.json`, encuentra sus dos
+secretos ya creados y no pregunta nada.
+
+### 7 · La prueba
+
+El agente es **Diseñador Stadium**. Probá con las dos cosas:
+
+> «Una placa de championes adidas Runfalcon a $3.490, antes $4.990, hasta
+> agotar stock.»
+
+> «En la plantilla precio el nombre del producto se ve chico, agrandalo.»
+
+---
+
+## La receta, cuando venga el cliente número cuatro
+
+El orden importa y no es obvio, así que queda escrito:
+
+1. **Supabase**: proyecto nuevo, y en su SQL Editor `base-de-un-cliente.sql`,
+   después `plantillas.sql`, `plantilla-pedidos.sql` y `motor-pedidos.sql`.
+   El primero tiene que ir primero: los otros tres usan una función que define
+   él (`tocar_actualizado`).
+2. **Kit de marca** en `.claude/skills/<marca>-disenos/`: `brand.py` (colores,
+   CSS y ayudantes), `marca.py` (el contrato del motor), `marca.json` (los
+   datos que van al prompt), `SKILL.md`, `assets/`, `fonts/` y las plantillas.
+3. **Asistime**: tenant, aplicación con permisos de documento, clave de API,
+   los dos documentos (manual de marca y catálogo), las herramientas y el
+   agente.
+4. **Las claves**: `API_CLAVE` en los secretos de sus Edge Functions,
+   `supabase-key-<marca>` y `asistime-api-<marca>` en Secret Manager. Los
+   nombres de las dos últimas los declara su `marca.json`.
+5. **Sembrar, publicar el catálogo, desplegar.**
+
+Dos cosas que se aprendieron con Stadium y valen para el que sigue:
+
+- **La clave de Asistime es por tenant.** La de otro cliente contesta `403`. No
+  se comparte ni por un rato.
+- **Comparar la base nueva contra la de referencia, no mirarla.** Se sacó una
+  huella de columnas, políticas, triggers, índices, reglas y funciones de
+  Clínica y de Stadium, y se compararon. Cuatro de cinco daban igual: la que no
+  eran las claves foráneas, a las que les faltaba el `on delete`. Sin esa
+  comparación, eso aparecía el día que alguien borrara un usuario y no pudiera.
 
 ---
 

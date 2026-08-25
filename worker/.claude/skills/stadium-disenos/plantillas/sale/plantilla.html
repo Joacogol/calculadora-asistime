@@ -1,0 +1,45 @@
+{#- La de impacto: naranja pleno y el porcentaje ocupando la pieza. Es la única
+    de la marca que invierte el fondo, y por eso es la única donde el logo va
+    en blanco. -#}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 22 else (m.titulo * 0.74 if t <= 40 else m.titulo * 0.56) -%}
+
+<div class="scrim" style="background:{{ ac }}"></div>
+
+{#- La S de agua. Sale del propio logotipo, gigante y apenas más clara que el
+    fondo: da textura sin agregar un elemento que la marca no tenga. -#}
+<div style="position:absolute;right:-{{ m.alto * 0.22 }}px;bottom:-{{ m.alto * 0.16 }}px;
+  opacity:.10">{{ iso(m.alto / 96 * 0.78, '#FFFFFF') }}</div>
+
+<div class="pad" style="padding:{{ m.pad }}px">
+  {{ logo(m.logo, '#FFFFFF') }}
+
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;
+    min-height:0;padding:{{ m.pad * 0.5 }}px 0">
+    {% if d.kicker %}
+    <div class="kicker" style="color:#FFFFFF;opacity:.85;font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 0.9 }}px">{{ d.kicker }}</div>
+    {% endif %}
+
+    <div class="disp-x" style="color:#FFFFFF;font-size:{{ cuerpo }}px">{{ d.titulo }}</div>
+
+    {% if d.hasta %}
+    <div style="display:flex;align-items:flex-start;gap:{{ m.hasta * 0.14 }}px;
+      color:#FFFFFF;margin-top:{{ m.hasta * 0.28 }}px">
+      <span class="kicker" style="font-size:{{ m.hasta * 0.2 }}px;
+        padding-top:{{ m.hasta * 0.16 }}px">HASTA</span>
+      {{ descuento(d.hasta, cuerpo=m.hasta) }}
+    </div>
+    {% endif %}
+
+    {% if d.bajada %}
+    <div class="body" style="color:#FFFFFF;opacity:.92;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 0.9 }}px;max-width:88%">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if d.pie %}
+  <div class="legal" style="color:#FFFFFF;opacity:.72;font-size:{{ m.legal }}px;
+    max-width:92%">{{ d.pie }}</div>
+  {% endif %}
+</div>

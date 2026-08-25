@@ -1,0 +1,61 @@
+{#- El nombre baja de cuerpo en dos escalones. Los números están acá, a la
+    vista, y no escondidos en una función: `verificar-motor.py` los lee del
+    HTML y dibuja la pieza justo en cada borde, así la banda del medio no se
+    queda sin probar. -#}
+{%- set n = d.nombre|length -%}
+{%- set cuerpo = m.nombre if n <= 34 else (m.nombre * 0.78 if n <= 58 else m.nombre * 0.62) -%}
+
+<div class="pad">
+  <div style="padding:{{ m.pad }}px {{ m.pad }}px 0;display:flex;align-items:flex-start;
+    justify-content:space-between;gap:28px">
+    {{ logo(m.logo) }}
+    {% if d.etiqueta %}<div style="flex:none;max-width:52%;text-align:right">
+      {{ pastilla(d.etiqueta, cuerpo=m.pastilla) }}</div>{% endif %}
+  </div>
+
+  {#- La foto tiene altura PROPIA, no lo que sobra. Con `flex:1` un nombre de
+      dos líneas le comía la mitad y el producto quedaba de estampilla: en una
+      pieza de retail el producto es la mitad del mensaje y no puede depender
+      de cuánto escribió alguien abajo. -#}
+  <div style="height:{{ m.foto }}px;flex:none;padding:{{ m.pad * 0.45 }}px {{ m.pad }}px 0">
+    <img class="prod" src="{{ d.foto }}">
+  </div>
+
+  <div class="grow" style="min-height:0"></div>
+
+  <div style="padding:0 {{ m.pad }}px {{ m.pad * 0.8 }}px">
+    {% if d.marca %}
+    <div class="kicker" style="color:{{ c.gris }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 0.55 }}px">{{ d.marca }}</div>
+    {% endif %}
+
+    <div class="disp" style="color:{{ c.tinta }};font-size:{{ cuerpo }}px">{{ d.nombre }}</div>
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;
+      gap:{{ m.pad * 0.4 }}px;margin-top:{{ cuerpo * 0.4 }}px">
+      <div style="display:flex;align-items:baseline;gap:{{ m.precio * 0.14 }}px;
+        min-width:0;flex:1;overflow:hidden">
+        {#- El precio no se ajusta al alto de línea: se recorta al ancho. Un
+            precio de más de doce caracteres no existe, y si llega uno es un
+            dato mal cargado — mejor que se vea cortado y alguien lo arregle,
+            a que empuje el descuento fuera de la pieza. -#}
+        <span class="precio" style="color:{{ c.tinta }};font-size:{{ m.precio }}px;
+          white-space:nowrap;overflow:hidden;text-overflow:clip">{{ d.precio }}</span>
+        {% if d.precio_antes %}
+        <span class="tachado body" style="color:{{ c.gris }};white-space:nowrap;
+          font-size:{{ m.precio * 0.3 }}px">{{ d.precio_antes }}</span>
+        {% endif %}
+      </div>
+      {% if d.descuento %}
+      <div style="flex:none">{{ descuento(d.descuento, cuerpo=m.precio * 0.62, color=ac) }}</div>
+      {% endif %}
+    </div>
+
+    {% if d.pie %}
+    <div class="legal" style="color:{{ c.gris }};font-size:{{ m.legal }}px;
+      margin-top:{{ m.legal * 1.05 }}px">{{ d.pie }}</div>
+    {% endif %}
+  </div>
+
+  {{ barra(m.barra, ac) }}
+</div>
