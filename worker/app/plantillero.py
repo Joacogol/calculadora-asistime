@@ -375,36 +375,51 @@ def _guardar(cli, slug: str, html: str, contrato: dict, etiqueta: str,
     return r.json()["version"]
 
 
-def _bajar_publicada(cli, slug: str) -> tuple[str, dict] | None:
-    """La versión EN USO de una plantilla, para editarla en vez de rehacerla.
+def _ultima(cli, slug: str) -> tuple[str, dict] | None:
+    """La versión más reciente de una plantilla, para editarla en vez de rehacerla.
 
-    Busca en dos lados y en este orden, que es el mismo que usa el motor para
-    decidir qué dibuja:
+    Busca en tres lados, en este orden:
 
-    1. la base, donde está la versión publicada;
-    2. el disco, donde está la que trajo el despliegue.
+    1. la publicada en la base — la que están usando las piezas;
+    2. la última de la base aunque NO esté publicada — el borrador que alguien
+       acaba de ver y sobre el que está pidiendo cambios;
+    3. el disco, donde está la que trajo el despliegue.
 
-    El segundo paso no es un plan B: es el caso normal de una plantilla que
-    nadie tocó todavía. La base sólo tiene las que alguien publicó desde que
-    existe la tabla; las otras once de Boss viven en el despliegue y son
-    igual de reales. Sin este paso, pedir «a la de torneos hacele el título
-    más grande» terminaría escribiendo una plantilla nueva parecida a torneo
-    —que es exactamente lo que corregir vino a evitar— sólo porque todavía no
-    la sembró nadie.
+    Ninguno de los tres es un plan B. El (3) es el caso normal de una plantilla
+    que nadie tocó: la base sólo tiene las que alguien guardó desde que existe
+    la tabla, y las once de Boss que vinieron en el despliegue son igual de
+    reales.
+
+    El (2) es el caso MÁS frecuente y el que faltaba. La conversación real es
+    «armame una plantilla» → se mira el preview → «cambiale esto». En ese
+    momento la plantilla existe, está en la base, y no está publicada — porque
+    publicar es justamente lo que la persona todavía no decidió. Buscando sólo
+    la publicada, ese pedido caía a rehacerla de cero: con el modelo caro, en
+    ocho minutos en vez de dos, y perdiendo las decisiones de la versión que la
+    persona acababa de aprobar a medias. Se vio pasar en producción.
     """
-    try:
-        r = requests.get(
-            cli._url("plantillas"), headers=cli._cab(), timeout=30,
-            params={"plantilla": f"eq.{slug}", "publicada": "is.true",
-                    "select": "html,contrato", "limit": "1"})
+    for params, como in (
+        ({"plantilla": f"eq.{slug}", "publicada": "is.true",
+          "select": "html,contrato", "limit": "1"}, "la publicada"),
+        ({"plantilla": f"eq.{slug}", "order": "version.desc",
+          "select": "html,contrato,version,publicada", "limit": "1"}, "la última"),
+    ):
+        try:
+            r = requests.get(cli._url("plantillas"), headers=cli._cab(),
+                             timeout=30, params=params)
+        except requests.RequestException as e:
+            # Que la base no conteste no tiene por qué impedir corregir: el
+            # disco tiene una versión buena. Se anota y se sigue.
+            log.warning("[%s] no pude consultar «%s» en la base (%s); "
+                        "voy al disco", cli.marca, slug, e)
+            break
         if r.status_code == 200 and r.json():
             f = r.json()[0]
+            if "version" in f:
+                log.info("[%s] corrijo «%s» sobre %s (v%s, %s)", cli.marca,
+                         slug, como, f["version"],
+                         "publicada" if f.get("publicada") else "borrador")
             return f["html"], f["contrato"]
-    except requests.RequestException as e:
-        # Que la base no conteste no tiene por qué impedir corregir: el disco
-        # tiene una versión buena. Se anota y se sigue.
-        log.warning("[%s] no pude consultar «%s» en la base (%s); voy al disco",
-                    cli.marca, slug, e)
 
     d = _skill(cli.marca) / "plantillas" / slug
     j, h = d / "plantilla.json", d / "plantilla.html"
@@ -594,7 +609,7 @@ async def atender(cli, pedido: dict) -> bool:
         # diferencia no es el prompt: es que el que corrige no lee
         # referencias, no inventa el contrato, y dibuja para verificar en vez
         # de para descubrir.
-        anterior = _bajar_publicada(cli, pedido["corrige"]) if pedido.get("corrige") else None
+        anterior = _ultima(cli, pedido["corrige"]) if pedido.get("corrige") else None
         modelo = MODELO
         if anterior:
             modelo = MODELO_CORRECCION
@@ -610,10 +625,13 @@ async def atender(cli, pedido: dict) -> bool:
                      cli.marca, pedido["corrige"])
         else:
             if pedido.get("corrige"):
-                # Pidieron corregir algo que no está publicado. Se arma de
-                # nuevo y se dice, en vez de fallar: el pedido es válido.
-                log.warning("[%s] «%s» no está publicada: la armo de cero",
-                            cli.marca, pedido["corrige"])
+                # Pidieron corregir algo que no aparece por ningún lado: ni
+                # publicada, ni en la base sin publicar, ni en el disco. Se
+                # arma de cero y se dice, en vez de fallar: lo más probable es
+                # que el agente haya inventado el id, y el pedido en sí es
+                # bueno igual.
+                log.warning("[%s] no encuentro «%s» en ningún lado: la armo "
+                            "de cero", cli.marca, pedido["corrige"])
             prompt = PROMPT.format(
                 marca=nombre, nombre_marca=cli.marca,
                 pedido=pedido["mensaje"], skill=carpeta, borrador=BORRADOR,
