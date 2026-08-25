@@ -105,6 +105,13 @@
       "nota": "Opcional. Con foto, el título va encima en BLANCO y con un velo medido contra esa foto. Conviene una foto de ambiente o de uso: una de catálogo sobre fondo blanco obliga a un velo tan grande que la pieza sale gris. Sin foto, sale sobre el color de la campaña — que es como está la mitad de las piezas reales."
     },
     {
+      "id": "sobre_video",
+      "tipo": "si_no",
+      "etiqueta": "¿Va encima de un video?",
+      "default": false,
+      "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba. Y respeta `posicion`: sin foto la pieza se centra sola, pero acá el video ocupa el lugar de la foto y el título tiene que ir arriba."
+    },
+    {
       "id": "foco",
       "tipo": "texto",
       "etiqueta": "Foco de la foto",

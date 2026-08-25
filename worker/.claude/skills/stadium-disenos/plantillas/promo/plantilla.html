@@ -20,7 +20,7 @@
 <div style="position:absolute;right:-{{ m.alto * 0.10 }}px;bottom:-{{ m.alto * 0.08 }}px;
   opacity:.09">{{ iso(m.alto / 96 * 0.44, pal.tinta) }}</div>
 
-<div class="pad" style="padding:{{ m.pad }}px;text-align:center;align-items:center">
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};text-align:center;align-items:center">
   {#- Sin foto el bloque se centra: si no, el título queda arriba, la letra
       chica abajo y media pieza naranja vacía en el medio. -#}
   {% if not d.foto %}<div class="grow"></div>{% endif %}

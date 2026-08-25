@@ -37,7 +37,7 @@
 
 <img class="bg" src="{{ d.foto }}" style="object-position:50% 40%">
 
-<div class="pad" style="padding:{{ m.pad }}px">
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
   {% if d.titulo %}
   <div style="display:flex;justify-content:{{ 'center' if cen else ('flex-end' if der else 'flex-start') }}">
     <div style="text-align:{{ 'center' if cen else ('right' if der else 'left') }}">

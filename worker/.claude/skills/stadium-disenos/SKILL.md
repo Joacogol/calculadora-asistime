@@ -123,6 +123,67 @@ pide un carrusel, que es mejor que un carrusel que sale mal.
 los subtítulos quemados— y el motor hoy sólo arma reels de rótulos sobre
 imagen. Existe un pack de edición de reels hablados que resuelve justo eso.
 
+## Reels: las zonas que Instagram tapa
+
+Un reel no se ve entero: Instagram le dibuja su interfaz encima. Lo que caiga
+ahí queda **tapado** —no recortado: tapado, o sea que el archivo se ve perfecto
+y en el teléfono no se lee—, que es la forma más difícil de detectar un error.
+
+| | reel | story |
+|---|---|---|
+| arriba | 250 px | 250 px |
+| abajo | 420 px | 250 px |
+| derecha | 144 px | 60 px |
+| izquierda | 60 px | 60 px |
+
+Las cinco plantillas usaban entre 72 y 92 px de margen y **las cinco invadían,
+en los dos formatos**. Ahora el margen sale de `pad_seguro(fmt, m.pad)`, que
+nunca achica: si la plantilla pedía más, gana la plantilla.
+
+### El rótulo sobre un clip
+
+`campana` con `sobre_video: true` sale **sin fondo**, para montarse encima de
+un video: título en blanco, sombra, y un degradado suave arriba en vez de un
+velo entero. Y respeta `posicion` —sin foto la pieza se centra sola, pero acá
+el video ocupa el lugar de la foto y el título va arriba—.
+
+```bash
+ffmpeg -t 5 -i clip.mp4 -i rotulo.png \
+  -filter_complex "[0:v]scale=1080:1920:flags=lanczos,fade=t=out:st=4.5:d=0.5[v];[v][1:v]overlay=0:0[out]" \
+  -map "[out]" -map 0:a -af "afade=t=out:st=4.5:d=0.5" \
+  -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -r 24 \
+  -c:a aac -b:a 192k -movflags +faststart reel.mp4
+```
+
+## Video por IA: qué aguanta y qué no
+
+Se probó con Seedance 2.5 y la SK8-Hi negra del catálogo de Stadium: 8 s, 9:16,
+tres planos —el pie entra, se calza, camina—. Resultado medido mirando los
+cuadros:
+
+- **Los planos quietos (0–5 s) salieron fieles.** Silueta, suela, etiqueta roja
+  del talón: todo en su lugar. Sirven para publicar.
+- **Los planos de caminata (5–8 s) deformaron el producto.** La caña alta
+  desapareció —la zapatilla se lee como una baja— y la suela cambió a color
+  goma, que en la negra total no existe.
+- **La acción pedida no ocurrió.** El pie nunca se calza la zapatilla: está al
+  lado durante cinco segundos y después hay un corte donde ya la tiene puesta.
+  Estos modelos saltean la manipulación fina.
+
+De ahí, tres reglas para el próximo:
+
+1. **Movimiento del producto, no manipulación del producto.** Una cámara que
+   gira alrededor de una zapatilla quieta sale bien; una mano o un pie que la
+   agarra, la calza o la ata, no.
+2. **Mirar los cuadros, no el primer cuadro.** El primer cuadro salió perfecto
+   y el problema estaba en el segundo 6.
+3. **Cuanto más liso el producto, mejor aguanta.** El negro total sobrevivió
+   más que lo que habría sobrevivido una franja blanca sobre negro.
+
+Y un detalle de formato: **pedimos 1080p y el clip vino en 608×1080.** Para
+publicar hay que escalar. Magnific tiene `video_upscale`; el escalado por
+software alcanza para mirar, no para publicar.
+
 ## Que el texto se lea: lo que se midió
 
 Sobre foto, el texto blanco «se perdía un poco». Medido con

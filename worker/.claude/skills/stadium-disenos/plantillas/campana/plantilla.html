@@ -21,7 +21,7 @@
     del Padre sobre una foto de catálogo en fondo blanco no llega a contraste
     ni con el velo al máximo, y la pieza sale gris y lavada. El color de la
     campaña se queda para los fondos planos, que es donde luce. -#}
-{%- if d.foto and not d.tinta -%}
+{%- if (d.foto or d.sobre_video) and not d.tinta -%}
   {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco) -%}
 {%- endif -%}
 {#- Sobre foto, además del velo va sombra en el texto. El velo se calcula con
@@ -30,12 +30,12 @@
     real: mediana 8,85:1, peor punto 1,98:1. La sombra es local y arregla ese
     peor punto sin oscurecer la foto entera. Sobre fondo plano NO va: ahí no
     hay nada de qué defenderse y se notaría. -#}
-{%- set sombra = sombra_texto() if d.foto else '' -%}
+{%- set sombra = sombra_texto() if (d.foto or d.sobre_video) else '' -%}
 {#- El texto chico lleva MÁS sombra, no menos. La sombra se dibuja alrededor
     del trazo, así que a 104 px de titular tapa un halo ancho y a 32 px de
     bajada tapa una línea fina: al mismo valor, el texto chico queda mucho más
     desprotegido justo cuando es el que más contraste necesita (4,5 contra 3). -#}
-{%- set sombra_chica = sombra_texto(1.6) if d.foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if (d.foto or d.sobre_video) else '' -%}
 {%- set t = d.titulo|length -%}
 {%- set cuerpo = m.titulo if t <= 26 else (m.titulo * 0.76 if t <= 48 else m.titulo * 0.58) -%}
 {%- set centrado = d.alineacion == 'centro' -%}
@@ -58,6 +58,11 @@
     diferencia entre 2,48:1 y 4,9:1 en la bajada, y no se nota en la foto. -#}
 <div class="scrim" style="background:{{ degrade([plan.velo, 0.36]|max, 0.78) }};
   transform:rotate(180deg)"></div>
+{% elif d.sobre_video %}
+{#- SOBRE VIDEO: la pieza sale sin fondo, para montarse encima de un clip.
+    No lleva velo entero —taparía el video— sino un degradado suave arriba,
+    que es donde está el texto. El resto queda limpio. -#}
+<div class="scrim" style="background:{{ degrade(0.42, 0.72) }};transform:rotate(180deg)"></div>
 {% else %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% endif %}
@@ -66,13 +71,13 @@
     lugar abajo al producto o a la persona; cuando no hay ninguno de los dos,
     respetarla al pie de la letra deja media pieza vacía y el logo solo al
     fondo. Eso no es una pieza de Stadium, es una pieza sin terminar. -#}
-{%- set pos = d.posicion if d.foto else ('abajo' if d.posicion == 'abajo' else 'centro') -%}
+{%- set pos = d.posicion if (d.foto or d.sobre_video) else ('abajo' if d.posicion == 'abajo' else 'centro') -%}
 {#- El alto se reparte con espaciadores y NO con \`justify-content\`: abajo hay
     un bloque fijo (logo y letra chica) que tiene que quedar pegado al borde,
     y en cuanto uno de estos espaciadores existe, \`justify-content\` deja de
     hacer efecto. Con dos espaciadores el título queda donde se pidió y el pie
     no se mueve nunca. -#}
-<div class="pad" style="padding:{{ m.pad }}px;
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
   align-items:{{ 'center' if centrado else 'flex-start' }};
   text-align:{{ 'center' if centrado else 'left' }}">
 

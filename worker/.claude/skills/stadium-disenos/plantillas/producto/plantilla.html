@@ -18,7 +18,7 @@
 {%- set plan = plan_titular(d.foto, ac, c.negro, (0.72, 1.0), 4.5, 3.0) -%}
 <div class="scrim" style="background:{{ degrade(plan.velo * 0.85, 0.34) }}"></div>
 
-<div class="pad" style="padding:{{ m.pad }}px">
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
   <div class="grow"></div>
   <div class="row" style="align-items:flex-end">
     <div>

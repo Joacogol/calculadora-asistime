@@ -351,3 +351,39 @@ def sombra_texto(fuerza=1.0):
             f"0 1px 2px rgba(0,0,0,{.42 * f:.2f}),"
             f"0 2px 10px rgba(0,0,0,{.40 * f:.2f}),"
             f"0 4px 30px rgba(0,0,0,{.34 * f:.2f});")
+
+
+# ═══ Las zonas que Instagram tapa ════════════════════════════════════════════
+#
+# Un reel y una story no se ven enteros: Instagram les dibuja su interfaz
+# encima. Arriba el nombre de la cuenta, abajo el epígrafe y la música, y a la
+# derecha la columna de corazones y comentarios. Lo que caiga ahí queda tapado
+# —no recortado: TAPADO, o sea que el archivo se ve perfecto y en el teléfono
+# no se lee—, que es la forma más difícil de detectar un error de diseño.
+#
+# Se comprobó: las cinco plantillas de Stadium usaban entre 72 y 92 px de
+# margen en story y reel, contra los 250 que hacen falta arriba y los 420 de
+# abajo en un reel. Las cinco invadían, en los dos formatos.
+#
+# Los números salen de un pack de edición de reels probado en piezas
+# publicadas. Reel y story NO son iguales: el reel tiene el epígrafe y la
+# música abajo (420 px) y la columna de botones a la derecha (144); la story
+# tiene la barra de responder, bastante más baja.
+ZONAS_SEGURAS = {
+    "reel":  {"arriba": 250, "abajo": 420, "izquierda": 60, "derecha": 144},
+    "story": {"arriba": 250, "abajo": 250, "izquierda": 60, "derecha": 60},
+}
+
+
+def pad_seguro(fmt, pad):
+    """El `padding` de la pieza, respetando lo que Instagram tapa en ese formato.
+
+    Devuelve el margen normal en `post` y `vert` —ahí no hay interfaz encima— y
+    en `story` y `reel` empuja cada lado hasta la zona segura. Nunca achica: si
+    la plantilla pedía más margen del que exige Instagram, gana la plantilla.
+    """
+    z = ZONAS_SEGURAS.get(fmt)
+    if not z:
+        return f"{pad}px"
+    return (f"{max(pad, z['arriba'])}px {max(pad, z['derecha'])}px "
+            f"{max(pad, z['abajo'])}px {max(pad, z['izquierda'])}px")
