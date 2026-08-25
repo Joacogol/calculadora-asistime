@@ -30,9 +30,9 @@ en el repo del worker. Hay que traerlo y copiarlo:
 
 ```bash
 # 1. traer el código nuevo, a donde sea
-git clone https://github.com/Joacogol/calculadora-asistime /tmp/nuevo
-cd /tmp/nuevo
-git checkout claude/asistime-auto-designs-agent-waais0
+rm -rf /tmp/nuevo
+git clone -b claude/asistime-auto-designs-agent-waais0 \
+  https://github.com/Joacogol/calculadora-asistime /tmp/nuevo
 
 # 2. copiarlo sobre el repo del worker
 cd /ruta/al/repo/del/worker
@@ -44,9 +44,18 @@ cp -r /tmp/nuevo/worker/funciones    .
 cp -r /tmp/nuevo/worker/estudio      .
 cp    /tmp/nuevo/worker/*.sql /tmp/nuevo/worker/*.md .
 cp    /tmp/nuevo/worker/requirements.txt .
+cp    /tmp/nuevo/worker/clientes.py /tmp/nuevo/worker/desplegar-chat.sh .
+chmod +x desplegar-chat.sh
 
 pip install jinja2
 ```
+
+**`clientes.py` y `desplegar-chat.sh` van en la lista, y faltaban.** El
+despliegue no es sólo el código que corre en el job: los pasos previos —qué
+secretos pedir, cuáles montar— viven en esos dos archivos. Cuando cambia un
+paso del despliegue y no se copian, pasa lo peor: el script viejo corre sin
+error, dice «Listo», y lo que se desplegó no tiene lo nuevo. Pasó con la clave
+de Magnific.
 
 `plantilla-generada/` **no se copia**: es documentación —una plantilla de
 ejemplo con sus previews— y no forma parte del worker.
