@@ -24,16 +24,40 @@ create table if not exists public.motor_pedidos (
   resumen        text not null,
   parte          text,
   quien          text,
-  -- Qué pasó con el pedido. Arranca `anotado` y lo mueve una persona:
-  -- `en_curso` cuando alguien lo agarra, `hecho` cuando salió, `descartado`
-  -- cuando se decidió que no va. Que exista `descartado` importa: un pedido que
-  -- se decidió no hacer es información, y hoy se pierde.
+  -- Qué pasó con el pedido. Arranca `anotado`. Si el motorista está prendido
+  -- lo toma (`generando`) y deja una propuesta (`propuesto`) o se cae
+  -- (`error`); de ahí en adelante lo mueve una persona: `en_curso` cuando
+  -- alguien lo agarra, `hecho` cuando salió, `descartado` cuando se decidió
+  -- que no va. Que exista `descartado` importa: un pedido que se decidió no
+  -- hacer es información, y hoy se pierde.
   estado         text not null default 'anotado',
   nota           text,
+  -- ── Lo que deja el motorista ────────────────────────────────────────────
+  -- Una PROPUESTA, no un despliegue: el parche en formato diff, las imágenes
+  -- que dibujó para mostrar que anda, y lo que quiera contar de lo que hizo.
+  -- Nadie las aplica solo — para eso está `en_curso`, que lo pone una persona.
+  parche         text,
+  evidencia      jsonb,
+  notas          text,
+  metricas       jsonb default '{}'::jsonb,
   constraint motor_estado_valido
-    check (estado in ('anotado','en_curso','hecho','descartado')),
+    check (estado in ('anotado','generando','propuesto',
+                      'en_curso','hecho','descartado','error')),
   constraint motor_resumen_no_vacio check (length(trim(resumen)) >= 10)
 );
+
+-- Para una base que ya tenía la tabla de antes del motorista. Sin esto, el
+-- motorista escribe en columnas que no existen y el pedido queda `generando`
+-- para siempre — que fue exactamente lo que pasó la primera vez.
+alter table public.motor_pedidos add column if not exists parche    text;
+alter table public.motor_pedidos add column if not exists evidencia jsonb;
+alter table public.motor_pedidos add column if not exists notas     text;
+alter table public.motor_pedidos add column if not exists metricas  jsonb default '{}'::jsonb;
+
+alter table public.motor_pedidos drop constraint if exists motor_estado_valido;
+alter table public.motor_pedidos add  constraint motor_estado_valido
+  check (estado in ('anotado','generando','propuesto',
+                    'en_curso','hecho','descartado','error'));
 
 create index if not exists motor_pedidos_estado_idx
   on public.motor_pedidos (estado, creado_en desc);

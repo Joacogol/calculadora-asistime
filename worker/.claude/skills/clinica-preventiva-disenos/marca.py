@@ -29,6 +29,7 @@ import presentacion                                                          # n
 # Python quede intacto.
 from templates import _pie as pie, _sedes as sedes                          # noqa: F401
 from templates import _titular as titular                                   # noqa: F401
+from templates import _titular_sobre_foto as titular_sobre_foto             # noqa: F401
 #: Cuánto cuerpo tipográfico le entra al titular. Se llama así y no `cuerpo`
 #: porque `d.cuerpo` es un campo de texto en varias plantillas y dentro del
 #: HTML los dos nombres se confundirían.

@@ -123,21 +123,33 @@ def _ayudas(marca, raiz):
               and n not in RESERVADAS
               and callable(getattr(marca, n, None))}
 
-    def _plan_titular(foto, acento, oscuro, zona):
+    def _plan_titular(foto, acento, oscuro, zona,
+                      objetivo_blanco=4.0, objetivo_acento=3.0):
         """Cuánto contraste hay en la franja donde cae el titular.
 
         Vive acá y no en la plantilla porque medir una foto le sirve a
         cualquier marca. La plantilla decide qué hacer con la respuesta; el
         motor la calcula. Las rutas del spec son relativas a la carpeta de la
         marca, así que se resuelven contra `raiz`.
+
+        Los objetivos son parámetros porque cada marca elige su listón: Boss
+        se conforma con 4,0 sobre blanco y Clínica pide 4,5. Los valores por
+        defecto son los de `legibilidad.plan_titular`, así que una llamada que
+        no los pasa —las de Boss— se comporta exactamente igual que antes.
         """
         ruta = pathlib.Path(foto)
         if not ruta.is_absolute():
             ruta = pathlib.Path(raiz) / ruta
         return legibilidad.plan_titular(str(ruta), acento, oscuro=oscuro,
-                                        zona=tuple(zona))
+                                        zona=tuple(zona),
+                                        objetivo_blanco=objetivo_blanco,
+                                        objetivo_acento=objetivo_acento)
 
     ayudas["plan_titular"] = _plan_titular
+    # El degradé que entrega el velo medido justo donde arranca el texto. Va
+    # de la mano de `plan_titular` —uno mide y el otro dibuja lo medido— y es
+    # igual de agnóstico de marca, así que vive en el mismo lugar.
+    ayudas["degrade"] = legibilidad.degrade
     return ayudas
 
 
@@ -240,13 +252,13 @@ Mostráselo a la persona, y recién si le gusta, `publicar_plantilla`.
 
 ## Si una de esta lista está mal
 
-Cuando lo que piden es cambiar una que ya existe —«el título de torneo se ve
-chico», «que resultados muestre también la sede»— usá **la misma
+Cuando lo que piden es cambiar una que ya existe —«el título de esa plantilla
+se ve chico», «que muestre también la dirección»— usá **la misma
 `crear_plantilla`, pero con `corrige`** y el id de esa plantilla, tal cual
 figura arriba.
 
-Es la diferencia entre corregir la plantilla que el club usa y reemplazarla por
-otra parecida. Rehaciéndola se pierden los campos que alguien ya venía
+Es la diferencia entre corregir la plantilla que se está usando y reemplazarla
+por otra parecida. Rehaciéndola se pierden los campos que alguien ya venía
 mandando y las decisiones que nadie escribió. Además sale en la mitad del
 tiempo.
 
