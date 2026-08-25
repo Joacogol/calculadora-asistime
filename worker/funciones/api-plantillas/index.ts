@@ -141,6 +141,8 @@ function limpiarPng(b: Uint8Array): Uint8Array | null {
 
 function limpiarWebp(b: Uint8Array): Uint8Array | null {
   const partes = [b.subarray(0, 12)];
+  let flags = -1;            // dónde cae el byte de banderas en la salida
+  let escritos = 12;
   let i = 12;
   while (i + 8 <= b.length) {
     const dv = new DataView(b.buffer, b.byteOffset + i, 8);
@@ -148,10 +150,34 @@ function limpiarWebp(b: Uint8Array): Uint8Array | null {
     const largo = dv.getUint32(4, true);
     const fin = i + 8 + largo + (largo % 2);
     if (fin > b.length) return null;
-    if (tipo !== "EXIF" && tipo !== "XMP ") partes.push(b.subarray(i, fin));
+    if (tipo !== "EXIF" && tipo !== "XMP ") {
+      if (tipo === "VP8X") flags = escritos + 8;
+      partes.push(b.subarray(i, fin));
+      escritos += fin - i;
+    }
     i = fin;
   }
   const salida = unir(partes);
+
+  // Un WebP extendido lleva un chunk `VP8X` cuyo primer byte declara QUÉ trae
+  // el archivo: ICC, alfa, EXIF, XMP, animación. Sacar el chunk de EXIF sin
+  // bajar su bandera deja un archivo que dice tener metadatos que ya no están.
+  //
+  // Muchos decodificadores lo perdonan —Pillow lo abre sin chistar— pero los
+  // estrictos rechazan la imagen ENTERA, y ahí no se pierde el metadato: se
+  // pierde la foto. Pasó de verdad: una foto de referencia que alguien mandó
+  // para una plantilla le llegó al agente como «an image in the conversation
+  // could not be processed and was removed», y el diseño se hizo sin mirarla.
+  //
+  // Los chunks EXIF y XMP nunca se copian, así que las dos banderas van
+  // SIEMPRE en cero. Ponerlas por lo que el archivo tiene al final —y no por
+  // lo que esta pasada sacó— es además lo que cura los que ya estaban mal:
+  // volver a pasarlos por acá los deja coherentes aunque el chunk lo haya
+  // sacado otro.
+  if (flags >= 0 && flags < salida.length) {
+    salida[flags] &= ~(0x08 | 0x04);
+  }
+
   // El encabezado RIFF declara el tamaño total: si se sacaron trozos hay que
   // corregirlo, o el archivo queda diciendo que pesa más de lo que pesa.
   new DataView(salida.buffer).setUint32(4, salida.length - 8, true);
