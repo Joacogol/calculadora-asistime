@@ -2,7 +2,7 @@
   "id": "precio",
   "nombre": "Precio",
   "descripcion": "un producto con su precio",
-  "cuando_usarla": "La pieza de todos los días: un producto, su precio, y si está en oferta el precio anterior y el descuento. Fondo blanco, la foto del producto entera y sin recortar. Si lo que manda es el porcentaje y no el producto, usá `sale`.",
+  "cuando_usarla": "La EXCEPCIÓN, no la pieza de todos los días. Se miraron 24 posts del feed de Stadium y no hay un solo precio encima de una foto: el precio va en el epígrafe. Usala cuando pidan expresamente una placa CON el precio a la vista —un aviso, una placa de Precios de Locos— y confirmá antes que la quieren así. Si el precio no tiene que verse en la imagen, usá `producto`. Si lo que manda es un porcentaje o una mecánica, usá `promo`.",
   "acento_por_defecto": "naranja",
   "medidas": {
     "post": {
