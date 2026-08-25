@@ -110,6 +110,43 @@ if [ -n "$SIN_CLAVE" ]; then
   echo "    cliente escribió (precios, qué foto usar, el tono)."
 fi
 
+# ── La clave de Magnific, para los reels ──────────────────────────────────
+# Es UNA sola para todo el worker, y no una por cliente: la cuenta de Magnific
+# es nuestra y los créditos salen del mismo balde. Lo que separa a un cliente
+# de otro es el tope de `marca.json` (`reels.creditos_maximos_mes`), no la
+# clave.
+#
+# NO es la del conector de Magnific: ese entra con OAuth de una persona y sirve
+# sólo adentro de un chat. El worker corre solo y necesita llave propia.
+#
+# Es opcional a propósito. Sin ella el despliegue sale igual y los pedidos de
+# reel se quedan quietos en `pendiente` —el worker mira la clave ANTES de tocar
+# la fila—, así que no se pierde ningún pedido ni se gasta nada, y salen solos
+# en la primera corrida después de cargarla.
+MAGNIFIC_SECRETO=""
+SOLICITAN_REELS=$(python3 clientes.py reels 2>/dev/null || true)
+if [ -n "$SOLICITAN_REELS" ]; then
+  echo "▸ 1c/4  La clave de Magnific (reels de video) — la piden: ${SOLICITAN_REELS}"
+  if ! gcloud secrets describe magnific-api-key --quiet >/dev/null 2>&1; then
+    echo "  Si no la tenés a mano, dejá vacío y Enter: se despliega igual y los"
+    echo "  pedidos de reel esperan en la cola sin gastar créditos."
+    read -rs -p "  Pegá la API key de Magnific y Enter (no se ve): " K; echo
+    if [ -n "$K" ]; then
+      printf '%s' "$K" | gcloud secrets create magnific-api-key --data-file=- --quiet
+    else
+      echo "  ⚠ sin clave: los reels van a quedar esperando en «pendiente»"
+    fi
+    unset K
+  fi
+  if gcloud secrets describe magnific-api-key --quiet >/dev/null 2>&1; then
+    gcloud secrets add-iam-policy-binding magnific-api-key \
+      --member="serviceAccount:${SA}" \
+      --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
+    MAGNIFIC_SECRETO="MAGNIFIC_CLAVE=magnific-api-key:latest,"
+    echo "  · magnific-api-key listo → MAGNIFIC_CLAVE"
+  fi
+fi
+
 echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # El separador ^|^ es porque CLIENTES es un JSON con comas adentro y gcloud
 # usa la coma para separar variables: sin esto, parte el JSON al medio.
@@ -120,7 +157,7 @@ gcloud run jobs deploy "$JOB" \
   --memory 2Gi --cpu 2 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
   --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}" \
-  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${ASISTIME_SECRETO}${SECRETOS_RUN}" \
+  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 
 echo "▸ 3/4  Reloj: una corrida por minuto (el webhook está bloqueado por política de la org)"

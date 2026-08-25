@@ -448,47 +448,52 @@ Ya está hecho: la tabla `reels`, la función `api-reels` desplegada, las tools
 configuración en `marca.json` (720p, 6 s, tope 3.000 por pieza y 20.000 al mes
 = 2.640 por reel).
 
-Falta:
-
-```bash
-# la clave de Magnific para el worker. NO es la del conector: ese entra con
-# OAuth de una persona y sirve sólo dentro de un chat.
-read -rs -p "Pegá la API key de Magnific y Enter (no se ve): " K; echo
-printf '%s' "$K" | gcloud secrets create magnific-api-key --data-file=-
-gcloud secrets add-iam-policy-binding magnific-api-key \
-  --member="serviceAccount:worker-boss-padel@boss-padel-disenos.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor" --quiet
-unset K
-```
-
-Y montar el secreto en el job, que es lo único que falta después de refrescar
-el código —el enganche en el ciclo ya está escrito en `app/chat.py`—:
-
-```bash
-gcloud run jobs update disenador-worker --region us-central1 \
-  --set-secrets MAGNIFIC_CLAVE=magnific-api-key:latest
-```
-
-Verificá que quedó, que es una línea y evita la peor forma de enterarse (un
-pedido que se muere recién al pedir el video):
-
-```bash
-gcloud run jobs describe disenador-worker --region us-central1 \
-  --format='value(spec.template.spec.template.spec.containers[0].env)' | tr ',' '\n' | grep -i magnific
-```
-
-La música **no hay que subirla**: la pista `street` viaja en el despliegue,
-dentro de `.claude/skills/stadium-disenos/musica/`. El worker la busca ahí
-primero y sólo si no está va al bucket. Para agregar una pista nueva sin
+El enganche en el ciclo del worker ya está escrito (`app/chat.py` llama a
+`reelero.atender`), y la música también viaja con el despliegue: la pista
+`street` vive en `.claude/skills/stadium-disenos/musica/`. El worker la busca
+ahí primero y sólo si no está va al bucket. Para agregar una pista nueva sin
 desplegar, subila al bucket `disenos` bajo `musica/<clave>.mp3` y agregá la
 clave al banco de `marca.json`.
+
+Falta una sola cosa: **la clave de Magnific en el job**. Y no hay que correr
+nada aparte — `desplegar-chat.sh` la pide solo, porque `stadium-disenos`
+declara el bloque `reels`:
+
+```bash
+cd ~/worker && ./desplegar-chat.sh
+```
+
+En el paso `1c/4` va a decir «La clave de Magnific (reels de video) — la
+piden: stadium-disenos» y pedirla sin eco. Se guarda en Secret Manager como
+`magnific-api-key` y entra al job como `MAGNIFIC_CLAVE`. Los despliegues que
+vengan después ya no la van a pedir.
+
+**No es la del conector de Magnific**: ese entra con OAuth de una persona y
+sirve sólo adentro de un chat. El worker corre solo y necesita llave propia.
+
+Si la dejás vacía el despliegue sale igual y no se rompe nada: el worker mira
+la clave ANTES de tocar una fila, así que los pedidos de reel se quedan quietos
+en `pendiente`, no se gasta un crédito, y salen solos en la primera corrida
+después de cargarla. En el log se ve así:
+
+```
+[stadium-disenos] 1 reel(s) esperando: falta MAGNIFIC_CLAVE en el job
+```
 
 > **El reel se puede probar por partes.** Con `API_CLAVE` puesta y las funciones
 > desplegadas, `crear_reel` ya anota la fila y `estado_reel` contesta
 > «pendiente»: eso prueba el camino agente → tool → función → base, que es
 > donde está casi toda la plomería. El video recién sale cuando el job tenga
-> `MAGNIFIC_CLAVE`. Sin ella la fila queda en `pendiente` y el log dice
-> exactamente eso: no se gasta nada y no se pierde el pedido.
+> `MAGNIFIC_CLAVE`.
+
+Un reel tarda unos cuatro minutos y el job vive uno, así que la fila cruza
+cuatro o cinco corridas: `pendiente → generando → montando → listo`. Para
+mirarla de afuera:
+
+```sql
+select estado, tarea, creditos_estimados, notas, url
+from reels order by creado_en desc limit 5;
+```
 
 ### 8 · La prueba
 

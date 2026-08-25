@@ -16,6 +16,10 @@ Y lo mismo para las claves de Asistime, que también son una por cliente:
     python3 clientes.py asistime-secretos → asistime-api-boss asistime-api-clinica
     python3 clientes.py asistime-run-secrets → ASISTIME_CLAVE=asistime-api-boss:latest,…
 
+Y cuáles hacen reels, que decide si el despliegue pide la clave de Magnific:
+
+    python3 clientes.py reels       → stadium-disenos
+
 Los clientes sin URL cargada se ignoran en `json` y en `run-secrets`: así se
 puede dejar un cliente a medio dar de alta en el archivo sin que rompa el
 despliegue de los que ya andan.
@@ -65,6 +69,25 @@ def asistime():
     return salida
 
 
+def con_reels():
+    """Las marcas que declaran el bloque `reels` en su `marca.json`.
+
+    Sirve para no pedirle al que despliega una clave de Magnific que ningún
+    cliente va a usar. Boss y Clínica no hacen reels: preguntarles por una
+    clave de video en cada despliegue es ruido, y el ruido en un script que se
+    corre a mano termina en Enter sin leer.
+    """
+    salida = []
+    for c in listos():
+        ruta = RAIZ / ".claude" / "skills" / c["marca"] / "marca.json"
+        try:
+            if json.loads(ruta.read_text(encoding="utf-8")).get("reels"):
+                salida.append(c["marca"])
+        except Exception:
+            continue
+    return salida
+
+
 if __name__ == "__main__":
     orden = sys.argv[1] if len(sys.argv) > 1 else "marcas"
     if orden == "marcas":
@@ -85,6 +108,8 @@ if __name__ == "__main__":
         print(" ".join(sec for _, _, sec in asistime()))
     elif orden == "asistime-run-secrets":
         print(",".join(f"{env}={sec}:latest" for _, env, sec in asistime()))
+    elif orden == "reels":
+        print(" ".join(con_reels()))
     elif orden == "faltantes":
         f = [c["marca"] for c in todos() if c not in listos()]
         print(" ".join(f))
