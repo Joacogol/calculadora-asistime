@@ -426,7 +426,36 @@ lista tiene sentido.
 Recorre los clientes solo: ve a Stadium en `clientes.json`, encuentra sus dos
 secretos ya creados y no pregunta nada.
 
-### 7 · La prueba
+### 7 · Reels (video por IA)
+
+Ya está hecho: la tabla `reels`, la función `api-reels` desplegada, las tools
+`crear_reel` y `estado_reel` en el tenant 176 y enganchadas al agente, y la
+configuración en `marca.json` (720p, 6 s, tope 3.000 por pieza y 20.000 al mes
+= 2.640 por reel).
+
+Falta:
+
+```bash
+# la clave de Magnific para el worker. NO es la del conector: ese entra con
+# OAuth de una persona y sirve sólo dentro de un chat.
+read -rs -p "Pegá la API key de Magnific y Enter (no se ve): " K; echo
+printf '%s' "$K" | gcloud secrets create magnific-api-key --data-file=-
+gcloud secrets add-iam-policy-binding magnific-api-key \
+  --member="serviceAccount:worker-boss-padel@boss-padel-disenos.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" --quiet
+unset K
+```
+
+Y en el worker, enganchar `app/reelero.py:atender_todos` en el ciclo, con
+`MAGNIFIC_CLAVE` en el entorno del job.
+
+> **El reel se puede probar por partes.** Con `API_CLAVE` puesta y las funciones
+> desplegadas, `crear_reel` ya anota la fila y `estado_reel` contesta
+> «pendiente»: eso prueba el camino agente → tool → función → base, que es
+> donde está casi toda la plomería. El video recién sale cuando el worker esté
+> enganchado.
+
+### 8 · La prueba
 
 El agente es **Diseñador Stadium**. Probá con las dos cosas:
 
