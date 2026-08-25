@@ -100,6 +100,65 @@ def _filas(cli) -> list[dict] | None:
     return r.json()
 
 
+def _bajar_assets(cli, marca: str, slug: str, contrato: dict,
+                  base: pathlib.Path) -> int:
+    """Deja en el disco las imágenes propias de una plantilla.
+
+    Una plantilla puede traer una foto suya —un fondo fijo, una textura— que no
+    está en el banco de la marca porque la mandó alguien al pedirla. El
+    contrato la declara así:
+
+        "assets": {"fondo.webp": "https://…/storage/…/fondo.webp"}
+
+    y el HTML la usa como `assets/fondo.webp`, igual que cualquier foto del
+    banco: el HTML temporal se escribe en la carpeta de la marca, así que la
+    ruta relativa resuelve sola.
+
+    ## Por qué se baja y no se referencia la URL
+
+    Porque `_captura` espera 320 ms fijos y no espera a la red. Una plantilla
+    que apunta a una URL entra en una carrera contra el reloj en CADA pieza que
+    se dibuje, y cuando la pierde no falla: dibuja el hueco. Una pieza sin la
+    foto, publicada, y nadie se entera de por qué.
+
+    Bajándola una vez por corrida, el render deja de depender de que el Storage
+    conteste rápido — que es exactamente la clase de dependencia que no querés
+    en algo que produce piezas todo el día.
+    """
+    assets = contrato.get("assets")
+    if not isinstance(assets, dict) or not assets:
+        return 0
+
+    destino = base.parent / "assets"
+    destino.mkdir(parents=True, exist_ok=True)
+    bajados = 0
+    for nombre, url in list(assets.items())[:8]:
+        nombre = str(nombre)
+        # El nombre viene del contrato, que lo escribió un agente. Que no pueda
+        # salirse de `assets/` no es paranoia: es una línea.
+        if "/" in nombre or "\\" in nombre or nombre.startswith("."):
+            log.warning("[%s] «%s» declara un asset con nombre inválido: %s",
+                        marca, slug, nombre)
+            continue
+        archivo = destino / nombre
+        if archivo.exists():
+            continue                    # ya está: no se vuelve a bajar
+        try:
+            r = requests.get(str(url), timeout=30)
+            r.raise_for_status()
+            archivo.write_bytes(r.content)
+            bajados += 1
+        except requests.RequestException as e:
+            # Que falte una foto no puede tirar abajo la sincronización de las
+            # otras plantillas. Se anota fuerte y se sigue: la pieza va a salir
+            # con el hueco, pero el log dice por qué.
+            log.error("[%s] no pude bajar el asset «%s» de «%s»: %s",
+                      marca, nombre, slug, e)
+    if bajados:
+        log.info("[%s] «%s»: %d imagen(es) propias bajadas", marca, slug, bajados)
+    return bajados
+
+
 def sincronizar(cli, marca: str) -> dict[str, int]:
     """Baja las plantillas publicadas al skill. Devuelve {plantilla: versión}.
 
@@ -138,6 +197,7 @@ def sincronizar(cli, marca: str) -> dict[str, int]:
         tocadas += _escribir(
             destino / "plantilla.json",
             json.dumps(contrato, ensure_ascii=False, indent=2) + "\n")
+        _bajar_assets(cli, marca, slug, contrato, destino)
         versiones[slug] = f.get("version")
 
     if tocadas:

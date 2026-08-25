@@ -119,8 +119,13 @@ def ejemplo(contrato: dict, carpeta_marca: pathlib.Path) -> dict:
         elif tipo == "opcion":
             d[cid] = campo.get("default", (campo.get("opciones") or [""])[0])
         elif tipo == "lista":
+            # Se acepta `{"id": …}` y también `"producto"` a secas: son dos
+            # formas de decir lo mismo y reventar por la diferencia no ayuda a
+            # nadie. Igual que en `plantillero._ejemplo`.
             cols = campo.get("columnas") or [{"id": "texto"}]
-            d[cid] = [[c.get("etiqueta", c["id"]) for c in cols] for _ in range(3)]
+            rotulo = (lambda c: c if isinstance(c, str)
+                      else c.get("etiqueta", c["id"]))
+            d[cid] = [[rotulo(c) for c in cols] for _ in range(3)]
         elif "default" in campo:
             d[cid] = campo["default"]
         elif campo.get("requerido"):

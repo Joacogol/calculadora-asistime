@@ -472,14 +472,25 @@ def _bajar_adjuntos(pedido: dict, borrador: Path) -> str:
         + "\n".join(lineas)
         + "\n\n**Abrilas con Read antes de decidir nada.** Te las mandaron "
         "para que las uses, así que mirá qué son y qué zona sirve de fondo.\n\n"
-        "En el HTML referenciá la **URL**, nunca el archivo local: el borrador "
-        "se borra al terminar y el disco del contenedor se pierde en el "
-        "despliegue siguiente. Una plantilla que apunta al archivo dibuja un "
-        "hueco la semana que viene.\n\n"
-        "Y pensá si la foto va fija o va como campo. Si la pieza siempre se ve "
-        "igual —como el fondo de `tactica`— va fija en el HTML. Si cada uso "
-        "puede querer otra, va como campo `imagen` con ésta de `default`: así "
-        "sirve tal cual hoy y se puede cambiar sin tocar la plantilla.\n")
+        "### Cómo se usa una de estas fotos\n\n"
+        "Declarala en el contrato, en `assets`, con el nombre que le pongas y "
+        "la URL de arriba —y en el HTML usala como **`assets/ese-nombre`**, "
+        "igual que cualquier foto del banco de la marca:\n\n"
+        "    \"assets\": {{\"fondo.webp\": \"https://…/referencias/xxx.webp\"}}\n\n"
+        "**No pongas la URL adentro del HTML.** El motor espera 320 ms y no "
+        "espera a la red: una plantilla que apunta a una URL corre esa carrera "
+        "en CADA pieza que se dibuje, y cuando la pierde no falla — dibuja el "
+        "hueco. Declarándola en `assets`, el worker la baja una vez por corrida "
+        "y el render no depende de que el Storage conteste rápido.\n\n"
+        "(Acá adentro Chromium no tiene salida a internet, así que una URL en "
+        "el HTML no se va a ver ni siquiera para probar. Otro motivo para no "
+        "usarla.)\n\n"
+        "### Fija o campo\n\n"
+        "Decidilo vos. Si la pieza siempre se ve igual —como el fondo de "
+        "`tactica`— la foto va fija en el HTML. Si cada uso puede querer otra, "
+        "va como campo `imagen` con `assets/ese-nombre` de `default`: sirve "
+        "tal cual hoy y se puede cambiar sin tocar la plantilla. Contá en el "
+        "`notas` cuál elegiste y por qué.\n")
 
 
 def _skill(marca: str) -> Path:
@@ -551,7 +562,25 @@ def _dibujar(marca_nombre: str, carpeta: Path, html: str, contrato: dict
     from playwright.sync_api import sync_playwright
 
     d = carpeta / "plantillas" / BORRADOR
-    datos = _ejemplo(contrato, carpeta)
+
+    # Si el agente dejó su `ejemplo.json`, se dibuja con ESE. Es el caso límite
+    # que él eligió y con el que verificó — el nombre más largo, la lista de
+    # ocho— y es mejor prueba que cualquier dato inventado desde el contrato.
+    #
+    # Además cierra un agujero: sin esto, el agente verifica con un dato y el
+    # worker con otro, así que el worker puede reventar con algo que el agente
+    # nunca vio. Pasó: un contrato que declaraba las columnas de una lista como
+    # strings dibujó bien en el preview del agente y tiró el worker al final,
+    # con la plantilla ya escrita.
+    propio = d / "ejemplo.json"
+    if propio.exists():
+        try:
+            datos = json.loads(propio.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"el `ejemplo.json` del borrador no es JSON válido: {e}") from e
+    else:
+        datos = _ejemplo(contrato, carpeta)
     salidas, render = [], Render(marca, carpeta)
     with sync_playwright() as p:
         nav = p.chromium.launch()
@@ -590,8 +619,16 @@ def _ejemplo(contrato: dict, carpeta: Path) -> dict:
         elif tipo == "opcion":
             d[cid] = campo.get("default", (campo.get("opciones") or [""])[0])
         elif tipo == "lista":
+            # Las columnas se declaran como `{"id": …, "etiqueta": …}`, que es
+            # lo que usan las catorce plantillas. Pero escribirlas como
+            # `["producto", "precio"]` es una forma razonable de decir lo
+            # mismo, y alguien la va a usar. Reventar acá por eso significa
+            # tirar diez minutos de trabajo del agente por una diferencia de
+            # forma que no cambia nada.
             cols = campo.get("columnas") or [{"id": "texto"}]
-            d[cid] = [[c.get("etiqueta", c["id"]) for c in cols] for _ in range(3)]
+            def _rotulo(c):
+                return c if isinstance(c, str) else c.get("etiqueta", c["id"])
+            d[cid] = [[_rotulo(c) for c in cols] for _ in range(3)]
         elif "default" in campo:
             d[cid] = campo["default"]
         elif campo.get("requerido"):
