@@ -25,15 +25,15 @@
   "_regla_telefono": "Al revés que en Boss Padel, y a propósito. Ver la regla.",
   "regla_telefono": "**El contacto va casi siempre.** Una pieza de esta marca termina en «vení» o «sacá tu hora», y quien la ve necesita saber cómo. El pie con teléfono y web es parte de la identidad, no un agregado. Sacalo sólo cuando el pedido lo diga o cuando la pieza sea puramente informativa —un aviso de feriado, un cambio de horario— donde no hay nada que gestionar.",
   "formato_por_defecto": "post",
-
   "_datos_sensibles": "Esta cuenta publica precios, plazos y requisitos de trámites de salud. Un precio viejo o un plazo que no es se convierte en un problema con un paciente en el mostrador, no en un error de diseño.",
   "regla_datos": "**No completes ningún dato que no te hayan dado.** Ni el precio, ni el plazo de entrega, ni el horario, ni si hace falta sacar hora, ni qué incluye un estudio. Si falta, preguntalo. Nunca lo deduzcas de otra pieza ni de lo que suene razonable — y ojo con los precios que aparezcan en piezas anteriores: pueden estar vencidos.",
-
   "_asistime": "Dónde vive el manual que edita la clínica. No es secreto: es un dato de la marca. La clave de API va en ASISTIME_CLAVE.",
   "asistime": {
     "tenant": 73,
     "documento": 833,
     "catalogo": 832,
-    "_nota": "`documento` es el manual de marca que edita la clínica. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue."
+    "clave_env": "ASISTIME_CLAVE_CLINICA",
+    "_nota": "`documento` es el manual de marca que edita la clínica. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_clave_env": "La clave de Asistime está atada a un tenant: la de Boss contesta 403 sobre los documentos de esta marca. Por eso cada una nombra la suya."
   }
 }

@@ -3,7 +3,11 @@
 """Publica el catálogo de plantillas de una marca como Documento de Asistime.
 
     ASISTIME_CLAVE=… python3 herramientas/publicar-catalogo.py boss-padel-disenos
-    ASISTIME_CLAVE=… python3 herramientas/publicar-catalogo.py boss-padel-disenos --probar
+    ASISTIME_CLAVE_CLINICA=… python3 herramientas/publicar-catalogo.py clinica-preventiva-disenos
+
+La variable la nombra cada marca en su `marca.json` (`asistime.clave_env`),
+porque la clave de Asistime está atada a un tenant y con dos clientes una
+sola no alcanza. La marca que no la nombre usa `ASISTIME_CLAVE`.
 
 El catálogo se genera de los contratos de cada plantilla —`plantillas/<id>/
 plantilla.json`— y queda como un documento que el agente lee. Es la otra mitad
@@ -69,9 +73,18 @@ def main(argv):
             f'  "asistime": {{"tenant": …, "documento": …, "catalogo": …}}\n'
             f"a su marca.json con el id del documento.")
 
-    clave = os.environ.get("ASISTIME_CLAVE", "").strip()
+    # La clave de Asistime está atada a un tenant, así que con más de un cliente
+    # no puede ser una sola: cada marca nombra la suya en su `marca.json` y la
+    # que no la nombre sigue con `ASISTIME_CLAVE`. Mismo criterio que en
+    # `app/manual.py`, donde está la explicación larga.
+    variable = ficha.get("clave_env") or "ASISTIME_CLAVE"
+    clave = (os.environ.get(variable) or "").strip()
     if not clave:
-        raise SystemExit("falta ASISTIME_CLAVE")
+        raise SystemExit(
+            f"falta {variable}, que es donde «{nombre}» busca su clave de "
+            f"Asistime.\n"
+            f"Si esa marca comparte la clave con otra, sacale `clave_env` de "
+            f"su marca.json.")
 
     if not hasattr(marca, "CATALOGO"):
         raise SystemExit(f"«{nombre}» todavía no expone CATALOGO() en marca.py")
