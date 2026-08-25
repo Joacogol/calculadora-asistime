@@ -28,6 +28,9 @@
     "tenant": 119,
     "documento": 779,
     "catalogo": 831,
-    "_nota": "`documento` es el manual de marca que edita el club. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue."
+    "_nota": "`documento` es el manual de marca que edita el club. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "clave_env": "ASISTIME_CLAVE",
+    "clave_secreto": "asistime-api-boss",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
   }
 }

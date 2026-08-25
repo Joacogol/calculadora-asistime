@@ -9,8 +9,8 @@
       "acento": "rojo"
     },
     "Costa Urbana": {
-      "direccion": "Costa Urbana Shopping, Ciudad de la Costa",
-      "_falta": "El horario de esta sede no está en ningún lado del código y no se inventa. Preguntáselo a la clínica y completalo acá; mientras tanto el agente no lo pone.",
+      "direccion": "Costa Urbana Shopping, Local 208, Ciudad de la Costa",
+      "horario": "L-V 7:00-18:45 · Sáb 8:00-11:45",
       "contacto": "092 566 967",
       "acento": "rojo"
     },
@@ -34,6 +34,7 @@
     "catalogo": 832,
     "clave_env": "ASISTIME_CLAVE_CLINICA",
     "_nota": "`documento` es el manual de marca que edita la clínica. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
-    "_clave_env": "La clave de Asistime está atada a un tenant: la de Boss contesta 403 sobre los documentos de esta marca. Por eso cada una nombra la suya."
+    "clave_secreto": "asistime-api-clinica",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
   }
 }

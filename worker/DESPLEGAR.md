@@ -249,19 +249,17 @@ gcloud secrets add-iam-policy-binding asistime-api-clinica \
 unset K
 ```
 
-> ⚠️ **`desplegar-chat.sh` todavía no sabe de esta clave.** Tiene el nombre del
-> secreto escrito a mano (`asistime-api-boss`) y le pasa al job una sola
-> variable. Mientras eso siga así, hay que agregarla al job aparte:
+Nada más: **`desplegar-chat.sh` ya recorre los clientes también para esto**.
+Lee de cada `marca.json` qué variable y qué secreto usa esa marca, pide por
+teclado la que falte, y las pasa todas al job.
+
+> Antes tenía el secreto de Boss escrito a mano y le pasaba al job una sola
+> variable. El efecto era peor que un error: **cada despliegue borraba la clave
+> del segundo cliente**, que pasaba a diseñar sin su manual de marca — sin
+> fallar y sin avisar, hasta que salía una pieza con un precio viejo.
 >
-> ```bash
-> gcloud run jobs update boss-chat --region southamerica-east1 \
->   --update-secrets ASISTIME_CLAVE_CLINICA=asistime-api-clinica:latest
-> ```
->
-> Y **repetirlo después de cada `./desplegar-chat.sh`**, porque el despliegue la
-> pisa. El arreglo de fondo es que el script recorra los clientes para esto
-> igual que ya hace con las claves de Supabase; hasta que eso se haga, esta
-> línea es la red.
+> Si un cliente queda sin su clave, ahora el despliegue lo dice dos veces: en
+> el momento y en un resumen al final.
 
 ### 5 · Publicarle el catálogo
 
