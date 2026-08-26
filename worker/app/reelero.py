@@ -282,9 +282,9 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
         cli._url("reels"), headers=cli._cab(), timeout=30,
         params={"estado": f"eq.{estado}", "order": "creado_en.asc",
                 "limit": str(limite),
-                "select": "id,creado_en,mensaje,foto,titulo,kicker,bajada,"
-                          "musica,tarea,resolucion,duracion,clip_url,quien,"
-                          "metricas"})
+                "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
+                          "kicker,bajada,musica,tarea,resolucion,duracion,"
+                          "clip_url,quien,metricas"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -315,20 +315,32 @@ def _marcar(cli, rid: str, estado: str, **campos):
         data=json.dumps({"estado": estado, **campos}), timeout=30).raise_for_status()
 
 
-#: Cuánto se le aguanta a una tarea antes de darla por perdida. Un video de
-#: seis segundos sale en unos cuatro minutos; cuarenta es diez veces eso.
-TOPE_GENERANDO = 40 * 60
+#: Cuánto se le aguanta a una tarea antes de darla por perdida.
+#:
+#: Estaba en 40 minutos —«diez veces lo que tarda un video»— y se midió que no
+#: alcanza: el primer reel de verdad estuvo más de una hora en `IN_PROGRESS` y
+#: seguía vivo. Lo que tarda Seedance no es sólo generar, es también la cola de
+#: Magnific, y esa no la controlamos. Dos horas no es una estimación de cuánto
+#: tarda: es el punto en que ya no se puede seguir diciendo «sigue
+#: generándose» sin que alguien mire.
+TOPE_GENERANDO = 2 * 60 * 60
 
 
 def _colgada(fila: dict) -> bool:
-    """¿Esta fila lleva demasiado esperando?
+    """¿Esta fila lleva demasiado ESPERANDO A MAGNIFIC?
 
-    Se mide contra `creado_en` —cuándo se pidió el reel— y no contra el momento
-    en que pasó a `generando`, que la fila no guarda. La diferencia son los
-    segundos que estuvo en `pendiente`, y no cambian nada a esta escala.
+    Se mide contra `actualizado_en` —el trigger `reels_tocar` lo pone en cada
+    UPDATE, así que es el momento en que la fila pasó a `generando`— y NO
+    contra `creado_en`.
+
+    La diferencia parecía un detalle y no lo era. Con `creado_en`, un pedido
+    que estuvo dos horas en `pendiente` esperando la clave de Magnific ya nacía
+    vencido: el worker pedía el video, gastaba los 2.640 créditos, y al minuto
+    siguiente daba la tarea por colgada sin haberle dado un solo minuto. Pasó
+    con el primer reel, el 26/8/2026.
     """
     from datetime import datetime, timezone
-    crudo = fila.get("creado_en")
+    crudo = fila.get("actualizado_en") or fila.get("creado_en")
     if not crudo:
         return False
     try:
@@ -446,7 +458,7 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                         getattr(cli, "marca", "?"), fila["id"], e)
             if _colgada(fila):
                 _marcar(cli, fila["id"], "error",
-                        notas=f"lleva más de {TOPE_GENERANDO // 60} minutos sin "
+                        notas=f"lleva más de {TOPE_GENERANDO // 3600} horas sin "
                               f"respuesta de Magnific: {e}")
                 movidas += 1
             continue
@@ -463,7 +475,7 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             # error, porque nadie sabe que hay que hacer algo.
             _marcar(cli, fila["id"], "error",
                     notas=f"Magnific lo dejó en «{estado}» más de "
-                          f"{TOPE_GENERANDO // 60} minutos")
+                          f"{TOPE_GENERANDO // 3600} horas")
             movidas += 1
         # si sigue en curso no se toca: el ciclo que viene vuelve a preguntar
 
