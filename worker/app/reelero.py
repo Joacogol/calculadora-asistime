@@ -90,7 +90,12 @@ MODELOS = {
         "ruta": "seedance-2-5-pro-{res}",
         "ruta_estado": "seedance-2-5-pro-{res}",
         "precio": {"480p": 200, "720p": 440, "1080p": 790},
-        "duraciones": tuple(range(4, 13)),
+        # 4 a 30 segundos, comprobado contra la API: acepta 30 y rechaza 3. Acá
+        # decía 4–12 y estaba mal, copiado de un techo mío de otra parte del
+        # código: un pedido de 15 segundos no se podía cumplir NUNCA, ni con el
+        # tope de créditos por las nubes, porque la tabla mentía sobre lo que el
+        # modelo sabe hacer. Los límites de un modelo se miden, no se suponen.
+        "duraciones": tuple(range(4, 31)),
         "multishot": True,
         "referencias": True,
         "manda_el_audio": True,               # acepta `no_music`
@@ -115,10 +120,19 @@ CALIDADES = {
 #: el video se ve blando; sirve para un borrador, no para publicar.
 POR_DEFECTO = {"calidad": "normal", "duracion": 6, "relacion": "social_story_9_16"}
 
-#: El rango que tiene sentido para un reel de producto, ANTES de que el modelo
-#: recorte a lo suyo. Menos de cuatro no alcanza para contar nada; más de doce
-#: ya no es un reel de producto.
-DURACION_MINIMA, DURACION_MAXIMA = 4, 12
+#: Lo que se acepta LEER de un pedido. No es lo que se va a hacer —eso lo
+#: decide `_plan` con lo que el modelo y el tope permiten— es hasta dónde se
+#: considera que un número es una duración y no otra cosa.
+#:
+#: Estaba en 4–12 y eso rompió un pedido real: alguien pidió 15 segundos, el 15
+#: cayó afuera del rango, `duracion_pedida` devolvió None —que significa «no
+#: dijo nada»— y el reel salió de 10 SIN UNA PALABRA de por qué. Un techo que
+#: descarta callado es el mismo error que no leer la duración: la persona pidió
+#: algo y el sistema hizo otra cosa sin avisar.
+#:
+#: Ahora el rango es amplio —Seedance 2.5 hace hasta 30— y lo que no entra ya
+#: no se descarta: se recorta a lo posible y SE DICE.
+DURACION_MINIMA, DURACION_MAXIMA = 3, 60
 
 _SEGUNDOS = re.compile(
     r"(?:de\s+)?(\d{1,2})\s*(?:segundos?|seg\b|s\b)", re.IGNORECASE)
@@ -163,6 +177,12 @@ def duracion_pedida(mensaje: str | None) -> int | None:
     Es una expresión regular y no una pregunta al modelo a propósito: «10
     segundos» escrito en castellano no tiene ambigüedad que valga una llamada.
     Si no encuentra nada, devuelve None y manda el default de la marca.
+
+    **Lo que encuentra lo devuelve aunque sea imposible.** Si alguien pide 15
+    segundos y ningún modelo llega, eso lo resuelve `_plan` —recorta y lo
+    escribe en `notas`—; devolver None acá lo convertiría en «no pidió nada» y
+    la persona nunca se enteraría. El rango sólo descarta lo que claramente no
+    es una duración de reel, no lo que es difícil de cumplir.
     """
     m = _SEGUNDOS.search(mensaje or "")
     if not m:
