@@ -282,9 +282,15 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
         cli._url("reels"), headers=cli._cab(), timeout=30,
         params={"estado": f"eq.{estado}", "order": "creado_en.asc",
                 "limit": str(limite),
+                # `creditos_estimados` está en la lista porque el paso de
+                # montaje lo copia a `creditos_gastados`. Faltaba, y el efecto
+                # era mudo: el reel salía bien y quedaba registrado con gasto
+                # cero. El tope del mes seguía andando —suma estimados, no
+                # gastados— así que nada fallaba; simplemente el registro de lo
+                # que se gastó decía cero para siempre.
                 "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
                           "kicker,bajada,musica,tarea,resolucion,duracion,"
-                          "clip_url,quien,metricas"})
+                          "clip_url,quien,metricas,creditos_estimados"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
