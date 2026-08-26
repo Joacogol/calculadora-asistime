@@ -58,49 +58,97 @@ log = logging.getLogger(__name__)
 
 API = "https://api.magnific.com/v1/ai/video"
 
-#: Cuántos créditos sale un video, por resolución y por segundo.
+#: Los modelos de video que sabemos pedir, con lo que cada uno cuesta y lo que
+#: cada uno acepta. No son intercambiables: cambia el precio, cambian las
+#: duraciones permitidas, cambia la forma del pedido y hasta cambia la URL para
+#: preguntar cómo va. Por eso está todo junto en una tabla y no repartido.
 #:
-#: NO sale de una tabla publicada: Magnific no expone un endpoint de precios y
-#: su estimador vive sólo en el conector, que necesita una sesión con OAuth y
-#: por lo tanto no sirve acá. Estos números se MIDIERON con `simulate_cost` el
-#: 25/8/2026, sobre 8 segundos en 9:16:
+#: **Los precios se MIDIERON con `simulate_cost` el 26/8/2026**, en 9:16 con
+#: efectos de sonido, y son lineales por segundo (se comprobó en 6, 10 y 15
+#: segundos: 840, 1.400 y 2.100 en Mini 720p). Magnific no publica una tabla de
+#: precios, así que esto queda viejo sin avisar el día que los cambie. Lo que
+#: de verdad protege es el tope de créditos de la marca: aunque esta tabla
+#: mienta, el gasto queda acotado.
 #:
-#:     480p → 1.600      720p → 3.520      1080p → 6.320
+#: La diferencia entre Mini 2.0 y 2.5 es de tres veces por el mismo reel —1.400
+#: contra 4.400 en diez segundos a 720p— y Magnific misma marca a Mini como su
+#: mejor relación calidad/precio para clips de 4 a 15 segundos.
+MODELOS = {
+    "seedance-2-mini": {
+        "nombre": "Seedance 2.0 Mini",
+        "ruta": "seedance-2-mini-{res}",
+        "ruta_estado": "seedance-2-mini",     # el estado NO lleva resolución
+        "precio": {"480p": 70, "720p": 140},
+        "duraciones": (5, 10),                # exactamente estas dos
+        "multishot": False,                   # sólo un `prompt`, hasta 2000
+        "referencias": True,
+        "manda_el_audio": False,              # no acepta `no_music`
+    },
+    "seedance-2-5-pro": {
+        "nombre": "Seedance 2.5",
+        "ruta": "seedance-2-5-pro-{res}",
+        "ruta_estado": "seedance-2-5-pro-{res}",
+        "precio": {"480p": 200, "720p": 440, "1080p": 790},
+        "duraciones": tuple(range(4, 13)),
+        "multishot": True,
+        "referencias": True,
+        "manda_el_audio": True,               # acepta `no_music`
+    },
+}
+
+#: Lo que la persona pide en el chat, traducido a modelo y resolución.
 #:
-#: Si Magnific cambia los precios, esto queda viejo sin avisar. Por eso el tope
-#: de la marca es lo que realmente protege: aunque la tabla mienta, el gasto
-#: queda acotado por `creditos_maximos`.
-PRECIO_POR_SEGUNDO = {"480p": 200, "720p": 440, "1080p": 790}
+#: Son tres y no diez porque quien escribe en el chat no elige un modelo: dice
+#: si esto es una prueba o si va a publicarse. Traducir eso es trabajo nuestro.
+CALIDADES = {
+    "borrador": ("seedance-2-mini", "480p"),
+    "normal":   ("seedance-2-mini", "720p"),
+    "maxima":   ("seedance-2-5-pro", "720p"),
+}
 
 #: Lo que se le pide a Magnific si la marca no dice otra cosa.
 #:
-#: **720p y seis segundos: 2.640 créditos.** Es una decisión de compromiso y
-#: conviene entender las dos puntas antes de moverla.
-#:
-#: Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y hay
-#: que estirarlo a 1080×1920 — 2,7 veces. En 480p serían 270×480, o sea 4
-#: veces, y a esa altura el video se ve blando. En 1080p sale 608×1080 y estira
-#: 1,8, pero cuesta 4.740 por los mismos seis segundos.
-#:
-#: La duración es el otro cursor, y es lineal: cada segundo de 720p son 440
-#: créditos. Seis alcanzan para los tres tiempos de un reel de producto
-#: (producto quieto, la persona entra, la caminata). Menos de cinco y el tercer
-#: tiempo no llega a leerse.
-POR_DEFECTO = {"resolucion": "720p", "duracion": 6, "relacion": "social_story_9_16"}
+#: `normal` es Mini 2.0 a 720p: 140 créditos por segundo. Magnific llama «720p»
+#: al lado largo, así que el clip sale de 406×720 y hay que estirarlo a
+#: 1080×1920 — 2,7 veces. En 480p serían 270×480, o sea 4 veces, y a esa altura
+#: el video se ve blando; sirve para un borrador, no para publicar.
+POR_DEFECTO = {"calidad": "normal", "duracion": 6, "relacion": "social_story_9_16"}
 
-
-#: Entre cuántos y cuántos segundos puede durar un reel. Menos de cuatro no
-#: alcanza para contar nada; más de doce ya no es un reel de producto, es otra
-#: cosa —y a 440 créditos el segundo, una cara.
+#: El rango que tiene sentido para un reel de producto, ANTES de que el modelo
+#: recorte a lo suyo. Menos de cuatro no alcanza para contar nada; más de doce
+#: ya no es un reel de producto.
 DURACION_MINIMA, DURACION_MAXIMA = 4, 12
 
 _SEGUNDOS = re.compile(
     r"(?:de\s+)?(\d{1,2})\s*(?:segundos?|seg\b|s\b)", re.IGNORECASE)
 
 
-def precio(resolucion: str, duracion: int) -> int:
-    """Lo que va a salir este video, antes de pedirlo."""
-    return PRECIO_POR_SEGUNDO.get(resolucion, PRECIO_POR_SEGUNDO["1080p"]) * duracion
+def ficha_modelo(modelo: str) -> dict:
+    return MODELOS.get(modelo) or MODELOS["seedance-2-5-pro"]
+
+
+def precio(modelo: str, resolucion: str, duracion: int) -> int:
+    """Lo que va a salir este video, antes de pedirlo.
+
+    Si no conoce la combinación devuelve el precio más caro que conoce, no cero.
+    Un precio desconocido que se estima en cero pasa cualquier tope y se entera
+    con la factura.
+    """
+    tabla = ficha_modelo(modelo)["precio"]
+    return tabla.get(resolucion, max(tabla.values())) * duracion
+
+
+def duracion_valida(modelo: str, pedida: int) -> int:
+    """La duración más cercana a la pedida que el modelo acepta de verdad.
+
+    Mini 2.0 sólo hace 5 o 10 segundos —el resto la API los rechaza con un
+    error de validación—, y 2.5 va de 4 en adelante. Pedir 7 en Mini no es un
+    video de 7 segundos: es un 400 y un pedido perdido.
+    """
+    permitidas = ficha_modelo(modelo)["duraciones"]
+    if pedida in permitidas:
+        return pedida
+    return min(permitidas, key=lambda d: (abs(d - pedida), d))
 
 
 def duracion_pedida(mensaje: str | None) -> int | None:
@@ -145,7 +193,7 @@ def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST") -> dict:
 
 # ═══ 1. Pedir el video ═══════════════════════════════════════════════════════
 
-def pedir_clip(fila: dict, ficha: dict) -> str:
+def pedir_clip(fila: dict, plan: dict, planos: list[dict]) -> str:
     """Le pide el video a Magnific y devuelve el id de tarea.
 
     Manda la foto en `reference_images` y no en `image`. La diferencia importa:
@@ -154,29 +202,52 @@ def pedir_clip(fila: dict, ficha: dict) -> str:
     en cambio, la foto le dice al modelo CÓMO ES el producto y lo deja componer
     una escena. El producto se mantiene y el fondo es de verdad.
 
-    Los planos van en `multishot` porque un reel de retail son tres tiempos, y
-    describirlos por separado da mucho más control que un párrafo largo. Se
-    probó: pidiendo un plano solo, el modelo se saltea la mitad de lo pedido.
+    Los planos van en `multishot` **cuando el modelo lo acepta**. 2.5 lo acepta;
+    Mini 2.0 no —su API sólo toma un `prompt` de hasta 2.000 caracteres— y ahí
+    los mismos planos se pliegan a un párrafo numerado. No es lo mismo: separar
+    los tiempos da más control y se midió que con un solo plano el modelo se
+    saltea la mitad de lo pedido. Numerarlos es lo más parecido que se puede
+    hacer sin el campo.
     """
-    res = ficha.get("resolucion") or POR_DEFECTO["resolucion"]
-    dur = int(ficha.get("duracion") or POR_DEFECTO["duracion"])
-    planos = ((fila.get("metricas") or {}).get("planos")
-              or guionar(fila, dur)
-              or _planos(fila, dur))
+    m = ficha_modelo(plan["modelo"])
     cuerpo = {
-        "prompt": fila["mensaje"],
-        "reference_images": [fila["foto"]],
-        "multishot": planos,
-        "duration": dur,
+        "duration": plan["duracion"],
         "aspect_ratio": POR_DEFECTO["relacion"],
         "sound_effects": True,
-        # La música la pone el worker desde el banco de la marca: es más barata
-        # (una pista de 30 s se genera una vez y se reusa en todos los reels) y
-        # sobre todo es SIEMPRE la misma, que es lo que hace que una cuenta
-        # suene a una cuenta y no a veinte piezas sueltas.
-        "no_music": True,
     }
-    return _pedir(f"seedance-2-5-pro-{res}", cuerpo)["data"]["task_id"]
+    if m["referencias"]:
+        cuerpo["reference_images"] = [fila["foto"]]
+    if m["manda_el_audio"]:
+        # La música la pone el worker desde el banco de la marca: es más barata
+        # (una pista se genera una vez y se reusa en todos los reels) y sobre
+        # todo es SIEMPRE la misma, que es lo que hace que una cuenta suene a
+        # una cuenta y no a veinte piezas sueltas. El modelo que no acepta este
+        # campo puede meter música propia, y de eso se entera el montaje.
+        cuerpo["no_music"] = True
+
+    if m["multishot"]:
+        cuerpo["prompt"] = fila["mensaje"]
+        cuerpo["multishot"] = planos
+    else:
+        cuerpo["prompt"] = _un_solo_prompt(planos)
+    return _pedir(m["ruta"].format(res=plan["resolucion"]), cuerpo)["data"]["task_id"]
+
+
+def _un_solo_prompt(planos: list[dict], tope: int = 1990) -> str:
+    """Los planos plegados en un párrafo, para el modelo que no tiene multishot.
+
+    Va numerado y con los segundos de cada tiempo adelante. Es la forma que más
+    se parece a una lista de planos dentro de un campo de texto: el modelo lee
+    un orden, no una sola escena promediada.
+
+    El recorte al final no es decorativo: Mini corta en 2.000 caracteres y un
+    prompt más largo se rechaza entero. Se recorta el ÚLTIMO plano, que es el
+    que menos se nota, en vez de dejar que la API tire el pedido.
+    """
+    partes = [f"Shot {i} ({p['duration']}s): {p['prompt']}"
+              for i, p in enumerate(planos, 1)]
+    texto = " ".join(partes)
+    return texto if len(texto) <= tope else texto[:tope].rsplit(" ", 1)[0]
 
 
 GUION = """Escribí la lista de planos de un reel vertical de {dur} segundos.
@@ -205,14 +276,25 @@ Reglas:
 6. Entre dos y tres planos, y las duraciones tienen que sumar exactamente
    {dur}.
 
+Y decidí la calidad, que es lo que va a costar:
+
+· `borrador` — si la persona dice que es una prueba, un boceto, "a ver cómo
+  queda", o pide algo rápido o barato.
+· `normal` — el default. Cualquier pedido de trabajo sin más aclaración.
+· `maxima` — sólo si dice que es para publicar, que tiene que quedar
+  impecable, que es para una campaña, o pide expresamente la mejor calidad.
+
+Ante la duda, `normal`: cuesta tres veces menos que `maxima` y es la que se
+usa todos los días.
+
 Contestá SÓLO el JSON, sin explicar nada y sin ```:
 
-[{{"prompt": "...", "duration": 3}}, {{"prompt": "...", "duration": 3}}]
+{{"calidad": "normal", "planos": [{{"prompt": "...", "duration": 3}}, {{"prompt": "...", "duration": 3}}]}}
 """
 
 
-def guionar(fila: dict, dur: int) -> list[dict] | None:
-    """Los planos que salen de lo que pidió la persona. None si no se pudo.
+def guionar(fila: dict, dur: int) -> dict | None:
+    """`{calidad, planos}` a partir de lo que pidió la persona. None si no se pudo.
 
     Esto existe porque durante un tiempo NO existió, y el efecto fue el peor
     posible: silencioso. `_planos` armaba siempre los mismos tres tiempos de
@@ -260,18 +342,24 @@ def guionar(fila: dict, dur: int) -> list[dict] | None:
         log.warning("no pude armar el guión, uso los planos por defecto: %s", e)
         return None
 
-    # El modelo puede envolver el JSON en ``` o en una frase. Se recorta al
-    # primer corchete y al último, que es más robusto que pedir por favor.
+    # El modelo puede envolver el JSON en ``` o en una frase. Se recorta a la
+    # primera llave y a la última, que es más robusto que pedir por favor.
     try:
-        i, j = crudo.index("["), crudo.rindex("]")
-        planos = json.loads(crudo[i:j + 1])
+        i, j = crudo.index("{"), crudo.rindex("}")
+        d = json.loads(crudo[i:j + 1])
         planos = [{"prompt": str(p["prompt"]), "duration": int(p["duration"])}
-                  for p in planos if p.get("prompt") and p.get("duration")]
+                  for p in (d.get("planos") or [])
+                  if p.get("prompt") and p.get("duration")]
+        calidad = str(d.get("calidad") or "").strip().lower()
     except Exception as e:                                   # noqa: BLE001
         log.warning("el guión no vino como JSON, uso los planos por defecto: %s", e)
         return None
     if not planos:
         return None
+    # Una calidad inventada no elige un modelo carísimo por accidente: cae al
+    # default, que es el barato.
+    if calidad not in CALIDADES:
+        calidad = POR_DEFECTO["calidad"]
 
     # Las duraciones tienen que sumar `dur` exactamente o Magnific rechaza el
     # pedido. El sobrante o el faltante va al último plano, que es el que menos
@@ -281,9 +369,9 @@ def guionar(fila: dict, dur: int) -> list[dict] | None:
         planos[-1]["duration"] += dur - total
     if planos[-1]["duration"] < 1:
         return None
-    log.info("guión de %d planos: %s", len(planos),
+    log.info("guión %s de %d planos: %s", calidad, len(planos),
              " | ".join(f"{p['duration']}s {p['prompt'][:50]}" for p in planos))
-    return planos
+    return {"calidad": calidad, "planos": planos}
 
 
 def _planos(fila: dict, dur: int) -> list[dict]:
@@ -319,9 +407,16 @@ def _planos(fila: dict, dur: int) -> list[dict]:
     ]
 
 
-def estado_clip(tarea: str, resolucion: str) -> tuple[str, str | None]:
-    """`(estado, url)` de una tarea. La URL vive 24 horas: hay que bajarla ya."""
-    d = _pedir(f"seedance-2-5-pro-{resolucion}/{tarea}", metodo="GET")["data"]
+def estado_clip(tarea: str, modelo: str, resolucion: str) -> tuple[str, str | None]:
+    """`(estado, url)` de una tarea. La URL vive 24 horas: hay que bajarla ya.
+
+    La ruta para preguntar NO es la misma que para pedir, y no es igual en todos
+    los modelos: 2.5 la lleva con resolución y Mini 2.0 sin ella. Preguntar por
+    la ruta equivocada da 404, o sea «no existe» para una tarea que existe y se
+    está generando — y el reel se daría por perdido con el video ya pagado.
+    """
+    ruta = ficha_modelo(modelo)["ruta_estado"].format(res=resolucion)
+    d = _pedir(f"{ruta}/{tarea}", metodo="GET")["data"]
     urls = d.get("generated") or []
     return d.get("status", "").upper(), (urls[0] if urls else None)
 
@@ -329,7 +424,7 @@ def estado_clip(tarea: str, resolucion: str) -> tuple[str, str | None]:
 # ═══ 2. Montar la pieza ══════════════════════════════════════════════════════
 
 def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path | None,
-           salida: pathlib.Path, dur: float) -> pathlib.Path:
+           salida: pathlib.Path, dur: float, usar_ambiente: bool = True) -> pathlib.Path:
     """Escala el clip a 1080×1920, le monta el rótulo y le pone la música.
 
     Tres cosas que costaron encontrar y que no se pueden sacar:
@@ -349,7 +444,11 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path
     pagó —2.640 créditos— y la fila termina en `error` con un mensaje de ffmpeg
     que no explica nada. Por eso se pregunta antes.
     """
-    ambiente = _tiene_audio(clip)
+    # `usar_ambiente=False` cuando el modelo no acepta que le pidan silencio: el
+    # clip puede venir con MÚSICA propia, y mezclarla debajo de la nuestra no da
+    # ambiente, da dos canciones a la vez. Con 2.5 se pide `no_music` y lo que
+    # queda es sonido de ambiente de verdad, que sí suma.
+    ambiente = usar_ambiente and _tiene_audio(clip)
     filtro = [f"[0:v]scale=1080:1920:flags=lanczos,"
               f"fade=t=out:st={dur-0.5:.2f}:d=0.5[vout]"]
     orden = ["-i", str(clip)]
@@ -441,8 +540,8 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
                 # gastados— así que nada fallaba; simplemente el registro de lo
                 # que se gastó decía cero para siempre.
                 "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
-                          "kicker,bajada,musica,tarea,resolucion,duracion,"
-                          "clip_url,quien,metricas,creditos_estimados"})
+                          "kicker,bajada,musica,tarea,modelo,resolucion,"
+                          "duracion,clip_url,quien,metricas,creditos_estimados"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -529,6 +628,90 @@ def _gastado_este_mes(cli) -> int:
     return sum((f.get("creditos_estimados") or 0) for f in r.json())
 
 
+def _plan(calidad: str, dur_pedida: int, tope_pieza: int) -> tuple[dict | None, str]:
+    """Qué modelo, qué resolución y cuántos segundos, dentro del tope.
+
+    Devuelve `(plan, aviso)`. El aviso es para la persona: si acá se cambió
+    algo de lo que pidió, tiene que poder leer qué y por qué. Un pedido que
+    sale distinto sin decir nada es peor que un pedido rechazado.
+
+    En vez de ir recortando de a poco, se arman TODAS las combinaciones que el
+    tope paga y se elige la mejor. Recortar por pasos parece más simple y se
+    equivoca: probando calidad por calidad dentro de cada duración, un pedido
+    de 12 segundos en calidad máxima con tope 4.500 salía en calidad normal de
+    10 —porque «normal» se probaba antes de bajar a 10 segundos— cuando la
+    máxima de 10 costaba 4.400 y entraba igual. Con las combinaciones a la
+    vista eso no puede pasar.
+
+    El criterio, en este orden:
+
+    1. **La duración manda.** Gana la que más se acerca a lo pedido. Un video
+       de cuatro segundos donde se pidieron diez se nota de lejos; el cambio de
+       modelo, mucho menos. Puede pasarse de lo pedido si es lo más cercano que
+       el modelo hace —Mini sólo hace 5 o 10, así que ocho segundos salen de
+       diez— siempre que el tope lo pague.
+    2. **Después la calidad**, y nunca por encima de la pedida: nadie quiere
+       descubrir que su borrador salió en calidad máxima.
+    """
+    orden = ["maxima", "normal", "borrador"]
+    if calidad not in orden:
+        calidad = POR_DEFECTO["calidad"]
+    candidatas = orden[orden.index(calidad):]
+
+    opciones = []
+    for rango, c in enumerate(candidatas):
+        modelo, res = CALIDADES[c]
+        for dur in ficha_modelo(modelo)["duraciones"]:
+            cuesta = precio(modelo, res, dur)
+            if cuesta <= tope_pieza:
+                opciones.append((abs(dur - dur_pedida), rango, dur, c, modelo,
+                                 res, cuesta))
+    if not opciones:
+        barato_m, barato_r = CALIDADES[candidatas[-1]]
+        barato_d = min(ficha_modelo(barato_m)["duraciones"])
+        return None, (f"ni el reel más barato ({barato_d}s en {barato_r}, "
+                      f"{precio(barato_m, barato_r, barato_d)} créditos) entra "
+                      f"en el tope por pieza ({tope_pieza}). Subilo en marca.json.")
+
+    _, _, dur, c, modelo, res, cuesta = min(opciones)
+    avisos = []
+    if c != calidad:
+        avisos.append(f"lo bajé a calidad {c} para que entrara en el tope de "
+                      f"{tope_pieza} créditos")
+    if dur != dur_pedida:
+        avisos.append(f"pediste {dur_pedida} segundos y sale de {dur}: es lo "
+                      f"que hace {ficha_modelo(modelo)['nombre']}")
+    return ({"modelo": modelo, "resolucion": res, "duracion": dur,
+             "creditos": cuesta, "calidad": c}, " · ".join(avisos))
+
+
+def _ajustar(planos: list[dict], dur: int) -> list[dict]:
+    """Que los planos sumen exactamente los segundos del video.
+
+    El guión se escribe para la duración PEDIDA y el modelo puede hacer otra
+    —Mini sólo hace 5 o 10—, así que las dos casi nunca coinciden. Un multishot
+    que suma distinto que `duration` no es un video más largo ni más corto: es
+    un pedido que Magnific rechaza.
+    """
+    planos = [dict(p) for p in planos]
+    total = sum(p["duration"] for p in planos)
+    if total == dur or not planos:
+        return planos
+    # Se reparte proporcionalmente y el resto va al último, que es el plano que
+    # menos sufre un segundo de más o de menos.
+    for p in planos:
+        p["duration"] = max(1, round(p["duration"] * dur / total))
+    planos[-1]["duration"] += dur - sum(p["duration"] for p in planos)
+    if planos[-1]["duration"] < 1:
+        # Con muy pocos segundos y muchos planos no hay reparto posible: se
+        # quedan los que entren.
+        planos = planos[:dur]
+        for i, p in enumerate(planos):
+            p["duration"] = 1
+        planos[-1]["duration"] += dur - len(planos)
+    return planos
+
+
 def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     """Un ciclo. Devuelve cuántas filas movió.
 
@@ -544,13 +727,13 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     tirado en el disco del job.
     """
     # El tope por pieza tiene que ser MAYOR que lo que cuesta el default, o
-    # todo se rechaza y nadie entiende por qué. 3.000 deja pasar los 2.640 de
-    # 720p/6s y frena un 1080p de ocho segundos (6.320), que es exactamente la
-    # línea que se quiso poner.
-    tope_pieza = int(ficha.get("creditos_maximos") or 3000)
+    # todo se rechaza y nadie entiende por qué.
+    tope_pieza = int(ficha.get("creditos_maximos") or 4500)
     tope_mes = int(ficha.get("creditos_maximos_mes") or 20000)
-    res = ficha.get("resolucion") or POR_DEFECTO["resolucion"]
     dur = int(ficha.get("duracion") or POR_DEFECTO["duracion"])
+    # La calidad por defecto de la marca. Es el 90% de los reels: acá es donde
+    # está la plata, no en la excepción que pide calidad máxima.
+    calidad_marca = ficha.get("calidad") or POR_DEFECTO["calidad"]
     movidas = 0
 
     # --- a) recién anotados: ¿cuánto sale? ----------------------------------
@@ -571,39 +754,40 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         if not _tomar(cli, fila["id"], "pendiente", "estimando"):
             continue
         try:
-            # La duración que pidió la persona manda sobre el default de la
-            # marca, PERO se recorta a lo que el tope deja pagar en vez de
-            # rechazar el reel entero. Rechazar un pedido de diez segundos
-            # porque entran ocho es contestar «no» donde se podía contestar
-            # «casi»: la persona quería un video, no una lección de topes.
-            dur_fila = duracion_pedida(fila.get("mensaje")) or dur
-            recorte = ""
-            cuesta = precio(res, dur_fila)
-            if cuesta > tope_pieza:
-                cabe = tope_pieza // PRECIO_POR_SEGUNDO.get(res, 10 ** 9)
-                if cabe >= DURACION_MINIMA:
-                    recorte = (f"pediste {dur_fila} segundos y salen {cuesta} "
-                               f"créditos: lo hago de {cabe}, que es lo que "
-                               f"entra en el tope de {tope_pieza}.")
-                    dur_fila, cuesta = cabe, precio(res, cabe)
+            con_foto = {**fila, "foto_texto": fila.get("titulo") or "the product"}
+            dur_pedida = duracion_pedida(fila.get("mensaje")) or dur
+
+            # El guión sale ANTES de elegir modelo, porque de ahí sale también
+            # la calidad: la misma lectura del pedido que decide los planos
+            # decide si esto es una prueba o algo para publicar. Una sola
+            # llamada, no dos.
+            guion = ((fila.get("metricas") or {}).get("guion")
+                     or guionar(con_foto, dur_pedida) or {})
+            calidad = guion.get("calidad") or calidad_marca
+            planos = guion.get("planos") or _planos(con_foto, dur_pedida)
+
+            plan, aviso = _plan(calidad, dur_pedida, tope_pieza)
+            if not plan:
+                _marcar(cli, fila["id"], "rechazado", notas=aviso)
+                movidas += 1
+                continue
+
+            # Los planos se rearman si el modelo recortó la duración, o suman
+            # otra cosa que el video y el modelo se queda con lo primero.
+            planos = _ajustar(planos, plan["duracion"])
+            cuesta = plan["creditos"]
 
             ya = _gastado_este_mes(cli)
-            if cuesta > tope_pieza:
-                _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
-                        notas=f"ni el reel más corto ({DURACION_MINIMA}s = "
-                              f"{precio(res, DURACION_MINIMA)}) entra en el tope por "
-                              f"pieza ({tope_pieza}). Subilo o bajá la resolución "
-                              f"en marca.json.")
-            elif ya + cuesta > tope_mes:
+            if ya + cuesta > tope_mes:
                 _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
                         notas=f"este reel sale {cuesta} créditos, este mes ya hay "
                               f"{ya} comprometidos y el tope mensual es {tope_mes}.")
             else:
-                tarea = pedir_clip({**fila, "foto_texto": fila.get("titulo") or "the product"},
-                                   {"resolucion": res, "duracion": dur_fila})
-                _marcar(cli, fila["id"], "generando", tarea=tarea, modelo="seedance-2-5-pro",
-                        resolucion=res, duracion=dur_fila, creditos_estimados=cuesta,
-                        **({"notas": recorte} if recorte else {}))
+                tarea = pedir_clip(con_foto, plan, planos)
+                _marcar(cli, fila["id"], "generando", tarea=tarea,
+                        modelo=plan["modelo"], resolucion=plan["resolucion"],
+                        duracion=plan["duracion"], creditos_estimados=cuesta,
+                        **({"notas": aviso} if aviso else {}))
         except Exception as e:                               # noqa: BLE001
             # A `error` y NO de vuelta a `pendiente`, aunque reintentar sería
             # más cómodo. Si `pedir_clip` se cortó por timeout, el video puede
@@ -623,7 +807,9 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             _marcar(cli, fila["id"], "error", notas="quedó en generando sin id de tarea")
             continue
         try:
-            estado, url = estado_clip(fila["tarea"], fila.get("resolucion") or res)
+            estado, url = estado_clip(
+                fila["tarea"], fila.get("modelo") or "seedance-2-5-pro",
+                fila.get("resolucion") or "720p")
         except Exception as e:                               # noqa: BLE001
             # Preguntar no cuesta ni cobra, así que un fallo acá no mata la
             # fila: se deja en `generando` y se vuelve a preguntar el minuto
@@ -699,7 +885,9 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                         falta_musica = f"sin música: no pude bajar {pista} ({e})"
                         log.warning("[%s] %s", getattr(cli, "marca", "?"), falta_musica)
                 final = montar(clip, rotulo, musica, t / "reel.mp4",
-                               float(fila.get("duracion") or dur))
+                               float(fila.get("duracion") or dur),
+                               usar_ambiente=ficha_modelo(
+                                   fila.get("modelo") or "").get("manda_el_audio", True))
                 aviso = " · ".join(x for x in (falta_rotulo, falta_musica) if x)
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),

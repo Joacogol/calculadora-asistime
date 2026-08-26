@@ -454,8 +454,30 @@ secretos ya creados y no pregunta nada.
 
 Ya está hecho: la tabla `reels`, la función `api-reels` desplegada, las tools
 `crear_reel` y `estado_reel` en el tenant 176 y enganchadas al agente, y la
-configuración en `marca.json` (720p, 6 s, tope 3.000 por pieza y 20.000 al mes
-= 2.640 por reel).
+configuración en `marca.json`.
+
+**Qué modelo se usa y cuánto sale.** Hay tres calidades, y la persona la puede
+pedir en el chat («esto es una prueba», «esto va a publicarse»); el worker la
+lee del mensaje. Precios medidos con `simulate_cost` el 26/8/2026, para 10
+segundos en vertical:
+
+| Calidad | Modelo | Créditos |
+|---|---|---|
+| `borrador` | Seedance 2.0 Mini 480p | 700 |
+| `normal` ← el default | Seedance 2.0 Mini 720p | 1.400 |
+| `maxima` | Seedance 2.5 720p | 4.400 |
+
+Los modelos NO son intercambiables y por eso el worker guarda de cada uno qué
+acepta: Mini hace 5 o 10 segundos exactos —nada en el medio—, no tiene el campo
+`multishot` (los planos se pliegan a un prompt numerado) y no acepta que le
+pidan silencio, así que su audio propio no se mezcla debajo de la música de la
+marca. 2.5 hace de 4 en adelante y acepta todo.
+
+Si lo pedido no entra en `creditos_maximos`, el worker **no rechaza de
+entrada**: primero busca la combinación más cercana que sí entre —cuidando
+antes la duración que la calidad, porque cuatro segundos donde se pidieron diez
+se notan y el cambio de modelo mucho menos— y deja escrito en `notas` qué
+cambió. Sólo rechaza si ni el más barato entra.
 
 El enganche en el ciclo del worker ya está escrito (`app/chat.py` llama a
 `reelero.atender`), y la música también viaja con el despliegue: la pista

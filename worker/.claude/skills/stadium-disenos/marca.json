@@ -44,12 +44,14 @@
   "regla_naranja": "**El naranja no es el color de todas las piezas.** Es el del logo y el de las promos. En el feed real aparece en 1 de cada 24 posts: la grilla es beige, tan, kraft, gris y blanco. Una pieza de producto o de campaña con fondo naranja no se parece a lo que publica Stadium.",
   "_reels": "Qué se le pide a Magnific cuando alguien manda una foto de producto y pide un reel. Los precios están MEDIDOS con el estimador el 25/8/2026, no publicados: si Magnific los cambia, esto queda viejo sin avisar y lo que protege de verdad son los topes.",
   "reels": {
-    "resolucion": "720p",
-    "duracion": 6,
+    "calidad": "normal",
+    "duracion": 10,
     "creditos_maximos": 4500,
     "creditos_maximos_mes": 20000,
-    "_costo": "A 720p son 440 créditos por segundo: 6 segundos 2.640 y 10 segundos 4.400. Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y el worker lo estira a 1080×1920 — 2,7 veces. En 480p costaría la mitad pero estiraría 4 veces y se vería blando; en 1080p los mismos 6 segundos costarían 4.740.",
-    "_topes": "`creditos_maximos` es por pieza y tiene que ser MAYOR que el costo de lo que se pida, o se recorta la duración. En 4.500 entra un reel de 10 segundos (4.400) y sigue frenando un 1080p de 8 (6.320). `creditos_maximos_mes` corta el mes: con 20.000 son siete reels de 6 segundos o cuatro de 10. Si alguien pide más segundos de los que el tope paga, el worker NO rechaza el reel: lo hace de la duración que entra y lo deja escrito en `notas`.",
+    "_calidad": "Qué modelo de video se usa por defecto. `normal` es Seedance 2.0 Mini a 720p: 140 créditos por segundo. `borrador` es el mismo modelo a 480p (70) y `maxima` es Seedance 2.5 a 720p (440), tres veces más caro. La persona puede pedir otra en el chat —«esto es una prueba», «esto va a publicarse»— y el worker la lee del mensaje; esto es lo que se usa cuando no dice nada, o sea casi siempre. Acá es donde está la plata.",
+    "_costo": "Medido con simulate_cost el 26/8/2026, en 9:16 con sonido, y es lineal por segundo. Un reel de 10 segundos: 700 en borrador, 1.400 en normal, 4.400 en máxima. Seedance 2.0 Mini sólo hace 5 o 10 segundos exactos; 2.5 va de 4 en adelante. Si se pide una duración que el modelo no hace, el worker toma la más cercana que sí y lo deja escrito en `notas`.",
+    "_topes": "`creditos_maximos` es por pieza. En 4.500 entra hasta un reel de 10 segundos en calidad máxima (4.400). Si algo no entra, el worker NO rechaza de entrada: primero acorta la duración, después baja de calidad, y sólo si ni el más barato entra lo rechaza — siempre diciendo qué cambió. `creditos_maximos_mes` es el techo real del gasto.",
+    "_duracion": "El default, para cuando la persona no dice cuántos segundos quiere. Está en 10 y no en 6 porque con Seedance 2.0 Mini un reel de 10 segundos sale 1.400 créditos — menos que los 2.640 que costaba uno de 6 en 2.5. Más largo y más barato al mismo tiempo. Mini además sólo hace 5 o 10 exactos, así que pedir 6 daría 5. La persona puede pedir otra duración en el chat y el worker la lee del mensaje.",
     "musica": [
       {
         "clave": "street",
@@ -57,7 +59,6 @@
       }
     ],
     "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una, así que de una pista salen muchos reels. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. El worker busca el archivo PRIMERO en `musica/` de esta carpeta —así viaja con el despliegue y está el día uno, sin un paso manual que alguien tenga que acordarse de hacer— y si no está, en el bucket bajo `musica/`, que es por donde se agrega una pista nueva sin desplegar. Si el agente no nombra ninguna, va la primera de esta lista: un reel de Stadium siempre lleva música.",
-    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata.",
-    "_duracion": "La persona la pide en el chat («un reel de 10 segundos») y el worker la lee del mensaje. `duracion` acá es el default de cuando no la dice. Entre 4 y 12 segundos; fuera de ese rango se ignora y va el default."
+    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
   }
 }
