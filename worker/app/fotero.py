@@ -51,6 +51,8 @@ import logging
 import os
 import pathlib
 import tempfile
+import urllib.error
+import urllib.parse
 import urllib.request
 
 import requests
@@ -89,6 +91,7 @@ VERBOS = {
     "fondo": {
         "ruta": "beta/remove-background",
         "sync": True,
+        "formulario": True,      # esta ruta NO lee JSON
         "modelo": "remove-background",
         "que_hace": "recorta el producto y deja el fondo transparente",
     },
@@ -138,14 +141,45 @@ def _clave() -> str:
     return c
 
 
-def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST") -> dict:
-    datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
+def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST",
+           formulario: bool = False) -> dict:
+    """Una llamada a Magnific, con el cuerpo en el formato que pide CADA ruta.
+
+    `formulario=True` manda `application/x-www-form-urlencoded` en vez de JSON, y
+    hace falta de verdad: `beta/remove-background` NO lee JSON. Contra un cuerpo
+    JSON perfecto contesta *«Either image_url or image_file is required»* —
+    exactamente el mismo error que contra un cuerpo vacío—, así que el mensaje
+    manda a revisar la URL de la foto, que está bien, en vez del formato del
+    pedido, que es lo que falla. Costó un pedido real para verlo.
+
+    Y los errores traen el CUERPO de la respuesta, no sólo el código. Sin esto,
+    una fila terminaba en `error` con la nota «HTTP Error 400: Bad Request», que
+    no dice nada: hay que reproducir la llamada a mano para enterarse de algo. El
+    cuerpo, en ese mismo caso, decía exactamente qué faltaba.
+    """
+    if cuerpo is None:
+        datos, tipo = None, "application/json"
+    elif formulario:
+        datos = urllib.parse.urlencode(cuerpo).encode()
+        tipo = "application/x-www-form-urlencoded"
+    else:
+        datos, tipo = json.dumps(cuerpo).encode(), "application/json"
+
     pedido = urllib.request.Request(
         f"{API}/{ruta}", data=datos, method=metodo,
-        headers={"x-magnific-api-key": _clave(),
-                 "Content-Type": "application/json"})
-    with urllib.request.urlopen(pedido, timeout=90) as r:
-        return json.loads(r.read().decode())
+        headers={"x-magnific-api-key": _clave(), "Content-Type": tipo})
+    try:
+        with urllib.request.urlopen(pedido, timeout=90) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        detalle = ""
+        try:
+            detalle = e.read().decode("utf-8", "replace")[:300]
+        except Exception:                                        # noqa: BLE001
+            pass
+        raise RuntimeError(
+            f"Magnific contestó {e.code} en {ruta}"
+            + (f": {detalle}" if detalle else "")) from None
 
 
 # ═══ 1. Pedir la edición ═════════════════════════════════════════════════════
@@ -247,7 +281,7 @@ def pedir(fila: dict) -> tuple[str | None, str | None]:
     id para ir a preguntar después.
     """
     v = VERBOS[fila["verbo"]]
-    r = _pedir(v["ruta"], _cuerpo(fila))
+    r = _pedir(v["ruta"], _cuerpo(fila), formulario=v.get("formulario", False))
     if v["sync"]:
         # La respuesta trae varias resoluciones. Se toma la grande: las piezas
         # se dibujan a 2160 y el `preview` viene a 0,25 megapíxeles, que es

@@ -50,6 +50,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import urllib.error
 import urllib.request
 
 import requests
@@ -182,13 +183,31 @@ def _clave() -> str:
 
 
 def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST") -> dict:
+    """Una llamada a Magnific, con el CUERPO del error cuando falla.
+
+    Sin esto, un pedido rechazado deja la nota «HTTP Error 400: Bad Request», que
+    no dice nada y obliga a reproducir la llamada a mano para enterarse de algo.
+    El cuerpo de la respuesta dice qué campo falta o qué valor no acepta — que es
+    justo lo que hay que leer cuando la fila ya está en `error` y el video, si
+    salió, ya se pagó.
+    """
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
     pedido = urllib.request.Request(
         f"{API}/{ruta}", data=datos, method=metodo,
         headers={"x-magnific-api-key": _clave(),
                  "Content-Type": "application/json"})
-    with urllib.request.urlopen(pedido, timeout=60) as r:
-        return json.loads(r.read().decode())
+    try:
+        with urllib.request.urlopen(pedido, timeout=60) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        detalle = ""
+        try:
+            detalle = e.read().decode("utf-8", "replace")[:300]
+        except Exception:                                        # noqa: BLE001
+            pass
+        raise RuntimeError(
+            f"Magnific contestó {e.code} en {ruta}"
+            + (f": {detalle}" if detalle else "")) from None
 
 
 # ═══ 1. Pedir el video ═══════════════════════════════════════════════════════
