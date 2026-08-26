@@ -21,11 +21,17 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-// Un reel cuesta créditos de verdad —2.640 con la configuración de Stadium— así
-// que el tope por hora es MUCHO más bajo que el de los diseños, que sólo gastan
-// CPU. Tres por hora es de sobra para trabajar y no alcanza para vaciar la
-// cuenta si el chat entra en un bucle.
-const MAX_POR_HORA = 3;
+// Cuántos reels se pueden pedir por hora. Es un freno contra un bucle del chat,
+// NO el control de gasto: el que cuida la plata es `creditos_maximos_mes` del
+// `marca.json`, que corta por créditos y no por cantidad.
+//
+// Empezó en 3 y frenaba antes de que nadie terminara de probar. Lo importante
+// es que frenar acá no ahorra un peso —el tope mensual ya lo hace— y en cambio
+// corta una conversación con una persona esperando del otro lado.
+//
+// Se puede cambiar sin tocar código con la variable `REELS_POR_HORA` en
+// Supabase. En 0 no hay tope por hora y manda sólo el tope de créditos.
+const MAX_POR_HORA = Number(Deno.env.get("REELS_POR_HORA") ?? 12);
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -142,11 +148,12 @@ Deno.serve(async (req) => {
     { headers: { ...cab, Prefer: "count=exact" } },
   );
   const recientes = (await rc.json()) as unknown[];
-  if (Array.isArray(recientes) && recientes.length >= MAX_POR_HORA) {
+  if (MAX_POR_HORA > 0 && Array.isArray(recientes) &&
+      recientes.length >= MAX_POR_HORA) {
     return json({
       error: `ya se pidieron ${recientes.length} reels en la última hora, que es el ` +
         `tope. Cada uno cuesta créditos: si de verdad hacen falta más, hay que ` +
-        `subir el tope a propósito.`,
+        `subir el tope a propósito (variable REELS_POR_HORA).`,
       codigo: "tope_por_hora",
     }, 429);
   }
