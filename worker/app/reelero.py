@@ -328,7 +328,7 @@ def estado_clip(tarea: str, resolucion: str) -> tuple[str, str | None]:
 
 # ═══ 2. Montar la pieza ══════════════════════════════════════════════════════
 
-def montar(clip: pathlib.Path, rotulo: pathlib.Path, musica: pathlib.Path | None,
+def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path | None,
            salida: pathlib.Path, dur: float) -> pathlib.Path:
     """Escala el clip a 1080×1920, le monta el rótulo y le pone la música.
 
@@ -350,17 +350,27 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path, musica: pathlib.Path | None
     que no explica nada. Por eso se pregunta antes.
     """
     ambiente = _tiene_audio(clip)
-    filtro = [
-        f"[0:v]scale=1080:1920:flags=lanczos,fade=t=out:st={dur-0.5:.2f}:d=0.5[base]",
-        f"[1:v]format=rgba,fade=t=in:st=0.3:d=0.5:alpha=1,"
-        f"fade=t=out:st={dur-0.8:.2f}:d=0.6:alpha=1[rot]",
-        "[base][rot]overlay=0:0:shortest=1[vout]",
-    ]
-    orden = ["-i", str(clip), "-loop", "1", "-t", f"{dur+0.1:.2f}", "-i", str(rotulo)]
+    filtro = [f"[0:v]scale=1080:1920:flags=lanczos,"
+              f"fade=t=out:st={dur-0.5:.2f}:d=0.5[vout]"]
+    orden = ["-i", str(clip)]
+    # El índice de la música depende de si hay rótulo, porque el rótulo es una
+    # entrada más. Se lleva en una variable en vez de escribir `[2:a]` a mano:
+    # el número escrito a mano fue correcto mientras el rótulo era obligatorio
+    # y habría apuntado al video el día que dejó de serlo.
+    i_musica = 1
+    if rotulo:
+        filtro[0] = filtro[0].replace("[vout]", "[base]")
+        filtro += [
+            f"[1:v]format=rgba,fade=t=in:st=0.3:d=0.5:alpha=1,"
+            f"fade=t=out:st={dur-0.8:.2f}:d=0.6:alpha=1[rot]",
+            "[base][rot]overlay=0:0:shortest=1[vout]",
+        ]
+        orden += ["-loop", "1", "-t", f"{dur+0.1:.2f}", "-i", str(rotulo)]
+        i_musica = 2
     if musica:
         orden += ["-i", str(musica)]
         filtro.append(
-            f"[2:a]atrim=0:{dur:.2f},afade=t=in:st=0:d=0.3,"
+            f"[{i_musica}:a]atrim=0:{dur:.2f},afade=t=in:st=0:d=0.3,"
             f"afade=t=out:st={dur-0.7:.2f}:d=0.7[mus]")
         if ambiente:
             filtro += [
@@ -657,7 +667,19 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             t = pathlib.Path(tmp)
             try:
                 clip = bajar(fila["clip_url"], t / "clip.mp4")
-                rotulo = armar_rotulo(fila, t / "rotulo.png")
+
+                # El rótulo va en su propio try por la misma razón que la
+                # música: acá el video YA está generado y pagado. Que el texto
+                # no se pueda dibujar es un problema; perder por eso un clip de
+                # 4.400 créditos es otro mucho más caro. Sale sin rótulo y la
+                # nota dice por qué.
+                rotulo = falta_rotulo = None
+                try:
+                    rotulo = armar_rotulo(fila, t / "rotulo.png")
+                except Exception as e:                       # noqa: BLE001
+                    falta_rotulo = f"sin rótulo: {e}"
+                    log.exception("[%s] no pude dibujar el rótulo del reel %s",
+                                  getattr(cli, "marca", "?"), fila["id"])
                 # La pista se resuelve acá y no se lee de la fila: lo que
                 # el agente escribió en `musica` es una clave del banco
                 # (`street`), no una URL, y `bajar` necesita una URL.
@@ -678,10 +700,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                         log.warning("[%s] %s", getattr(cli, "marca", "?"), falta_musica)
                 final = montar(clip, rotulo, musica, t / "reel.mp4",
                                float(fila.get("duracion") or dur))
+                aviso = " · ".join(x for x in (falta_rotulo, falta_musica) if x)
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
                         creditos_gastados=fila.get("creditos_estimados"),
-                        **({"notas": falta_musica} if falta_musica else {}))
+                        **({"notas": aviso} if aviso else {}))
             except Exception as e:                       # noqa: BLE001
                 _marcar(cli, fila["id"], "error", notas=f"al montar: {e}")
         movidas += 1
@@ -748,8 +771,8 @@ def musica_de(cli, ficha: dict, pedida: str | None) -> str | None:
     return f"{cli.url.rstrip('/')}/storage/v1/object/public/disenos/musica/{clave}.mp3"
 
 
-def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path:
-    """El PNG transparente que se monta encima del clip.
+def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None:
+    """El PNG transparente que se monta encima del clip. None si no hay qué decir.
 
     Es la plantilla `campana` en modo `sobre_video`, dibujada al tamaño del
     reel. O sea: **el rótulo de un reel se hace con el mismo molde que una
@@ -765,11 +788,27 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path:
     · Es **sync**. Playwright se niega a correr su API sync adentro de un loop
       de asyncio, y el ciclo del worker es async: hay que entrar por
       `asyncio.to_thread`, igual que el dibujo de plantillas.
+
+    Y el título: `campana` lo declara `requerido`, así que una fila sin título
+    no dibuja, revienta. Eso costó un video pagado —4.400 créditos, el
+    26/8/2026—: el clip estaba listo y el montaje murió pidiendo un campo. Por
+    eso acá el texto se busca en los tres campos y no sólo en `titulo`: si el
+    agente escribió la frase en la bajada, esa frase es el título del rótulo.
+    Y si no escribió ninguno, se devuelve None y el reel sale sin rótulo, que
+    es infinitamente mejor que no salir.
     """
     import importlib
     import sys
 
     from . import config
+
+    # El primero que tenga texto manda. El orden es el de importancia visual,
+    # no el del contrato.
+    texto = next((t for t in (fila.get("titulo"), fila.get("kicker"),
+                              fila.get("bajada")) if (t or "").strip()), "")
+    if not texto:
+        log.info("el reel %s no trae texto: va sin rótulo", fila.get("id"))
+        return None
 
     carpeta = config.RAIZ / ".claude" / "skills" / marca
     sys.path.insert(0, str(carpeta))
@@ -785,13 +824,14 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path:
             f"la marca «{marca}» no tiene la plantilla `campana`, que es con la "
             f"que se dibuja el rótulo de los reels")
 
-    html = plantillas["campana"]({
-        "titulo": fila.get("titulo") or "",
-        "kicker": fila.get("kicker") or "",
-        "bajada": fila.get("bajada") or "",
-        "sobre_video": True,
-        "posicion": "arriba",
-    }, "reel")
+    datos = {"titulo": texto, "sobre_video": True, "posicion": "arriba"}
+    # El kicker y la bajada sólo entran si no fueron ELLOS los que hicieron de
+    # título: si no, la misma frase saldría dos veces en la pieza.
+    for campo in ("kicker", "bajada"):
+        valor = (fila.get(campo) or "").strip()
+        if valor and valor != texto:
+            datos[campo] = valor
+    html = plantillas["campana"](datos, "reel")
     html += "<style>.canvas{background:transparent !important}</style>"
 
     with sync_playwright() as p:
