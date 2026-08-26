@@ -47,6 +47,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 import urllib.request
@@ -88,9 +89,37 @@ PRECIO_POR_SEGUNDO = {"480p": 200, "720p": 440, "1080p": 790}
 POR_DEFECTO = {"resolucion": "720p", "duracion": 6, "relacion": "social_story_9_16"}
 
 
+#: Entre cuántos y cuántos segundos puede durar un reel. Menos de cuatro no
+#: alcanza para contar nada; más de doce ya no es un reel de producto, es otra
+#: cosa —y a 440 créditos el segundo, una cara.
+DURACION_MINIMA, DURACION_MAXIMA = 4, 12
+
+_SEGUNDOS = re.compile(
+    r"(?:de\s+)?(\d{1,2})\s*(?:segundos?|seg\b|s\b)", re.IGNORECASE)
+
+
 def precio(resolucion: str, duracion: int) -> int:
     """Lo que va a salir este video, antes de pedirlo."""
     return PRECIO_POR_SEGUNDO.get(resolucion, PRECIO_POR_SEGUNDO["1080p"]) * duracion
+
+
+def duracion_pedida(mensaje: str | None) -> int | None:
+    """Los segundos que pidió la persona, si los dijo.
+
+    «Un reel de 10 segundos» es un pedido, no un comentario, y hasta el
+    26/8/2026 el worker lo ignoraba: sacaba la duración del `marca.json` y
+    hacía seis segundos siempre. Se pidieron diez dos veces seguidas y salieron
+    seis las dos veces, sin una palabra que dijera por qué.
+
+    Es una expresión regular y no una pregunta al modelo a propósito: «10
+    segundos» escrito en castellano no tiene ambigüedad que valga una llamada.
+    Si no encuentra nada, devuelve None y manda el default de la marca.
+    """
+    m = _SEGUNDOS.search(mensaje or "")
+    if not m:
+        return None
+    n = int(m.group(1))
+    return n if DURACION_MINIMA <= n <= DURACION_MAXIMA else None
 
 
 def _clave() -> str:
@@ -131,7 +160,9 @@ def pedir_clip(fila: dict, ficha: dict) -> str:
     """
     res = ficha.get("resolucion") or POR_DEFECTO["resolucion"]
     dur = int(ficha.get("duracion") or POR_DEFECTO["duracion"])
-    planos = fila.get("metricas", {}).get("planos") or _planos(fila, dur)
+    planos = ((fila.get("metricas") or {}).get("planos")
+              or guionar(fila, dur)
+              or _planos(fila, dur))
     cuerpo = {
         "prompt": fila["mensaje"],
         "reference_images": [fila["foto"]],
@@ -148,8 +179,119 @@ def pedir_clip(fila: dict, ficha: dict) -> str:
     return _pedir(f"seedance-2-5-pro-{res}", cuerpo)["data"]["task_id"]
 
 
+GUION = """Escribí la lista de planos de un reel vertical de {dur} segundos.
+
+Lo que pidió la persona, textual:
+\"\"\"{pedido}\"\"\"
+
+El producto es: {producto}. Va aparte como imagen de referencia, así que no
+hace falta describirlo en detalle: alcanza con nombrarlo.
+
+Reglas:
+
+1. Si la persona describió una escena, ESA es la escena. Seguila. No la
+   cambies por algo más seguro ni más publicitario.
+2. Si sólo pidió "un reel con este producto" sin decir qué pasa, usá esta
+   estructura de retail: el producto quieto con la cámara acercándose muy
+   despacio, después una persona que entra al cuadro al lado del producto, y
+   al final alguien de espaldas caminando en la calle usándolo.
+3. El producto tiene que quedar reconocible y sin deformarse: misma forma,
+   mismos colores, mismos detalles. Una escena rara —el producto gigante,
+   alguien que cae adentro— está PERMITIDA si la pidieron; lo que no se vale
+   es que el producto cambie de forma o que unas manos lo estrujen.
+4. Nada de texto, letras ni carteles en el video. El texto lo pone el rótulo
+   después, encima.
+5. Escribí los planos EN INGLÉS. El modelo responde mejor.
+6. Entre dos y tres planos, y las duraciones tienen que sumar exactamente
+   {dur}.
+
+Contestá SÓLO el JSON, sin explicar nada y sin ```:
+
+[{{"prompt": "...", "duration": 3}}, {{"prompt": "...", "duration": 3}}]
+"""
+
+
+def guionar(fila: dict, dur: int) -> list[dict] | None:
+    """Los planos que salen de lo que pidió la persona. None si no se pudo.
+
+    Esto existe porque durante un tiempo NO existió, y el efecto fue el peor
+    posible: silencioso. `_planos` armaba siempre los mismos tres tiempos de
+    retail y se mandaban en `multishot`, que pesa mucho más que el `prompt`.
+    Así que alguien pedía «una persona cae del cielo y aterriza adentro del
+    zapato», pagaba 2.640 créditos, y recibía un reel de catálogo correcto y
+    completamente ajeno a lo que había pedido. Sin un error en ningún lado.
+
+    La estructura de retail no se tira —sigue siendo el mejor default y está
+    escrita en el prompt—, pero pasa a ser lo que se hace CUANDO NO PIDIERON
+    OTRA COSA, que es muy distinto de lo único que se puede hacer.
+
+    Es un solo turno y sin herramientas: no es un agente trabajando, es una
+    traducción de un pedido en castellano a una lista de planos. Al lado de los
+    2.640 créditos del video, lo que cuesta no se mide.
+
+    Si falla, devuelve None y el que llama se queda con `_planos`. Preferimos
+    un reel genérico antes que ningún reel.
+    """
+    pedido = (fila.get("mensaje") or "").strip()
+    if not pedido:
+        return None
+    try:
+        import asyncio
+
+        from claude_agent_sdk import ClaudeAgentOptions, query
+
+        prompt = GUION.format(dur=dur, pedido=pedido[:2000],
+                              producto=fila.get("foto_texto") or "the product")
+
+        async def _pedir_guion() -> str:
+            texto = ""
+            async for msg in query(prompt=prompt, options=ClaudeAgentOptions(
+                    allowed_tools=[], max_turns=1, permission_mode="dontAsk")):
+                for bloque in getattr(msg, "content", None) or []:
+                    t = getattr(bloque, "text", None)
+                    if t:
+                        texto += t
+            return texto
+
+        # `asyncio.run` y no `await`: esta función corre adentro del hilo que
+        # `chat.py` abre con `to_thread`, o sea que no hay loop andando acá.
+        crudo = asyncio.run(_pedir_guion())
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude armar el guión, uso los planos por defecto: %s", e)
+        return None
+
+    # El modelo puede envolver el JSON en ``` o en una frase. Se recorta al
+    # primer corchete y al último, que es más robusto que pedir por favor.
+    try:
+        i, j = crudo.index("["), crudo.rindex("]")
+        planos = json.loads(crudo[i:j + 1])
+        planos = [{"prompt": str(p["prompt"]), "duration": int(p["duration"])}
+                  for p in planos if p.get("prompt") and p.get("duration")]
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("el guión no vino como JSON, uso los planos por defecto: %s", e)
+        return None
+    if not planos:
+        return None
+
+    # Las duraciones tienen que sumar `dur` exactamente o Magnific rechaza el
+    # pedido. El sobrante o el faltante va al último plano, que es el que menos
+    # sufre un segundo de más o de menos.
+    total = sum(p["duration"] for p in planos)
+    if total != dur:
+        planos[-1]["duration"] += dur - total
+    if planos[-1]["duration"] < 1:
+        return None
+    log.info("guión de %d planos: %s", len(planos),
+             " | ".join(f"{p['duration']}s {p['prompt'][:50]}" for p in planos))
+    return planos
+
+
 def _planos(fila: dict, dur: int) -> list[dict]:
     """Los tres tiempos de un reel de producto, repartidos en `dur` segundos.
+
+    Es el DEFAULT, no la ley: se usa cuando `guionar` no pudo armar el guión a
+    partir de lo que pidió la persona. Lo de abajo sigue valiendo como consejo
+    y por eso está también escrito en el prompt de `guionar`.
 
     **Nada de manipulación del producto.** Se midió: pidiéndole a un pie que se
     calce la zapatilla, el modelo directamente no lo hace —el pie queda al lado
@@ -419,21 +561,39 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         if not _tomar(cli, fila["id"], "pendiente", "estimando"):
             continue
         try:
-            cuesta = precio(res, dur)
+            # La duración que pidió la persona manda sobre el default de la
+            # marca, PERO se recorta a lo que el tope deja pagar en vez de
+            # rechazar el reel entero. Rechazar un pedido de diez segundos
+            # porque entran ocho es contestar «no» donde se podía contestar
+            # «casi»: la persona quería un video, no una lección de topes.
+            dur_fila = duracion_pedida(fila.get("mensaje")) or dur
+            recorte = ""
+            cuesta = precio(res, dur_fila)
+            if cuesta > tope_pieza:
+                cabe = tope_pieza // PRECIO_POR_SEGUNDO.get(res, 10 ** 9)
+                if cabe >= DURACION_MINIMA:
+                    recorte = (f"pediste {dur_fila} segundos y salen {cuesta} "
+                               f"créditos: lo hago de {cabe}, que es lo que "
+                               f"entra en el tope de {tope_pieza}.")
+                    dur_fila, cuesta = cabe, precio(res, cabe)
+
             ya = _gastado_este_mes(cli)
             if cuesta > tope_pieza:
                 _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
-                        notas=f"{cuesta} créditos supera el tope por pieza ({tope_pieza}). "
-                              f"Bajá la resolución o la duración en marca.json.")
+                        notas=f"ni el reel más corto ({DURACION_MINIMA}s = "
+                              f"{precio(res, DURACION_MINIMA)}) entra en el tope por "
+                              f"pieza ({tope_pieza}). Subilo o bajá la resolución "
+                              f"en marca.json.")
             elif ya + cuesta > tope_mes:
                 _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
                         notas=f"este reel sale {cuesta} créditos, este mes ya hay "
                               f"{ya} comprometidos y el tope mensual es {tope_mes}.")
             else:
                 tarea = pedir_clip({**fila, "foto_texto": fila.get("titulo") or "the product"},
-                                   {"resolucion": res, "duracion": dur})
+                                   {"resolucion": res, "duracion": dur_fila})
                 _marcar(cli, fila["id"], "generando", tarea=tarea, modelo="seedance-2-5-pro",
-                        resolucion=res, duracion=dur, creditos_estimados=cuesta)
+                        resolucion=res, duracion=dur_fila, creditos_estimados=cuesta,
+                        **({"notas": recorte} if recorte else {}))
         except Exception as e:                               # noqa: BLE001
             # A `error` y NO de vuelta a `pendiente`, aunque reintentar sería
             # más cómodo. Si `pedir_clip` se cortó por timeout, el video puede

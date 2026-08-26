@@ -46,10 +46,10 @@
   "reels": {
     "resolucion": "720p",
     "duracion": 6,
-    "creditos_maximos": 3000,
+    "creditos_maximos": 4500,
     "creditos_maximos_mes": 20000,
-    "_costo": "720p a 6 segundos son 2.640 créditos. Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y el worker lo estira a 1080×1920 — 2,7 veces. En 480p costaría 1.200 pero estiraría 4 veces y se vería blando; en 1080p costaría 4.740.",
-    "_topes": "`creditos_maximos` es por pieza y tiene que ser MAYOR que el costo por defecto o se rechaza todo. 3.000 deja pasar los 2.640 y frena un 1080p de ocho segundos (6.320). `creditos_maximos_mes` corta el mes: con 20.000 son siete reels.",
+    "_costo": "A 720p son 440 créditos por segundo: 6 segundos 2.640 y 10 segundos 4.400. Magnific llama «720p» al lado largo, así que el clip sale de 406×720 y el worker lo estira a 1080×1920 — 2,7 veces. En 480p costaría la mitad pero estiraría 4 veces y se vería blando; en 1080p los mismos 6 segundos costarían 4.740.",
+    "_topes": "`creditos_maximos` es por pieza y tiene que ser MAYOR que el costo de lo que se pida, o se recorta la duración. En 4.500 entra un reel de 10 segundos (4.400) y sigue frenando un 1080p de 8 (6.320). `creditos_maximos_mes` corta el mes: con 20.000 son siete reels de 6 segundos o cuatro de 10. Si alguien pide más segundos de los que el tope paga, el worker NO rechaza el reel: lo hace de la duración que entra y lo deja escrito en `notas`.",
     "musica": [
       {
         "clave": "street",
@@ -57,6 +57,7 @@
       }
     ],
     "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una, así que de una pista salen muchos reels. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. El worker busca el archivo PRIMERO en `musica/` de esta carpeta —así viaja con el despliegue y está el día uno, sin un paso manual que alguien tenga que acordarse de hacer— y si no está, en el bucket bajo `musica/`, que es por donde se agrega una pista nueva sin desplegar. Si el agente no nombra ninguna, va la primera de esta lista: un reel de Stadium siempre lleva música.",
-    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
+    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata.",
+    "_duracion": "La persona la pide en el chat («un reel de 10 segundos») y el worker la lee del mensaje. `duracion` acá es el default de cuando no la dice. Entre 4 y 12 segundos; fuera de ese rango se ignora y va el default."
   }
 }
