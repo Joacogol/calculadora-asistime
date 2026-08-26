@@ -555,7 +555,8 @@ de una estimación: si el número está mal, está mal por arriba, y eso rechaza
 algo que entraba en lugar de dejar pasar un gasto. Cuando se puedan medir hay
 que bajarlos en `app/fotero.py`.
 
-**Las tools en Asistime.** Son dos, igual que los reels:
+**Las tools en Asistime ya están creadas** (tenant 176, ids 2079 y 2080) y
+enganchadas al agente Diseñador Stadium:
 
 - `editar_foto` → `POST` a `.../functions/v1/api-fotos` con
   `{verbo, foto, instruccion?, formato?}`. Devuelve un id al instante.
@@ -563,6 +564,16 @@ que bajarlos en `app/fotero.py`.
   45 segundos adentro** antes de contestar: una edición tarda segundos, así que
   la mayoría de las veces el agente puede mostrar la foto en el mismo mensaje
   en vez de decir «ya te la mando». Con `&esperar=no` contesta al instante.
+  Por eso esta tool NO tiene bucle de espera propio, a diferencia de
+  `estado_diseno` y `estado_reel`: esperar de los dos lados no acorta nada y
+  hace el camino más difícil de razonar.
+
+**El prompt del agente se reescribió** (versión 2, publicada). Además de los
+reels y las fotos, arregla algo que estaba roto desde que se rehízo el set de
+plantillas: la versión 1 nombraba `sale`, `lanzamiento` y `marca`, que ya no
+existen. Ahora nombra las cinco reales y dice explícitamente que **si el
+catálogo y el prompt no coinciden, manda el catálogo** — el catálogo lo genera
+el motor solo y no se puede quedar viejo; el prompt sí.
 
 ### 8 · La prueba
 
