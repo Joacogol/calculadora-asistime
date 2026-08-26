@@ -526,6 +526,44 @@ select estado, tarea, creditos_estimados, notas, url
 from reels order by creado_en desc limit 5;
 ```
 
+### 7b · Editor de fotos (los cinco verbos)
+
+La tabla `fotos_editadas` está creada en Stadium, `api-fotos` desplegada
+(versión 1) y `app/fotero.py` enganchado al ciclo. Falta **crear las dos tools
+en Asistime**, con la misma clave que ya usan `crear_reel` y `estado_reel`.
+
+Los verbos, y de dónde salió cada uno:
+
+| Verbo | Qué hace | Por qué está |
+|---|---|---|
+| `fondo` | recorta el producto | la foto de catálogo viene sobre blanco y `campana` tiene escrito que eso «obliga a un velo tan grande que la pieza sale gris» |
+| `formato` | la lleva a otra proporción | hay una foto por producto y cuatro formatos; recortar a 9:16 se come el producto, así que **expande** en vez de recortar |
+| `tamano` | la agranda | el cliente manda 800 píxeles por WhatsApp y las piezas se dibujan a 2160 |
+| `retoque` | saca o cambia algo puntual | «sacale el cartel de oferta», «borrá la persona del fondo» |
+| `escena` | pone el producto en otro lugar | una calle, una mesa, un pie |
+
+`retoque` y `escena` son el mismo endpoint con distinto prompt, y los dos
+GENERAN imagen: pueden deformar el producto. Por eso el worker le pega a cada
+prompt una regla de que el producto no se toca —misma forma, mismos colores,
+mismos logos—, la misma lección que dejaron los reels. Aun así, una pieza que
+sale de `escena` conviene mirarla antes de publicarla.
+
+**Los precios.** `fondo` son 3 créditos, medido. Los otros cuatro **no se
+pudieron medir** —el conector de Magnific, que es donde vive el simulador, se
+cayó a mitad de camino— así que el worker les pone una cota alta de 300 en vez
+de una estimación: si el número está mal, está mal por arriba, y eso rechaza
+algo que entraba en lugar de dejar pasar un gasto. Cuando se puedan medir hay
+que bajarlos en `app/fotero.py`.
+
+**Las tools en Asistime.** Son dos, igual que los reels:
+
+- `editar_foto` → `POST` a `.../functions/v1/api-fotos` con
+  `{verbo, foto, instruccion?, formato?}`. Devuelve un id al instante.
+- `estado_foto` → `GET` a `.../functions/v1/api-fotos?id=...`. **Espera hasta
+  45 segundos adentro** antes de contestar: una edición tarda segundos, así que
+  la mayoría de las veces el agente puede mostrar la foto en el mismo mensaje
+  en vez de decir «ya te la mando». Con `&esperar=no` contesta al instante.
+
 ### 8 · La prueba
 
 El agente es **Diseñador Stadium**. Probá con las dos cosas:

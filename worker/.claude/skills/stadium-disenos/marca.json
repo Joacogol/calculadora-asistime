@@ -60,5 +60,14 @@
     ],
     "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una, así que de una pista salen muchos reels. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. El worker busca el archivo PRIMERO en `musica/` de esta carpeta —así viaja con el despliegue y está el día uno, sin un paso manual que alguien tenga que acordarse de hacer— y si no está, en el bucket bajo `musica/`, que es por donde se agrega una pista nueva sin desplegar. Si el agente no nombra ninguna, va la primera de esta lista: un reel de Stadium siempre lleva música.",
     "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
+  },
+  "fotos": {
+    "creditos_maximos": 600,
+    "creditos_maximos_mes": 5000,
+    "_que_hace": "Los cinco verbos que el agente le puede pedir a una foto ANTES de usarla en una pieza: `fondo` recorta el producto, `formato` la lleva a otra proporción inventando los bordes en vez de recortar, `tamano` la agranda, `retoque` saca o cambia algo puntual, y `escena` pone el producto en otro lugar.",
+    "_por_que": "Salen de problemas concretos del motor, no de la lista de lo que la API sabe hacer. La foto de catálogo viene sobre blanco y la plantilla `campana` tiene escrito que una foto así obliga a un velo tan grande que la pieza sale gris: `fondo` lo arregla. La que manda el cliente por WhatsApp viene de 800 píxeles y las piezas se dibujan a 2160: eso es `tamano`. Y la horizontal que sirve para un post no entra en un story sin comerse el producto: eso es `formato`.",
+    "_costo": "Quitar el fondo son 3 créditos, medido con simulate_cost el 26/8/2026. Los otros cuatro NO se pudieron medir —el conector de Magnific se cayó y su simulador es el único lugar donde están los precios— así que el worker les pone una COTA ALTA de 300, no una estimación. Cuando se puedan medir hay que bajarlos: hoy `formato`, `tamano`, `retoque` y `escena` figuran más caros de lo que seguramente son, y eso puede rechazar algo que entraba.",
+    "_topes": "`creditos_maximos` es por pieza y `creditos_maximos_mes` corta el mes. Son aparte de los de `reels` a propósito: editar fotos sale centavos y generar video sale miles, y un solo tope compartido dejaría que un reel se coma el presupuesto de cien recortes de fondo.",
+    "_regla_producto": "`retoque` y `escena` GENERAN imagen, así que pueden deformar el producto. Se midió con los reels: pidiéndole al modelo que manipule una zapatilla, la caña alta desapareció y la suela cambió de color. Por eso el worker le pega a cada prompt una regla de que el producto no se toca — misma forma, mismos colores, mismos logos. Aun así, una pieza que sale de `escena` conviene mirarla antes de publicarla."
   }
 }

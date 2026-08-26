@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import (banco, cobro, config, manual, motorista, plantillas,
+from . import (banco, cobro, config, fotero, manual, motorista, plantillas,
                plantillero, publicador, reelero)
 from .supa import Cliente
 from .disenador import disenar
@@ -228,7 +228,7 @@ async def ciclo():
     # texto viejo cacheado para la siguiente.
     manual.limpiar()
     plantillas.limpiar()
-    hechos = subidos = plantillas_nuevas = propuestas = reels = 0
+    hechos = subidos = plantillas_nuevas = propuestas = reels = fotos = 0
     for datos in config.clientes():
         cli = Cliente(**datos)
         if not cli.configurado:
@@ -270,6 +270,16 @@ async def ciclo():
         except Exception:
             log.exception("[%s] falló la cola de reels", cli.marca)
 
+        # Las ediciones de foto van antes que los reels a propósito: cuestan
+        # centavos, tardan segundos y hay alguien esperándolas en un chat.
+        # Los reels cuestan créditos de verdad y tardan minutos: que una
+        # corrida se vaya en un reel no puede dejar sin atender un «sacale el
+        # fondo a esta foto» que se resuelve en cinco segundos.
+        try:
+            fotos += await asyncio.to_thread(fotero.atender, cli)
+        except Exception:
+            log.exception("[%s] falló la cola de fotos", cli.marca)
+
         # Los pedidos de motor van al final y apagados por defecto
         # (MOTORISTA=1 los prende). Lo que dejan es una PROPUESTA para que
         # alguien mire: no despliegan nada. Van últimos porque son lo menos
@@ -285,14 +295,16 @@ async def ciclo():
             except Exception:
                 log.exception("[%s] falló la cola de publicación", cli.marca)
 
-    if not (hechos or subidos or plantillas_nuevas or propuestas or reels):
-        log.info("sin diseños pendientes, plantillas, reels ni publicaciones "
-                 "en cola")
+    if not (hechos or subidos or plantillas_nuevas or propuestas or reels
+            or fotos):
+        log.info("sin diseños pendientes, plantillas, reels, fotos ni "
+                 "publicaciones en cola")
         return
     dur = (datetime.now(timezone.utc) - inicio).total_seconds()
     log.info("ciclo terminado en %.0fs · %d diseños · %d plantillas · "
-             "%d publicaciones · %d propuestas de motor · %d pasos de reel",
-             dur, hechos, plantillas_nuevas, subidos, propuestas, reels)
+             "%d publicaciones · %d propuestas de motor · %d pasos de reel · "
+             "%d fotos", dur, hechos, plantillas_nuevas, subidos, propuestas,
+             reels, fotos)
 
 
 async def main():
