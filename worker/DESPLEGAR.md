@@ -413,9 +413,26 @@ programado para el día siguiente — copió la foto, la midió, la clasificó c
 post, encoló, y `estado_publicacion` contestó al instante que estaba
 programada en vez de esperar 75 segundos. Después se borró todo.
 
-> **Falta en Boss.** Su `api-publicar` es la versión anterior y no tiene la
-> puerta `/foto`. Cuando se despliegue desde este repo la gana, y ahí hay que
-> crearle la tool `publicar_foto` en el tenant 119.
+**En Boss quedó igual, el mismo día.** Se desplegó su `api-publicar` (v7) con
+la puerta `/foto` y el texto en la voz del club —«la foto de la cancha», «el
+Instagram del club»—, se creó la tool `publicar_foto` (id 2115) y se enganchó
+al agente 364, y su prompt subió a la versión 9 con la tabla de los dos caminos
+y la misma regla de no hacer otra cosa en silencio.
+
+Una diferencia a propósito: en Boss `publicar_foto` pide `confirmado: true`,
+como sus otras dos tools que publican. En Clínica no, porque ahí ninguna lo
+pide y meterlo en una sola habría sido una excepción sin explicación. La pausa
+existe en las dos — en Clínica la sostiene el prompt.
+
+Probado en Boss igual que en Clínica, sin publicar nada real: sin foto → 400
+`falta_la_foto`; una dirección interna → 400 `foto_invalida`; una URL que no es
+imagen → 400 `foto_no_sirve`; clave mala → 401; y la puerta vieja intacta → 400
+`falta diseno_id`.
+
+> **Falta en Stadium**, y no por el código: su `cuentas_ig` está vacía. Hasta
+> que no se conecte el Instagram del club no hay a dónde publicar, así que no
+> tiene desplegado `api-publicar` ni sus tools. Cuando se conecte son los
+> mismos tres pasos.
 
 ---
 
