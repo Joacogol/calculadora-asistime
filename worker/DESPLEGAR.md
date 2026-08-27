@@ -436,6 +436,71 @@ imagen → 400 `foto_no_sirve`; clave mala → 401; y la puerta vieja intacta �
 
 ---
 
+### 6c · El banco de fotos, y por qué no se podía elegir de él
+
+**Encontrado el 27/8/2026, buscando otra cosa.** Le pidió al agente que la
+pieza usara una foto del banco de la clínica y no salía nunca. Tres problemas
+apilados, y el orden en que se descubren es el inverso al que importan:
+
+**1 · `crear_diseno` de Clínica no tenía el campo.** Boss lo tenía desde
+siempre; la herramienta de Clínica se escribió de cero el 25/8 y quedó sin
+`fotos_elegidas`. Sin ese campo no hay forma de nombrar una foto del banco.
+
+**2 · Y el freno que sí tenía la bloqueaba.** Esta guarda:
+
+```js
+if (!fotos.length && /\b(foto|imagen|adjunt|...)/i.test(mensaje))
+  → 400 "pasame la URL de la foto"
+```
+
+miraba sólo `fotos` —las que la persona manda por el chat—. Así que decir
+«usá una **foto** del banco» disparaba el freno, y el agente le pedía a la
+persona la URL de una foto que la clínica ya tenía guardada. El pedido no
+llegaba a salir: en el log de la Edge Function no había **ninguna** llamada
+después de las 15:54, mientras seguía intentando.
+
+Es el mismo patrón que el bug del sleep: una guarda que existe para evitar un
+caso raro, y que se dispara justo cuando NO debería.
+
+**3 · Y aunque el campo hubiera estado, no había qué elegir.** Las 20 fotos de
+la tabla `fotos` tenían `descripcion` y `etiquetas` **vacías**. Como el motor
+las traduce a `"Foto que subió el cliente, sin descripción."` / `"uso
+general"`, el diseñador veía veinte entradas idénticas con claves como
+`whatsapp-image-2026-08-03-at-18-00-49-7`. Y el banco semilla del skill de
+Clínica está vacío a propósito, así que el 100% del banco eran esas veinte.
+
+#### Cómo quedó
+
+| Pieza | Qué se hizo |
+|---|---|
+| `api-disenos` | ruta nueva `GET /api-disenos/banco` (v9 en Clínica) |
+| tabla `fotos` | las 20 descritas y etiquetadas, mirándolas una por una |
+| tool `ver_banco` (2117) | el agente puede ver el banco antes de encargar |
+| tool `crear_diseno` (2063) | campo `fotos_elegidas` + el freno arreglado |
+| prompt (v4) | la tabla de los tres caminos de una foto |
+
+El freno sigue existiendo —sin él, una foto que nadie eligió la elige el
+diseñador y la pieza sale con otra— pero ahora tiene salida: si el pedido
+habla del banco, el error dice «mirá `ver_banco`», no «pasame una URL».
+
+> **Una clave inventada no da error.** El diseñador no la encuentra, elige
+> otra foto, y la pieza sale linda con la foto equivocada. Por eso tanto la
+> tool como el prompt insisten en copiar la clave tal cual desde `ver_banco`.
+> Es la falla más cara del sistema: la que no se ve.
+
+Probado de punta a punta: se encargó una pieza con
+`fotos_elegidas: ["whatsapp-image-2026-08-03-at-18-00-49"]` (la fachada), la
+columna lo recibió, y la placa salió **con esa foto**. Después se borró.
+
+> **Falta en Boss.** Su `crear_diseno` sí tiene `fotos_elegidas`, pero su
+> agente tampoco puede ver el banco: no tiene `ver_banco` ni la ruta `/banco`.
+> Y no alcanza con copiar lo de Clínica — la tabla `fotos` de Boss está
+> **vacía**: su banco son las ~20 fotos ya descritas a mano en el
+> `fotos.json` del skill. Así que su `ver_banco` tiene que leer ese archivo,
+> no la tabla. Es un cambio distinto, no una copia.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:

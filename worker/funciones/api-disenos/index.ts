@@ -69,6 +69,17 @@ const ESPERA_PASO_MS = 4_000;
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// La forma de una foto decide más que sus medidas: si entra en un post sin
+// comerse media escena, o si sólo sirve para story. El agente elige mejor
+// leyendo «vertical» que leyendo 1200x1599.
+function forma(ancho?: number, alto?: number): string {
+  if (!ancho || !alto) return "desconocida";
+  const r = ancho / alto;
+  if (r > 1.15) return "apaisada";
+  if (r < 0.87) return "vertical";
+  return "cuadrada";
+}
+
 function json(cuerpo: unknown, status = 200) {
   return new Response(JSON.stringify(cuerpo), {
     status,
@@ -258,6 +269,34 @@ Deno.serve(async (req) => {
   // ── Cómo va un pedido ───────────────────────────────────────────────────
   if (req.method === "GET") {
     const url0 = new URL(req.url);
+
+    // ── Qué fotos hay en el banco ─────────────────────────────────────────
+    //
+    // Vive acá, y no en una función aparte, porque es la pregunta que hay que
+    // contestar ANTES de encargar una pieza: «¿qué fotos tenemos?». Sin esto,
+    // pedirle al agente que elija una del banco es pedirle que adivine una
+    // clave. Y una clave inventada no falla ruidosamente: el diseñador elige
+    // otra foto y la pieza sale bien, pero con la que él quiso — que es la
+    // peor forma de fallar, porque nadie se entera.
+    if (url0.pathname.endsWith("/banco")) {
+      const r = await fetch(
+        `${base}/rest/v1/fotos?activa=eq.true` +
+        `&select=clave,descripcion,etiquetas,ancho,alto&order=clave&limit=100`,
+        { headers: cab },
+      );
+      if (!r.ok) return json({ error: "no pude leer el banco de fotos" }, 502);
+      const filas = await r.json();
+      return json({
+        total: filas.length,
+        fotos: filas.map((f: any) => ({
+          clave: f.clave,
+          descripcion: f.descripcion || "Sin descripción.",
+          usar_para: (f.etiquetas || []).join(", ") || "uso general",
+          forma: forma(f.ancho, f.alto),
+        })),
+      });
+    }
+
     const id = url0.searchParams.get("id");
     if (!id) return json({ error: "falta el parámetro id" }, 400);
     const esperar = url0.searchParams.get("esperar") !== "no";
