@@ -753,11 +753,29 @@ chat conteste nunca un error.
 Todas las funciones aceptan `?esperar=no` para saltear la espera — sirve para
 probarlas a mano sin quedarse un minuto mirando el cursor.
 
-> **Falta hacerlo en Boss y en Stadium.** Las funciones se despliegan desde el
-> mismo `funciones/` (ya arreglado) pero sus tools todavía tienen el bucle. En
-> Boss son `estado_diseno`, `estado_plantilla` y `estado_publicacion`; en
-> Stadium además `estado_reel`. `estado_foto` de Stadium ya estaba bien: se
-> escribió sin bucle porque `api-fotos` ya esperaba adentro.
+### Dónde quedó aplicado (27/8/2026)
+
+| Cliente | Funciones redesplegadas | Tools corregidas |
+|---|---|---|
+| Clínica (73) | `api-disenos` v8, `api-plantillas` v5, `api-publicar` v2 | `estado_diseno` 2064, `estado_plantilla` 2061, `estado_publicacion` 2109 |
+| Boss (119) | `api-disenos` v9, `api-plantillas` v6, `api-publicar` v6 | `estado_diseno` 1665, `estado_plantilla` 2056, `estado_publicacion` 1666 |
+| Stadium (176) | `api-disenos` v2, `api-reels` v4, **`api-plantillas` v1 (no existía)** | `estado_diseno` 2070, `estado_plantilla` 2072, `estado_reel` 2076 |
+
+`estado_foto` de Stadium ya estaba bien: se escribió sin bucle porque
+`api-fotos` esperaba adentro desde el primer día. Es el único que nunca
+estuvo roto, y por la razón correcta.
+
+> **A Stadium le faltaba `api-plantillas` entera.** No estaba desplegada — la
+> función nunca se había subido a su proyecto. Sus cuatro tools de plantilla
+> (`crear_plantilla`, `estado_plantilla`, `publicar_plantilla` y
+> `avisar_cambio_motor`, que entra por `/motor`) apuntaban a una URL que daba
+> 404. Nadie lo notó porque en Stadium todavía nadie había pedido una
+> plantilla nueva. Sus tablas sí estaban: lo único que faltaba era el
+> despliegue. Ya está, y probada.
+>
+> La lección es la misma que con `api-publicar` en Clínica: **que la tabla
+> exista no es que la función exista**, y una tool que apunta a una función
+> que no está no se queja hasta que alguien la usa.
 
 ---
 

@@ -6,14 +6,16 @@
 // es que alguien encargue reels —que gastan créditos y quedan registrados—, no
 // que lea datos ni borre nada.
 //
-// ── Por qué acá tampoco se espera ────────────────────────────────────────
+// ── Por qué acá tampoco se espera el reel entero ─────────────────────────
 //
-// Generar el video son cuatro minutos. El sandbox de la tool corta a los 120
-// segundos. Pero además hay una razón mejor que el timeout: la tool corre
-// DENTRO del turno del agente, así que esperar deja el chat mudo todo ese rato
-// y si la conversación se corta en el medio, el pedido se pierde con ella.
+// Generar el video son cuatro minutos. Además del timeout hay una razón mejor:
+// la tool corre DENTRO del turno del agente, así que esperar todo eso deja el
+// chat mudo, y si la conversación se corta en el medio el pedido se pierde con
+// ella.
 //
-// `POST` anota y devuelve el id al instante. `GET` cuenta cómo va.
+// `POST` anota y devuelve el id al instante. `GET` cuenta cómo va — esperando
+// hasta un minuto adentro, que no cubre los cinco pero hace que cada consulta
+// valga por un minuto en vez de por un instante.
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +34,18 @@ const CORS = {
 // Se puede cambiar sin tocar código con la variable `REELS_POR_HORA` en
 // Supabase. En 0 no hay tope por hora y manda sólo el tope de créditos.
 const MAX_POR_HORA = Number(Deno.env.get("REELS_POR_HORA") ?? 12);
+
+// Cuánto espera el GET a que el reel esté antes de contestar «todavía no».
+// Un reel tarda unos cinco minutos, así que la espera no lo cubre entero: lo
+// que hace es que cada consulta valga por un minuto en vez de por un instante.
+//
+// La espera vive ACÁ y no en la tool de Asistime porque el sandbox de las
+// tools no sabe dormir: un `setTimeout` no lo suspende, lo mata. Ver la nota
+// larga en `api-disenos`.
+const ESPERA_MAX_MS = 55_000;
+const ESPERA_PASO_MS = 5_000;
+
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -84,33 +98,40 @@ Deno.serve(async (req) => {
 
   // ── Cómo va un pedido ──────────────────────────────────────────────────
   if (req.method === "GET") {
-    const id = new URL(req.url).searchParams.get("id");
+    const url0 = new URL(req.url);
+    const id = url0.searchParams.get("id");
     if (!id) return json({ error: "falta id" }, 400);
+    const esperar = url0.searchParams.get("esperar") !== "no";
 
-    const r = await fetch(
-      `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,notas,` +
-        `creditos_estimados,creado_en,titulo`,
-      { headers: cab },
-    );
-    const filas = await r.json();
-    if (!Array.isArray(filas) || !filas.length) {
-      return json({ error: "no existe", codigo: "no_existe" }, 404);
+    const hasta = Date.now() + (esperar ? ESPERA_MAX_MS : 0);
+    for (;;) {
+      const r = await fetch(
+        `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,notas,` +
+          `creditos_estimados,creado_en,titulo`,
+        { headers: cab },
+      );
+      const filas = await r.json();
+      if (!Array.isArray(filas) || !filas.length) {
+        return json({ error: "no existe", codigo: "no_existe" }, 404);
+      }
+      const f = filas[0];
+      const terminado = ["listo", "error", "rechazado"].includes(f.estado);
+      const cuerpo = {
+        id: f.id,
+        estado: f.estado,
+        listo: f.estado === "listo",
+        terminado,
+        url: f.url || null,
+        titulo: f.titulo || null,
+        creditos: f.creditos_estimados || null,
+        mensaje: f.notas || null,
+        esperando_seg: Math.round(
+          (Date.now() - new Date(f.creado_en).getTime()) / 1000,
+        ),
+      };
+      if (terminado || Date.now() >= hasta) return json(cuerpo);
+      await dormir(ESPERA_PASO_MS);
     }
-    const f = filas[0];
-    const terminado = ["listo", "error", "rechazado"].includes(f.estado);
-    return json({
-      id: f.id,
-      estado: f.estado,
-      listo: f.estado === "listo",
-      terminado,
-      url: f.url || null,
-      titulo: f.titulo || null,
-      creditos: f.creditos_estimados || null,
-      mensaje: f.notas || null,
-      esperando_seg: Math.round(
-        (Date.now() - new Date(f.creado_en).getTime()) / 1000,
-      ),
-    });
   }
 
   if (req.method !== "POST") return json({ error: "método no permitido" }, 405);
