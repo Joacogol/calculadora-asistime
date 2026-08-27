@@ -207,7 +207,8 @@ como receta para el cliente siguiente. Lo que está hecho:
 | `api-plantillas` (nueva) y `api-disenos` (v7, con el arreglo de WebP) | ✅ |
 | Sus 4 plantillas sembradas y publicadas | ✅ |
 | Su clave de Asistime en `asistime-api-clinica` | ✅ |
-| Catálogo publicado, agente y 6 herramientas | ✅ |
+| Catálogo publicado, agente y 8 herramientas | ✅ |
+| `api-publicar` y las tools de Instagram (27/8/2026) | ✅ |
 
 Lo que sigue es cómo se hizo cada paso.
 
@@ -234,9 +235,10 @@ cd ~/worker
 npx supabase link --project-ref <ref-del-proyecto>
 npx supabase functions deploy api-plantillas --no-verify-jwt
 npx supabase functions deploy api-disenos    --no-verify-jwt
+npx supabase functions deploy api-publicar   --no-verify-jwt
 ```
 
-Las dos salen del mismo archivo que está en `funciones/`: no tienen nada
+Las tres salen del mismo archivo que está en `funciones/`: no tienen nada
 específico de un cliente, leen todo de variables de entorno.
 
 Después conviene probarlas sin gastar un diseño — con la clave del cliente:
@@ -309,7 +311,56 @@ ASISTIME_CLAVE_CLINICA="$(gcloud secrets versions access latest --secret=asistim
 Sacale el `--probar` si lo que lista tiene sentido. El nombre de la variable no
 es libre: lo declara `marca.json` de cada marca en `asistime.clave_env`.
 
-### 6 · La prueba, desde el chat de Clínica
+### 6 · Publicar en Instagram — lo que faltaba
+
+**Hecho el 27/8/2026.** Clínica diseñaba bien pero no podía publicar: había que
+bajar la pieza del chat y subirla a mano. Boss sí podía, desde el 6/8.
+
+Lo raro es lo poco que faltaba. La base de Clínica ya tenía las dos tablas
+(`cuentas_ig` y `publicaciones`) y la vista `instagram_estado`, porque las trae
+`base-de-un-cliente.sql`. Y ya tenía **la cuenta conectada y con token válido**
+—`clinica.preventiva`, activa—, puesta el 5/8. Lo que no existía era el camino
+entre el chat y esa cola: la Edge Function y las dos tools.
+
+| Qué faltaba | Dónde |
+|---|---|
+| `api-publicar` | Supabase de Clínica |
+| `publicar_diseno` y `estado_publicacion` | tenant 73 de Asistime |
+| El agente enganchado a esas dos tools | agente 542 |
+| La sección «Publicar en Instagram» del prompt | versión 2, publicada |
+
+`api-publicar` **no estaba en el repo**: vivía sólo dentro del Supabase de Boss.
+Ahora está en `funciones/api-publicar/`, así que el cliente que viene la recibe
+con el resto.
+
+Cómo probarla sin publicar nada —los cinco casos, todos de lectura o de
+rechazo—:
+
+```bash
+U=https://<ref>.supabase.co/functions/v1/api-publicar
+D=<id de un diseño que exista>
+curl -s -w " %{http_code}\n" "$U?diseno_id=$D" -H "x-api-clave: mala"     # 401
+curl -s -w " %{http_code}\n" "$U" -H "x-api-clave: $CLAVE"                # 400
+curl -s -w " %{http_code}\n" "$U?diseno_id=$D" -H "x-api-clave: $CLAVE"   # 200
+curl -s -w " %{http_code}\n" -X POST "$U" -H "x-api-clave: $CLAVE" \
+     -H "Content-Type: application/json" -d '{}'                          # 400
+curl -s -w " %{http_code}\n" -X POST "$U" -H "x-api-clave: $CLAVE" \
+     -H "Content-Type: application/json" \
+     -d '{"diseno_id":"00000000-0000-0000-0000-000000000000"}'            # 404
+```
+
+El último es el que importa y es el menos obvio: un **404** quiere decir que la
+función pasó el chequeo de Instagram y se cayó recién al buscar el diseño. Si
+en cambio contesta **409 `sin_instagram`**, el token no está o está vencido, y
+eso hay que arreglarlo antes de que alguien pida publicar en el chat.
+
+> **El token de Instagram vence.** El de Clínica vence el **4/10/2026**; el de
+> Boss, el 2/10. La vista `instagram_estado` los marca `por_vencer` siete días
+> antes, pero **nadie mira esa vista**: hay que renovarlos desde la app. Si se
+> vencen, `publicar_diseno` contesta que la cuenta no está activa y el agente
+> lo dice — no se pierde nada, pero deja de publicar.
+
+### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
 
@@ -319,6 +370,20 @@ El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
 
 La primera tiene que volver con una pieza en dos o tres minutos; la segunda con
 un preview de una versión nueva, en borrador, en unos dos.
+
+Y la tercera, **una vez que la primera volvió y la miraste**:
+
+> «Publicala.»
+
+Tiene que quedar en cola y salir en el Instagram de la clínica en un par de
+minutos, con el link del posteo. Ojo con dos cosas al leer la respuesta:
+
+- **«Quedó en cola» no es «salió».** El agente tiene que confirmarlo con
+  `estado_publicacion` antes de decir que está publicado. Si dice que salió sin
+  haber confirmado, el prompt no está tomando — revisá que la versión 2 sea la
+  publicada.
+- **Si la pieza tiene un post y una story**, el agente tiene que preguntarte
+  cuál querés antes de publicar, no elegir por su cuenta.
 
 ---
 
@@ -357,7 +422,7 @@ cd ~/worker
 # «entrypoint path does not exist», que no dice en ningún lado que el problema
 # es dónde está el archivo. Se hace una sola vez por máquina.
 mkdir -p supabase/functions
-for F in api-disenos api-plantillas api-reels; do
+for F in api-disenos api-plantillas api-publicar api-reels api-fotos; do
   ln -sfn "$PWD/funciones/$F" "supabase/functions/$F"
 done
 
@@ -369,7 +434,13 @@ export SUPABASE_ACCESS_TOKEN="$T"; unset T; echo
 npx supabase link --project-ref heajbidxysjxxegqemka
 npx supabase functions deploy api-plantillas --no-verify-jwt
 npx supabase functions deploy api-disenos    --no-verify-jwt
+npx supabase functions deploy api-publicar   --no-verify-jwt
 ```
+
+> `api-publicar` se despliega igual aunque Stadium **todavía no tenga Instagram
+> conectado**: sin cuenta contesta `409 sin_instagram` y no rompe nada. El día
+> que se conecte, la función ya está y sólo faltan las dos tools. Stadium
+> tampoco las tiene todavía: hoy su agente diseña y edita fotos, no publica.
 
 Y la prueba de siempre, que no gasta un diseño:
 
@@ -604,11 +675,22 @@ El orden importa y no es obvio, así que queda escrito:
    `supabase-key-<marca>` y `asistime-api-<marca>` en Secret Manager. Los
    nombres de las dos últimas los declara su `marca.json`.
 5. **Sembrar, publicar el catálogo, desplegar.**
+6. **Instagram, si el cliente lo quiere**: conectar la cuenta (queda en
+   `cuentas_ig`), desplegar `api-publicar` y crear las tools `publicar_diseno`
+   y `estado_publicacion` en su tenant. Es lo último a propósito: publicar en
+   la cuenta real de un cliente no se deshace, y conviene que antes haya
+   piezas que alguien ya miró y aprobó.
 
 Dos cosas que se aprendieron con Stadium y valen para el que sigue:
 
 - **La clave de Asistime es por tenant.** La de otro cliente contesta `403`. No
   se comparte ni por un rato.
+- **Que la tabla exista no es que la función exista.** Clínica tuvo desde el
+  primer día las tablas de publicación y la cuenta de Instagram conectada, y
+  aun así no podía publicar: faltaban la Edge Function y las tools, y
+  `api-publicar` ni siquiera estaba en el repo — vivía sólo dentro del Supabase
+  de Boss. Cuando algo «anda en un cliente y no en otro», el primer lugar donde
+  mirar es qué hay desplegado, no qué hay en la base.
 - **Comparar la base nueva contra la de referencia, no mirarla.** Se sacó una
   huella de columnas, políticas, triggers, índices, reglas y funciones de
   Clínica y de Stadium, y se compararon. Cuatro de cinco daban igual: la que no
