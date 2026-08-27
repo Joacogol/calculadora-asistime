@@ -69,12 +69,24 @@ API = "https://api.magnific.com/v1/ai"
 #: lugar donde están los precios— así que llevan una COTA ALTA, no una
 #: estimación: un número que seguro está por encima del real.
 #:
+#: **27/8/2026.** El conector volvió y `crear` se midió DE VERDAD, que es lo
+#: único que vale: se generó una imagen y el saldo de la cuenta bajó de 11.878
+#: a 11.778. Cien créditos exactos, no un número de un simulador.
+#:
+#: Los otros cuatro siguen con la cota. El simulador ya contesta —`images_expand`
+#: 50, `images_retouch` 10, `images_upscale` de 90 a 1080 según el tamaño— pero
+#: esos son los endpoints del CONECTOR, y el worker le pega a otras rutas REST
+#: con otros modelos. Copiar esos números acá sería cambiar una cota honesta por
+#: una cifra que parece medida y no lo está. Se bajan cuando se midan como se
+#: midió `crear`: gastando uno y mirando el saldo.
+#:
 #: Poner una cota alta y no un promedio es deliberado. Un precio inventado por
 #: abajo pasa cualquier tope y se descubre con la factura; uno inventado por
 #: arriba, en el peor caso, rechaza algo que entraba — y eso se ve enseguida y
 #: se corrige. Cuando se puedan medir, estos números bajan y hay que bajarlos.
 PRECIOS = {
     "fondo":   {"creditos": 3,   "medido": True},
+    "crear":   {"creditos": 100, "medido": True},
     "formato": {"creditos": 300, "medido": False},
     "tamano":  {"creditos": 300, "medido": False},
     "retoque": {"creditos": 300, "medido": False},
@@ -88,6 +100,16 @@ PRECIOS = {
 #: tarea que hay que ir a preguntar. Los dos caminos existen porque la API es
 #: así, no porque nos guste.
 VERBOS = {
+    "crear": {
+        "ruta": "text-to-image/seedream-v5-pro",
+        "sync": False,
+        "modelo": "seedream-v5-pro",
+        "que_hace": "inventa una foto nueva a partir de una descripción",
+        # El único verbo que NO parte de una foto. Todo lo demás en este módulo
+        # supone que hay una imagen de entrada, así que la excepción se declara
+        # acá y se lee de un lugar en vez de repetirse en cada `if`.
+        "sin_foto": True,
+    },
     "fondo": {
         "ruta": "beta/remove-background",
         "sync": True,
@@ -125,6 +147,19 @@ VERBOS = {
 #: usan las plantillas. No es una lista nueva: es la misma de `marca.FORMATOS`,
 #: escrita acá porque este módulo se prueba sin levantar el motor.
 PROPORCIONES = {"post": 1 / 1, "vert": 4 / 5, "story": 9 / 16, "reel": 9 / 16}
+
+#: Cómo se llaman nuestras proporciones del lado de Magnific, para `crear`.
+#:
+#: `vert` es el único que no tiene equivalente: nuestras piezas verticales son
+#: 4:5 y el modelo no lo ofrece, así que va a 3:4, que es un poco más alto. La
+#: pieza recorta unos píxeles arriba y abajo — preferible a generar un 1:1 y
+#: estirarlo.
+RELACIONES = {
+    "post":  "square_1_1",
+    "vert":  "traditional_3_4",
+    "story": "social_story_9_16",
+    "reel":  "social_story_9_16",
+}
 
 #: Lo máximo que la API deja agregar de un lado al expandir.
 MAX_EXPANSION = 2048
@@ -225,7 +260,18 @@ def bordes(ancho: int, alto: int, formato: str) -> dict:
 
 def _cuerpo(fila: dict) -> dict:
     """El pedido que le corresponde a este verbo. Cada uno es distinto."""
-    verbo, foto = fila["verbo"], fila["foto"]
+    verbo, foto = fila["verbo"], fila.get("foto")
+    if verbo == "crear":
+        instruccion = (fila.get("instruccion") or "").strip()
+        if not instruccion:
+            raise ValueError(
+                "«crear» necesita la descripción de la foto. Sin eso no hay "
+                "nada que generar.")
+        cuerpo = {"prompt": _prompt("crear", instruccion), "resolution": "2k"}
+        rel = RELACIONES.get(fila.get("formato") or "")
+        if rel:
+            cuerpo["aspect_ratio"] = rel
+        return cuerpo
     if verbo == "fondo":
         return {"image_url": foto}
     if verbo == "tamano":
@@ -265,6 +311,15 @@ def _prompt(verbo: str, instruccion: str) -> str:
     medio algo que puede entender mal lo que pidieron. Una traducción torcida
     de «sacale el cartel» es peor que un prompt mezclado.
     """
+    # `crear` no tiene producto que cuidar: parte de la nada. Lo que sí tiene
+    # es el riesgo contrario — que la imagen salga con carteles, logos o marcas
+    # inventadas y termine publicada como si fuera el local de verdad. Un texto
+    # falso en la fachada de una clínica no es un detalle estético.
+    if verbo == "crear":
+        return (f"{instruccion.strip()}. Photorealistic, natural light, clean "
+                f"composition. No text, no letters, no logos, no signage, no "
+                f"watermarks anywhere in the image. Do not depict real brands.")
+
     regla = ("Keep the product exactly as it is: same shape, same colors, same "
              "materials, same logos and text on it. Do not redesign it, do not "
              "change its proportions, do not add or remove parts of it.")

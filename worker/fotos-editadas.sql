@@ -30,10 +30,15 @@ create table if not exists public.fotos_editadas (
   -- decoración.
   user_id        uuid references auth.users(id) on delete set null,
 
-  -- Qué se pidió. `verbo` es uno de los cinco; `instruccion` es el texto libre
-  -- que sólo usan `retoque` y `escena`.
+  -- Qué se pidió. `verbo` es uno de los seis; `instruccion` es el texto libre
+  -- que usan `crear`, `retoque` y `escena`.
+  --
+  -- `foto` admite NULL desde que existe `crear`, que no parte de ninguna: es el
+  -- único verbo que inventa la imagen entera. Los otros cinco la exigen, y eso
+  -- lo hace cumplir `api-fotos` antes de anotar la fila — la restricción vive
+  -- donde se sabe qué verbo es, no en la columna, que no lo sabe.
   verbo          text not null,
-  foto           text not null,
+  foto           text,
   instruccion    text,
   formato        text,          -- para `formato`: post, vert, story, reel
 

@@ -6,8 +6,10 @@
 // peor que pasa es que alguien encargue ediciones —que gastan unos créditos y
 // quedan registradas—, no que lea datos ni borre nada.
 //
-// ── Los cinco verbos ─────────────────────────────────────────────────────
+// ── Los seis verbos ──────────────────────────────────────────────────────
 //
+//   crear     inventa una foto nueva a partir de una descripción, sin partir
+//             de ninguna: es el único que no lleva `foto`
 //   fondo     recorta el producto y deja el fondo transparente
 //   formato   estira la foto a otra proporción inventando los bordes
 //   tamano    agranda una foto chica
@@ -36,13 +38,18 @@ const MAX_POR_HORA = Number(Deno.env.get("FOTOS_POR_HORA") ?? 40);
 const ESPERA_MAX_MS = 45_000;
 const ESPERA_PASO_MS = 3_000;
 
-const VERBOS = ["fondo", "formato", "tamano", "retoque", "escena"];
+const VERBOS = ["crear", "fondo", "formato", "tamano", "retoque", "escena"];
 const FORMATOS = ["post", "vert", "story", "reel"];
 
-// Los dos verbos que generan imagen a partir de una instrucción. Sin texto no
-// hay nada que pedirle al modelo, y conviene decirlo ACÁ —donde el error
-// todavía le llega a una persona que puede arreglarlo— y no en el worker.
-const CON_INSTRUCCION = ["retoque", "escena"];
+// Los verbos que generan imagen a partir de una instrucción. Sin texto no hay
+// nada que pedirle al modelo, y conviene decirlo ACÁ —donde el error todavía
+// le llega a una persona que puede arreglarlo— y no en el worker.
+const CON_INSTRUCCION = ["crear", "retoque", "escena"];
+
+// El único que NO parte de una foto. Se escribe como lista y no como
+// `verbo === "crear"` porque el día que haya otro generador desde cero, el
+// que lo agregue va a encontrar acá el lugar donde decirlo.
+const SIN_FOTO = ["crear"];
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -160,19 +167,20 @@ Deno.serve(async (req) => {
   if (!VERBOS.includes(verbo)) {
     return json({
       error: `«${verbo || "(vacío)"}» no es algo que sepa hacer. Puedo: ` +
+        `crear (inventar una foto desde una descripción, sin partir de otra), ` +
         `fondo (recortar el producto), formato (llevarla a otra proporción), ` +
         `tamano (agrandarla), retoque (sacar o cambiar algo puntual) y ` +
         `escena (poner el producto en otro lugar).`,
       codigo: "verbo_desconocido",
     }, 400);
   }
-  if (!foto) {
+  if (!foto && !SIN_FOTO.includes(verbo)) {
     return json({
       error: "hay que decir qué foto editar: una URL https pública",
       codigo: "falta_la_foto",
     }, 400);
   }
-  if (!fotoValida(foto)) {
+  if (foto && !fotoValida(foto)) {
     return json({
       error: "la foto tiene que ser una URL https pública que se pueda descargar",
       codigo: "foto_invalida",
@@ -181,7 +189,9 @@ Deno.serve(async (req) => {
   if (CON_INSTRUCCION.includes(verbo) && instruccion.length < 4) {
     return json({
       error: `«${verbo}» necesita que le digas qué hacer. Por ejemplo: ` +
-        (verbo === "retoque"
+        (verbo === "crear"
+          ? "«una sala de espera luminosa, sillas vacías, luz de mañana»."
+          : verbo === "retoque"
           ? "«sacale el cartel de oferta que tiene abajo»."
           : "«poné la zapatilla en una vereda al atardecer»."),
       codigo: "falta_la_instruccion",
@@ -191,6 +201,15 @@ Deno.serve(async (req) => {
     return json({
       error: `«formato» necesita a cuál: ${FORMATOS.join(", ")}.`,
       codigo: "falta_el_formato",
+    }, 400);
+  }
+  // Para `crear` el formato es opcional —sin él sale cuadrada— pero uno mal
+  // escrito se ignoraría en silencio y la foto saldría con otra proporción sin
+  // que nadie entienda por qué. Mejor decirlo.
+  if (formato && !FORMATOS.includes(formato)) {
+    return json({
+      error: `«${formato}» no es un formato. Son: ${FORMATOS.join(", ")}.`,
+      codigo: "formato_desconocido",
     }, 400);
   }
 
@@ -210,8 +229,11 @@ Deno.serve(async (req) => {
   }
 
   const fila: Record<string, unknown> = {
-    verbo, foto, quien: c.quien ?? "Asistime",
+    verbo, quien: c.quien ?? "Asistime",
   };
+  // `crear` no tiene foto de entrada. Se omite la columna en vez de mandar ""
+  // para que en la base se distinga «no lleva» de «venía vacía».
+  if (foto) fila.foto = foto;
   if (instruccion) fila.instruccion = instruccion;
   if (formato) fila.formato = formato;
   if (usuario) fila.user_id = usuario;

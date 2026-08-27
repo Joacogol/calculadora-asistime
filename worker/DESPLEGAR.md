@@ -501,6 +501,91 @@ columna lo recibió, y la placa salió **con esa foto**. Después se borró.
 
 ---
 
+### 6d · Magnific en Clínica: arreglar una foto, o inventarla
+
+**27/8/2026.** Clínica no tenía nada de esto: `api-fotos` no estaba desplegada,
+la tabla no existía y su `marca.json` no declaraba el bloque `fotos`, que es el
+interruptor que el worker mira para saber si a esa marca le toca la cola.
+
+Y faltaba un verbo. Los cinco que había —`fondo`, `formato`, `tamano`,
+`retoque`, `escena`— **parten todos de una foto que ya existe**. Para Stadium
+alcanza: tiene una foto por producto y lo que necesita es adaptarlas. Para
+Clínica no, y por la razón contraria: tiene veinte fotos y once son casi el
+mismo mostrador. Lo que le falta no se resuelve eligiendo mejor.
+
+Así que hay un sexto verbo, `crear`, que no parte de nada:
+
+```
+POST /api-fotos  {"verbo":"crear","instruccion":"...","formato":"post"}
+```
+
+Le pega a `text-to-image/seedream-v5-pro`, que devuelve un `task_id` y se
+consulta igual que los otros cuatro asíncronos. Es el único verbo sin `foto`,
+así que esa columna pasó a admitir NULL — la restricción vive en `api-fotos`,
+que sabe qué verbo es, y no en la columna, que no lo sabe.
+
+**Cuesta 100 créditos, medidos de verdad**: se generó una imagen y el saldo de
+la cuenta bajó de 11.878 a 11.778. No es un número de simulador.
+
+> **Los otros cuatro siguen con la cota de 300.** El simulador del conector ya
+> contesta (`images_expand` 50, `images_retouch` 10, `images_upscale` de 90 a
+> 1080 según el tamaño) pero **esos son los endpoints del conector, no las
+> rutas REST que usa el worker**. Copiarlos sería cambiar una cota honesta por
+> una cifra que parece medida y no lo está. Se bajan cuando se midan como se
+> midió `crear`: gastando uno y mirando el saldo.
+
+#### El puente con el diseño, que ya existía
+
+No hizo falta plomería nueva. `estado_foto` devuelve la URL de la foto **ya
+subida al bucket del cliente** —el worker la baja de Magnific y la guarda,
+porque la URL de ellos caduca— y esa URL entra en `crear_diseno` por el campo
+`fotos`, el mismo que usan las fotos que manda una persona por el chat. El
+agente encadena: `crear_foto` → `estado_foto` → `crear_diseno`.
+
+#### Lo que quedó, y lo que falta
+
+| Pieza | Estado |
+|---|---|
+| verbo `crear` en `app/fotero.py` | ✅ escrito |
+| `api-fotos` con los seis verbos, desplegada en Clínica (v1) | ✅ |
+| tabla `fotos_editadas` en Clínica, `foto` nullable | ✅ |
+| bloque `fotos` en el `marca.json` de Clínica | ✅ escrito |
+| tools `crear_foto` (2118), `editar_foto` (2119), `estado_foto` (2120) | ✅ |
+| prompt del agente, versión 5 | ✅ publicada |
+| **el worker con el verbo nuevo** | ❌ **falta desplegar** |
+
+El último renglón es el que importa: `fotero.py` y `marca.json` viajan DENTRO
+de la imagen del worker. Hasta que no se corra
+
+```bash
+cd ~/worker && ./desplegar-chat.sh
+```
+
+los pedidos de foto de Clínica se quedan quietos en `pendiente` —no se pierden
+ni gastan un crédito— porque el worker todavía no sabe que esa marca edita
+fotos. `MAGNIFIC_CLAVE` ya está en el job desde el 26/8, así que el despliegue
+no la va a volver a pedir.
+
+Probado hasta donde se puede sin el despliegue: los seis rechazos de la función
+(clave mala, verbo inventado, `crear` sin instrucción, formato mal escrito,
+`fondo` sin foto, URL interna) y un pedido real que dejó la fila correcta —
+`verbo: crear`, `foto: null`, `formato: post`, `pendiente`—. Después se borró.
+
+#### La regla que no es técnica
+
+Una foto inventada que se publica como si fuera la clínica es un problema
+distinto al de una pieza fea. Por eso hay tres frenos, y ninguno es opcional:
+
+1. El prompt que va a Magnific pide **sin texto, sin carteles, sin logos**. Una
+   fachada generada con un cartel inventado es lo peor que puede salir de acá.
+2. `estado_foto` le dice al agente, cuando el verbo fue `crear`, que avise que
+   la foto la hizo una IA.
+3. El prompt del agente lo repite entre las cosas que no hace nunca: *mostrar
+   una foto inventada sin decir que la inventó una IA — ni aunque quede
+   perfecta, sobre todo si queda perfecta*.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
