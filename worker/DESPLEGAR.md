@@ -710,6 +710,57 @@ Dos cosas que se aprendieron con Stadium y valen para el que sigue:
 
 ---
 
+## El sandbox de las tools de Asistime no sabe dormir
+
+Vale para cualquier tool que se escriba de acá en adelante, así que va escrito
+donde se lee y no en un comentario.
+
+**Una tool de Asistime no puede esperar.** Esto:
+
+```js
+await new Promise(function (seguir) { setTimeout(seguir, 8000); });
+```
+
+no la suspende ocho segundos: la **mata**, y el chat contesta un error.
+
+Las cuatro tools de estado —`estado_diseno`, `estado_plantilla`,
+`estado_publicacion`, `estado_reel`— estaban escritas con un bucle que
+consultaba, y si todavía no estaba listo dormía y volvía a consultar. Ese
+bucle sale por `break` cuando la pieza **ya está**, o sea antes de llegar al
+sleep. Así que fallaba **únicamente cuando la pieza no estaba lista** — que es
+exactamente el caso para el que el bucle se había escrito.
+
+Andaba siempre que no hiciera falta. Por eso sobrevivió a 22 diseños seguidos
+en Clínica: cada vez que el agente consultó, la placa ya estaba.
+
+Se descubrió el **27/8/2026**: una consulta que llegó **nueve segundos** antes
+de que la placa terminara. La placa salió perfecta y el chat dijo que había
+fallado. Lo que lo delató fue el log de la Edge Function: **una sola llamada**
+donde tenía que haber diez.
+
+### Cómo queda
+
+| Dónde | Qué hace |
+|---|---|
+| La Edge Function (`GET`) | **espera adentro** 55 s (75 s en `api-publicar`) |
+| La tool de Asistime | **una sola consulta**, sin bucle y sin `setTimeout` |
+
+Si al volver no está listo, la tool devuelve `listo: false` con un mensaje que
+le dice al agente que **no es un error** y que vuelva a llamar. Encadenando
+tres o cuatro consultas se cubren los 2 a 4 minutos de una pieza sin que el
+chat conteste nunca un error.
+
+Todas las funciones aceptan `?esperar=no` para saltear la espera — sirve para
+probarlas a mano sin quedarse un minuto mirando el cursor.
+
+> **Falta hacerlo en Boss y en Stadium.** Las funciones se despliegan desde el
+> mismo `funciones/` (ya arreglado) pero sus tools todavía tienen el bucle. En
+> Boss son `estado_diseno`, `estado_plantilla` y `estado_publicacion`; en
+> Stadium además `estado_reel`. `estado_foto` de Stadium ya estaba bien: se
+> escribió sin bucle porque `api-fotos` ya esperaba adentro.
+
+---
+
 ## Dos cosas pendientes que no son de este despliegue
 
 **Rotar tres claves.** La de Anthropic (`anthropic-key` en Secret Manager), la

@@ -17,15 +17,23 @@
 // que lea datos ni borre nada. Y se revoca cambiando un secreto, sin tocar la
 // base.
 //
-// ── Por qué no espera el resultado ───────────────────────────────────────
+// ── Quién espera, y por qué acá ──────────────────────────────────────────
 //
 // Un diseño tarda de 2 a 4 minutos: Chromium levanta, renderiza, y si hay reel
-// además corre ffmpeg. El sandbox donde corre la tool corta a los 120 segundos.
-// Esperar acá sería garantizar que la tool falle SIEMPRE, y encima después de
-// haber gastado la plata del render.
+// además corre ffmpeg. Eso es más de lo que aguanta cualquier llamada, así que
+// `POST` devuelve el id al instante y `GET` cuenta cómo va.
 //
-// Por eso `POST` devuelve el id al instante y `GET` cuenta cómo va. El chat
-// avisa «lo estoy preparando» y vuelve a consultar.
+// Pero el `GET` **espera un rato adentro** antes de contestar «todavía no», y
+// eso importa más de lo que parece: la espera tiene que vivir ACÁ, en Deno,
+// porque el sandbox donde corren las tools de Asistime **no la puede hacer**.
+// Una tool que hace `await new Promise(r => setTimeout(r, 8000))` no duerme y
+// sigue: se muere ahí. Y se muere sólo cuando la pieza NO estaba lista, que es
+// justamente el caso para el que se había escrito la espera — así que andaba
+// siempre que no hiciera falta.
+//
+// Se descubrió el 27/8/2026, en Clínica: una consulta que llegó nueve segundos
+// antes de que la pieza terminara, y el chat contestó un error por una placa
+// que había salido bien.
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +59,15 @@ const TIPOS: Record<string, string> = {
   jpg: "image/jpeg", png: "image/png",
   webp: "image/webp", gif: "image/gif",
 };
+
+// Cuánto espera el GET a que la pieza esté antes de contestar «todavía no».
+// El tope de la tool que llama es de 90 segundos: 55 deja margen de sobra y,
+// encadenando tres o cuatro consultas, cubre los 2 a 4 minutos que tarda una
+// pieza sin que el chat conteste nunca un error.
+const ESPERA_MAX_MS = 55_000;
+const ESPERA_PASO_MS = 4_000;
+
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function json(cuerpo: unknown, status = 200) {
   return new Response(JSON.stringify(cuerpo), {
@@ -240,39 +257,52 @@ Deno.serve(async (req) => {
 
   // ── Cómo va un pedido ───────────────────────────────────────────────────
   if (req.method === "GET") {
-    const id = new URL(req.url).searchParams.get("id");
+    const url0 = new URL(req.url);
+    const id = url0.searchParams.get("id");
     if (!id) return json({ error: "falta el parámetro id" }, 400);
-    const r = await fetch(
-      `${base}/rest/v1/disenos?id=eq.${encodeURIComponent(id)}` +
-      `&select=id,estado,titulo,urls,documentos,videos,copy,mensaje_agente,creado_en&limit=1`,
-      { headers: cab },
-    );
-    if (!r.ok) return json({ error: "no pude consultar el pedido" }, 502);
-    const [d] = await r.json();
-    if (!d) return json({ error: "no existe ese pedido" }, 404);
+    const esperar = url0.searchParams.get("esperar") !== "no";
 
-    const listo = d.estado === "listo";
-    return json({
-      id: d.id,
-      estado: d.estado,
-      listo,
-      // `terminado` distingue «ya no va a cambiar» de «sigue trabajando», que
-      // es lo único que el chat necesita para decidir si vuelve a preguntar.
-      terminado: listo || d.estado === "error",
-      titulo: d.titulo || null,
-      imagenes: d.urls || [],
-      documentos: (d.documentos || []).map((x: any) => x.url),
-      videos: (d.videos || []).map((x: any) => x.url),
-      copy: d.copy || null,
-      mensaje: d.mensaje_agente || null,
-      // Cuánto hace que espera. Un pedido puede quedarse en `pendiente` para
-      // siempre —el worker caído, la cuenta sin saldo— y desde afuera eso se
-      // ve igual que «está trabajando». Con este número, quien pregunta puede
-      // distinguir «falta poco» de «acá pasó algo».
-      esperando_seg: d.creado_en
-        ? Math.round((Date.now() - new Date(d.creado_en).getTime()) / 1000)
-        : null,
-    });
+    const armar = (d: any) => {
+      const listo = d.estado === "listo";
+      return {
+        id: d.id,
+        estado: d.estado,
+        listo,
+        // `terminado` distingue «ya no va a cambiar» de «sigue trabajando»,
+        // que es lo único que el chat necesita para decidir si vuelve a
+        // preguntar.
+        terminado: listo || d.estado === "error",
+        titulo: d.titulo || null,
+        imagenes: d.urls || [],
+        documentos: (d.documentos || []).map((x: any) => x.url),
+        videos: (d.videos || []).map((x: any) => x.url),
+        copy: d.copy || null,
+        mensaje: d.mensaje_agente || null,
+        // Cuánto hace que espera. Un pedido puede quedarse en `pendiente` para
+        // siempre —el worker caído, la cuenta sin saldo— y desde afuera eso se
+        // ve igual que «está trabajando». Con este número, quien pregunta puede
+        // distinguir «falta poco» de «acá pasó algo».
+        esperando_seg: d.creado_en
+          ? Math.round((Date.now() - new Date(d.creado_en).getTime()) / 1000)
+          : null,
+      };
+    };
+
+    const hasta = Date.now() + (esperar ? ESPERA_MAX_MS : 0);
+    for (;;) {
+      const r = await fetch(
+        `${base}/rest/v1/disenos?id=eq.${encodeURIComponent(id)}` +
+        `&select=id,estado,titulo,urls,documentos,videos,copy,mensaje_agente,creado_en&limit=1`,
+        { headers: cab },
+      );
+      if (!r.ok) return json({ error: "no pude consultar el pedido" }, 502);
+      const [d] = await r.json();
+      if (!d) return json({ error: "no existe ese pedido" }, 404);
+
+      const cuerpo = armar(d);
+      if (cuerpo.terminado || Date.now() >= hasta) return json(cuerpo);
+      await dormir(ESPERA_PASO_MS);
+    }
   }
 
   if (req.method !== "POST") return json({ error: "usá POST o GET" }, 405);

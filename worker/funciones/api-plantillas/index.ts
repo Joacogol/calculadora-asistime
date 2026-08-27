@@ -77,6 +77,15 @@ const TIPOS: Record<string, string> = {
 
 const TD = new TextDecoder();
 
+// Cuánto espera el GET a que la plantilla esté antes de contestar «todavía
+// no». La espera vive ACÁ y no en la tool de Asistime porque el sandbox de las
+// tools no sabe dormir: un `setTimeout` no lo suspende, lo mata. Ver la nota
+// larga en `api-disenos`.
+const ESPERA_MAX_MS = 55_000;
+const ESPERA_PASO_MS = 4_000;
+
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 function json(cuerpo: unknown, status = 200) {
   return new Response(JSON.stringify(cuerpo), {
     status,
@@ -343,49 +352,58 @@ Deno.serve(async (req) => {
   if (req.method === "GET") {
     const id = url.searchParams.get("id");
     if (!id) return json({ error: "falta el id" }, 400);
+    const esperar = url.searchParams.get("esperar") !== "no";
+    const hasta = Date.now() + (esperar ? ESPERA_MAX_MS : 0);
 
-    const r = await fetch(
-      `${base}/rest/v1/plantilla_pedidos?id=eq.${encodeURIComponent(id)}` +
-      `&select=id,estado,plantilla,version,preview,notas,mensaje_agente,corrige,creado_en`,
-      { headers: cab });
-    if (!r.ok) return json({ error: "no pude consultar el pedido" }, 500);
+    for (;;) {
+      const r = await fetch(
+        `${base}/rest/v1/plantilla_pedidos?id=eq.${encodeURIComponent(id)}` +
+        `&select=id,estado,plantilla,version,preview,notas,mensaje_agente,corrige,creado_en`,
+        { headers: cab });
+      if (!r.ok) return json({ error: "no pude consultar el pedido" }, 500);
 
-    const filas = await r.json();
-    if (!filas.length) return json({ error: "no existe ese pedido" }, 404);
-    const p = filas[0];
+      const filas = await r.json();
+      if (!filas.length) return json({ error: "no existe ese pedido" }, 404);
+      const p = filas[0];
 
-    const terminado = p.estado === "listo" || p.estado === "error";
-    const esperando = Math.round(
-      (Date.now() - new Date(p.creado_en).getTime()) / 1000);
+      const terminado = p.estado === "listo" || p.estado === "error";
+      const esperando = Math.round(
+        (Date.now() - new Date(p.creado_en).getTime()) / 1000);
 
-    // Si terminó, se devuelve además el contrato: el agente necesita saber qué
-    // campos tiene la plantilla nueva para poder usarla en la pieza siguiente
-    // sin esperar a que el catálogo se regenere.
-    let campos = null;
-    if (p.estado === "listo" && p.plantilla && p.version) {
-      const c = await fetch(
-        `${base}/rest/v1/plantillas?plantilla=eq.${encodeURIComponent(p.plantilla)}` +
-        `&version=eq.${p.version}&select=contrato`, { headers: cab });
-      if (c.ok) {
-        const cf = await c.json();
-        campos = cf[0]?.contrato?.campos ?? null;
+      if (!terminado && Date.now() < hasta) {
+        await dormir(ESPERA_PASO_MS);
+        continue;
       }
-    }
 
-    return json({
-      id: p.id,
-      estado: p.estado,
-      terminado,
-      listo: p.estado === "listo",
-      esperando_seg: esperando,
-      plantilla: p.plantilla,
-      version: p.version,
-      corrige: p.corrige,
-      preview: p.preview || [],
-      campos,
-      notas: p.notas,
-      mensaje: p.mensaje_agente,
-    });
+      // Si terminó, se devuelve además el contrato: el agente necesita saber
+      // qué campos tiene la plantilla nueva para poder usarla en la pieza
+      // siguiente sin esperar a que el catálogo se regenere.
+      let campos = null;
+      if (p.estado === "listo" && p.plantilla && p.version) {
+        const c = await fetch(
+          `${base}/rest/v1/plantillas?plantilla=eq.${encodeURIComponent(p.plantilla)}` +
+          `&version=eq.${p.version}&select=contrato`, { headers: cab });
+        if (c.ok) {
+          const cf = await c.json();
+          campos = cf[0]?.contrato?.campos ?? null;
+        }
+      }
+
+      return json({
+        id: p.id,
+        estado: p.estado,
+        terminado,
+        listo: p.estado === "listo",
+        esperando_seg: esperando,
+        plantilla: p.plantilla,
+        version: p.version,
+        corrige: p.corrige,
+        preview: p.preview || [],
+        campos,
+        notas: p.notas,
+        mensaje: p.mensaje_agente,
+      });
+    }
   }
 
   // ── Pedir una plantilla nueva ──────────────────────────────────────────

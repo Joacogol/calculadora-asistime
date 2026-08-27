@@ -42,6 +42,18 @@ const FEED_MIN = 0.795, FEED_MAX = 1.915;
 
 const VIDEO = /\.(mp4|mov)$/i;
 
+// Cuánto espera el GET a que la publicación salga antes de contestar «todavía
+// no». El worker corre cada minuto, así que esperando algo más de eso la
+// mayoría de las consultas contestan con el link ya puesto.
+//
+// La espera vive ACÁ y no en la tool de Asistime porque el sandbox de las
+// tools no sabe dormir: un `setTimeout` no lo suspende, lo mata. Ver la nota
+// larga en `api-disenos`.
+const ESPERA_MAX_MS = 75_000;
+const ESPERA_PASO_MS = 5_000;
+
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 function json(cuerpo: unknown, status = 200) {
   return new Response(JSON.stringify(cuerpo), {
     status,
@@ -147,31 +159,55 @@ Deno.serve(async (req) => {
 
   // ── Cómo va la publicación ──────────────────────────────────────────────
   if (req.method === "GET") {
-    const diseno = new URL(req.url).searchParams.get("diseno_id");
+    const url0 = new URL(req.url);
+    const diseno = url0.searchParams.get("diseno_id");
     if (!diseno) return json({ error: "falta el parámetro diseno_id" }, 400);
-    const filas = await traer_publicaciones(diseno);
-    if (!filas.length) {
-      return json({
+    const esperar = url0.searchParams.get("esperar") !== "no";
+
+    const hasta = Date.now() + (esperar ? ESPERA_MAX_MS : 0);
+    for (;;) {
+      const filas = await traer_publicaciones(diseno);
+
+      // Sin ninguna fila no hay nada que esperar: a este diseño nadie lo mandó
+      // a publicar. Esperar acá sería tener al chat mudo setenta y cinco
+      // segundos por una respuesta que ya se sabe.
+      if (!filas.length) {
+        return json({
+          diseno_id: diseno,
+          publicaciones: [],
+          terminado: true,
+          mensaje: "Este diseño todavía no se mandó a publicar.",
+        });
+      }
+
+      const activas = filas.filter((f: any) =>
+        f.estado === "programado" || f.estado === "subiendo");
+
+      // Una publicación programada para dentro de tres horas no es una
+      // demora: es lo que se pidió. Contestar ya, en vez de esperar por algo
+      // que no va a pasar en este minuto.
+      const inminente = activas.some((f: any) =>
+        !f.publicar_en ||
+        new Date(f.publicar_en).getTime() <= Date.now() + 120_000);
+
+      const cuerpo = {
         diseno_id: diseno,
-        publicaciones: [],
-        terminado: true,
-        mensaje: "Este diseño todavía no se mandó a publicar.",
-      });
+        terminado: activas.length === 0,
+        publicaciones: filas.map((f: any) => ({
+          id: f.id,
+          tipo: f.tipo,
+          estado: f.estado,
+          cuando: f.publicar_en,
+          permalink: f.permalink || null,
+          mensaje: f.mensaje || null,
+        })),
+      };
+
+      if (cuerpo.terminado || !inminente || Date.now() >= hasta) {
+        return json(cuerpo);
+      }
+      await dormir(ESPERA_PASO_MS);
     }
-    const activas = filas.filter((f: any) =>
-      f.estado === "programado" || f.estado === "subiendo");
-    return json({
-      diseno_id: diseno,
-      terminado: activas.length === 0,
-      publicaciones: filas.map((f: any) => ({
-        id: f.id,
-        tipo: f.tipo,
-        estado: f.estado,
-        cuando: f.publicar_en,
-        permalink: f.permalink || null,
-        mensaje: f.mensaje || null,
-      })),
-    });
   }
 
   if (req.method !== "POST") return json({ error: "usá POST o GET" }, 405);
