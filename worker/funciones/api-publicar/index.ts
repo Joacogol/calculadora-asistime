@@ -1,4 +1,12 @@
-// Publicar en Instagram una pieza que YA existe, desde el chat de Asistime.
+// Publicar en Instagram, desde el chat de Asistime.
+//
+// Dos puertas, y la diferencia entre ellas es lo único que hay que entender:
+//
+//   POST /api-publicar        una PIEZA que el sistema diseñó. Se nombra por su
+//                             `diseno_id` y nunca por una URL.
+//   POST /api-publicar/foto   una FOTO tal cual, sin diseñar. Sirve para lo que
+//                             ya está listo: la foto de la fachada, la del
+//                             equipo, una que mandó un proveedor.
 //
 // ── La regla que esta función no rompe ────────────────────────────────────
 //
@@ -11,15 +19,29 @@
 // quien pide publicar es ella. Lo que esta función agrega son los tres cierres
 // que un chat necesita y un botón no:
 //
-//   1. **Sólo publica piezas de un diseño propio.** Nunca una URL suelta. Un
-//      agente al que se le puede dictar la URL es un agente al que cualquiera
-//      le publica lo que quiera en la cuenta del cliente.
+//   1. **Sólo publica lo que pasó por acá.** Ni la pieza ni la foto se
+//      publican desde la URL que le dicten: la foto se BAJA, se verifica que
+//      sea una imagen por sus bytes, se le sacan los metadatos y se guarda en
+//      el Storage del cliente. Lo que sale a Instagram es siempre nuestra
+//      copia. Una URL que no se pueda bajar, o que no sea una imagen, no
+//      llega a la cola.
 //   2. **Un diseño no se publica dos veces.** Si ya hay una publicación en
 //      curso o publicada, contesta 409 con los datos de esa. Sin esto, que el
 //      modelo llame dos veces —que llama— duplica el posteo.
 //   3. **Falla temprano y en voz alta.** Si no hay cuenta de Instagram, o el
 //      diseño no está listo, o la pieza no entra en el feed, lo dice ahora y
 //      no dentro de veinte minutos en una fila que nadie mira.
+//
+// ── Por qué una foto suelta también crea una fila en `disenos` ───────────
+//
+// Porque después de esa fila TODO el camino ya está escrito y probado: el
+// freno de publicar dos veces, la medición de la pieza, la elección entre
+// feed y story, la consulta de estado y el worker que sube. Una foto
+// publicada directo no es un caso aparte: es un diseño de una sola imagen que
+// nadie dibujó.
+//
+// Además deja registro. Sin la fila, lo que sale al Instagram de la clínica
+// por esta puerta no quedaría anotado en ningún lado.
 //
 // Publicar en sí sigue siendo del worker: esta función sólo escribe la fila.
 // Es una cola porque publicar tarda y puede fallar a la mitad.
@@ -42,6 +64,17 @@ const FEED_MIN = 0.795, FEED_MAX = 1.915;
 
 const VIDEO = /\.(mp4|mov)$/i;
 
+// Lo que se acepta cuando lo que se publica es una foto tal cual. Mismos
+// números que en `api-disenos`: una foto de celular pesa entre 2 y 5 MB.
+const MAX_BYTES = 12 * 1024 * 1024;
+
+const TIPOS: Record<string, string> = {
+  jpg: "image/jpeg", png: "image/png",
+  webp: "image/webp", gif: "image/gif",
+};
+
+const TD = new TextDecoder();
+
 // Cuánto espera el GET a que la publicación salga antes de contestar «todavía
 // no». El worker corre cada minuto, así que esperando algo más de eso la
 // mayoría de las consultas contestan con el link ya puesto.
@@ -61,19 +94,48 @@ function json(cuerpo: unknown, status = 200) {
   });
 }
 
-/** Ancho y alto de un PNG, sin bajar el archivo entero.
+/** Ancho y alto de una imagen, sin bajar el archivo entero.
  *
- * Las medidas están en los primeros 24 bytes, así que un Range alcanza. Se
- * mide en vez de adivinar por el nombre porque el nombre lo escribe el agente
- * y puede decir cualquier cosa; los píxeles no mienten. */
+ * Se mide en vez de adivinar por el nombre porque el nombre lo escribe el
+ * agente y puede decir cualquier cosa; los píxeles no mienten. Y de esta
+ * medida depende algo que se ve: si la pieza va al feed o va a stories.
+ *
+ * En PNG las medidas están en los primeros 24 bytes. En JPEG están en el
+ * marcador SOF, que puede caer bastante más adentro — por eso se piden 128 KB
+ * y no 34. Antes sólo se leía PNG, y con una foto de celular —que es JPEG— la
+ * medición fallaba en silencio y se caía a adivinar por el nombre del
+ * archivo: toda foto vertical terminaba clasificada como cuadrada. */
+function medirPng(b: Uint8Array): [number, number] | null {
+  if (b.length < 24 || b[0] !== 0x89 || b[1] !== 0x50) return null;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  return [dv.getUint32(16), dv.getUint32(20)];
+}
+
+function medirJpg(b: Uint8Array): [number, number] | null {
+  if (b.length < 4 || b[0] !== 0xFF || b[1] !== 0xD8) return null;
+  let i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xFF) { i++; continue; }
+    const m = b[i + 1];
+    // Los SOF —donde viven las medidas— son C0..CF menos C4, C8 y CC, que son
+    // tablas y no encabezados de cuadro.
+    if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) {
+      return [(b[i + 7] << 8) | b[i + 8], (b[i + 5] << 8) | b[i + 6]];
+    }
+    if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { i += 2; continue; }
+    const largo = (b[i + 2] << 8) | b[i + 3];
+    if (largo < 2) return null;
+    i += 2 + largo;
+  }
+  return null;
+}
+
 async function medir(url: string): Promise<[number, number] | null> {
   try {
-    const r = await fetch(url, { headers: { Range: "bytes=0-33" } });
+    const r = await fetch(url, { headers: { Range: "bytes=0-131071" } });
     if (!r.ok) return null;
     const b = new Uint8Array(await r.arrayBuffer());
-    if (b.length < 24 || b[0] !== 0x89 || b[1] !== 0x50) return null;
-    const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-    return [dv.getUint32(16), dv.getUint32(20)];
+    return medirPng(b) || medirJpg(b);
   } catch {
     return null;
   }
@@ -125,6 +187,138 @@ function caption_de(copy: string): string {
   return limpiar_caption(conCopy ? conCopy.cuerpo.join("\n") : copy);
 }
 
+// ── Traer la foto que mandó la persona ───────────────────────────────────
+//
+// Todo esto es COPIA LITERAL de `api-disenos`, igual que en `api-plantillas` y
+// por lo mismo: es el mismo problema y ya está resuelto ahí. Escribir una
+// tercera versión sería garantizar que dentro de seis meses alguien arregle
+// una y no las otras.
+//
+// La URL que da el chat es de otra plataforma y puede estar firmada por unos
+// minutos. Además es una URL que alguien DICTÓ, y publicar lo que a uno le
+// dictan es exactamente lo que esta función no hace: se baja, se verifica que
+// sea una imagen por sus bytes, se le sacan los metadatos y se guarda en el
+// Storage del cliente. Lo que sale a Instagram es nuestra copia.
+
+function unir(partes: Uint8Array[]): Uint8Array {
+  let n = 0;
+  for (const p of partes) n += p.length;
+  const salida = new Uint8Array(n);
+  let i = 0;
+  for (const p of partes) { salida.set(p, i); i += p.length; }
+  return salida;
+}
+
+/** Qué es el archivo, por sus primeros bytes y no por la extensión de la URL:
+ *  muchas URLs de chat no tienen extensión, y la que tienen puede mentir. */
+function formato(b: Uint8Array): string | null {
+  if (b.length < 12) return null;
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return "jpg";
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return "png";
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+      b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return "webp";
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return "gif";
+  return null;
+}
+
+function limpiarJpg(b: Uint8Array): Uint8Array | null {
+  const partes = [b.subarray(0, 2)];
+  let i = 2;
+  while (true) {
+    if (i + 4 > b.length || b[i] !== 0xFF) return null;
+    const m = b[i + 1];
+    // 0xDA es el comienzo de la imagen comprimida: de ahí al final va tal cual.
+    if (m === 0xDA) { partes.push(b.subarray(i)); break; }
+    const largo = (b[i + 2] << 8) | b[i + 3];
+    if (largo < 2 || i + 2 + largo > b.length) return null;
+    // APP1..APP15 es donde viven EXIF, GPS y XMP. COM es el comentario.
+    // APP0 (JFIF) se conserva: describe la imagen, no a quien la sacó.
+    const meta = (m >= 0xE1 && m <= 0xEF) || m === 0xFE;
+    if (!meta) partes.push(b.subarray(i, i + 2 + largo));
+    i += 2 + largo;
+  }
+  return unir(partes);
+}
+
+function limpiarPng(b: Uint8Array): Uint8Array | null {
+  const fuera = new Set(["tEXt", "zTXt", "iTXt", "eXIf", "tIME"]);
+  const partes = [b.subarray(0, 8)];
+  let i = 8;
+  while (i + 12 <= b.length) {
+    const dv = new DataView(b.buffer, b.byteOffset + i, 8);
+    const largo = dv.getUint32(0);
+    const tipo = TD.decode(b.subarray(i + 4, i + 8));
+    const fin = i + 12 + largo;
+    if (fin > b.length) return null;
+    if (!fuera.has(tipo)) partes.push(b.subarray(i, fin));
+    i = fin;
+    if (tipo === "IEND") break;
+  }
+  return unir(partes);
+}
+
+function limpiarWebp(b: Uint8Array): Uint8Array | null {
+  const partes = [b.subarray(0, 12)];
+  let flags = -1;
+  let escritos = 12;
+  let i = 12;
+  while (i + 8 <= b.length) {
+    const dv = new DataView(b.buffer, b.byteOffset + i, 8);
+    const tipo = TD.decode(b.subarray(i, i + 4));
+    const largo = dv.getUint32(4, true);
+    const fin = i + 8 + largo + (largo % 2);
+    if (fin > b.length) return null;
+    if (tipo !== "EXIF" && tipo !== "XMP ") {
+      if (tipo === "VP8X") flags = escritos + 8;
+      partes.push(b.subarray(i, fin));
+      escritos += fin - i;
+    }
+    i = fin;
+  }
+  const salida = unir(partes);
+  // Bajar las banderas de EXIF y XMP del chunk VP8X: sacar los chunks sin
+  // bajarlas deja un archivo que dice tener metadatos que ya no están, y los
+  // decodificadores estrictos rechazan la imagen entera. Ver la nota larga en
+  // `api-disenos`.
+  if (flags >= 0 && flags < salida.length) salida[flags] &= ~(0x08 | 0x04);
+  new DataView(salida.buffer).setUint32(4, salida.length - 8, true);
+  return salida;
+}
+
+/** Saca todo lo que la foto cuenta sobre quién la sacó y dónde.
+ *
+ * Acá pesa más que en `api-disenos`: allá la foto termina redibujada por
+ * Chromium y los metadatos se pierden solos, pero lo que se publica por esta
+ * puerta es el archivo tal cual. Si trae las coordenadas de dónde se tomó,
+ * salen a Instagram.
+ *
+ * No re-comprime: mueve bytes, no píxeles. */
+function limpiar(b: Uint8Array, fmt: string): Uint8Array {
+  try {
+    const r = fmt === "jpg" ? limpiarJpg(b)
+            : fmt === "png" ? limpiarPng(b)
+            : fmt === "webp" ? limpiarWebp(b) : null;
+    return r || b;
+  } catch {
+    return b;
+  }
+}
+
+/** ¿Es una URL que tiene sentido ir a buscar? Nadie de afuera llega acá sin
+ *  la clave, pero una función que baja cualquier dirección que le dicten es
+ *  una función que puede ser usada para mirar adentro de la red. */
+function direccion_valida(u: string): boolean {
+  let url: URL;
+  try { url = new URL(u); } catch { return false; }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+  const h = url.hostname.toLowerCase();
+  if (h === "localhost" || h.endsWith(".localhost") || h === "::1") return false;
+  if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)) return false;
+  if (/^169\.254\./.test(h)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -156,6 +350,9 @@ Deno.serve(async (req) => {
     );
     return r.ok ? await r.json() : [];
   };
+
+  const ruta = new URL(req.url).pathname;
+  const esFoto = ruta.endsWith("/foto");
 
   // ── Cómo va la publicación ──────────────────────────────────────────────
   if (req.method === "GET") {
@@ -219,8 +416,8 @@ Deno.serve(async (req) => {
     return json({ error: "el cuerpo tiene que ser JSON" }, 400);
   }
 
-  const diseno_id = String(cuerpo.diseno_id || "").trim();
-  if (!diseno_id) return json({ error: "falta diseno_id" }, 400);
+  let diseno_id = String(cuerpo.diseno_id || "").trim();
+  if (!diseno_id && !esFoto) return json({ error: "falta diseno_id" }, 400);
 
   // ── ¿Hay cuenta de Instagram? ───────────────────────────────────────────
   // Primero de todo: sin cuenta conectada, la fila quedaría esperando para
@@ -243,6 +440,100 @@ Deno.serve(async (req) => {
              "desde la app antes de publicar.",
       codigo: "sin_instagram",
     }, 409);
+  }
+
+  // ── Una foto tal cual: se copia y se anota como un diseño de una imagen ──
+  //
+  // Después de esto, `diseno_id` apunta a una fila normal de `disenos` y todo
+  // lo que sigue —el freno de publicar dos veces, la medición, la elección
+  // entre feed y story, la consulta de estado, el worker— funciona sin saber
+  // que esta pieza no la dibujó nadie.
+  if (esFoto) {
+    const origen = String(cuerpo.foto || "").trim();
+    if (!origen) {
+      return json({ error: "falta la foto: una URL https que se pueda bajar",
+                    codigo: "falta_la_foto" }, 400);
+    }
+    if (!direccion_valida(origen)) {
+      return json({
+        error: "La foto tiene que ser una URL pública que se pueda descargar.",
+        codigo: "foto_invalida",
+      }, 400);
+    }
+
+    let crudo: Uint8Array;
+    try {
+      const rf = await fetch(origen, { signal: AbortSignal.timeout(20000) });
+      if (!rf.ok) throw new Error(`el servidor contestó ${rf.status}`);
+      crudo = new Uint8Array(await rf.arrayBuffer());
+    } catch (e) {
+      return json({
+        error: `No pude bajar la foto: ${(e as Error).message}. Pedile a la ` +
+               `persona que la mande de nuevo.`,
+        codigo: "foto_no_sirve",
+      }, 400);
+    }
+    if (crudo.length > MAX_BYTES) {
+      return json({ error: "La foto pesa más de 12 MB.",
+                    codigo: "foto_no_sirve" }, 400);
+    }
+    const fmt = formato(crudo);
+    if (!fmt) {
+      return json({
+        error: "Eso no es una imagen que Instagram acepte. Mandala en JPG o PNG.",
+        codigo: "foto_no_sirve",
+      }, 400);
+    }
+    // GIF no: Instagram no lo publica como imagen y lo que sale es un cuadro
+    // quieto. Mejor decirlo que publicar algo que no es lo que esperan.
+    if (fmt === "gif") {
+      return json({
+        error: "Instagram no publica GIFs como foto: sale un cuadro quieto. " +
+               "Si es una animación tiene que ir como video.",
+        codigo: "foto_no_sirve",
+      }, 400);
+    }
+
+    const rutaFoto = `publicaciones/${crypto.randomUUID()}.${fmt}`;
+    const up = await fetch(`${base}/storage/v1/object/disenos/${rutaFoto}`, {
+      method: "POST",
+      headers: {
+        apikey: llave,
+        Authorization: `Bearer ${llave}`,
+        "Content-Type": TIPOS[fmt],
+      },
+      body: limpiar(crudo, fmt),
+    });
+    if (!up.ok) {
+      console.error("storage", up.status, (await up.text()).slice(0, 300));
+      return json({ error: "no pude guardar la foto" }, 500);
+    }
+    const nuestra = `${base}/storage/v1/object/public/disenos/${rutaFoto}`;
+
+    const fila: Record<string, unknown> = {
+      mensaje: "Foto publicada tal cual desde el chat, sin diseñar.",
+      formatos: ["post"],
+      estado: "listo",
+      titulo: String(cuerpo.titulo || "Foto sin diseñar").slice(0, 200),
+      quien: String(cuerpo.quien || "Asistime").slice(0, 120),
+      urls: [nuestra],
+    };
+    if (usuario) fila.user_id = usuario;
+    if (typeof cuerpo.caption === "string" && cuerpo.caption.trim()) {
+      fila.copy = String(cuerpo.caption).slice(0, 2200);
+    }
+
+    const rn = await fetch(`${base}/rest/v1/disenos`, {
+      method: "POST",
+      headers: { ...cab, Prefer: "return=representation" },
+      body: JSON.stringify(fila),
+    });
+    if (!rn.ok) {
+      console.error("insert diseno", rn.status, (await rn.text()).slice(0, 300));
+      return json({ error: "no pude registrar la foto" }, 500);
+    }
+    const [creado] = await rn.json();
+    diseno_id = creado.id;
   }
 
   // ── El diseño ───────────────────────────────────────────────────────────

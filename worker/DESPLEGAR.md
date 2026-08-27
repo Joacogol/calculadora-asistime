@@ -360,6 +360,65 @@ eso hay que arreglarlo antes de que alguien pida publicar en el chat.
 > vencen, `publicar_diseno` contesta que la cuenta no está activa y el agente
 > lo dice — no se pierde nada, pero deja de publicar.
 
+### 6b · Subir una foto sin diseñarla
+
+**Hecho el 27/8/2026, después de una prueba que lo dejó a la vista.** Le
+pidieron al agente subir una foto a Instagram y el agente **diseñó una placa
+con ella**, sin avisar. No era un error del código: `publicar_diseno` sólo
+acepta un `diseno_id` —nunca una URL— así que armar una pieza era literalmente
+lo único que sabía hacer con una foto. El problema era que lo hacía en
+silencio.
+
+Se resolvió con las dos mitades, porque cada una sola deja el agujero abierto:
+
+**La capacidad.** `api-publicar` gana una segunda puerta:
+
+```
+POST /api-publicar        una pieza diseñada, por su `diseno_id`
+POST /api-publicar/foto   una foto tal cual
+```
+
+La foto **no se publica desde la URL que le dicten**. La función la baja,
+verifica por sus bytes que sea una imagen de verdad, le saca los metadatos —en
+una foto de celular eso incluye dónde se tomó, y acá el archivo sale sin
+redibujar— y la guarda en el Storage del cliente. Lo que va a Instagram es
+siempre nuestra copia.
+
+Y crea una fila normal en `disenos`, con `estado: listo`. Eso no es un rodeo:
+de ahí para abajo funciona todo lo que ya estaba escrito y probado —el freno
+de publicar dos veces, la medición de la pieza, la elección entre feed y
+story, `estado_publicacion`, el worker— sin que ninguno tenga que saber que
+esa pieza no la dibujó nadie. Y deja registro de lo que salió.
+
+> **`medir()` aprendió a leer JPEG.** Sólo sabía PNG, y una foto de celular es
+> JPEG: la medición fallaba **en silencio** y se caía a adivinar por el nombre
+> del archivo, con lo cual toda foto vertical terminaba clasificada como
+> cuadrada e iba al feed recortada. Con piezas del motor nunca se notó porque
+> son PNG.
+
+**El prompt.** Versión 3, publicada. Arranca con una regla que ahora encabeza
+todo lo demás:
+
+> **Nunca hagas algo distinto de lo que te pidieron sin decirlo.**
+
+Y una tabla que separa los dos caminos por una sola pregunta —*¿hay que
+diseñar algo?*—, con la instrucción de preguntar cuando no esté claro en vez
+de elegir.
+
+**La tool** es `publicar_foto` (id 2114), enganchada al agente 542.
+
+Probado sin publicar nada real: los cuatro rechazos (sin foto, dirección
+interna, una URL que no es imagen, clave mala) y el camino completo
+programado para el día siguiente — copió la foto, la midió, la clasificó como
+post, encoló, y `estado_publicacion` contestó al instante que estaba
+programada en vez de esperar 75 segundos. Después se borró todo.
+
+> **Falta en Boss.** Su `api-publicar` es la versión anterior y no tiene la
+> puerta `/foto`. Cuando se despliegue desde este repo la gana, y ahí hay que
+> crearle la tool `publicar_foto` en el tenant 119.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
