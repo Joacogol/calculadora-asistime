@@ -809,6 +809,40 @@ En Asistime: tool **`publicar_reel` (2134)**, 17 enganchadas al agente 364, y
 
 ---
 
+### 6h · El primer intento de publicar el reel, y el error que mentía
+
+Joaquín pidió subir su reel como story y le saltó un error. El log de la
+función lo dice en una línea:
+
+```
+GET | 400 | .../rest/v1/reels?id=eq.Prop_plane_flying_with_banner_202608281431.mp4
+```
+
+**El agente mandó el nombre del archivo en vez del id del reel.** PostgREST
+rechazó eso porque no es un uuid, devolvió 400, y de ahí salía mi mensaje:
+«Esta marca no hace reels, así que no hay ninguno para publicar».
+
+Ese mensaje es el verdadero problema. **Es falso** —Boss hace reels, el video
+estaba hecho y pago— y manda a mirar al lugar más equivocado posible: a la
+configuración de la marca, cuando lo que estaba mal era un parámetro. Un error
+que apunta al lugar equivocado cuesta más que no tener error.
+
+Dos arreglos, en dos capas:
+
+1. **En la tool `publicar_reel`**: el id se valida como uuid ANTES de salir a
+   la red, y el mensaje le dice al agente exactamente qué mandó mal y dónde
+   está el id bueno. Se arregla solo, sin que nadie mire un log.
+2. **En `api-publicar`**: el mismo guardián, y el `!rr.ok` dejó de afirmar que
+   la marca no hace reels. Ahora es un 502 que dice que no se pudo buscar y
+   que puede ser de las dos cosas, sin elegir una y equivocarse.
+
+> **La lección, que ya está escrita en otros lugares de este repo.** Un
+> guardián que se dispara sólo en el caso raro es el que nunca se prueba, y
+> el que va a mentir justo cuando alguien lo necesite. Éste se escribió el
+> mismo día que la función y falló en el primer uso real.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:

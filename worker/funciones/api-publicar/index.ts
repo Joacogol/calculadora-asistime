@@ -565,15 +565,39 @@ Deno.serve(async (req) => {
                     codigo: "falta_el_reel" }, 400);
     }
 
+    // El id es un UUID, y se chequea ANTES de preguntarle a la base. El
+    // 28/8/2026, el primer día que esto existió, el agente mandó el NOMBRE DEL
+    // ARCHIVO («Prop_plane_flying_with_banner_...mp4»). PostgREST contestó 400
+    // porque eso no es un uuid, y de acá salía «esta marca no hace reels»: una
+    // respuesta FALSA —los hace— que manda a mirar al lugar equivocado. Un id
+    // con forma rara es un error de quien llama y hay que decírselo así.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+          .test(reel_id)) {
+      return json({
+        error: `«${reel_id}» no es el id de un reel: el id es un uuid y lo ` +
+               `devuelve crear_reel. No es el nombre del archivo ni el final ` +
+               `de la URL del video.`,
+        codigo: "reel_id_invalido",
+      }, 400);
+    }
+
     const rr = await fetch(
       `${base}/rest/v1/reels?id=eq.${encodeURIComponent(reel_id)}` +
       `&select=id,estado,url,titulo,notas&limit=1`,
       { headers: cab });
     if (!rr.ok) {
+      // Acá ya no se puede decir «esta marca no hace reels»: con un id bien
+      // formado, que la consulta falle es un problema nuestro, no del pedido.
+      // Si la tabla no existiera —una marca sin video— también cae acá, así
+      // que el mensaje tiene que servir para los dos casos sin mentir en
+      // ninguno.
+      console.error("leer reel", rr.status, (await rr.text()).slice(0, 300));
       return json({
-        error: "Esta marca no hace reels, así que no hay ninguno para publicar.",
-        codigo: "sin_reels",
-      }, 409);
+        error: "No pude buscar ese reel. Puede que esta marca todavía no " +
+               "tenga el motor de video prendido; si lo tiene, es un " +
+               "problema nuestro y hay que avisar al equipo.",
+        codigo: "no_pude_leer_el_reel",
+      }, 502);
     }
     const [reel] = await rr.json();
     if (!reel) {
