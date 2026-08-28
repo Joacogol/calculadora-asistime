@@ -32,5 +32,14 @@
     "clave_env": "ASISTIME_CLAVE",
     "clave_secreto": "asistime-api-boss",
     "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
+  },
+  "fotos": {
+    "creditos_maximos": 600,
+    "creditos_maximos_mes": 5000,
+    "_que_hace": "Los seis verbos que el agente le puede pedir a una foto ANTES de usarla en una pieza. Cinco parten de una foto que ya existe: `fondo` la recorta, `formato` la lleva a otra proporción inventando los bordes en vez de recortar, `tamano` la agranda, `retoque` saca o cambia algo puntual y `escena` la lleva a otro lugar. El sexto, `crear`, no parte de nada: inventa la foto entera a partir de una descripción.",
+    "_por_que": "El banco del club son 29 fotos elegidas y descritas a mano, y son buenas: jugadores y jugadoras en cancha, público, la escuelita, retratos. Lo que les falta es lo de alrededor — un fondo con textura, una cancha vacía a una hora que nadie fotografió — y cuatro de las 29 (`ph-noche`, `ph-indoor`, `ph-cancha`, `ph-cesped`) están anotadas en el propio banco como «candidata a reemplazo»: son rectángulos casi negros que no aportan imagen. Ésas son exactamente las que `crear` puede reemplazar bien.",
+    "_costo": "`crear` son 100 créditos, MEDIDOS el 27/8/2026: se generó una imagen y el saldo de la cuenta bajó de 11.878 a 11.778. `fondo` son 3, medidos el 26/8. Los otros cuatro llevan una cota alta de 300 que no es una estimación sino un techo: si está mal, está mal por arriba.",
+    "_regla_gente": "Acá no hay productos que deformar, pero hay algo peor: la gente. Una foto inventada de «nuestros jugadores» son personas que no existen presentadas como socios del club. Por eso `crear` es para lugares, fondos y texturas — no para inventar jugadores, socios ni profes. Si la pieza necesita gente, sale del banco, que para eso tiene 29 fotos reales. Y el prompt del agente tiene escrito que cuando una foto la hizo la IA, lo dice.",
+    "_topes": "`creditos_maximos` es por pieza y `creditos_maximos_mes` corta el mes. Son aparte de los de `reels` a propósito: editar o inventar una foto sale centavos y generar video sale miles, y un solo tope compartido dejaría que un reel se coma el presupuesto de cincuenta fotos."
   }
 }

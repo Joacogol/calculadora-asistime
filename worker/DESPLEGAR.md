@@ -586,6 +586,91 @@ distinto al de una pieza fea. Por eso hay tres frenos, y ninguno es opcional:
 
 ---
 
+### 6e · Lo mismo en Boss y en Stadium (28/8/2026)
+
+Tres cosas que quedaban abiertas después de Clínica.
+
+#### El banco de Boss, que el agente no podía ver
+
+`crear_diseno` de Boss acepta `fotos_elegidas` desde el primer día, pero nunca
+hubo forma de saber **qué claves existen**: el banco de este club son 29 fotos
+descritas a mano que viajan dentro de la imagen del worker, en
+`referencias/fotos.json`, y el agente del chat no ve ese archivo.
+
+La ruta `/banco` lee la tabla `fotos`, que en Boss estaba **vacía**. Y los
+archivos no se podían subir al Storage desde acá: viven adentro del worker, no
+en un servidor público.
+
+Así que las 29 filas que se cargaron son el **índice** del banco, no una copia:
+
+| Columna | Qué lleva |
+|---|---|
+| `clave`, `descripcion`, `etiquetas` | copiadas del `fotos.json` del skill |
+| `ancho`, `alto` | medidos de los archivos reales, para que `forma` sirva |
+| `url` | **NULL** — el archivo está en el worker, no acá |
+
+`url` pasó a admitir NULL para esto, con un `comment on column` que lo explica.
+Y esto **no le cambia nada al diseñador**: `banco.sincronizar()` saltea en
+silencio toda fila sin url (`if not clave or not url: continue`), así que sigue
+usando los assets del skill exactamente como hasta hoy. El día que Boss suba
+fotos desde una app, esas filas sí van a traer url y van a convivir con éstas.
+
+> **Por qué no se subieron los archivos.** Habría unificado los dos bancos, que
+> es hacia donde va la arquitectura. Pero cambia lo que el diseñador usa (los
+> `assets/banco/` bajados en vez de los del skill), obliga a bajar 29 fotos en
+> cada arranque en frío, y necesita la `service_role` de Boss para subirlas. A
+> cambio de eso, lo único que se gana es que `/banco` devuelva una url que nadie
+> usa. No valía el riesgo sobre algo que hoy anda.
+
+#### `crear_foto` en los tres
+
+| | Clínica | Boss | Stadium |
+|---|---|---|---|
+| tabla `fotos_editadas` | ✅ | ✅ nueva | ✅ |
+| `api-fotos` con los seis verbos | ✅ v1 | ✅ v1 | ✅ v2 |
+| bloque `fotos` en `marca.json` | ✅ | ✅ **falta desplegar** | ✅ |
+| `crear_foto` / `editar_foto` / `estado_foto` | 2118 / 2119 / 2120 | 2129 / 2130 / 2131 | 2123 / 2079 / 2080 |
+| `ver_banco` | 2117 | 2128 | — (su tabla `fotos` está vacía) |
+
+**Cada marca frena una cosa distinta, y no es decoración.** El verbo `crear`
+inventa una imagen entera, y lo que es inaceptable inventar cambia por cliente:
+
+- **Stadium** no inventa **productos**. Los championes tienen que ser los de
+  verdad; una IA los dibuja *parecidos* y eso es publicidad de algo que no se
+  vende. `crear_foto` frena si la descripción nombra un producto y manda a
+  `escena`, que parte de la foto real.
+- **Boss** no inventa **gente**. Una foto de «nuestros jugadores» hecha por IA
+  son personas que no existen presentadas como socios. Frena si la descripción
+  pide personas —salvo que diga «sin gente» o «vacía»— y manda al banco, que
+  para eso tiene 29 fotos reales.
+- **Clínica** no inventa **carteles**: una fachada generada con un cartel que
+  dice cualquier cosa es lo peor que puede salir de una cuenta de salud.
+
+Y en los tres, `estado_foto` le dice al agente que avise cuando la foto la hizo
+una IA, y el prompt lo repite entre las cosas que no hace nunca.
+
+> **Boss necesita un despliegue del worker.** Su bloque `fotos` en `marca.json`
+> viaja dentro de la imagen, igual que pasó con Clínica: hasta que no se corra
+> `./desplegar-chat.sh` —copiando antes el código, ver el principio de este
+> documento— sus pedidos de foto se quedan quietos en `pendiente`, sin gastar
+> un crédito. Stadium y Clínica ya andan.
+
+#### Los cuatro precios, otra vez sin medir
+
+`formato`, `tamano`, `retoque` y `escena` siguen con la cota de 300. El
+conector de Magnific —único lugar donde está el saldo, porque la API REST no
+expone ningún endpoint de cuenta (se probaron 16 rutas, todas 404)— se cayó
+antes de poder medirlos, igual que la primera vez.
+
+Medir es fácil cuando el conector está: se corre uno, se mira el saldo antes y
+después, y esa resta es el precio. Así se midieron `crear` (100) y `fondo` (3).
+Lo que NO sirve es copiar los números del simulador del conector
+(`images_expand` 50, `images_retouch` 10, `images_upscale` 90–1080): son otros
+endpoints con otros modelos, y una cifra que parece medida y no lo está es peor
+que una cota honesta.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
