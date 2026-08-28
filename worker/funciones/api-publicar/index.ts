@@ -4,9 +4,12 @@
 //
 //   POST /api-publicar        una PIEZA que el sistema diseñó. Se nombra por su
 //                             `diseno_id` y nunca por una URL.
-//   POST /api-publicar/foto   una FOTO tal cual, sin diseñar. Sirve para lo que
-//                             ya está listo: la foto de la fachada, la del
-//                             equipo, una que mandó un proveedor.
+//   POST /api-publicar/foto   un ARCHIVO tal cual, sin diseñar: una foto O un
+//                             video que la persona adjuntó en el chat. Sirve
+//                             para lo que ya está listo — la foto de la
+//                             fachada, el video que grabó alguien del club.
+//                             Se llama `/foto` por historia: cuando se
+//                             escribió sólo aceptaba imágenes.
 //   POST /api-publicar/reel   un VIDEO hecho por el motor de reels. Se nombra
 //                             por su `reel_id` y el archivo ya es nuestro.
 //
@@ -24,12 +27,12 @@
 // quien pide publicar es ella. Lo que esta función agrega son los tres cierres
 // que un chat necesita y un botón no:
 //
-//   1. **Sólo publica lo que pasó por acá.** Ni la pieza ni la foto se
-//      publican desde la URL que le dicten: la foto se BAJA, se verifica que
-//      sea una imagen por sus bytes, se le sacan los metadatos y se guarda en
-//      el Storage del cliente. Lo que sale a Instagram es siempre nuestra
-//      copia. Una URL que no se pueda bajar, o que no sea una imagen, no
-//      llega a la cola.
+//   1. **Sólo publica lo que pasó por acá.** Nada se publica desde la URL que
+//      le dicten: el archivo se BAJA, se verifica POR SUS BYTES que sea una
+//      imagen o un video de verdad, y se guarda en el Storage del cliente. A
+//      las fotos además se les sacan los metadatos. Lo que sale a Instagram es
+//      siempre nuestra copia. Una URL que no se pueda bajar, o que no sea ni
+//      imagen ni video, no llega a la cola.
 //   2. **Un diseño no se publica dos veces.** Si ya hay una publicación en
 //      curso o publicada, contesta 409 con los datos de esa. Sin esto, que el
 //      modelo llame dos veces —que llama— duplica el posteo.
@@ -76,6 +79,16 @@ const VIDEO = /\.(mp4|mov)$/i;
 // Lo que se acepta cuando lo que se publica es una foto tal cual. Mismos
 // números que en `api-disenos`: una foto de celular pesa entre 2 y 5 MB.
 const MAX_BYTES = 12 * 1024 * 1024;
+
+// Y lo que se acepta cuando es un VIDEO. Instagram aguanta mucho más, pero
+// esta función tiene que pasarlo por su propia memoria: 80 MB entran cómodos y
+// cubren de sobra un video de celular de un minuto. Más que eso conviene que
+// alguien lo suba a mano antes que arriesgar que se corte a la mitad.
+const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+
+const TIPOS_VIDEO: Record<string, string> = {
+  mp4: "video/mp4", mov: "video/quicktime",
+};
 
 const TIPOS: Record<string, string> = {
   jpg: "image/jpeg", png: "image/png",
@@ -228,6 +241,53 @@ function formato(b: Uint8Array): string | null {
       b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return "webp";
   if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return "gif";
   return null;
+}
+
+/** ¿Es un video? MP4 y MOV se reconocen por la caja `ftyp`, que está en los
+ *  bytes 4 a 8. Se mira igual que las imágenes —por los bytes y no por la
+ *  extensión— porque la URL de un chat muchas veces no tiene ninguna. */
+function formatoVideo(b: Uint8Array): string | null {
+  if (b.length < 12) return null;
+  if (TD.decode(b.subarray(4, 8)) !== "ftyp") return null;
+  // `qt  ` es QuickTime, o sea .mov. El resto de las marcas conocidas
+  // —isom, mp42, avc1, iso5— son MP4.
+  return TD.decode(b.subarray(8, 12)) === "qt  " ? "mov" : "mp4";
+}
+
+/** Los primeros bytes de una URL, y cuánto pesa el archivo entero.
+ *
+ *  Existe para no bajar cincuenta megas y descubrir después que no servían.
+ *  Doce bytes alcanzan para saber si es foto o video, y el `content-range` de
+ *  la misma respuesta trae el tamaño total.
+ *
+ *  Si el servidor ignora el `Range` y manda todo, se lee el primer pedazo y se
+ *  corta la conexión. Muchos servidores de chat hacen exactamente eso.
+ */
+async function asomarse(url: string, n: number):
+    Promise<{ cabeza: Uint8Array; total: number }> {
+  const r = await fetch(url, {
+    headers: { Range: `bytes=0-${n - 1}` },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) throw new Error(`el servidor contestó ${r.status}`);
+
+  // `bytes 0-65535/12345678` → 12345678. Si no vino el rango, el
+  // `content-length` sirve sólo cuando la respuesta ES el archivo entero.
+  const rango = r.headers.get("content-range") || "";
+  const total = Number(rango.split("/")[1] ||
+                       (r.status === 200 ? r.headers.get("content-length") : 0) || 0);
+
+  const lector = r.body!.getReader();
+  const trozos: Uint8Array[] = [];
+  let leidos = 0;
+  while (leidos < n) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    trozos.push(value);
+    leidos += value.length;
+  }
+  await lector.cancel().catch(() => {});
+  return { cabeza: unir(trozos), total };
 }
 
 function limpiarJpg(b: Uint8Array): Uint8Array | null {
@@ -461,91 +521,190 @@ Deno.serve(async (req) => {
   // entre feed y story, la consulta de estado, el worker— funciona sin saber
   // que esta pieza no la dibujó nadie.
   if (esFoto) {
-    const origen = String(cuerpo.foto || "").trim();
+    // `foto` es el nombre viejo y sigue andando; `archivo` es el que
+    // corresponde ahora que por acá también entra un video.
+    const origen = String(cuerpo.archivo ?? cuerpo.foto ?? cuerpo.video ?? "").trim();
     if (!origen) {
-      return json({ error: "falta la foto: una URL https que se pueda bajar",
+      return json({ error: "falta el archivo: una URL https que se pueda bajar",
                     codigo: "falta_la_foto" }, 400);
     }
     if (!direccion_valida(origen)) {
       return json({
-        error: "La foto tiene que ser una URL pública que se pueda descargar.",
+        error: "Tiene que ser una URL pública que se pueda descargar.",
         codigo: "foto_invalida",
       }, 400);
     }
 
-    let crudo: Uint8Array;
+    // Primero se ASOMA: doce bytes dicen si es foto o video, y traer un video
+    // de cincuenta megas a la memoria para descubrir que no servía sería
+    // pagar el viaje entero por una pregunta de doce bytes.
+    let cabeza: Uint8Array, pesa: number;
     try {
-      const rf = await fetch(origen, { signal: AbortSignal.timeout(20000) });
-      if (!rf.ok) throw new Error(`el servidor contestó ${rf.status}`);
-      crudo = new Uint8Array(await rf.arrayBuffer());
+      ({ cabeza, total: pesa } = await asomarse(origen, 65536));
     } catch (e) {
       return json({
-        error: `No pude bajar la foto: ${(e as Error).message}. Pedile a la ` +
-               `persona que la mande de nuevo.`,
+        error: `No pude bajar el archivo: ${(e as Error).message}. Pedile a ` +
+               `la persona que lo mande de nuevo.`,
         codigo: "foto_no_sirve",
       }, 400);
     }
-    if (crudo.length > MAX_BYTES) {
-      return json({ error: "La foto pesa más de 12 MB.",
-                    codigo: "foto_no_sirve" }, 400);
-    }
-    const fmt = formato(crudo);
-    if (!fmt) {
+
+    const fmt = formato(cabeza);
+    const vid = fmt ? null : formatoVideo(cabeza);
+
+    if (!fmt && !vid) {
       return json({
-        error: "Eso no es una imagen que Instagram acepte. Mandala en JPG o PNG.",
-        codigo: "foto_no_sirve",
-      }, 400);
-    }
-    // GIF no: Instagram no lo publica como imagen y lo que sale es un cuadro
-    // quieto. Mejor decirlo que publicar algo que no es lo que esperan.
-    if (fmt === "gif") {
-      return json({
-        error: "Instagram no publica GIFs como foto: sale un cuadro quieto. " +
-               "Si es una animación tiene que ir como video.",
+        error: "Eso no es ni una imagen ni un video de los que Instagram " +
+               "acepta. Las fotos van en JPG o PNG y los videos en MP4 o MOV.",
         codigo: "foto_no_sirve",
       }, 400);
     }
 
-    const rutaFoto = `publicaciones/${crypto.randomUUID()}.${fmt}`;
-    const up = await fetch(`${base}/storage/v1/object/disenos/${rutaFoto}`, {
-      method: "POST",
-      headers: {
-        apikey: llave,
-        Authorization: `Bearer ${llave}`,
-        "Content-Type": TIPOS[fmt],
-      },
-      body: limpiar(crudo, fmt),
-    });
-    if (!up.ok) {
-      console.error("storage", up.status, (await up.text()).slice(0, 300));
-      return json({ error: "no pude guardar la foto" }, 500);
-    }
-    const nuestra = `${base}/storage/v1/object/public/disenos/${rutaFoto}`;
+    // ── Si es un VIDEO ──────────────────────────────────────────────────
+    //
+    // No se re-empaqueta ni se le sacan metadatos: se copia tal cual. Un
+    // video no lleva las coordenadas del celular como una foto, y volver a
+    // codificarlo acá sería tardar minutos para empeorar la imagen.
+    //
+    // Se copia igual, en vez de publicar la URL que dictaron, por la misma
+    // razón que la foto: la del chat se vence en un rato, e Instagram tarda
+    // en procesar un video. Si la URL muere en el medio, el posteo falla sin
+    // que nadie entienda por qué.
+    if (vid) {
+      if (pesa > MAX_VIDEO_BYTES) {
+        return json({
+          error: `El video pesa ${Math.round(pesa / 1048576)} MB y el tope ` +
+                 `son 80. Habría que subirlo a mano, o mandar uno más corto.`,
+          codigo: "video_muy_pesado",
+        }, 400);
+      }
 
-    const fila: Record<string, unknown> = {
-      mensaje: "Foto publicada tal cual desde el chat, sin diseñar.",
-      formatos: ["post"],
-      estado: "listo",
-      titulo: String(cuerpo.titulo || "Foto sin diseñar").slice(0, 200),
-      quien: String(cuerpo.quien || "Asistime").slice(0, 120),
-      urls: [nuestra],
-    };
-    if (usuario) fila.user_id = usuario;
-    if (typeof cuerpo.caption === "string" && cuerpo.caption.trim()) {
-      fila.copy = String(cuerpo.caption).slice(0, 2200);
+      const rutaVid = `publicaciones/${crypto.randomUUID()}.${vid}`;
+      let rv: Response;
+      try {
+        rv = await fetch(origen, { signal: AbortSignal.timeout(120000) });
+        if (!rv.ok) throw new Error(`el servidor contestó ${rv.status}`);
+      } catch (e) {
+        return json({
+          error: `No pude bajar el video: ${(e as Error).message}.`,
+          codigo: "foto_no_sirve",
+        }, 400);
+      }
+
+      // El cuerpo va como flujo y no como bloque: así el video pasa de una
+      // punta a la otra sin quedar entero en la memoria de esta función.
+      const upv = await fetch(`${base}/storage/v1/object/disenos/${rutaVid}`, {
+        method: "POST",
+        headers: {
+          apikey: llave,
+          Authorization: `Bearer ${llave}`,
+          "Content-Type": TIPOS_VIDEO[vid],
+        },
+        body: rv.body,
+      });
+      if (!upv.ok) {
+        console.error("storage video", upv.status, (await upv.text()).slice(0, 300));
+        return json({ error: "no pude guardar el video" }, 500);
+      }
+      const nuestroVid =
+        `${base}/storage/v1/object/public/disenos/${rutaVid}`;
+
+      const filaV: Record<string, unknown> = {
+        mensaje: "Video publicado tal cual desde el chat, sin diseñar.",
+        formatos: ["reel"],
+        estado: "listo",
+        titulo: String(cuerpo.titulo || "Video sin diseñar").slice(0, 200),
+        quien: String(cuerpo.quien || "Asistime").slice(0, 120),
+        urls: [],
+        videos: [{ url: nuestroVid }],
+      };
+      if (usuario) filaV.user_id = usuario;
+      if (typeof cuerpo.caption === "string" && cuerpo.caption.trim()) {
+        filaV.copy = String(cuerpo.caption).slice(0, 2200);
+      }
+
+      const rnv = await fetch(`${base}/rest/v1/disenos`, {
+        method: "POST",
+        headers: { ...cab, Prefer: "return=representation" },
+        body: JSON.stringify(filaV),
+      });
+      if (!rnv.ok) {
+        console.error("insert video", rnv.status, (await rnv.text()).slice(0, 300));
+        return json({ error: "no pude registrar el video" }, 500);
+      }
+      const [creadoV] = await rnv.json();
+      diseno_id = creadoV.id;
     }
 
-    const rn = await fetch(`${base}/rest/v1/disenos`, {
-      method: "POST",
-      headers: { ...cab, Prefer: "return=representation" },
-      body: JSON.stringify(fila),
-    });
-    if (!rn.ok) {
-      console.error("insert diseno", rn.status, (await rn.text()).slice(0, 300));
-      return json({ error: "no pude registrar la foto" }, 500);
+    // ── Si es una FOTO ──────────────────────────────────────────────────
+    if (fmt) {
+      let crudo: Uint8Array;
+      try {
+        const rf = await fetch(origen, { signal: AbortSignal.timeout(20000) });
+        if (!rf.ok) throw new Error(`el servidor contestó ${rf.status}`);
+        crudo = new Uint8Array(await rf.arrayBuffer());
+      } catch (e) {
+        return json({
+          error: `No pude bajar la foto: ${(e as Error).message}. Pedile a la ` +
+                 `persona que la mande de nuevo.`,
+          codigo: "foto_no_sirve",
+        }, 400);
+      }
+      if (crudo.length > MAX_BYTES) {
+        return json({ error: "La foto pesa más de 12 MB.",
+                      codigo: "foto_no_sirve" }, 400);
+      }
+      // GIF no: Instagram no lo publica como imagen y lo que sale es un cuadro
+      // quieto. Mejor decirlo que publicar algo que no es lo que esperan.
+      if (fmt === "gif") {
+        return json({
+          error: "Instagram no publica GIFs como foto: sale un cuadro quieto. " +
+                 "Si es una animación tiene que ir como video.",
+          codigo: "foto_no_sirve",
+        }, 400);
+      }
+
+      const rutaFoto = `publicaciones/${crypto.randomUUID()}.${fmt}`;
+      const up = await fetch(`${base}/storage/v1/object/disenos/${rutaFoto}`, {
+        method: "POST",
+        headers: {
+          apikey: llave,
+          Authorization: `Bearer ${llave}`,
+          "Content-Type": TIPOS[fmt],
+        },
+        body: limpiar(crudo, fmt),
+      });
+      if (!up.ok) {
+        console.error("storage", up.status, (await up.text()).slice(0, 300));
+        return json({ error: "no pude guardar la foto" }, 500);
+      }
+      const nuestra = `${base}/storage/v1/object/public/disenos/${rutaFoto}`;
+
+      const fila: Record<string, unknown> = {
+        mensaje: "Foto publicada tal cual desde el chat, sin diseñar.",
+        formatos: ["post"],
+        estado: "listo",
+        titulo: String(cuerpo.titulo || "Foto sin diseñar").slice(0, 200),
+        quien: String(cuerpo.quien || "Asistime").slice(0, 120),
+        urls: [nuestra],
+      };
+      if (usuario) fila.user_id = usuario;
+      if (typeof cuerpo.caption === "string" && cuerpo.caption.trim()) {
+        fila.copy = String(cuerpo.caption).slice(0, 2200);
+      }
+
+      const rn = await fetch(`${base}/rest/v1/disenos`, {
+        method: "POST",
+        headers: { ...cab, Prefer: "return=representation" },
+        body: JSON.stringify(fila),
+      });
+      if (!rn.ok) {
+        console.error("insert diseno", rn.status, (await rn.text()).slice(0, 300));
+        return json({ error: "no pude registrar la foto" }, 500);
+      }
+      const [creado] = await rn.json();
+      diseno_id = creado.id;
     }
-    const [creado] = await rn.json();
-    diseno_id = creado.id;
   }
 
   // ── Un reel: se enchufa al camino que ya existe ─────────────────────────
