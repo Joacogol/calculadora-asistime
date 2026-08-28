@@ -575,9 +575,10 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
                 # `creditos_estimados` está en la lista porque el paso de
                 # montaje lo copia a `creditos_gastados`. Faltaba, y el efecto
                 # era mudo: el reel salía bien y quedaba registrado con gasto
-                # cero. El tope del mes seguía andando —suma estimados, no
-                # gastados— así que nada fallaba; simplemente el registro de lo
-                # que se gastó decía cero para siempre.
+                # cero. El tope del mes —que en ese momento existía— seguía
+                # andando igual, porque suma estimados y no gastados, así que
+                # nada fallaba: simplemente el registro de lo que se gastó
+                # decía cero para siempre.
                 "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
                           "kicker,bajada,musica,tarea,modelo,resolucion,"
                           "duracion,clip_url,quien,metricas,creditos_estimados"})
@@ -649,7 +650,7 @@ def _colgada(fila: dict) -> bool:
 
 
 def _gastado_este_mes(cli) -> int:
-    """Lo que ya se comprometió este mes, para el tope mensual.
+    """Lo que ya se comprometió este mes. Sólo se llama si hay tope que mirar.
 
     Suma `creditos_estimados` y no `creditos_gastados`: lo que protege es lo que
     se va a gastar, no lo que ya se gastó. Un video pedido hace treinta segundos

@@ -688,6 +688,82 @@ nada, porque las piezas se dibujan a 2160.
 
 ---
 
+### 6f · Boss hace video, y nadie tiene ya techo mensual (28/8/2026)
+
+Joaquín le pidió un reel al agente de Boss y no salió. **El agente no falló**:
+hizo exactamente lo que su instructivo le decía —«video → `avisar_cambio_motor`»—
+y dejó el pedido anotado (`motor_pedidos`, 16:06). El motivo real era más
+grande que ese pedido: **Boss no tenía el motor de video prendido para nada**.
+Lo tenía Stadium solo.
+
+Y había una trampa al lado: en `crear_diseno` el formato `reel` existe, pero
+en el motor de DISEÑOS significa una imagen quieta de 1080×1920 — una story
+sin moverse. Si el agente hubiera ido por ahí, habría entregado una placa
+llamándola reel. Que dijera «esto necesita código» fue mejor que eso.
+
+**Lo que se hizo, en orden:**
+
+1. **Tabla `reels`** en el Supabase de Boss, copia exacta de la de Stadium
+   (23 columnas, 5 constraints, 3 índices, los 2 triggers, RLS). Se copió y no
+   se reescribió a propósito: el worker que la atiende es el mismo, así que
+   cualquier diferencia sería un bug de un solo cliente.
+2. **`api-reels` v1** desplegada en Boss. Probada: 401 con clave mala, 400 con
+   clave buena y sin foto.
+3. **Bloque `reels` en su `marca.json`** — y esto es lo que hace que el motor
+   lo atienda: `reelero.atender` arranca con `if not ficha: return 0`. Sin el
+   bloque, un pedido de reel se queda quieto sin gastar un peso. **Por eso el
+   despliegue del worker es el que enciende todo esto**, no las Edge Functions.
+4. **Plantilla `campana` para Boss** — el motor la exige por nombre para
+   dibujar el rótulo que va encima del video, y Boss no la tenía. Sirve además
+   como plantilla normal (un anuncio de una idea, sin datos duros).
+5. **Tools `crear_reel` (2133) y `estado_reel` (2132)** en el tenant 119, y las
+   16 enganchadas al agente 364. **Prompt v11 (4671)** publicado, y corregida
+   la descripción de `avisar_cambio_motor`, que seguía mandando el video ahí.
+
+**Sin música, a diferencia de Stadium.** El banco de pistas de Boss está vacío
+a propósito: un reel del club sale con el sonido que genera el propio video —la
+pelota, la cancha, el ambiente— y para un club deportivo eso suele estar mejor
+que una cortina encima. Cuando haya una pista de la casa se agrega en
+`reels.musica` con el mp3 en `musica/`, y desde ese momento los reels la llevan.
+
+**Dos reglas nuevas, y las dos son de la casa.** El texto no va DENTRO del
+video: el modelo escribe pésimo y saca letras deformadas, así que la escena
+va con el cartel vacío y la frase se dibuja encima con `titulo`. Y la gente del
+club no se anima: un video le inventa a una persona real gestos y caras que
+nunca hizo, así que los reels se arman sobre la cancha, la pelota, un plano
+abierto o de espaldas.
+
+#### El techo mensual dejó de existir, en todos
+
+Aparte de los reels, Joaquín pidió sacar el corte mensual de créditos «para
+Stadium, Boss, Clínica Preventiva y todos los que se sumen».
+
+No alcanzaba con borrar el número del `marca.json`: el código decía
+`... or 20000` y sin la clave caía en el default. Ahora es `or 0` y el corte se
+saltea cuando vale 0, así que **sin la clave no hay techo** — que es lo que
+hace que un cliente nuevo nazca sin techo sin que nadie se acuerde de nada. Si
+alguna vez hiciera falta, se vuelve a escribir `creditos_maximos_mes` en el
+bloque y el corte vuelve solo.
+
+**El tope POR PIEZA se queda.** Los dos frenos parecían el mismo y no lo son:
+que un pedido salga miles de créditos es un error —un bucle del chat, una
+duración absurda— y eso se sigue frenando. Que el mes sume no es un error, es
+el cliente usando lo que compró.
+
+> **Lo que NO se pudo probar acá.** Este repo es un espejo PARCIAL del worker:
+> no tiene `motor/legibilidad.py`, ni el `brand.py` de Boss, ni sus fuentes.
+> (Por eso el despliegue copia con `cp -r`, que fusiona: lo que sólo vive en
+> `~/worker` sobrevive.) La `campana` se probó renderizando el Jinja con los
+> helpers stubeados —compila, no le falta ninguna variable, y sobre video no
+> pinta fondo opaco, que es lo único que taparía el clip entero— pero no se
+> dibujó con la tipografía y el logo reales. El primer reel es la prueba.
+>
+> Y si la `campana` falla, **no se pierde el video**: el rótulo va en su propio
+> `try` desde que un reel de 4.400 créditos murió así. Sale el clip sin texto y
+> la nota dice por qué; `estado_reel` se la lee a la persona antes de que suba.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:

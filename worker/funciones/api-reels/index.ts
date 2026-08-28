@@ -24,12 +24,15 @@ const CORS = {
 };
 
 // Cuántos reels se pueden pedir por hora. Es un freno contra un bucle del chat,
-// NO el control de gasto: el que cuida la plata es `creditos_maximos_mes` del
-// `marca.json`, que corta por créditos y no por cantidad.
+// NO el control de gasto: el que corta por plata es `creditos_maximos` del
+// `marca.json`, que mira los créditos de CADA pieza. El techo mensual que
+// había se sacó el 28/8/2026 —cuánto gasta el cliente en un mes es decisión
+// suya—, así que hoy este tope por hora es el único límite por cantidad.
 //
 // Empezó en 3 y frenaba antes de que nadie terminara de probar. Lo importante
-// es que frenar acá no ahorra un peso —el tope mensual ya lo hace— y en cambio
-// corta una conversación con una persona esperando del otro lado.
+// es que un tope por hora bajo no ahorra un peso —el que pide doce reels en
+// una hora los quería— y en cambio corta una conversación con una persona
+// esperando del otro lado.
 //
 // Se puede cambiar sin tocar código con la variable `REELS_POR_HORA` en
 // Supabase. En 0 no hay tope por hora y manda sólo el tope de créditos.
@@ -152,7 +155,9 @@ Deno.serve(async (req) => {
   }
   if (!foto) {
     return json({
-      error: "un reel se arma A PARTIR de una foto de producto: sin foto no hay reel",
+      error: "un reel se arma A PARTIR de una foto: sin foto no hay reel. " +
+        "Puede ser una del banco de la marca, una que hayan mandado en el " +
+        "chat, o una inventada con `crear_foto`.",
       codigo: "falta_la_foto",
     }, 400);
   }
