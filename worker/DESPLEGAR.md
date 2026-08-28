@@ -885,6 +885,48 @@ algo?* — y con la instrucción de preguntar en vez de elegir.
 
 ---
 
+### 6j · Una regla que está SUPUESTA y no medida (28/8/2026)
+
+En el prompt de Boss v11 escribí, como si fuera un hecho:
+
+> «El modelo de video escribe pésimo: si le pedís un cartel que diga algo,
+> salen letras deformadas y palabras inventadas.»
+
+**Eso no se midió nunca.** Era una creencia general sobre modelos de video
+aplicada a Seedance 2.0 Mini sin una sola prueba. Queda anotado acá porque en
+este repo la diferencia entre «se midió» y «se supone» es la que sostiene todo
+lo demás, y ésta se coló del lado equivocado.
+
+Dos cosas la ponen en duda:
+
+1. **El motor NUNCA prohibió el texto.** El único `"no text"` del código está
+   en `_planos()`, la lista de planos de emergencia que se usa sólo si falla el
+   guión. El camino normal —`motor/guion.py`— no dice nada del asunto. O sea
+   que el pedido de un cartel le habría llegado a Seedance tal cual: lo único
+   que lo frenaba era mi instrucción al agente de no pedirlo.
+2. **Joaquín lo hizo por fuera y salió.** El 28/8/2026 armó la misma avioneta
+   con el cartel en Nano Banana (modelo Omni) y el texto salió legible.
+
+Eso NO prueba que Seedance lo haga —es otro modelo— pero sube las chances lo
+suficiente como para que medirlo sea más barato que seguir suponiendo.
+
+**Cómo se mide, cuando alguien quiera:** un reel en calidad `borrador` (700
+créditos, la mitad de uno normal) pidiendo el cartel escrito dentro de la
+escena. Si las letras salen bien, se saca la regla del prompt; si salen
+deformadas, la regla se queda pero por fin con una medición atrás.
+
+> **El camino que probablemente sea el mejor de los tres.** Que el cartel venga
+> ya escrito en la FOTO DE PARTIDA —los modelos de imagen escriben bastante
+> mejor que los de video— y que el video sólo tenga que conservarlo en vez de
+> inventarlo. Hoy está cerrado porque `_prompt("crear")` en `fotero.py` le pega
+> atrás «No text, no letters, no logos, no signage» a toda foto inventada. Esa
+> prohibición tiene una razón buena y NO se saca a lo bruto: un cartel
+> inventado en la fachada de una clínica es un problema de verdad. Pero es una
+> regla que podría vivir en el `marca.json` de cada cliente en vez de estar
+> clavada en el código para todos.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
