@@ -1,0 +1,676 @@
+# -*- coding: utf-8 -*-
+"""Reels de Boss Padel: varios clips y fotos cortados y pegados en un video.
+
+La idea es la misma que en las placas y en el PDF: el pedido aporta el
+contenido, el sistema aporta la forma. Acá el renderizador es ffmpeg en vez de
+Chromium, pero las tapas de entrada y de cierre las sigue dibujando Chromium —
+así el reel arranca y termina con exactamente la misma tipografía que el resto
+de las piezas.
+
+Cómo está armado: cada tramo se renderiza por separado a un archivo normalizado
+(1080×1920, 30 fps, audio 48k estéreo) y recién al final se concatenan. Es más
+lento que un solo filter_complex gigante, pero cuando algo sale mal se ve
+exactamente en qué tramo, y permite mezclar video con fotos sin que se rompa
+nada.
+
+    python3 video.py reel.json
+"""
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+# ── De qué marca son los materiales ──────────────────────────────────────────
+# El motor no tiene tipografías ni fotos propias: se los presta la marca. La
+# carpeta se fija con `configurar()` antes de armar nada, y el valor por defecto
+# apunta acá sólo para que importar el módulo no explote.
+RAIZ = Path(__file__).resolve().parent
+FUENTES = RAIZ / "fonts"
+SALIDA = RAIZ / "out"
+TIPO_TITULO = FUENTES / "Barlow-Black.ttf"
+TIPO_PIE = FUENTES / "BarlowCondensed-Medium.ttf"
+VELO_PNG = RAIZ / "assets" / "velo-reel.png"
+_BANCO: dict = {}
+
+ANCHO, ALTO, FPS = 1080, 1920, 30
+NEGRO = "0x0A0A0A"
+LIMA = "0xE4FF02"
+
+
+ANIMO = "club"
+LOGO_HTML = ""
+CSS_MARCA = ""
+
+
+def configurar(raiz, titulo="Barlow-Black.ttf",
+               pie="BarlowCondensed-Medium.ttf", acento=None, animo="club",
+               logo_html="", css_marca=""):
+    """Apunta el motor a los materiales de una marca.
+
+    `titulo` y `pie` son los archivos de tipografía que la marca usa para los
+    rótulos del reel. Tienen que ser TTF reales: ffmpeg dibuja el texto con
+    freetype y no entiende fuentes variables — Archivo es variable y sale
+    siempre en peso regular, por eso acá va Barlow Black.
+    """
+    global RAIZ, FUENTES, SALIDA, TIPO_TITULO, TIPO_PIE, VELO_PNG, _BANCO, LIMA
+    global ANIMO, LOGO_HTML, CSS_MARCA
+    RAIZ = Path(raiz)
+    ANIMO = animo
+    # El logo va como HTML porque es un SVG vectorial: pasarlo por PNG a esta
+    # altura le comería el filo justo en la parte más chica de la pieza.
+    LOGO_HTML, CSS_MARCA = logo_html, css_marca
+    FUENTES = RAIZ / "fonts"
+    SALIDA = RAIZ / "out"
+    TIPO_TITULO = FUENTES / titulo
+    TIPO_PIE = FUENTES / pie
+    VELO_PNG = RAIZ / "assets" / "velo-reel.png"
+    if acento:
+        LIMA = acento if acento.startswith("0x") else "0x" + acento.lstrip("#")
+    # El banco de fotos con los encuadres ya resueltos. El reel es 9:16 igual
+    # que una historia, así que se reusa el valor de `story` y no se decide de
+    # nuevo: así una jugadora se ve igual en la placa y en el reel.
+    try:
+        _BANCO = json.loads(
+            (RAIZ / "referencias" / "fotos.json").read_text(encoding="utf-8"))
+    except Exception:
+        _BANCO = {}
+
+
+def _correr(args, etapa=""):
+    r = subprocess.run(args, capture_output=True, text=True)
+    if r.returncode != 0:
+        cola = "\n".join(r.stderr.strip().splitlines()[-12:])
+        raise RuntimeError(f"ffmpeg falló{' en ' + etapa if etapa else ''}:\n{cola}")
+
+
+def _texto_dibujado(texto: str, tmp: Path, i: int, pos="arriba") -> str:
+    """Título que entra con un fundido y una subida corta.
+
+    El texto va a un archivo aparte en vez de ir en la línea de comandos: los
+    dos puntos, las comillas y los acentos rompen el escapado de drawtext, y
+    «3, 2, 1…» tiene justamente comas y puntos.
+    """
+    if not texto:
+        return ""
+    archivo = tmp / f"txt{i}.txt"
+    archivo.write_text(texto.upper(), encoding="utf-8")
+
+    y_base = 300 if pos == "arriba" else ALTO - 520
+    # sube 34 px durante los primeros 0.45 s y ahí se queda
+    y = f"{y_base}+34*(1-min(1\\,t/0.45))"
+    alfa = "min(1\\,t/0.35)"
+
+    return (
+        f"drawtext=textfile='{archivo}':fontfile='{TIPO_TITULO}':"
+        f"fontsize=92:fontcolor=white@1:alpha='{alfa}':"
+        f"x=(w-text_w)/2:y={y}:line_spacing=14:"
+        f"shadowcolor=black@0.55:shadowx=0:shadowy=5"
+    )
+
+
+# Degradé oscuro arriba y abajo, generado con PIL en `assets/velo-reel.png`.
+# Un drawbox pinta alfa constante y deja un borde recto bien visible cruzando
+# la imagen; esto se funde de verdad. Sin velo, el texto blanco desaparece
+# cuando abajo hay una cancha celeste iluminada.
+# (VELO_PNG se fija en configurar(), junto al resto de los materiales.)
+
+# Un MP4 guarda UN solo juego de parámetros de decodificación (el `avcC`) en el
+# contenedor: el del primer tramo. ffmpeg es tolerante y relee los parámetros
+# que vienen dentro del flujo, pero QuickTime no — usa el del contenedor y nada
+# más. Si los tramos se codifican con ajustes distintos, en Mac se ve el primer
+# cuadro congelado mientras el audio sigue corriendo.
+#
+# Por eso TODOS los tramos se codifican exactamente igual, con el nivel y la
+# cantidad de cuadros de referencia fijados a mano en vez de dejar que el preset
+# los deduzca. Así el `avcC` sirve para todo el archivo y el pegado sin
+# recodificar (`-c copy`) es válido. No tocar sin volver a probar en un Mac.
+VIDEO_X264 = [
+    "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+    "-profile:v", "high", "-level", "4.2", "-pix_fmt", "yuv420p",
+    "-x264-params", "ref=4:bframes=3:keyint=60:min-keyint=30:scenecut=0",
+    "-video_track_timescale", "30000",
+    # El color también se fija a mano. Un clip de cámara viene etiquetado
+    # bt709 y una foto o una placa no vienen etiquetadas: si se mezclan, el
+    # color puede saltar de un tramo al siguiente. bt709 es lo que corresponde
+    # en HD y lo que cualquier reproductor asume.
+    "-colorspace", "bt709", "-color_primaries", "bt709",
+    "-color_trc", "bt709", "-color_range", "tv",
+]
+AUDIO_AAC = ["-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2"]
+
+
+
+# ── rótulos ───────────────────────────────────────────────────────────────
+# El texto de los reels lo dibuja Chromium, no `drawtext`. Tres razones: usa
+# las tipografías reales de la marca con su interletrado, no hay que pelear
+# con el escapado de acentos y comas, y sobre todo permite emoticones — que
+# `drawtext` no puede porque las fuentes de emoji son mapas de bits a color.
+#
+# El truco para pintarlos de blanco es `filter: brightness(0) invert(1)`:
+# aplasta cualquier glifo de color a negro y lo invierte a blanco puro.
+ALTO_ROTULO = 460
+
+
+def _rotulo_png(texto: str, emoji: str, tmp: Path, i: int, cuerpo: int = 96) -> Path:
+    from playwright.sync_api import sync_playwright
+    salida = tmp / f"rot{i:02d}.png"
+    ico = (f'<span style="filter:brightness(0) invert(1);font-size:{int(cuerpo*1.02)}px;'
+           f'line-height:1">{emoji}</span>') if emoji else ""
+    html = f"""<html><head><meta charset="utf-8"><style>
+      @font-face{{font-family:'Barlow';src:url('file://{FUENTES}/Barlow-Black.ttf');font-weight:900}}
+      *{{margin:0;padding:0}}
+      body{{width:{ANCHO}px;height:{ALTO_ROTULO}px;background:transparent;
+        display:flex;align-items:center;justify-content:center}}
+      .fila{{display:flex;align-items:center;gap:{int(cuerpo*0.34)}px;
+        padding:0 60px;max-width:100%}}
+      .txt{{font-family:'Barlow',sans-serif;font-weight:900;font-size:{cuerpo}px;
+        line-height:1.06;color:#fff;text-transform:uppercase;letter-spacing:-.015em;
+        text-shadow:0 5px 22px rgba(0,0,0,.62);text-align:center}}
+    </style></head><body><div class="fila">
+      <div class="txt">{texto}</div>{ico}
+    </div></body></html>"""
+    archivo = tmp / f"rot{i:02d}.html"
+    archivo.write_text(html, encoding="utf-8")
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_ROTULO})
+        pg.goto(f"file://{archivo}")
+        pg.wait_for_timeout(320)
+        pg.screenshot(path=str(salida), omit_background=True)
+        b.close()
+    return salida
+
+
+def _capa_rotulo(entrada: str, pos: str) -> str:
+    """Superpone la secuencia del rótulo.
+
+    Ya no hay fundido ni subida acá: **la animación completa viene dibujada en
+    la secuencia PNG**, con easing de verdad. Lo único que queda es ponerla en
+    su lugar. Ver `motor/rotulos.py` para el porqué.
+
+    La `y` deja libres los 250 px de arriba —donde Instagram pone el nombre de
+    la cuenta— y los 300 de abajo, donde van los botones y el pie de foto.
+    """
+    y = 250 if pos == "arriba" else ALTO - ALTO_ROTULO - 300
+    return (f"[{entrada}]format=rgba[rot];"
+            f"[base][rot]overlay=x=0:y={y}:shortest=0")
+
+
+def _fondo_y_frente(recorte: float, foco_x: float) -> str:
+    """Encuadre vertical de una fuente apaisada.
+
+    Llevar un 16:9 a 9:16 recortando deja sólo un tercio del ancho: en pádel
+    eso parte la cancha al medio y se pierden dos jugadores. Pero dejar el
+    clip entero tampoco sirve — a ancho completo ocupa el 32% de la altura y
+    se lee como una tirita perdida en el medio.
+
+    El punto medio: se recorta la fuente a una proporción intermedia
+    (`recorte`, por defecto 1:1) y ESO va a ancho completo. Con 1:1 la imagen
+    ocupa el 56% del alto, que es lo que se ve en los reels del club. El resto
+    lo llena el mismo clip desenfocado. `foco_x` mueve el recorte a los lados
+    para seguir la acción: 0.5 es el centro.
+    """
+    return (
+        f"[0:v]split=2[bg][fg];"
+        f"[bg]scale={ANCHO}:{ALTO}:force_original_aspect_ratio=increase,"
+        f"crop={ANCHO}:{ALTO},gblur=sigma=42,eq=brightness=-0.16:saturation=0.65[bgb];"
+        # De un 16:9 recortado a vertical sólo quedan 608 px de ancho que hay
+        # que estirar a 1080: un aumento de 1,78×. Con el escalador por
+        # defecto la imagen queda blanda al lado de las fotos, que son
+        # nítidas. Lanczos conserva bastante más borde, y el `unsharp` de
+        # después le devuelve el filo que igual se pierde. Los valores son
+        # suaves a propósito: pasarse de rosca hace aparecer halos alrededor
+        # de los jugadores, que se ve peor que la imagen blanda.
+        f"[fg]crop=w='min(iw\\,ih*{recorte})':h=ih:"
+        f"x='(iw-min(iw\\,ih*{recorte}))*{foco_x}':y=0,"
+        f"scale={ANCHO}:-2:flags=lanczos,"
+        f"unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=0.9[fgs];"
+        # Golpe de zoom: entra 7% más grande y se asienta en un cuarto de
+        # segundo. Da la sensación de que la cámara empuja en el corte.
+        f"[bgb][fgs]overlay=(W-w)/2:(H-h)/2,"
+        f"scale=w='{ANCHO}*(1+0.07*exp(-7*t))':h='{ALTO}*(1+0.07*exp(-7*t))':"
+        f"eval=frame:flags=bicubic,crop={ANCHO}:{ALTO}[compuesto];"
+        f"[1:v]scale={ANCHO}:{ALTO}[velo];"
+        f"[compuesto][velo]overlay=0:0"
+    )
+
+
+def _marco_y_frente(alto_ventana: int, fondo: str) -> str:
+    """El clip ENTERO, centrado, con bandas de marca arriba y abajo.
+
+    Es la alternativa a recortar. Un punto de pádel filmado de lejos es una
+    unidad —los cuatro jugadores, la pelota y las paredes—: llevarlo a 9:16
+    recortando se lleva un tercio del ancho y con él la mitad de lo que hace
+    que la jugada se entienda.
+
+    El espacio que sobra no es relleno: es **donde el texto no tapa la
+    jugada**. Ahí van el logo y el título.
+    """
+    return (
+        f"color=c={fondo}:s={ANCHO}x{ALTO}:r={FPS}[bg];"
+        f"[0:v]scale={ANCHO}:-2:flags=lanczos,"
+        f"unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=0.7,"
+        f"fps={FPS},setsar=1[fgs];"
+        f"[bg][fgs]overlay=(W-w)/2:(H-h)/2:shortest=1[conclip];"
+        # El marco va ENCIMA del clip y no debajo: así el filo de acento y las
+        # bandas recortan el video en vez de quedar tapados por él.
+        f"[conclip][1:v]overlay=0:0[compuesto];"
+        f"[compuesto]null"
+    )
+
+
+def _segmento_video(t: dict, i: int, tmp: Path) -> Path:
+    desde = float(t.get("desde", 0))
+    dura = float(t["dura"])
+    fuente = (RAIZ / t["archivo"]) if not Path(t["archivo"]).is_absolute() else Path(t["archivo"])
+    salida = tmp / f"seg{i:02d}.mp4"
+
+    # `dura` es siempre lo que el tramo ocupa EN EL REEL. Con cámara lenta o
+    # rápida, lo que hay que tomar del original es otra cosa: un tramo de 4
+    # segundos a velocidad 0,5 se come 2 segundos de material. Mantener `dura`
+    # como la duración final es lo que hace que los eventos de sonido y la
+    # suma total sigan cerrando sin tocar nada más.
+    vel = float(t.get("velocidad", 1) or 1)
+    dura_fuente = round(dura * vel, 3)
+
+    # Tres formas de meter un clip en 9:16, y la elección es de diseño:
+    #   `lleno`  (por defecto) el clip llena el cuadro y se pierde ancho
+    #   `marco`  el clip queda ENTERO y las bandas llevan logo y título
+    #   `recorte` mayor a 1 → bandas desenfocadas (el look viejo, casi nunca)
+    marco_png = None
+    if t.get("encuadre") == "marco":
+        from . import analisis, rotulos
+        ficha = analisis.sondear(fuente)
+        prop = (ficha["ancho"] / ficha["alto"]) if ficha["alto"] else 1.0
+        alto_ventana = int(round(ANCHO / max(prop, 0.05) / 2) * 2)
+        marco_png, banda_sup, banda_inf = rotulos.marco(
+            tmp / f"marco{i:02d}.png", ANCHO, ALTO, alto_ventana,
+            logo_html=LOGO_HTML, css_marca=CSS_MARCA,
+            fondo=t.get("fondo", "#0A0A0A"),
+            acento="#" + LIMA.lstrip("0x").lstrip("#"))
+        cadena = _marco_y_frente(alto_ventana, t.get("fondo", "#0A0A0A"))
+    else:
+        cadena = _fondo_y_frente(float(t.get("recorte", ANCHO / ALTO)),
+                                 float(t.get("foco_x", 0.5)))
+    # setpts va ANTES del fps: primero se estira o comprime el tiempo, y
+    # recién después se fija la cadencia final. Al revés, la cámara lenta sale
+    # a tirones porque ffmpeg duplica cuadros ya fijados.
+    if vel != 1:
+        cadena += f",setpts={1/vel:.6f}*PTS"
+    cadena += f",fps={FPS},setsar=1"
+    rot = None
+    if t.get("texto"):
+        from . import rotulos
+        rot = tmp / f"rot{i:02d}"
+        rotulos.secuencia(
+            t["texto"], dura, rot, TIPO_TITULO, ANCHO, ALTO_ROTULO,
+            estilo=t.get("estilo", "pop"), emoji=t.get("emoji", ""),
+            cuerpo=int(t.get("cuerpo", 96)),
+            acento="#" + LIMA.lstrip("0x").lstrip("#"), tinta="#0A0A0A",
+            fps=FPS)
+        pos = t.get("pos", "arriba")
+        if marco_png:
+            # En modo marco el título va en la banda, no encima de la jugada:
+            # ese es todo el punto del marco.
+            y = max(20, (ALTO - alto_ventana) // 2 - ALTO_ROTULO - 10) if pos == "arriba" \
+                else min(ALTO - ALTO_ROTULO - 20,
+                         (ALTO + alto_ventana) // 2 + 10)
+            cadena += (f"[base];[3:v]format=rgba[rot];"
+                       f"[base][rot]overlay=x=0:y={y}:shortest=0")
+        else:
+            cadena += "[base];" + _capa_rotulo("3:v", pos)
+    cadena += ",format=yuv420p[v]"
+
+    def intento(pista_audio: str):
+        # La secuencia trae exactamente los cuadros que dura el tramo, así que
+        # no lleva `-loop` ni `-t`: se lee como un video mudo de la duración
+        # justa. `-framerate` va ANTES de `-i` — después no aplica a la entrada.
+        extra = (["-framerate", str(FPS), "-i", str(rot / "%04d.png")]
+                 if rot else [])
+        return ["ffmpeg", "-v", "error", "-y", "-ss", str(desde),
+                "-t", str(dura_fuente),
+                "-i", str(fuente),
+                # La entrada 1 es el velo en modo lleno y el MARCO en modo
+                # marco: las dos son un PNG del tamaño del cuadro que se
+                # superpone al final, así que ocupan el mismo lugar y el resto
+                # de la cadena no cambia.
+                "-i", str(marco_png or VELO_PNG),
+                # La pista de silencio siempre está: para concatenar, todos los
+                # tramos tienen que tener las mismas pistas, y una foto o una
+                # placa no traen audio propio.
+                "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
+                *extra,
+                "-filter_complex", cadena,
+                "-map", "[v]", "-map", pista_audio,
+                *VIDEO_X264, *AUDIO_AAC,
+                "-shortest", str(salida)]
+
+    # Un tramo a otra velocidad va MUDO a propósito. Estirar el audio con
+    # `atempo` deja la voz con tono de dibujo animado, y un tramo en cámara
+    # lenta es casi siempre material de ambiente donde el sonido no aporta.
+    # La música y los efectos siguen corriendo por encima en la mezcla final.
+    if t.get("audio", True) and vel == 1:
+        try:
+            _correr(intento("0:a"), f"tramo {i} (video)")
+            return salida
+        except RuntimeError as e:
+            # Un clip sin pista de audio, o con una que ffmpeg no puede
+            # remuestrear, no debería tirar abajo el reel entero.
+            print(f"  ⚠ tramo {i}: sin audio utilizable, va en silencio ({str(e)[:60]})")
+    _correr(intento("2:a"), f"tramo {i} (video, en silencio)")
+    return salida
+
+
+def _foco_del_banco(nombre: str) -> tuple[float, float]:
+    """El encuadre que ya está resuelto en fotos.json, reusado para video.
+
+    El reel es 9:16 igual que una historia, así que corresponde el valor de
+    `story`. No hay que volver a decidirlo acá: si se decide de nuevo, la misma
+    foto sale distinta en la placa y en el reel.
+    """
+    ficha = _BANCO.get(Path(nombre).stem, {})
+    foco = ficha.get("foco", {}).get("story", "50% 50%")
+    try:
+        x, y = (float(v.rstrip("%")) / 100 for v in foco.split())
+        return x, y
+    except ValueError:
+        return 0.5, 0.5
+
+
+def _segmento_foto(t: dict, i: int, tmp: Path) -> Path:
+    """Una foto quieta en un reel se lee como un error. Siempre lleva un
+    acercamiento lento — el ojo necesita movimiento para no leerlo como que el
+    video se colgó."""
+    dura = float(t.get("dura", 2.5))
+    fuente = (RAIZ / t["archivo"]) if not Path(t["archivo"]).is_absolute() else Path(t["archivo"])
+    salida = tmp / f"seg{i:02d}.mp4"
+    cuadros = int(dura * FPS)
+    zoom_fin = float(t.get("zoom", 1.12))
+    fx, fy = _foco_del_banco(t["archivo"])
+    fx = float(t.get("foco_x", fx))
+    fy = float(t.get("foco_y", fy))
+
+    # PRIMERO recortar a 9:16, DESPUÉS el acercamiento. Al revés —que es como
+    # estaba— zoompan toma una región con la proporción de la foto original
+    # (2:3) y la mete a la fuerza en 1080×1920 (9:16): la imagen sale aplastada
+    # un 16% a lo ancho. Se ve como gente más flaca y más alta. Recortando
+    # antes, la región y la salida tienen la misma proporción y no hay
+    # deformación posible.
+    rel = ANCHO / ALTO
+    cadena = (
+        f"[0:v]crop=w='min(iw\\,ih*{rel})':h='min(ih\\,iw/{rel})':"
+        f"x='(iw-min(iw\\,ih*{rel}))*{fx}':y='(ih-min(ih\\,iw/{rel}))*{fy}',"
+        f"scale={ANCHO*2}:{ALTO*2},"
+        f"zoompan=z='(1+({zoom_fin}-1)*on/{cuadros})*(1+0.07*exp(-7*on/{FPS}))':d={cuadros}:"
+        f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={ANCHO}x{ALTO}:fps={FPS}[b0];"
+        f"[1:v]scale={ANCHO}:{ALTO}[velo];"
+        f"[b0][velo]overlay=0:0,setsar=1"
+    )
+    rot = None
+    if t.get("texto"):
+        from . import rotulos
+        rot = tmp / f"rot{i:02d}"
+        rotulos.secuencia(
+            t["texto"], dura, rot, TIPO_TITULO, ANCHO, ALTO_ROTULO,
+            estilo=t.get("estilo", "pop"), emoji=t.get("emoji", ""),
+            cuerpo=int(t.get("cuerpo", 96)),
+            acento="#" + LIMA.lstrip("0x").lstrip("#"), tinta="#0A0A0A",
+            fps=FPS)
+        pos = t.get("pos", "arriba")
+        if marco_png:
+            # En modo marco el título va en la banda, no encima de la jugada:
+            # ese es todo el punto del marco.
+            y = max(20, (ALTO - alto_ventana) // 2 - ALTO_ROTULO - 10) if pos == "arriba" \
+                else min(ALTO - ALTO_ROTULO - 20,
+                         (ALTO + alto_ventana) // 2 + 10)
+            cadena += (f"[base];[3:v]format=rgba[rot];"
+                       f"[base][rot]overlay=x=0:y={y}:shortest=0")
+        else:
+            cadena += "[base];" + _capa_rotulo("3:v", pos)
+    cadena += ",format=yuv420p[v]"
+
+    _correr(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(dura), "-i", str(fuente),
+             "-i", str(VELO_PNG),
+             "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
+             *(["-loop", "1", "-t", str(dura), "-i", str(rot)] if rot else []),
+             "-filter_complex", cadena, "-map", "[v]", "-map", "2:a",
+             *VIDEO_X264, *AUDIO_AAC,
+             "-shortest", str(salida)], f"tramo {i} (foto)")
+    return salida
+
+
+def _segmento_placa(png: Path, dura: float, i: int, tmp: Path) -> Path:
+    """Una placa ya dibujada por Chromium, convertida en tramo de video."""
+    salida = tmp / f"seg{i:02d}.mp4"
+    _correr(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(dura), "-i", str(png),
+             "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
+             "-vf", (f"scale={ANCHO}:{ALTO}:force_original_aspect_ratio=decrease,"
+                    f"pad={ANCHO}:{ALTO}:(ow-iw)/2:(oh-ih)/2:color=#0A0A0A,"
+                    f"fps={FPS},setsar=1,format=yuv420p"),
+             "-map", "0:v", "-map", "1:a",
+             *VIDEO_X264, *AUDIO_AAC,
+             "-shortest", str(salida)], f"tramo {i} (placa)")
+    return salida
+
+
+def _firma(ruta: Path) -> str:
+    """Los parámetros que tienen que ser idénticos para poder pegar sin recodificar."""
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+         "stream=width,height,pix_fmt,profile,level,r_frame_rate,color_range,color_space,sample_aspect_ratio",
+         "-of", "compact=p=0:nk=1", str(ruta)], capture_output=True, text=True)
+    return r.stdout.strip()
+
+
+def _verificar_uniformidad(segmentos: list[Path]):
+    """Todos los tramos tienen que compartir parámetros o el reel no se ve en Mac.
+
+    Esto ya pasó una vez: las placas salían en nivel 4.0 y el resto en 5.0, el
+    MP4 se quedaba con el `avcC` del primero, y en QuickTime se veía el primer
+    cuadro congelado con el audio corriendo. En ffmpeg se veía perfecto, así
+    que el error pasó desapercibido hasta que alguien lo abrió en una Mac.
+    Es barato chequearlo acá y carísimo descubrirlo del otro lado.
+    """
+    firmas = {}
+    for s in segmentos:
+        firmas.setdefault(_firma(s), []).append(s.name)
+    if len(firmas) > 1:
+        detalle = "\n".join(f"    {f}  <-  {', '.join(n)}" for f, n in firmas.items())
+        raise RuntimeError(
+            "los tramos no comparten parámetros de codificación, así que el reel "
+            "no se vería en QuickTime:\n" + detalle)
+
+
+def _eventos_sonoros(spec: dict, duraciones: list[float]) -> list[tuple]:
+    """Dónde va cada efecto. El motor ya sabe dónde están los cortes.
+
+    Un `whoosh` sobre el corte y un `impacto` apenas después: el barrido tapa
+    el salto de imagen y el golpe le pone el pie. El `pop` va con el rótulo,
+    unas milésimas después del corte para que no se pisen entre sí.
+    """
+    eventos, t = [], 0.0
+    for i, (tramo, dur) in enumerate(zip(spec["tramos"], duraciones)):
+        if i > 0:
+            eventos.append((max(0, t - 0.10), "whoosh", 0.55))
+            eventos.append((t, "impacto", 0.60))
+        # El golpecito del rótulo se puede apagar por tramo o para todo el
+        # reel: en una pieza con alguien hablando molesta más de lo que suma.
+        if tramo.get("texto") and tramo.get("sonido_rotulo", True) \
+                and spec.get("sonido", {}).get("rotulos", True):
+            eventos.append((t + 0.06, "pop", 0.42))
+        t += dur
+    # el riser desemboca justo en el último tramo, que es el cierre
+    if len(duraciones) > 1:
+        eventos.append((max(0, t - duraciones[-1] - 1.25), "riser", 0.34))
+    return eventos
+
+
+def _mezclar(mudo: Path, final: Path, spec: dict, duraciones: list[float]):
+    """Mezcla el audio original con la música y los efectos.
+
+    Tres pistas y nada más: el sonido de cancha de los clips, la cama musical
+    bien abajo, y los efectos por encima. Los volúmenes están puestos para que
+    en un celular con el parlante chico se oiga el golpe y no la música.
+
+    Al final va `loudnorm` a -14 LUFS, que es el nivel al que normalizan
+    Instagram, TikTok y YouTube. Sin esto el reel sale bajo comparado con lo
+    que hay alrededor en el feed, y encima el volumen salta entre un tramo con
+    audio de cancha y uno de foto que sólo tiene la música.
+    """
+    from . import sonido
+    dur = sum(duraciones)
+    son = spec.get("sonido", {})
+
+    entradas, mezcla, etiquetas = [], [], []
+    entradas += ["-i", str(mudo)]
+    mezcla.append(f"[0:a]volume={son.get('vol_original', 0.60)}[a0]")
+    etiquetas.append("[a0]")
+
+    # La música VA por defecto desde el 4/8/2026.
+    #
+    # Antes iba apagada, y el razonamiento era bueno mientras duró: Instagram
+    # restringe su biblioteca musical por tipo de cuenta, así que convenía
+    # entregar el reel con el sonido de cancha y agregarle la música en la app
+    # al publicar, donde la licencia ya está resuelta.
+    #
+    # Ese razonamiento se cayó cuando construimos la publicación por API:
+    # **por la API no se puede agregar música de Instagram.** Un reel que sale
+    # por ahí sale con el audio que tenga el archivo. Si la música no va
+    # adentro, no va.
+    #
+    # Y se puede meter adentro sin ningún problema de licencia porque
+    # `sonido.py` la SINTETIZA: no se descarga nada, la cama es nuestra.
+    if son.get("musica", True):
+        pista = son.get("archivo_musica")
+        ruta = (Path(pista) if pista
+                else sonido.musica(dur, son.get("bpm"),
+                                   son.get("animo", ANIMO)))
+        entradas += ["-i", str(ruta)]
+        n = len(etiquetas)
+        mezcla.append(f"[{n}:a]volume={son.get('vol_musica', 0.26)},"
+                      f"aformat=sample_rates=48000:channel_layouts=stereo[a{n}]")
+        etiquetas.append(f"[a{n}]")
+
+    if son.get("efectos", True):
+        ruta = sonido.pista_efectos(_eventos_sonoros(spec, duraciones), dur)
+        entradas += ["-i", str(ruta)]
+        n = len(etiquetas)
+        mezcla.append(f"[{n}:a]volume={son.get('vol_efectos', 0.85)},"
+                      f"aformat=sample_rates=48000:channel_layouts=stereo[a{n}]")
+        etiquetas.append(f"[a{n}]")
+
+    cadena = ";".join(mezcla) + ";" + "".join(etiquetas) + \
+        f"amix=inputs={len(etiquetas)}:normalize=0:duration=first," \
+        f"loudnorm=I=-14:TP=-1.5:LRA=11," \
+        f"aformat=sample_rates=48000:channel_layouts=stereo[out]"
+
+    _correr(["ffmpeg", "-v", "error", "-y", *entradas,
+             "-filter_complex", cadena,
+             "-map", "0:v", "-map", "[out]",
+             "-c:v", "copy", *AUDIO_AAC,
+             "-movflags", "+faststart", str(final)], "mezcla de audio")
+
+
+def reel(spec: dict, salida: Path = SALIDA) -> Path:
+    """Arma el reel completo. Devuelve la ruta del mp4.
+
+    `salida` es parámetro para poder escribir directo en la carpeta de
+    entrega y ahorrarse el turno de copiar desde `out/`.
+    """
+    SALIDA = Path(salida)
+    SALIDA.mkdir(parents=True, exist_ok=True)
+    tmp = SALIDA / f"_tmp_{spec['nombre']}"
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir(parents=True)
+
+    segmentos = []
+    for i, t in enumerate(spec["tramos"]):
+        tipo = t.get("tipo", "video")
+        if tipo == "video":
+            segmentos.append(_segmento_video(t, i, tmp))
+        elif tipo == "foto":
+            segmentos.append(_segmento_foto(t, i, tmp))
+        elif tipo == "placa":
+            ruta = (RAIZ / t["archivo"]) if not Path(t["archivo"]).is_absolute() else Path(t["archivo"])
+            segmentos.append(_segmento_placa(ruta, float(t.get("dura", 1.6)), i, tmp))
+        else:
+            raise ValueError(f"tipo de tramo desconocido: {tipo}")
+        print(f"  tramo {i+1}/{len(spec['tramos'])} · {tipo}")
+
+    _verificar_uniformidad(segmentos)
+
+    lista = tmp / "lista.txt"
+    lista.write_text("".join(f"file '{s.resolve()}'\n" for s in segmentos), encoding="utf-8")
+
+    final = SALIDA / f"{spec['nombre']}.mp4"
+    mudo = tmp / "sin-mezclar.mp4"
+    # Todos los tramos salieron con los mismos parámetros, así que el concat
+    # puede copiar los flujos sin recodificar: es instantáneo y sin pérdida.
+    _correr(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0",
+             "-i", str(lista), "-c", "copy", "-movflags", "+faststart",
+             str(mudo)], "concatenado")
+
+    duraciones = [float(t.get("dura", 2.5)) for t in spec["tramos"]]
+    if spec.get("sonido", {}).get("activo", True):
+        print("  mezclando audio")
+        _mezclar(mudo, final, spec, duraciones)
+    else:
+        shutil.copy(mudo, final)
+
+    if not spec.get("conservar_tmp"):
+        shutil.rmtree(tmp, ignore_errors=True)
+    return final
+
+
+def duracion(ruta: Path) -> float:
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                        "-of", "default=nw=1:nk=1", str(ruta)],
+                       capture_output=True, text=True)
+    return float(r.stdout.strip() or 0)
+
+
+if __name__ == "__main__":
+    # video.py reel.json [carpeta-de-salida]
+    spec = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    ruta = reel(spec, Path(sys.argv[2]) if len(sys.argv) > 2 else SALIDA)
+    print(f"→ {ruta.name}  ·  {duracion(ruta):.1f}s  ·  "
+          f"{ruta.stat().st_size/1024/1024:.1f} MB")
+
+
+def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
+                materiales: dict | None = None) -> tuple[Path, list[str]]:
+    """Valida un guion de edición, lo traduce y lo renderiza.
+
+    Es la puerta que usa el agente. Existe para que el guion se valide SIEMPRE
+    antes de encodear: un encode tarda minutos y descubrir a los tres minutos
+    que un tramo pedía un segundo que no existe es tirar esos tres minutos, con
+    un error de ffmpeg que no explica nada.
+
+    Devuelve (ruta del mp4, avisos).
+    """
+    from . import analisis as _analisis
+    from . import guion as _guion
+
+    base = Path(carpeta_material)
+    if materiales is None:
+        # Si no vino el análisis hecho, se sondean los archivos del guion. Es
+        # barato —leer cabeceras, no decodificar— y hace que la validación
+        # funcione igual aunque alguien llame a esto a mano.
+        materiales = {}
+        for t in (g.get("tramos") or []):
+            arch = (t.get("archivo") or "").strip()
+            if arch and arch not in materiales and (base / arch).exists():
+                try:
+                    materiales[arch] = _analisis.sondear(base / arch)["duracion"]
+                except Exception:
+                    pass
+        # La música puede no tener archivo: ahí es la cama sintetizada.
+        pista = (g.get("musica") or {}).get("archivo")
+        if pista and (base / pista).exists():
+            materiales.setdefault(pista, 0.0)
+
+    avisos = _guion.verificar(g, materiales)
+    spec = _guion.a_spec(g, nombre, base)
+    return reel(spec, salida), avisos
