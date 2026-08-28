@@ -1,12 +1,17 @@
 // Publicar en Instagram, desde el chat de Asistime.
 //
-// Dos puertas, y la diferencia entre ellas es lo único que hay que entender:
+// Tres puertas, y la diferencia entre ellas es lo único que hay que entender:
 //
 //   POST /api-publicar        una PIEZA que el sistema diseñó. Se nombra por su
 //                             `diseno_id` y nunca por una URL.
 //   POST /api-publicar/foto   una FOTO tal cual, sin diseñar. Sirve para lo que
 //                             ya está listo: la foto de la fachada, la del
 //                             equipo, una que mandó un proveedor.
+//   POST /api-publicar/reel   un VIDEO hecho por el motor de reels. Se nombra
+//                             por su `reel_id` y el archivo ya es nuestro.
+//
+// Las dos últimas terminan en el mismo lugar que la primera: anotan un diseño
+// y siguen por el camino de siempre. Ver la nota de abajo.
 //
 // ── La regla que esta función no rompe ────────────────────────────────────
 //
@@ -32,7 +37,7 @@
 //      diseño no está listo, o la pieza no entra en el feed, lo dice ahora y
 //      no dentro de veinte minutos en una fila que nadie mira.
 //
-// ── Por qué una foto suelta también crea una fila en `disenos` ───────────
+// ── Por qué una foto suelta —o un reel— también crea una fila en `disenos` ─
 //
 // Porque después de esa fila TODO el camino ya está escrito y probado: el
 // freno de publicar dos veces, la medición de la pieza, la elección entre
@@ -42,6 +47,10 @@
 //
 // Además deja registro. Sin la fila, lo que sale al Instagram de la clínica
 // por esta puerta no quedaría anotado en ningún lado.
+//
+// Con el reel es igual, con una diferencia: el video NO se copia, porque ya
+// está en nuestro bucket —lo subió el motor de reels—. Bajarlo y volverlo a
+// subir sería mover diez megas para dejarlos donde ya estaban.
 //
 // Publicar en sí sigue siendo del worker: esta función sólo escribe la fila.
 // Es una cola porque publicar tarda y puede fallar a la mitad.
@@ -353,6 +362,7 @@ Deno.serve(async (req) => {
 
   const ruta = new URL(req.url).pathname;
   const esFoto = ruta.endsWith("/foto");
+  const esReel = ruta.endsWith("/reel");
 
   // ── Cómo va la publicación ──────────────────────────────────────────────
   if (req.method === "GET") {
@@ -417,7 +427,9 @@ Deno.serve(async (req) => {
   }
 
   let diseno_id = String(cuerpo.diseno_id || "").trim();
-  if (!diseno_id && !esFoto) return json({ error: "falta diseno_id" }, 400);
+  if (!diseno_id && !esFoto && !esReel) {
+    return json({ error: "falta diseno_id" }, 400);
+  }
 
   // ── ¿Hay cuenta de Instagram? ───────────────────────────────────────────
   // Primero de todo: sin cuenta conectada, la fila quedaría esperando para
@@ -536,6 +548,90 @@ Deno.serve(async (req) => {
     diseno_id = creado.id;
   }
 
+  // ── Un reel: se enchufa al camino que ya existe ─────────────────────────
+  //
+  // Mismo truco que la foto y por la misma razón: se anota como un diseño de
+  // un solo video. De ahí para abajo, el freno de publicar dos veces, la
+  // elección entre feed y story, la consulta de estado y el worker funcionan
+  // sin saber que esta pieza salió de otra tabla.
+  //
+  // La diferencia con la foto es que el video NO se copia: ya vive en nuestro
+  // bucket —lo subió el propio motor de reels— así que bajarlo y volverlo a
+  // subir sería mover 10 MB para dejarlos en el mismo lugar.
+  if (esReel) {
+    const reel_id = String(cuerpo.reel_id || "").trim();
+    if (!reel_id) {
+      return json({ error: "falta reel_id: el id que devolvió crear_reel",
+                    codigo: "falta_el_reel" }, 400);
+    }
+
+    const rr = await fetch(
+      `${base}/rest/v1/reels?id=eq.${encodeURIComponent(reel_id)}` +
+      `&select=id,estado,url,titulo,notas&limit=1`,
+      { headers: cab });
+    if (!rr.ok) {
+      return json({
+        error: "Esta marca no hace reels, así que no hay ninguno para publicar.",
+        codigo: "sin_reels",
+      }, 409);
+    }
+    const [reel] = await rr.json();
+    if (!reel) {
+      return json({ error: "No existe ningún reel con ese id.",
+                    codigo: "no_existe" }, 404);
+    }
+    if (reel.estado !== "listo" || !reel.url) {
+      return json({
+        error: reel.estado === "error" || reel.estado === "rechazado"
+          ? `Ese reel no llegó a hacerse (${reel.estado}). ` + (reel.notas || "")
+          : "El video todavía no está listo. Esperá a que termine antes de " +
+            "publicarlo.",
+        codigo: "no_esta_listo",
+        estado: reel.estado,
+      }, 409);
+    }
+
+    // Si este reel ya se anotó antes, se REUSA ese diseño en vez de crear uno
+    // nuevo. No es una optimización: es lo que hace que el freno de «ya se
+    // publicó» —que mira por diseño— también valga para los reels. Sin esto,
+    // dos llamadas seguidas serían dos diseños distintos y dos posteos.
+    const marca_id = `[reel ${reel_id}]`;
+    const rv = await fetch(
+      `${base}/rest/v1/disenos?mensaje=like.*${encodeURIComponent(marca_id)}*` +
+      `&select=id&limit=1`,
+      { headers: cab });
+    const [ya] = rv.ok ? await rv.json() : [];
+
+    if (ya) {
+      diseno_id = ya.id;
+    } else {
+      const filaR: Record<string, unknown> = {
+        mensaje: `Reel publicado desde el chat, sin diseñar. ${marca_id}`,
+        formatos: ["reel"],
+        estado: "listo",
+        titulo: String(reel.titulo || cuerpo.titulo || "Reel").slice(0, 200),
+        quien: String(cuerpo.quien || "Asistime").slice(0, 120),
+        urls: [],
+        videos: [{ url: reel.url }],
+      };
+      if (usuario) filaR.user_id = usuario;
+      if (typeof cuerpo.caption === "string" && cuerpo.caption.trim()) {
+        filaR.copy = String(cuerpo.caption).slice(0, 2200);
+      }
+      const rn2 = await fetch(`${base}/rest/v1/disenos`, {
+        method: "POST",
+        headers: { ...cab, Prefer: "return=representation" },
+        body: JSON.stringify(filaR),
+      });
+      if (!rn2.ok) {
+        console.error("insert reel", rn2.status, (await rn2.text()).slice(0, 300));
+        return json({ error: "no pude registrar el reel" }, 500);
+      }
+      const [creadoR] = await rn2.json();
+      diseno_id = creadoR.id;
+    }
+  }
+
   // ── El diseño ───────────────────────────────────────────────────────────
   const rd = await fetch(
     `${base}/rest/v1/disenos?id=eq.${encodeURIComponent(diseno_id)}` +
@@ -602,7 +698,18 @@ Deno.serve(async (req) => {
       piezas: Math.min(feed.length, 10),
     });
   }
-  if (verticales.length) {
+  // Una story puede ser una imagen vertical O un video: Instagram acepta las
+  // dos y el worker ya sabe armar las dos. Faltaba decirlo acá, y por eso un
+  // video sólo se podía publicar como reel.
+  //
+  // Cuando hay video manda el video: si alguien generó uno, la story que
+  // quiere es ésa y no las placas que la acompañan. Las dos opciones —reel y
+  // story— quedan a la vista, así que la persona elige; son publicaciones
+  // distintas (el reel queda en la grilla, la story se va en 24 horas) y
+  // elegir por ella sería adivinar.
+  if (videos.length) {
+    opciones.push({ tipo: "story", urls: [videos[0]], piezas: 1 });
+  } else if (verticales.length) {
     opciones.push({
       tipo: "story",
       urls: verticales.map((i) => i.url),

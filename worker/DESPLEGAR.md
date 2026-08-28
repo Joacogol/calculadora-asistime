@@ -764,6 +764,51 @@ el cliente usando lo que compró.
 
 ---
 
+### 6g · Publicar el video: al feed o de story (28/8/2026)
+
+Joaquín le pidió al agente de Boss publicar una story de un video y le dijo que
+no podía. **Y era verdad, porque yo se lo había escrito en el instructivo.**
+Pero la razón que yo suponía —que faltaba la espera de transcodificación de
+Instagram— era falsa. Vale anotarlo: se afirmó sin medir.
+
+**El worker sabía hacerlo desde siempre**, y con cuidado:
+
+- `publicador.py` ya elegía el contenedor: `if _es_video(pieza): return
+  ig.contenedor_story(pieza, es_video=True)`.
+- `instagram.py` ya tenía las dos ramas de `contenedor_story` (`video_url` o
+  `image_url`) y `contenedor_reel` con `share_to_feed`.
+- Y la espera **está escrita**: `ig.esperar(contenedor)` con reintentos hasta
+  una hora, contados en `esperas` y no en `intentos` a propósito, para que
+  aguantar un video no se confunda con haber fallado.
+
+Lo que faltaba estaba todo en la puerta de entrada, `api-publicar`:
+
+1. **`publicar_diseno` lee `disenos`.** Un reel de `crear_reel` vive en `reels`
+   y no lo veía nadie. Ahora hay una ruta `/reel` que lo anota como un diseño
+   de un solo video — **el mismo truco que `/foto`**, para que el freno de
+   publicar dos veces, la consulta de estado y el worker sigan funcionando sin
+   enterarse de que la pieza salió de otra tabla. El video NO se copia: ya está
+   en nuestro bucket.
+2. **Un video sólo se ofrecía como `reel`, nunca como `story`.** Eran dos
+   líneas. Ahora, cuando hay video, se ofrecen las dos y el agente **pregunta**:
+   son publicaciones distintas —el reel queda en la grilla, la story se va en
+   24 horas— y elegir por la persona sería adivinar.
+
+**Reusar el diseño sintético no es una optimización.** Si cada llamada creara
+uno nuevo, el freno de «ya se publicó» —que mira por diseño— nunca se
+dispararía y dos llamadas seguidas serían dos posteos. Por eso la ruta busca
+primero por la marca `[reel <id>]` que deja en el `mensaje`.
+
+En Asistime: tool **`publicar_reel` (2134)**, 17 enganchadas al agente 364, y
+**prompt v12 (4675)**.
+
+> **Nunca se publicó un video por este sistema.** Se miraron las publicaciones
+> de los tres clientes: seis en total, las seis imágenes. O sea que este camino
+> no estaba roto, estaba **sin estrenar** — y el primer reel que se suba es la
+> prueba de verdad de todo lo de arriba.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
