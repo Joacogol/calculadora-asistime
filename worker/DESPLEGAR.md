@@ -655,19 +655,36 @@ una IA, y el prompt lo repite entre las cosas que no hace nunca.
 > documento— sus pedidos de foto se quedan quietos en `pendiente`, sin gastar
 > un crédito. Stadium y Clínica ya andan.
 
-#### Los cuatro precios, otra vez sin medir
+#### Los cuatro precios, medidos (28/8/2026)
 
-`formato`, `tamano`, `retoque` y `escena` siguen con la cota de 300. El
-conector de Magnific —único lugar donde está el saldo, porque la API REST no
-expone ningún endpoint de cuenta (se probaron 16 rutas, todas 404)— se cayó
-antes de poder medirlos, igual que la primera vez.
+El conector volvió y se midieron los cuatro que faltaban, de la única forma que
+vale: corriendo uno y mirando cuánto bajó el saldo.
 
-Medir es fácil cuando el conector está: se corre uno, se mira el saldo antes y
-después, y esa resta es el precio. Así se midieron `crear` (100) y `fondo` (3).
-Lo que NO sirve es copiar los números del simulador del conector
-(`images_expand` 50, `images_retouch` 10, `images_upscale` 90–1080): son otros
-endpoints con otros modelos, y una cifra que parece medida y no lo está es peor
-que una cota honesta.
+| Verbo | Cota vieja | Real | |
+|---|---|---|---|
+| `fondo` | — | **3** | medido el 26/8 |
+| `formato` | 300 | **40** | 7 veces más barato |
+| `retoque` | 300 | **100** | |
+| `escena` | 300 | **100** | mismo endpoint que `retoque` |
+| `crear` | — | **100** | medido el 27/8 |
+| `tamano` | 300 | **180** | con una foto de 1,9 MP |
+
+Tres de los cuatro salían bastante más baratos de lo que decía la cota, que es
+exactamente lo que la cota prometía: equivocarse por arriba y rechazar de más,
+nunca dejar pasar un gasto.
+
+**`tamano` es el único que depende del tamaño.** Magnific lo cobra por tramos:
+90 el chico, 180 el mediano —el que se midió—, 270 el grande y **1080 el
+enorme**. Ese salto es el que puede dejar corta una estimación fija, así que
+`_cuerpo` ahora mide la foto y rechaza agrandar una de más de 4 megapíxeles.
+No es sólo un freno de costo: agrandar una foto que ya es grande no arregla
+nada, porque las piezas se dibujan a 2160.
+
+> **Lo que NO se usó**: los números del simulador del conector. Son de otros
+> endpoints con otros modelos que las rutas REST del worker. Por eso los
+> precios estuvieron dos días en 300 en vez de tomar prestada una cifra
+> parecida — una que parece medida y no lo está es peor que una cota honesta.
+> Cuando por fin se midió, `formato` resultó 40 y el simulador decía 50.
 
 ---
 

@@ -63,34 +63,31 @@ API = "https://api.magnific.com/v1/ai"
 
 #: Lo que cuesta cada verbo, en créditos.
 #:
-#: **Ojo con la columna `medido`.** `fondo` se midió con `simulate_cost` el
-#: 26/8/2026 y son 3 créditos. Los otros cuatro NO se pudieron medir —el
-#: conector de Magnific se cayó a mitad de camino y su simulador es el único
-#: lugar donde están los precios— así que llevan una COTA ALTA, no una
-#: estimación: un número que seguro está por encima del real.
+#: **Los seis están MEDIDOS**, no estimados. Se midieron de la única forma que
+#: vale: corriendo uno y mirando cuánto bajó el saldo de la cuenta. `fondo` el
+#: 26/8/2026, `crear` el 27/8, y los otros cuatro el 28/8 — 40, 180, 100 y 100,
+#: contra la cota de 300 que llevaban antes. Tres de los cuatro salían bastante
+#: más baratos de lo que decía la cota.
 #:
-#: **27/8/2026.** El conector volvió y `crear` se midió DE VERDAD, que es lo
-#: único que vale: se generó una imagen y el saldo de la cuenta bajó de 11.878
-#: a 11.778. Cien créditos exactos, no un número de un simulador.
+#: **Lo que NO se usó para esto**: el simulador del conector de Magnific. Sus
+#: números son de otros endpoints con otros modelos que las rutas REST a las
+#: que le pega el worker. Una cifra que parece medida y no lo está es peor que
+#: una cota honesta — por eso estuvieron dos días en 300 en vez de tomar
+#: prestado un número parecido.
 #:
-#: Los otros cuatro siguen con la cota. El simulador ya contesta —`images_expand`
-#: 50, `images_retouch` 10, `images_upscale` de 90 a 1080 según el tamaño— pero
-#: esos son los endpoints del CONECTOR, y el worker le pega a otras rutas REST
-#: con otros modelos. Copiar esos números acá sería cambiar una cota honesta por
-#: una cifra que parece medida y no lo está. Se bajan cuando se midan como se
-#: midió `crear`: gastando uno y mirando el saldo.
-#:
-#: Poner una cota alta y no un promedio es deliberado. Un precio inventado por
-#: abajo pasa cualquier tope y se descubre con la factura; uno inventado por
-#: arriba, en el peor caso, rechaza algo que entraba — y eso se ve enseguida y
-#: se corrige. Cuando se puedan medir, estos números bajan y hay que bajarlos.
+#: **`tamano` es el único que depende del tamaño.** Magnific lo cobra por
+#: tramos: 90 el chico, 180 el mediano —el que se midió, con una foto de 1,9
+#: megapíxeles—, 270 el grande y 1080 el enorme. Los 180 alcanzan porque este
+#: verbo existe para agrandar fotos CHICAS; para que no se cuele una grande y
+#: cueste 1080 sin que nadie lo estimara, `_cuerpo` la rechaza antes (ver
+#: `MAX_MP_AGRANDAR`).
 PRECIOS = {
     "fondo":   {"creditos": 3,   "medido": True},
     "crear":   {"creditos": 100, "medido": True},
-    "formato": {"creditos": 300, "medido": False},
-    "tamano":  {"creditos": 300, "medido": False},
-    "retoque": {"creditos": 300, "medido": False},
-    "escena":  {"creditos": 300, "medido": False},
+    "formato": {"creditos": 40,  "medido": True},
+    "tamano":  {"creditos": 180, "medido": True},
+    "retoque": {"creditos": 100, "medido": True},
+    "escena":  {"creditos": 100, "medido": True},
 }
 
 #: Qué le pide cada verbo a Magnific.
@@ -160,6 +157,17 @@ RELACIONES = {
     "story": "social_story_9_16",
     "reel":  "social_story_9_16",
 }
+
+#: Hasta qué tamaño tiene sentido agrandar una foto — y hasta dónde sale barato.
+#:
+#: Las dos cosas van juntas y por eso hay un solo número. Agrandar una foto que
+#: ya es grande no arregla nada: la pieza se dibuja a 2160 y con 4 megapíxeles
+#: ya sobra. Y del lado del precio, Magnific cobra `tamano` por tramos y el
+#: salto de arriba es feo — 1080 créditos contra los 180 del tramo mediano.
+#:
+#: Cortando acá pasan las dos cosas: no se agranda lo que no hace falta, y el
+#: precio estimado (180) no se puede quedar corto contra el real.
+MAX_MP_AGRANDAR = 4.0
 
 #: Lo máximo que la API deja agregar de un lado al expandir.
 MAX_EXPANSION = 2048
@@ -275,6 +283,13 @@ def _cuerpo(fila: dict) -> dict:
     if verbo == "fondo":
         return {"image_url": foto}
     if verbo == "tamano":
+        ancho, alto = medidas(foto)
+        mp = (ancho * alto) / 1_000_000
+        if mp > MAX_MP_AGRANDAR:
+            raise ValueError(
+                f"esta foto ya mide {ancho}x{alto} ({mp:.1f} megapíxeles) y las "
+                f"piezas se dibujan a 2160: agrandarla no cambiaría nada y "
+                f"costaría varias veces más. Usala como está.")
         return {"image": foto}
     if verbo == "formato":
         ancho, alto = medidas(foto)
