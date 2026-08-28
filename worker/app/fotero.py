@@ -478,7 +478,12 @@ def atender_todos(cli, ficha: dict, subir) -> int:
     este módulo se pueda probar sin levantar el motor entero.
     """
     tope_pieza = int(ficha.get("creditos_maximos") or 600)
-    tope_mes = int(ficha.get("creditos_maximos_mes") or 5000)
+    # El techo del mes es OPCIONAL y por defecto no hay. Una marca que no lo
+    # escribe no tiene corte de mes, y eso incluye a las que se sumen mañana.
+    # El tope por pieza sí queda siempre: ése frena un pedido absurdo o un
+    # bucle del chat, que es un error. Cuánto gasta un cliente en un mes no es
+    # un error — es una decisión suya.
+    tope_mes = int(ficha.get("creditos_maximos_mes") or 0)
     movidas = 0
 
     # --- a) recién anotados ------------------------------------------------
@@ -501,19 +506,22 @@ def atender_todos(cli, ficha: dict, subir) -> int:
             continue
 
         cuesta = precio(verbo)
-        ya = _gastado_este_mes(cli)
         if cuesta > tope_pieza:
             _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
                     notas=f"«{verbo}» sale {cuesta} créditos y el tope por pieza "
                           f"es {tope_pieza}.")
             movidas += 1
             continue
-        if ya + cuesta > tope_mes:
-            _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
-                    notas=f"este mes ya hay {ya} créditos de fotos comprometidos "
-                          f"y el tope es {tope_mes}.")
-            movidas += 1
-            continue
+        # Sin techo no hace falta preguntar cuánto va gastado, que era una
+        # consulta por cada foto de la corrida.
+        if tope_mes:
+            ya = _gastado_este_mes(cli)
+            if ya + cuesta > tope_mes:
+                _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
+                        notas=f"este mes ya hay {ya} créditos de fotos "
+                              f"comprometidos y el tope es {tope_mes}.")
+                movidas += 1
+                continue
 
         if not _tomar(cli, fila["id"], "pendiente", "trabajando"):
             continue

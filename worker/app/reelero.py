@@ -768,7 +768,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     # El tope por pieza tiene que ser MAYOR que lo que cuesta el default, o
     # todo se rechaza y nadie entiende por qué.
     tope_pieza = int(ficha.get("creditos_maximos") or 4500)
-    tope_mes = int(ficha.get("creditos_maximos_mes") or 20000)
+    # Opcional, y por defecto no hay: ver el comentario gemelo en `fotero`.
+    # Acá pesa más que allá —un reel sale miles y una foto cientos—, y por eso
+    # mismo el tope por pieza se queda: lo que no puede pasar es que UN pedido
+    # se dispare, no que el mes sume.
+    tope_mes = int(ficha.get("creditos_maximos_mes") or 0)
     dur = int(ficha.get("duracion") or POR_DEFECTO["duracion"])
     # La calidad por defecto de la marca. Es el 90% de los reels: acá es donde
     # está la plata, no en la excepción que pide calidad máxima.
@@ -816,8 +820,8 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             planos = _ajustar(planos, plan["duracion"])
             cuesta = plan["creditos"]
 
-            ya = _gastado_este_mes(cli)
-            if ya + cuesta > tope_mes:
+            ya = _gastado_este_mes(cli) if tope_mes else 0
+            if tope_mes and ya + cuesta > tope_mes:
                 _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
                         notas=f"este reel sale {cuesta} créditos, este mes ya hay "
                               f"{ya} comprometidos y el tope mensual es {tope_mes}.")
