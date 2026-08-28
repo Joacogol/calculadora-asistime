@@ -843,6 +843,48 @@ Dos arreglos, en dos capas:
 
 ---
 
+### 6i · Adjuntar un archivo y decir «subilo» (28/8/2026)
+
+Lo que Joaquín quería desde el principio, y que yo entendí tarde: **adjuntar
+un archivo propio en el chat y publicarlo tal cual.** No generar nada. Todo lo
+de las secciones anteriores publica videos que hace NUESTRO motor, que es otra
+cosa.
+
+Eso no existía para video en ningún cliente. `publicar_foto` mira los bytes y
+acepta sólo JPG, PNG y WebP, así que un mp4 devolvía «eso no es una imagen que
+Instagram acepte». (Se revisó: Clínica tampoco lo tenía. Los dos clientes
+tienen la misma puerta, y la de Clínica es una versión más vieja todavía.)
+
+**La puerta `/foto` ahora acepta las dos cosas** y decide por los bytes: la
+caja `ftyp` de los primeros doce dice si es MP4 o MOV. Sigue llamándose
+`/foto` por historia; el campo nuevo es `archivo` y el viejo sigue andando.
+
+Tres decisiones que vale la pena entender:
+
+- **Se asoma antes de bajar.** Un `Range` de 64 KB alcanza para saber qué es, y
+  el `content-range` de esa misma respuesta trae el tamaño total. Traer
+  cincuenta megas para descubrir que no servían es pagar el viaje entero por
+  una pregunta de doce bytes. Si el servidor ignora el `Range` y manda todo, se
+  lee el primer pedazo y se corta la conexión.
+- **El video se copia, pero en flujo.** `body: rv.body` en vez de un
+  `arrayBuffer`: el archivo pasa de una punta a la otra sin quedar entero en la
+  memoria de la función. Y se copia, en vez de publicar la URL del chat, por lo
+  mismo que la foto — esa URL se vence, e Instagram tarda en procesar un video.
+- **No se re-empaqueta.** Un video no lleva las coordenadas del celular como
+  una foto, y recodificarlo acá sería tardar minutos para empeorar la imagen.
+  Tope de 80 MB.
+
+En Asistime: **`publicar_archivo` (2138) reemplaza a `publicar_foto`** y queda
+enganchada en su lugar. No conviven: dos puertas para el mismo trabajo es
+exactamente lo que hace que un agente elija mal. **Prompt v13 (4682)**, que
+ahora arranca con la pregunta que ordena todo lo demás — *¿hay que diseñar
+algo?* — y con la instrucción de preguntar en vez de elegir.
+
+> `publicar_foto` (2115) queda existiendo pero desenganchada, por si hay que
+> volver atrás. Cuando pase un tiempo sin sustos, se borra.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
