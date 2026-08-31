@@ -1055,6 +1055,39 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                 f"se sacaron {quitado:.1f}s de tiempos muertos y quedaron "
                 f"{len(abiertos)} tramos")
 
+    # `duracion_objetivo` — cuando alguien pide un largo, se elige QUÉ entra.
+    #
+    # Va después del recorte de silencios y antes de los subtítulos: necesita
+    # los tramos ya definidos para saber cuánto dura cada uno, y los subtítulos
+    # se calculan sobre los tramos finales.
+    #
+    # **Sin objetivo no se descarta nada.** Sacar los silencios es indiscutible
+    # —nadie extraña una pausa—, pero tirar una frase entera es una decisión
+    # editorial, y un motor no debería tomarla sin que se la pidan. Un reel
+    # largo se acorta; una frase que el sistema tiró en silencio no se
+    # recupera.
+    objetivo = float(g.get("duracion_objetivo") or 0)
+    if objetivo > 0 and (g.get("tramos") or []):
+        from . import habla as _habla
+        g = dict(g)
+        conteo = []
+        for t0 in g["tramos"]:
+            desde0 = float(t0.get("desde", 0))
+            hasta0 = float(t0.get("hasta", desde0))
+            vel0 = float(t0.get("velocidad", 1) or 1)
+            pal = _habla.palabras(base / (t0.get("archivo") or ""), vocabulario or "")
+            dicho = " ".join(w["texto"] for w in pal
+                             if desde0 <= w["desde"] < hasta0)
+            conteo.append({"dura": (hasta0 - desde0) / vel0, "texto": dicho})
+        quedan = _habla.elegir_tramos(conteo, objetivo, marca)
+        if len(quedan) < len(g["tramos"]):
+            fuera = sum(conteo[i]["dura"] for i in range(len(conteo))
+                        if i not in quedan)
+            g["tramos"] = [g["tramos"][i] for i in quedan]
+            avisos_previos.append(
+                f"para llegar a los {objetivo:.0f}s se dejaron afuera "
+                f"{len(conteo) - len(quedan)} tramos ({fuera:.0f}s)")
+
     # `subtitulos: "auto"` significa «sacalos de lo que se dice en el video».
     # Se resuelve ACÁ y no en cada puerta porque por acá pasan las dos: la tool
     # del chat y el agente diseñador que corre `video.py guion.json`. Una sola

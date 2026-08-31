@@ -395,8 +395,111 @@ def hook_de(texto: str, marca: str = "") -> str:
         log.warning("no pude escribir el hook: %s", e)
         return ""
 
-    # Un modelo que se va de largo no arruina la pieza: se corta.
-    palabras_ = linea.split()
-    if len(palabras_) > 10:
-        linea = " ".join(palabras_[:10])
-    return linea.strip(" .,:;")
+    return _recortar_hook(linea)
+
+
+def _recortar_hook(linea: str, tope: int = 10) -> str:
+    """Acorta un hook largo SIN dejarlo colgado a mitad de frase.
+
+    La primera versión cortaba en la palabra número diez y listo, y salió
+    «Un cliente le pide un diseño a la IA de». Terminar en «de» es peor que no
+    tener hook: la frase promete algo que nunca dice, y encima queda como un
+    error del sistema a la vista de todos.
+
+    El orden es: primero probar si hay una coma antes del tope —una coma es un
+    final legítimo—, y si no, retroceder mientras la última palabra no diga
+    nada por sí sola. Es la misma lista `DEBILES` que usan los subtítulos: si
+    una palabra no puede cerrar un renglón, tampoco puede cerrar un titular.
+    """
+    linea = (linea or "").strip(" .,:;·-–—")
+    pal = linea.split()
+    if len(pal) <= tope:
+        return _sin_cola_debil(linea)
+
+    # ¿Hay una coma dentro del tope? Ahí termina una idea.
+    for i in range(min(tope, len(pal)) - 1, 1, -1):
+        if pal[i].endswith(","):
+            return " ".join(pal[:i + 1]).strip(" ,")
+    return _sin_cola_debil(" ".join(pal[:tope]))
+
+
+def _sin_cola_debil(linea: str) -> str:
+    """Saca del final las palabras que no dicen nada solas."""
+    pal = linea.split()
+    while len(pal) > 3 and pal[-1].lower().strip(" ,.;:") in DEBILES:
+        pal.pop()
+    return " ".join(pal).strip(" .,:;")
+
+
+def elegir_tramos(tramos: list[dict], objetivo: float, marca: str = "") -> list[int]:
+    """Cuáles tramos entran para llegar a un largo objetivo. Devuelve índices.
+
+    **Sólo corre si alguien pidió un largo.** Sin `duracion_objetivo` el motor
+    conserva todo lo que se dijo, y eso es deliberado: descartar material de un
+    cliente sin que nadie lo haya pedido es una decisión editorial que un motor
+    no debería tomar solo. Un reel largo se puede acortar; una frase que el
+    sistema tiró en silencio no se recupera.
+
+    Cuando SÍ se pide, el criterio es el que falta en todo lo demás que hace
+    este módulo: sacar los silencios no convierte una grabación cruda en un
+    reel, porque el silencio no es lo único que sobra. Acá se lee lo que se
+    dice en cada tramo y se elige qué entra, conservando el orden — reordenar
+    una explicación la rompe.
+
+    Si falla, devuelve todos: un reel largo es peor que uno bien editado, y
+    muchísimo mejor que ninguno.
+    """
+    todos = list(range(len(tramos)))
+    total = sum(float(t.get("dura") or 0) for t in tramos)
+    if not tramos or objetivo <= 0 or total <= objetivo:
+        return todos
+    try:
+        import asyncio
+        import json as _json
+        from claude_agent_sdk import ClaudeAgentOptions, query
+    except Exception:                                        # noqa: BLE001
+        return todos
+
+    lista = "\n".join(
+        f"{i}. ({float(t.get('dura') or 0):.1f}s) {t.get('texto', '').strip() or '[sin voz]'}"
+        for i, t in enumerate(tramos))
+    prompt = (
+        "Estás editando un reel vertical de Instagram"
+        + (f" de {marca}" if marca else "") + ". Estos son los tramos "
+        "disponibles, con su duración y lo que se dice en cada uno:\n\n"
+        + lista + f"\n\nEl reel entero dura {total:.0f}s y tiene que quedar en "
+        f"unos {objetivo:.0f}s. Elegí qué tramos entran.\n\n"
+        "Criterios:\n"
+        "· Conservá el ORDEN. Reordenar una explicación la rompe.\n"
+        "· Que se entienda solo: el que mira no vio los tramos que sacaste.\n"
+        "· Sacá primero lo que se repite, lo que titubea y lo que no aporta "
+        "al punto principal.\n"
+        "· El primer tramo casi siempre entra: es el que engancha.\n"
+        "· Un tramo sin voz sólo entra si es la única imagen de algo.\n\n"
+        'Contestá SÓLO un JSON así: {"tramos": [0, 2, 3]}')
+
+    try:
+        async def _pedir() -> str:
+            t = ""
+            async for msg in query(prompt=prompt, options=ClaudeAgentOptions(
+                    allowed_tools=[], max_turns=1, permission_mode="dontAsk")):
+                for bloque in getattr(msg, "content", None) or []:
+                    x = getattr(bloque, "text", None)
+                    if x:
+                        t += x
+            return t
+        crudo = asyncio.run(_pedir())
+        i, j = crudo.index("{"), crudo.rindex("}")
+        elegidos = [int(x) for x in _json.loads(crudo[i:j + 1]).get("tramos") or []]
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude elegir los tramos, van todos: %s", e)
+        return todos
+
+    # Se ordenan y se limpian: un índice inventado o repetido no puede armar un
+    # reel con un tramo que no existe ni mostrar dos veces el mismo.
+    elegidos = sorted({i for i in elegidos if 0 <= i < len(tramos)})
+    if not elegidos:
+        return todos
+    log.info("de %d tramos entran %d (objetivo %.0fs)",
+             len(tramos), len(elegidos), objetivo)
+    return elegidos
