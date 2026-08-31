@@ -365,4 +365,7 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
             and x.get("desde") is not None and x.get("hasta") is not None]
 
     return {"nombre": nombre, "tramos": tramos, "sonido": son,
-            "subtitulos": subs, "hook": str(g.get("hook") or "").strip()}
+            "subtitulos": subs, "hook": str(g.get("hook") or "").strip(),
+            "cierre": (g.get("cierre") if isinstance(g.get("cierre"), dict)
+                       else ({"texto": str(g["cierre"]).strip()}
+                             if g.get("cierre") else None))}

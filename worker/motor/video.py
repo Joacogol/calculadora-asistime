@@ -305,10 +305,28 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
 #: en decidir si sigue mirando; más que eso ya compite con los subtítulos.
 DURA_HOOK = 3.0
 
-#: Dónde vive. Arriba, pero por debajo de los 250 px que Instagram tapa con el
-#: nombre de la cuenta, y bien lejos de los subtítulos para que no se lean como
-#: una sola cosa.
-ALTO_HOOK, ARRIBA_HOOK = 460, 330
+#: Dónde vive: apenas debajo de los 250 px que Instagram tapa con el nombre de
+#: la cuenta, y no más abajo.
+#:
+#: Estaba en 330 con 460 px de alto y en un video de alguien hablando el hook
+#: caía justo sobre la cara. Un titular encima de la cara del que habla es peor
+#: que no tener titular: tapa lo único que la persona vino a mirar.
+#:
+#: **No se detecta la cara, y es a propósito.** Se podría —hay librerías— pero
+#: sumar una dependencia de visión por computadora al worker para acomodar un
+#: texto es caro para lo que resuelve. La banda de arriba es donde va el hook
+#: en cualquier reel bien hecho, con cara o sin cara, así que alcanza con
+#: ponerlo ahí y no dejarlo crecer.
+ALTO_HOOK, ARRIBA_HOOK = 300, 268
+
+#: Cuántos renglones puede ocupar el hook. Dos.
+#:
+#: No es una preferencia: tres renglones de titular ocupan medio cuadro y a los
+#: tres segundos se van, así que el reel arranca con la mitad de la pantalla
+#: tapada. Si el texto no entra en dos, se achica hasta que entre — para eso
+#: está el guardián de `render.py`, y acá se usa con un límite de alto en vez
+#: de uno de ancho.
+LINEAS_HOOK = 2
 
 
 def _hook_png(texto: str, tmp: Path) -> Path:
@@ -333,7 +351,7 @@ def _hook_png(texto: str, tmp: Path) -> Path:
       .canvas{{width:{ANCHO}px;height:{ALTO_HOOK}px;position:relative;
         background:transparent;display:flex;flex-direction:column;
         align-items:center;justify-content:center;padding:0 80px;gap:26px}}
-      .txt{{font-family:'Hook',sans-serif;font-weight:900;font-size:104px;
+      .txt{{font-family:'Hook',sans-serif;font-weight:900;font-size:92px;
         line-height:1.02;color:#fff;text-align:center;text-transform:uppercase;
         letter-spacing:-.025em;
         text-shadow:0 4px 16px rgba(0,0,0,.92), 0 0 34px rgba(0,0,0,.8)}}
@@ -349,8 +367,89 @@ def _hook_png(texto: str, tmp: Path) -> Path:
         pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_HOOK})
         pg.goto(f"file://{arch}")
         pg.wait_for_timeout(300)
+        # Primero que entre en dos renglones, después que entre en el ancho.
+        # En ese orden: achicar por el alto cambia cuántas líneas hay, así que
+        # medir el ancho antes sería medir un texto que todavía va a cambiar.
+        pg.evaluate(CABE_EN_DOS, LINEAS_HOOK)
         pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
         pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
+        b.close()
+    return salida
+
+
+#: Achica el hook hasta que entre en la cantidad de renglones pedida.
+CABE_EN_DOS = """
+(maximo) => {
+  const el = document.querySelector('.txt');
+  if (!el) return 0;
+  const alto = () => parseFloat(getComputedStyle(el).lineHeight) ||
+                     parseFloat(getComputedStyle(el).fontSize) * 1.02;
+  let fs = parseFloat(getComputedStyle(el).fontSize);
+  let vueltas = 0;
+  while (el.getBoundingClientRect().height > alto() * maximo + 2 &&
+         vueltas < 40 && fs > 44) {
+    fs *= 0.95;
+    el.style.fontSize = fs + 'px';
+    vueltas++;
+  }
+  return Math.round(fs);
+}
+"""
+
+
+#: Cuánto dura la tapa de cierre. Segundo y medio: lo que tarda alguien en
+#: leer dos renglones cortos. Más que eso y el reel «termina» antes de terminar,
+#: que es peor que cortar en seco.
+DURA_CIERRE = 1.6
+
+
+def _cierre_png(texto: str, pie: str, tmp: Path) -> Path:
+    """La placa del final: el fondo de la marca, la frase y la barra de acento.
+
+    Un reel montado con material crudo termina donde se cortó el último clip,
+    o sea en el medio de una frase. Eso se nota y se lee como un error, aunque
+    el resto esté bien: el que mira no sabe si se cortó la carga o si el video
+    era así.
+
+    La tapa no arregla el contenido, pero pone un punto final. Es lo mínimo que
+    hace que una pieza parezca terminada.
+    """
+    from playwright.sync_api import sync_playwright
+    from .render import QUE_ENTRE, MARGEN_SEGURO
+
+    salida = tmp / "cierre.png"
+    acento = "#" + LIMA.lstrip("0x").lstrip("#")
+    html = f"""<html><head><meta charset="utf-8"><style>
+      {CSS_MARCA}
+      @font-face{{font-family:'Hook';src:url('file://{TIPO_TITULO}');font-weight:900}}
+      @font-face{{font-family:'Pie';src:url('file://{TIPO_PIE}');font-weight:500}}
+      *{{margin:0;padding:0;box-sizing:border-box}}
+      body{{background:{NEGRO.replace('0x', '#')}}}
+      .canvas{{width:{ANCHO}px;height:{ALTO}px;background:{NEGRO.replace('0x', '#')};
+        display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:34px;padding:0 110px}}
+      .txt{{font-family:'Hook',sans-serif;font-weight:900;font-size:104px;
+        line-height:1.02;color:#fff;text-align:center;text-transform:uppercase;
+        letter-spacing:-.03em}}
+      .barra{{width:220px;height:16px;background:{acento}}}
+      .pie{{font-family:'Pie',sans-serif;font-weight:500;font-size:44px;
+        color:#fff;opacity:.82;letter-spacing:.02em;text-align:center}}
+    </style></head><body>
+      <div class="canvas">
+        <div class="txt">{texto}</div>
+        <div class="barra"></div>
+        {f'<div class="pie">{pie}</div>' if pie else ''}
+      </div>
+    </body></html>"""
+    arch = tmp / "cierre.html"
+    arch.write_text(html, encoding="utf-8")
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": ANCHO, "height": ALTO})
+        pg.goto(f"file://{arch}")
+        pg.wait_for_timeout(300)
+        pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
+        pg.locator(".canvas").screenshot(path=str(salida))
         b.close()
     return salida
 
@@ -811,8 +910,18 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
         shutil.rmtree(tmp)
     tmp.mkdir(parents=True)
 
+    # La tapa de cierre entra como un tramo de tipo `placa`, que el motor ya
+    # sabe pegar. No hace falta ninguna maquinaria nueva: es una imagen fija
+    # con una duración, igual que una foto.
+    tramos = list(spec["tramos"])
+    cierre = spec.get("cierre") or {}
+    if cierre.get("texto"):
+        png = _cierre_png(str(cierre["texto"]), str(cierre.get("pie") or ""), tmp)
+        tramos.append({"tipo": "placa", "archivo": str(png),
+                       "dura": float(cierre.get("dura") or DURA_CIERRE)})
+
     segmentos = []
-    for i, t in enumerate(spec["tramos"]):
+    for i, t in enumerate(tramos):
         tipo = t.get("tipo", "video")
         if tipo == "video":
             segmentos.append(_segmento_video(t, i, tmp))
@@ -823,7 +932,7 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
             segmentos.append(_segmento_placa(ruta, float(t.get("dura", 1.6)), i, tmp))
         else:
             raise ValueError(f"tipo de tramo desconocido: {tipo}")
-        print(f"  tramo {i+1}/{len(spec['tramos'])} · {tipo}")
+        print(f"  tramo {i+1}/{len(tramos)} · {tipo}")
 
     _verificar_uniformidad(segmentos)
 
@@ -847,7 +956,7 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
         print(f"  hook: «{spec['hook']}»")
         mudo = _quemar_hook(mudo, str(spec["hook"]), tmp)
 
-    duraciones = [float(t.get("dura", 2.5)) for t in spec["tramos"]]
+    duraciones = [float(t.get("dura", 2.5)) for t in tramos]
     if spec.get("sonido", {}).get("activo", True):
         print("  mezclando audio")
         _mezclar(mudo, final, spec, duraciones)
