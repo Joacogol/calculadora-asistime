@@ -268,11 +268,32 @@ No repitas para qué sirve la plantilla: eso ya está.
 Lo que vuelve es otra vez un borrador, y vale lo mismo: **la plantilla que se
 usa hoy no cambió** hasta que alguien publique la versión nueva.
 
+## Un carrusel NO necesita una plantilla de carrusel
+
+Esta lista son las plantillas de UNA pieza. `carrusel` y `secuencia` no están
+—ni tienen que estar— porque **son formatos, no plantillas**: los arma el motor
+encadenando diapositivas, con la portada y el cierre que ya tiene la marca.
+
+Se piden como cualquier otro formato, en `formatos` de `crear_diseno`:
+
+- **`carrusel`** — de 3 a 6 imágenes para el feed, que se leen deslizando.
+- **`secuencia`** — 3 stories que se ven una atrás de otra.
+
+Contá en `mensaje` qué va en cada diapositiva, en orden. Eso alcanza.
+
+**No armes una plantilla nueva para hacer un carrusel.** Es el error que da
+esta lista si se la lee sola: como no aparece `carrusel`, parece que falta.
+Pasó el 28/8/2026 — se pidió un carrusel de seis diapositivas para un servicio
+y el agente ofreció construir un molde que no hacía falta.
+
+Una plantilla se arma cuando falta un TIPO DE PIEZA, no cuando falta un
+formato.
+
 ## Y si necesita código
 
-`avisar_cambio_motor` queda para lo que de verdad necesita código: el video,
-los efectos, un formato que no existe, la estructura del carrusel. Es la
-excepción, no la salida fácil.
+`avisar_cambio_motor` queda para lo que de verdad necesita código: los efectos,
+un formato que no existe, un carrusel que se encadene solo. **El carrusel y la
+secuencia no van acá: ésos ya se pueden.** Es la excepción, no la salida fácil.
 """
 
 

@@ -927,6 +927,54 @@ deformadas, la regla se queda pero por fin con una medición atrás.
 
 ---
 
+### 6k · El catálogo decía que faltaba una plantilla que no hacía falta (28/8/2026)
+
+Se pidió un carrusel de seis diapositivas para el servicio de Papanicolaou y el
+agente de Clínica contestó que **no existe una plantilla de carrusel** y ofreció
+armar una.
+
+**El agente no se portó mal**: buscó, leyó el catálogo, no encontró `carrusel`,
+aplicó la regla de «si falta, armala» y preguntó antes de gastar. Hizo todo bien
+con la información que tenía. La información estaba mal.
+
+Un carrusel **no es una plantilla, es un formato**. Lo arma el motor encadenando
+diapositivas con la `portada` y el `cierre` que la marca ya tiene en `DIAPOS`.
+Y estaba a mano:
+
+- `crear_diseno` de Clínica **ya acepta** `carrusel` en sus formatos válidos, y
+  su propia descripción pone de ejemplo «un carrusel explicando el psicotécnico».
+- Clínica **ya lo había hecho**: el 4/8/2026, dos piezas de 3 y 4 imágenes
+  pedidas como «Necesito un carrusel con estos 3 slides», con formato
+  `secuencia`. Las dos salieron bien.
+
+El catálogo listaba sólo plantillas de UNA pieza y nunca decía que los formatos
+encadenados existen por otro lado. Y remataba con un renglón que empujaba en la
+dirección contraria: «`avisar_cambio_motor` queda para… **la estructura del
+carrusel**».
+
+**Arreglado en dos lugares:**
+
+1. `motor/plantillas.py` — el generador del catálogo gana una sección entera,
+   «Un carrusel NO necesita una plantilla de carrusel», y el renglón final deja
+   de nombrar el carrusel entre lo que necesita código.
+2. **El documento de Asistime, a mano** (tenant 73, doc 832, versión 2
+   publicada). No es lo mismo que lo anterior: el generador arregla el problema
+   *desde el próximo despliegue*, y esto lo arregla *ahora*. Cuando se despliegue,
+   `publicar-catalogo.py` lo va a pisar con el mismo texto y las dos versiones
+   convergen.
+
+> **Boss y Stadium tienen el mismo renglón equivocado** en su catálogo. Ahí no
+> se editó a mano porque nadie chocó todavía; el despliegue del generador los
+> corrige a los tres.
+
+**La lección.** El catálogo se genera solo desde los contratos de las plantillas
+—que es lo que lo mantiene al día— pero por eso mismo sólo puede hablar de
+plantillas. Todo lo que el motor sabe hacer y NO es una plantilla es invisible
+ahí, y el agente no tiene forma de enterarse. Los formatos encadenados eran el
+primer caso; conviene mirar si hay otros.
+
+---
+
 ### 7 · La prueba, desde el chat de Clínica
 
 El agente se llama **Diseñador Clínica Preventiva**. Probá con las dos cosas:
