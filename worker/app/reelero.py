@@ -1019,7 +1019,8 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 from motor import habla as mhabla
                 final, avisos = mvideo.desde_guion(
                     guion, str(fila["id"]), material, t,
-                    vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "")
+                    vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "",
+                    marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "")
 
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),

@@ -107,6 +107,39 @@ def palabras(ruta, vocabulario: str = "") -> list[dict]:
         return []
 
 
+#: Palabras con las que una línea de subtítulo NO puede terminar.
+#:
+#: Son las que no significan nada solas: artículos, preposiciones,
+#: conjunciones, posesivos. Dejarlas colgando al final de la línea obliga a
+#: leer el renglón siguiente para entender el primero, y en un reel —donde el
+#: texto está en pantalla dos segundos— eso se paga caro.
+#:
+#: Salió de mirar un reel real: «creamos el / primer agente y», «tenemos
+#: disponibles que en / realidad es». Las dos líneas cortan justo donde la
+#: frase todavía no dijo nada.
+DEBILES = {
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "lo", "al", "del",
+    "de", "a", "ante", "bajo", "con", "contra", "desde", "en", "entre", "hacia",
+    "hasta", "para", "por", "según", "sin", "sobre", "tras", "durante",
+    "y", "e", "o", "u", "ni", "que", "qué", "como", "cómo", "cuando", "cuándo",
+    "donde", "dónde", "porque", "pero", "aunque", "si", "sí", "más", "muy",
+    "mi", "tu", "su", "mis", "tus", "sus", "nuestro", "nuestra", "este", "esta",
+    "ese", "esa", "aquel", "se", "me", "te", "nos", "les", "le",
+}
+
+
+def _peso(palabra: str) -> int:
+    """Cuánto molesta cortar DESPUÉS de esta palabra. Menos es mejor."""
+    limpia = palabra.lower().strip(" ,.;:¿?¡!\"'()")
+    if limpia.endswith((".", "?", "!")) or palabra.rstrip().endswith((".", "?", "!")):
+        return 0                      # final de oración: el mejor corte posible
+    if palabra.rstrip().endswith(","):
+        return 1                      # una coma es una pausa de verdad
+    if limpia in DEBILES:
+        return 9                      # deja el renglón sin decir nada
+    return 3
+
+
 def frases(pals: list[dict]) -> list[dict]:
     """Agrupa palabras en frases que entren en pantalla y se alcancen a leer.
 
@@ -151,10 +184,24 @@ def frases(pals: list[dict]) -> list[dict]:
         if partes == 1:
             salida.append(armar(b))
             continue
-        # Reparto por cantidad de palabras: es lo que mantiene las líneas
-        # parecidas sin tener que medir cada corte.
+        # Dónde cortar: cerca del reparto parejo, pero corriéndose hasta tres
+        # palabras para no terminar un renglón en «el», «de» o «que».
+        #
+        # El equilibrio importa —dos líneas de largo muy distinto se leen
+        # peor— así que alejarse del punto ideal también pesa. Gana el corte
+        # que minimiza las dos cosas juntas.
         n = len(b)
-        cortes = [round(n * i / partes) for i in range(partes + 1)]
+        cortes = [0]
+        for i in range(1, partes):
+            ideal = round(n * i / partes)
+            mejor, mejor_costo = ideal, None
+            for cand in range(max(cortes[-1] + 1, ideal - 3),
+                              min(n - (partes - i), ideal + 3) + 1):
+                costo = _peso(b[cand - 1]["texto"]) + abs(cand - ideal)
+                if mejor_costo is None or costo < mejor_costo:
+                    mejor, mejor_costo = cand, costo
+            cortes.append(mejor)
+        cortes.append(n)
         for i in range(partes):
             trozo = b[cortes[i]:cortes[i + 1]]
             if trozo:
@@ -225,3 +272,65 @@ def vocabulario_de(marca) -> str:
     partes = [getattr(marca, "NOMBRE", "") or ""]
     partes += list(getattr(marca, "VOCABULARIO", ()) or ())
     return ", ".join(p for p in partes if p).strip(", ")
+
+
+def hook_de(texto: str, marca: str = "") -> str:
+    """Una frase de enganche para los primeros segundos, escrita por Claude.
+
+    Los tres primeros segundos deciden si alguien sigue mirando, y el arranque
+    natural de casi todo el material crudo es el peor posible: «bueno, en este
+    video les voy a mostrar…». Eso ANUNCIA en vez de mostrar, y anunciar es lo
+    que hace que el dedo siga de largo.
+
+    Se le pasa lo que se dice en el video —ya transcrito— y devuelve una línea.
+    Corta y en mayúsculas la pone la plantilla; acá sólo importa que diga algo.
+
+    Si falla devuelve cadena vacía, y el reel sale sin hook. Un reel sin hook
+    es peor que uno con hook, pero infinitamente mejor que ningún reel: esto no
+    puede tumbar un montaje que ya está hecho.
+    """
+    texto = (texto or "").strip()
+    if len(texto) < 20:
+        return ""
+    try:
+        import asyncio
+        from claude_agent_sdk import ClaudeAgentOptions, query
+    except Exception:                                        # noqa: BLE001
+        log.warning("no está el SDK de Claude: el reel va sin hook")
+        return ""
+
+    prompt = (
+        "Escribí el texto de enganche para los primeros 3 segundos de un reel "
+        "vertical de Instagram" + (f" de {marca}" if marca else "") + ".\n\n"
+        "Esto es lo que se dice en el video:\n\n" + texto[:2500] + "\n\n"
+        "Reglas:\n"
+        "· Máximo 8 palabras. Se lee en un segundo y medio.\n"
+        "· Que diga LO CONCRETO que el video muestra, no que lo anuncie. "
+        "«En este video te muestro cómo hacer X» está mal; «X en 30 segundos» "
+        "está bien.\n"
+        "· Castellano rioplatense, sin signos de admiración ni emojis.\n"
+        "· Nada de clickbait ni promesas que el video no cumple.\n"
+        "· Contestá SÓLO la frase, sin comillas ni explicación.")
+
+    try:
+        async def _pedir() -> str:
+            t = ""
+            async for msg in query(prompt=prompt, options=ClaudeAgentOptions(
+                    allowed_tools=[], max_turns=1, permission_mode="dontAsk")):
+                for bloque in getattr(msg, "content", None) or []:
+                    x = getattr(bloque, "text", None)
+                    if x:
+                        t += x
+            return t
+        # `asyncio.run` y no `await`, por la misma razón que en `reelero`: esto
+        # corre adentro del hilo que abre `to_thread`, sin loop propio.
+        linea = asyncio.run(_pedir()).strip().strip('"«»').split("\n")[0]
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude escribir el hook: %s", e)
+        return ""
+
+    # Un modelo que se va de largo no arruina la pieza: se corta.
+    palabras_ = linea.split()
+    if len(palabras_) > 10:
+        linea = " ".join(palabras_[:10])
+    return linea.strip(" .,:;")

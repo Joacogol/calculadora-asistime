@@ -301,6 +301,75 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
     return salida
 
 
+#: Cuánto se queda el hook en pantalla. Tres segundos es lo que tarda alguien
+#: en decidir si sigue mirando; más que eso ya compite con los subtítulos.
+DURA_HOOK = 3.0
+
+#: Dónde vive. Arriba, pero por debajo de los 250 px que Instagram tapa con el
+#: nombre de la cuenta, y bien lejos de los subtítulos para que no se lean como
+#: una sola cosa.
+ALTO_HOOK, ARRIBA_HOOK = 460, 330
+
+
+def _hook_png(texto: str, tmp: Path) -> Path:
+    """El texto de enganche de los primeros segundos.
+
+    Va en mayúsculas, grande y con la barra del color de la marca debajo. No es
+    un subtítulo más grande: es lo único que se lee con el dedo listo para
+    pasar de largo, así que se comporta como un titular de placa —el mismo
+    peso, el mismo interletrado apretado— y por eso usa la misma tipografía de
+    título que las piezas.
+    """
+    from playwright.sync_api import sync_playwright
+    from .render import QUE_ENTRE, MARGEN_SEGURO
+
+    salida = tmp / "hook.png"
+    acento = "#" + LIMA.lstrip("0x").lstrip("#")
+    html = f"""<html><head><meta charset="utf-8"><style>
+      {CSS_MARCA}
+      @font-face{{font-family:'Hook';src:url('file://{TIPO_TITULO}');font-weight:900}}
+      *{{margin:0;padding:0;box-sizing:border-box}}
+      body{{background:transparent}}
+      .canvas{{width:{ANCHO}px;height:{ALTO_HOOK}px;position:relative;
+        background:transparent;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;padding:0 80px;gap:26px}}
+      .txt{{font-family:'Hook',sans-serif;font-weight:900;font-size:104px;
+        line-height:1.02;color:#fff;text-align:center;text-transform:uppercase;
+        letter-spacing:-.025em;
+        text-shadow:0 4px 16px rgba(0,0,0,.92), 0 0 34px rgba(0,0,0,.8)}}
+      .barra{{width:190px;height:14px;background:{acento};
+        box-shadow:0 3px 14px rgba(0,0,0,.55)}}
+    </style></head><body>
+      <div class="canvas"><div class="txt">{texto}</div><div class="barra"></div></div>
+    </body></html>"""
+    arch = tmp / "hook.html"
+    arch.write_text(html, encoding="utf-8")
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_HOOK})
+        pg.goto(f"file://{arch}")
+        pg.wait_for_timeout(300)
+        pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
+        pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
+        b.close()
+    return salida
+
+
+def _quemar_hook(entrada: Path, texto: str, tmp: Path) -> Path:
+    """Pone el hook encima de los primeros segundos del reel ya montado."""
+    if not texto:
+        return entrada
+    capa = _hook_png(texto, tmp)
+    con = tmp / "con-hook.mp4"
+    _correr(["ffmpeg", "-v", "error", "-y", "-i", str(entrada), "-i", str(capa),
+             "-filter_complex",
+             f"[0:v][1:v]overlay=x=0:y={ARRIBA_HOOK}:"
+             f"enable='between(t,0,{DURA_HOOK})'[v]",
+             "-map", "[v]", "-map", "0:a?", "-c:a", "copy",
+             "-movflags", "+faststart", str(con)], "hook")
+    return con
+
+
 def _quemar_subtitulos(mudo: Path, subs: list[dict], tmp: Path) -> Path:
     """Superpone los subtítulos sobre el reel ya concatenado.
 
@@ -774,6 +843,10 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
         print(f"  quemando {len(subs)} subtítulos")
         mudo = _quemar_subtitulos(mudo, subs, tmp)
 
+    if spec.get("hook"):
+        print(f"  hook: «{spec['hook']}»")
+        mudo = _quemar_hook(mudo, str(spec["hook"]), tmp)
+
     duraciones = [float(t.get("dura", 2.5)) for t in spec["tramos"]]
     if spec.get("sonido", {}).get("activo", True):
         print("  mezclando audio")
@@ -803,7 +876,7 @@ if __name__ == "__main__":
 
 def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                 materiales: dict | None = None,
-                vocabulario: str = "") -> tuple[Path, list[str]]:
+                vocabulario: str = "", marca: str = "") -> tuple[Path, list[str]]:
     """Valida un guion de edición, lo traduce y lo renderiza.
 
     Es la puerta que usa el agente. Existe para que el guion se valide SIEMPRE
@@ -880,6 +953,26 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
             avisos_previos.append(
                 "no pude sacar los subtítulos del audio, así que el reel sale "
                 f"sin ellos ({e})")
+
+    # `hook: "auto"` — el sistema escribe la frase de enganche a partir de lo
+    # que se dice. Va DESPUÉS de los subtítulos porque los reusa: el texto ya
+    # está transcrito y sale gratis.
+    #
+    # El hook escrito a mano gana siempre: si el guion trae una frase, esa
+    # frase manda y no se llama a nadie. «auto» es para cuando quien pide el
+    # reel no sabe qué dice el video —que es el caso del chat, donde el agente
+    # no puede escuchar el material.
+    if isinstance(g.get("hook"), str) and \
+            g["hook"].strip().lower() in ("auto", "automatico", "automático"):
+        from . import habla as _habla
+        g = dict(g)
+        dicho = " ".join(s.get("texto", "") for s in (g.get("subtitulos") or []))
+        g["hook"] = _habla.hook_de(dicho, marca) if dicho else ""
+        if g["hook"]:
+            log.info("hook automático: «%s»", g["hook"])
+        else:
+            avisos_previos.append(
+                "no pude escribir el hook automático, el reel sale sin él")
     if materiales is None:
         # Si no vino el análisis hecho, se sondean los archivos del guion. Es
         # barato —leer cabeceras, no decodificar— y hace que la validación

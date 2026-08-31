@@ -365,4 +365,4 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
             and x.get("desde") is not None and x.get("hasta") is not None]
 
     return {"nombre": nombre, "tramos": tramos, "sonido": son,
-            "subtitulos": subs}
+            "subtitulos": subs, "hook": str(g.get("hook") or "").strip()}
