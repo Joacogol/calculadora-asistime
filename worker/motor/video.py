@@ -680,21 +680,25 @@ def _mezclar(mudo: Path, final: Path, spec: dict, duraciones: list[float]):
     mezcla.append(f"[0:a]volume={son.get('vol_original', 0.60)}[a0]")
     etiquetas.append("[a0]")
 
-    # La música VA por defecto desde el 4/8/2026.
+    # La música y los efectos SE PIDEN. No vienen por defecto desde el
+    # 31/8/2026, y el cambio salió de escuchar un reel.
     #
-    # Antes iba apagada, y el razonamiento era bueno mientras duró: Instagram
-    # restringe su biblioteca musical por tipo de cuenta, así que convenía
-    # entregar el reel con el sonido de cancha y agregarle la música en la app
-    # al publicar, donde la licencia ya está resuelta.
+    # Venían prendidos los dos, con una razón buena para la música: por la API
+    # de Instagram no se le puede agregar música al publicar —un reel que sale
+    # por ahí sale con el audio que tenga el archivo—, así que si no va adentro,
+    # no va. Y meterla adentro no tiene problema de licencia porque `sonido.py`
+    # la SINTETIZA: no se descarga nada, la cama es nuestra.
     #
-    # Ese razonamiento se cayó cuando construimos la publicación por API:
-    # **por la API no se puede agregar música de Instagram.** Un reel que sale
-    # por ahí sale con el audio que tenga el archivo. Si la música no va
-    # adentro, no va.
+    # Lo que ese razonamiento no contemplaba es un video de alguien HABLANDO a
+    # cámara. Ahí una cama musical y unos golpes sintetizados encima de la voz
+    # no adornan: ensucian. Y es el caso que más va a crecer, porque es el que
+    # lleva subtítulos.
     #
-    # Y se puede meter adentro sin ningún problema de licencia porque
-    # `sonido.py` la SINTETIZA: no se descarga nada, la cama es nuestra.
-    if son.get("musica", True):
+    # Poner el default en «no» es la decisión conservadora de las dos: un reel
+    # que sale sin música se publica igual y se le agrega después; uno que sale
+    # con música encima de la voz hay que rehacerlo. Para que vuelva, se pide
+    # —`musica` en el guion, o `efectos: true`— y eso es una palabra.
+    if son.get("musica", False):
         pista = son.get("archivo_musica")
         ruta = (Path(pista) if pista
                 else sonido.musica(dur, son.get("bpm"),
@@ -705,7 +709,7 @@ def _mezclar(mudo: Path, final: Path, spec: dict, duraciones: list[float]):
                       f"aformat=sample_rates=48000:channel_layouts=stereo[a{n}]")
         etiquetas.append(f"[a{n}]")
 
-    if son.get("efectos", True):
+    if son.get("efectos", False):
         ruta = sonido.pista_efectos(_eventos_sonoros(spec, duraciones), dur)
         entradas += ["-i", str(ruta)]
         n = len(etiquetas)

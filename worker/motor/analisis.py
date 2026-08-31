@@ -467,6 +467,35 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     t, db = energia_audio(ruta)
     mudos = silencios(t, db, umbral_db=umbral_db, minimo=minimo)
 
+    # ── tiempo muerto que la energía no oye ──
+    #
+    # Medido en un video real: entre «acá» y «Y» hay 1,6 s en los que no se
+    # dice nada, pero hay sonido —una respiración, un «eeeh», la sala— y la
+    # energía no lo marca como silencio. Ese hueco sobrevivía al recorte y era
+    # exactamente lo que se sentía como tiempo muerto al mirar el reel.
+    #
+    # Dos medidas distintas, dos definiciones de vacío: **callado** es lo que
+    # oye la energía, **muerto** es que no se diga nada. Un reel hablado se
+    # edita por lo segundo. Se cortan los dos.
+    #
+    # El final de cada palabra se toma como el arranque más una ventana, y no
+    # como el `end` que declara Whisper, porque ese `end` está estirado hasta
+    # la palabra siguiente: usarlo tal cual diría que nunca hay huecos.
+    if palabras and len(palabras) > 1:
+        VENTANA = 0.60
+        for w, sig in zip(palabras, palabras[1:]):
+            corta = min(w["hasta"], w["desde"] + VENTANA)
+            if sig["desde"] - corta >= max(minimo, 0.5):
+                mudos.append((corta + 0.10, sig["desde"] - 0.10))
+        mudos.sort()
+        juntos = []
+        for x, y in mudos:
+            if juntos and x <= juntos[-1][1]:
+                juntos[-1] = (juntos[-1][0], max(juntos[-1][1], y))
+            else:
+                juntos.append((x, y))
+        mudos = juntos
+
     tramos, cursor = [], desde
     for a, b in mudos:
         if b <= desde or a >= fin:
@@ -479,29 +508,60 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     if fin - cursor >= min_tramo:
         tramos.append((round(max(desde, cursor - aire), 2), round(fin, 2)))
 
-    # ── que el primer y el último borde no partan una palabra ──
+    # ── que ningún corte parta una palabra ──
     #
-    # Está medido en un video real: la palabra «Una» arranca en 1,74 pero el
-    # ataque es tan suave que la energía dice silencio hasta 2,25. Con
-    # cualquier `aire` razonable el corte cae adentro y el reel empieza con
-    # media sílaba — justo la primera, que es la que engancha o no. Subir el
-    # `aire` no lo arregla: con 0,45 s seguía mordiendo y ya casi no recortaba.
+    # Se usa el ARRANQUE de cada palabra y no su final, y ahí está toda la
+    # gracia. La trampa que el pack de JordiGPT documenta es que Whisper
+    # ESTIRA las palabras sobre las pausas: su `end` se va hasta donde empieza
+    # la siguiente, así que dos frases separadas por un silencio real parecen
+    # una sola palabra larga. Protegiendo por el `end` se juntaba todo — medido:
+    # de seis tramos quedaban dos y el recorte caía de 4,2 s a 2,4.
     #
-    # **Sólo los bordes de afuera, y eso es deliberado.** La primera versión
-    # protegía TODOS los cortes y el resultado fue peor: de seis tramos quedaron
-    # dos y el recorte bajó de 4,6 s a 2,4. La causa es la trampa que el propio
-    # pack de JordiGPT advierte —Whisper ESTIRA las palabras sobre las pausas—,
-    # así que sus bordes dicen que dos frases separadas por un silencio real son
-    # una sola palabra larga. Adentro manda la energía, que para eso se mide;
-    # en las puntas manda la transcripción, que es donde la energía falla porque
-    # el que habla entra y sale bajito.
+    # El `start`, en cambio, es preciso: es el instante en que se oye la
+    # palabra. Así que lo que se protege es una ventana desde el arranque —lo
+    # que dura la palabra, con un tope— y no el hueco inventado que viene
+    # después. Adentro de esa ventana no puede caer un corte; fuera, manda la
+    # energía, que es la que sabe dónde hay silencio de verdad.
+    #
+    # El tope existe porque una palabra estirada puede declarar dos segundos de
+    # duración: sin él volveríamos a proteger la pausa entera.
     if palabras and tramos:
+        VENTANA = 0.60
+
+        def protegida(x):
+            """El arranque de la palabra que este instante estaría partiendo."""
+            for w in palabras:
+                fin_real = min(w["hasta"], w["desde"] + VENTANA)
+                if w["desde"] < x < fin_real:
+                    return w["desde"], fin_real
+            return None
+
+        ajustados = []
+        for a, b in tramos:
+            p = protegida(a)
+            if p:
+                a = p[0] - 0.04
+            p = protegida(b)
+            if p:
+                b = p[1] + 0.04
+            ajustados.append((round(max(desde, a), 2), round(min(fin, b), 2)))
+
+        # La primera palabra merece un trato aparte: el que habla entra bajito
+        # y la energía no la oye. Medido en un video real, «Una» arranca en
+        # 1,74 y la energía decía silencio hasta 2,25.
         primera = min((w["desde"] for w in palabras), default=None)
+        if primera is not None and ajustados and primera < ajustados[0][0]:
+            ajustados[0] = (round(max(desde, primera - 0.06), 2), ajustados[0][1])
         ultima = max((w["hasta"] for w in palabras), default=None)
-        a0, b0 = tramos[0]
-        if primera is not None and primera < a0:
-            tramos[0] = (round(max(desde, primera - 0.06), 2), b0)
-        aN, bN = tramos[-1]
-        if ultima is not None and ultima > bN:
-            tramos[-1] = (aN, round(min(fin, ultima + 0.06), 2))
+        if ultima is not None and ajustados and ultima > ajustados[-1][1]:
+            ajustados[-1] = (ajustados[-1][0], round(min(fin, ultima + 0.06), 2))
+
+        # Estirar puede haber pegado dos tramos: se juntan, porque cortar y
+        # volver a entrar en el mismo lugar se ve como un salto.
+        tramos = []
+        for a, b in ajustados:
+            if tramos and a <= tramos[-1][1] + 0.05:
+                tramos[-1] = (tramos[-1][0], max(tramos[-1][1], b))
+            else:
+                tramos.append((a, b))
     return tramos

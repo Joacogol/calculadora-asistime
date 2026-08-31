@@ -15,16 +15,35 @@ La música es una cama, no un tema: bombo en cada pulso, palmas en 2 y 4,
 hi-hat en las corcheas, un bajo y un punteo. Suena a base programada porque
 lo es, pero marca el pulso y llena el silencio.
 
-    python3 sonido.py            # genera todo en assets/sfx/
+    python3 sonido.py            # genera todo en la carpeta de caché
 """
 import subprocess
+import os
+import tempfile
 import wave
 from pathlib import Path
 
 import numpy as np
 
 RAIZ = Path(__file__).resolve().parent
-SFX = RAIZ / "assets" / "sfx"
+
+#: Dónde se escriben las pistas sintetizadas.
+#:
+#: **Fuera del repositorio, a propósito.** Antes se escribían en
+#: `motor/assets/sfx/`, que está versionado: cada reel que alguien armaba
+#: dejaba el repo «sucio» con cuatro WAV que nadie había tocado a mano. Pasó
+#: cuatro veces en una sola tarde de trabajo y las cuatro hubo que descartarlos
+#: antes de commitear; a la quinta alguien los commitea sin mirar y el
+#: repositorio se llena de audio generado.
+#:
+#: No son fuente: son caché. Se regeneran solos en segundos y dependen de la
+#: duración y del ánimo que pida cada pieza, así que dos reels distintos
+#: producen archivos distintos y guardarlos no sirve para nada.
+#:
+#: Se puede fijar con `MOTOR_CACHE` — en Cloud Run el disco es efímero y
+#: `/tmp` es el lugar correcto.
+SFX = Path(os.environ.get("MOTOR_CACHE") or
+           (Path(tempfile.gettempdir()) / "motor-sonido"))
 SR = 48000
 
 

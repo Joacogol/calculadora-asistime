@@ -336,6 +336,10 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
                 tramos[-1][campo] = t[campo]
 
     son = dict(sonido or {})
+    # Los efectos se piden con `efectos: true` en el guion. Ver la nota en
+    # `video._mezclar` sobre por qué ya no vienen solos.
+    if g.get("efectos") is not None:
+        son["efectos"] = bool(g.get("efectos"))
     mus = g.get("musica")
     if mus:
         son["musica"] = True
