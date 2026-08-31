@@ -60,15 +60,32 @@ de Magnific.
 `plantilla-generada/` **no se copia**: es documentación —una plantilla de
 ejemplo con sus previews— y no forma parte del worker.
 
-Antes de seguir, mirá qué cambió:
+Antes de seguir, comprobá que la copia quedó completa:
 
 ```bash
-git status
-git diff --stat
+diff -rq /tmp/nuevo/worker/motor motor
+diff -rq /tmp/nuevo/worker/app   app
 ```
 
-Tiene que tocar `app/`, `motor/`, `herramientas/`, `.claude/skills/`, y agregar
-los `.sql`. **Si toca algo que no reconocés, pará y avisá.**
+**Los dos tienen que imprimir nada**: eso significa que lo que quedó en el
+worker es exactamente lo que se subió.
+
+> Acá decía `git status` y `git diff --stat`. **No sirve: `~/worker` no es un
+> repositorio de git**, así que esos dos comandos contestan `fatal: not a git
+> repository` y no comprueban nada. Se descubrió el 31/8/2026, desplegando.
+> `diff -rq` hace la comprobación de verdad —compara archivo por archivo contra
+> el origen— y encima no depende de que el worker sea un repo.
+
+Y el control que de verdad importa cuando el despliegue cambia el script: que
+lo nuevo esté en el archivo que se va a ejecutar. Por ejemplo, para el cambio
+de máquina del 31/8:
+
+```bash
+grep "cpu 8" desplegar-chat.sh
+```
+
+Si no imprime nada, el `cp` del script no funcionó: el despliegue va a correr,
+decir «Listo», y no traer lo nuevo. **Parar ahí.**
 
 ### Sobre la verificación
 
