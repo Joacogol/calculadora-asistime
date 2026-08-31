@@ -482,6 +482,55 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     # como el `end` que declara Whisper, porque ese `end` está estirado hasta
     # la palabra siguiente: usarlo tal cual diría que nunca hay huecos.
     if palabras and len(palabras) > 1:
+        # ── dónde termina de verdad cada palabra ──
+        #
+        # Whisper dice que «gustaría» dura 2,24 s: estira el final hasta la
+        # palabra siguiente. Hasta acá eso se compensaba con una ventana fija
+        # de 0,75 s, que es una estimación —y una estimación conservadora
+        # obliga a dejar mucho aire, que es por qué el recorte sacaba 6,8 s de
+        # 71 y el reel quedaba larguísimo.
+        #
+        # Pero el dato existe y ya se estaba midiendo para otra cosa: la
+        # ENERGÍA dice exactamente cuándo la voz se apagó. Whisper sabe QUÉ se
+        # dice y CUÁNDO empieza; la energía sabe cuándo termina. Cruzarlas da
+        # el final real de cada palabra, y con un final real ya no hace falta
+        # dejar aire de más «por las dudas».
+        #
+        # Se mide con paso fino: a 0,25 s —el paso que usa el resto del
+        # módulo— el error es del mismo tamaño que una sílaba.
+        tf, dbf = energia_audio(ruta, paso=0.06)
+        piso = umbral_db
+
+        #: Cuántas muestras seguidas por encima del umbral hacen falta para
+        #: decir «acá todavía se está hablando». Tres, o sea 0,18 s.
+        #:
+        #: Una sola no alcanza, y eso era el bug: la primera versión buscaba el
+        #: último instante por encima del umbral y devolvía casi siempre el
+        #: final del hueco, porque en el medio del silencio hay chasquidos —una
+        #: tecla, una silla, un click— que pasan el umbral por una muestra. Con
+        #: eso el recorte no sacaba nada: medido, 71 s quedaban en 64,2 con la
+        #: medición de energía y sin ella, exactamente igual.
+        #:
+        #: Una sílaba dura más de 0,18 s. Un chasquido, no.
+        SEGUIDAS = 3
+
+        def _fin_real(desde_p: float, tope_p: float) -> float:
+            """El último instante en que se estaba hablando de verdad.
+
+            Se recorre al revés y se busca una RACHA por encima del umbral, no
+            una muestra suelta.
+            """
+            muestras = [(x, y) for x, y in zip(tf, dbf) if desde_p <= x <= tope_p]
+            corridos = 0
+            for x, y in reversed(muestras):
+                if y > piso:
+                    corridos += 1
+                    if corridos >= SEGUIDAS:
+                        return x + SEGUIDAS * 0.06
+                else:
+                    corridos = 0
+            return desde_p
+
         VENTANA = 0.75
         # Sólo huecos GRANDES, y dejando aire generoso a los dos lados.
         #
@@ -500,10 +549,18 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
         # frases, que es el que se siente como tiempo muerto. Los de medio
         # segundo son la respiración de alguien hablando y sacarlos hace que
         # suene atropellado.
-        HUECO_MINIMO = 0.90
-        AIRE = 0.35
+        # Con el final medido en vez de estimado, los dos números se pueden
+        # apretar: un hueco de medio segundo ya se corta, y el aire baja a
+        # 0,18 s. Antes eran 0,90 y 0,35 y no era exceso de prudencia —era lo
+        # que costaba no saber dónde terminaba la palabra—.
+        HUECO_MINIMO = 0.50
+        AIRE = 0.18
         for w, sig in zip(palabras, palabras[1:]):
-            corta = min(w["hasta"], w["desde"] + VENTANA)
+            # La ventana sigue como tope: si la energía no encuentra el final
+            # —un clip con ruido de fondo parejo—, no se corta de más.
+            corta = min(_fin_real(w["desde"], sig["desde"]),
+                        w["desde"] + VENTANA * 2)
+            corta = max(corta, w["desde"] + 0.10)
             if sig["desde"] - corta >= HUECO_MINIMO:
                 mudos.append((corta + AIRE, sig["desde"] - AIRE))
         mudos.sort()
