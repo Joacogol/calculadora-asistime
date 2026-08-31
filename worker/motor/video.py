@@ -1102,7 +1102,8 @@ if __name__ == "__main__":
 
 def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                 materiales: dict | None = None,
-                vocabulario: str = "", marca: str = "") -> tuple[Path, list[str]]:
+                vocabulario: str = "", marca: str = ""
+                ) -> tuple[Path, list[str], dict]:
     """Valida un guion de edición, lo traduce y lo renderiza.
 
     Es la puerta que usa el agente. Existe para que el guion se valide SIEMPRE
@@ -1110,7 +1111,10 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     que un tramo pedía un segundo que no existe es tirar esos tres minutos, con
     un error de ffmpeg que no explica nada.
 
-    Devuelve (ruta del mp4, avisos).
+    Devuelve (ruta del mp4, avisos, guion armado). El tercero es el guion ya
+    resuelto —tramos concretos, subtítulos escritos, hook decidido—: es lo que
+    permite retocar el reel después sin volver a transcribir. Ver el comentario
+    al final de esta función.
     """
     from . import analisis as _analisis
     from . import guion as _guion
@@ -1267,5 +1271,30 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
             materiales.setdefault(pista, 0.0)
 
     avisos = avisos_previos + _guion.verificar(g, materiales)
+
+    # El guion RESUELTO, para poder retocar el reel después sin rehacerlo.
+    #
+    # Hasta acá `g` fue pasando de lo que pidió la persona —«usá estos tres
+    # videos, sacá los tiempos muertos, subtítulos automáticos»— a algo
+    # concreto: diez tramos con su entrada y su salida, veintidós frases con su
+    # segundo, un hook escrito. Eso es lo caro y lo que no se repite igual:
+    # volver a escuchar el audio da los mismos errores de transcripción otra
+    # vez, y volver a medir los silencios puede dar tramos apenas distintos.
+    #
+    # Guardarlo hace que corregir una frase sea corregir UNA FRASE: se cambia
+    # ese texto y se vuelve a dibujar, y todo lo demás queda idéntico. Sin
+    # esto, cualquier retoque obligaría a rehacer el reel entero y con él a
+    # rehacer los aciertos.
+    #
+    # No es un formato nuevo: **es un guion válido**, el mismo que entra por
+    # arriba. Devolvérselo a esta función lo vuelve a dibujar igual.
+    #
+    # Las dos órdenes que YA se ejecutaron se sacan, y eso no es un detalle: si
+    # quedaran, la próxima vuelta volvería a recortar unos tramos ya recortados
+    # y a elegir dentro de una selección ya hecha. Se irían comiendo el reel de
+    # a poco en cada retoque.
+    armado = {k: v for k, v in g.items()
+              if k not in ("cortar_silencios", "duracion_objetivo")}
+
     spec = _guion.a_spec(g, nombre, base)
-    return reel(spec, salida), avisos
+    return reel(spec, salida), avisos, armado

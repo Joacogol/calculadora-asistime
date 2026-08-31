@@ -582,7 +582,7 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
                 "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
                           "kicker,bajada,musica,tarea,modelo,resolucion,"
                           "duracion,clip_url,quien,metricas,creditos_estimados,"
-                          "clips,guion"})
+                          "clips,guion,armado,origen"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -1046,7 +1046,13 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
             material = t / "material"
             material.mkdir()
             try:
-                guion = fila.get("guion") or {}
+                # Un retoque llega con el guion YA armado de la vuelta
+                # anterior, con un cambio adentro. Ese manda sobre lo que pidió
+                # el agente: trae los tramos, las frases y el hook concretos, y
+                # justamente por eso el reel no se vuelve a transcribir ni a
+                # medir. Cambia lo que se cambió y nada más. Ver
+                # `motor.video.desde_guion`.
+                guion = fila.get("armado") or fila.get("guion") or {}
                 clips = fila.get("clips") or []
 
                 # El orden en que llegan los clips no es el orden en que se
@@ -1098,14 +1104,19 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                     css_marca=getattr(marca_mod, "CSS_MARCA", "") or "")
 
                 from motor import habla as mhabla
-                final, avisos = mvideo.desde_guion(
+                final, avisos, armado = mvideo.desde_guion(
                     guion, str(fila["id"]), material, t,
                     vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "",
                     marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "")
 
                 dichos = ([aviso_orden] if aviso_orden else []) + list(avisos)
+                # `armado` es el guion ya resuelto. Se guarda para poder
+                # retocar el reel después —corregir una frase, sacar un tramo—
+                # sin volver a escuchar el audio, que daría los mismos errores
+                # de transcripción otra vez. Ver `motor.video.desde_guion`.
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
+                        armado=armado,
                         creditos_estimados=0, creditos_gastados=0,
                         **({"notas": " · ".join(dichos)} if dichos else {}))
             except Exception as e:                           # noqa: BLE001
