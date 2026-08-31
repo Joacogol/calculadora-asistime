@@ -1497,6 +1497,23 @@ imagen. Trae el motor, Whisper y el corte de tiempos muertos.
   «el video lo generó una IA y puede deformar caras», que en un montaje con
   material real es falso.
 
+**5 · Asignárselas al AGENTE.** Este paso faltaba en la receta y costó una
+prueba fallida el 31/8: crear la herramienta en el cliente NO la pone a
+disposición de nadie. En Asistime las herramientas se crean a nivel cliente y
+después se asocian a cada agente por separado. Con `montar_reel` creada pero sin
+asignar, el Diseñador de Boss contestó —con toda coherencia— que no podía editar
+videos: para él esa herramienta no existía.
+
+Va por la interfaz: **Agentes → el agente diseñador → Herramientas → marcar la
+nueva → Guardar.**
+
+**No lo intentes por la API.** El único endpoint que hay
+(`PUT /tenants/{id}/agents/{id}/tools`) REEMPLAZA la lista entera, y el `GET`
+que la lee devuelve cada herramienta con su código completo, así que la
+respuesta viene cortada y no se puede reconstruir qué tenía antes. Mandar una
+lista incompleta le borra herramientas a un agente que funciona. El filtro
+`?fields=id,name` se ignora.
+
 ### Lo que hay que decidir por cliente
 
 **El vocabulario de la marca.** Sale de `NOMBRE` y de un `VOCABULARIO` opcional
