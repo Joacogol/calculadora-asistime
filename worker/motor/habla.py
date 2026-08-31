@@ -374,6 +374,10 @@ def hook_de(texto: str, marca: str = "") -> str:
         "· Que diga LO CONCRETO que el video muestra, no que lo anuncie. "
         "«En este video te muestro cómo hacer X» está mal; «X en 30 segundos» "
         "está bien.\n"
+        "· Tiene que salir del TEMA PRINCIPAL, no de cualquier momento "
+        "llamativo. Si en el video algo falla o sale mal, eso NO va en el hook "
+        "salvo que el video sea justamente sobre eso: es un momento "
+        "incidental, y el titular de una pieza no lidera con un tropiezo.\n"
         "· Castellano rioplatense, sin signos de admiración ni emojis.\n"
         "· Nada de clickbait ni promesas que el video no cumple.\n"
         "· Contestá SÓLO la frase, sin comillas ni explicación.")
@@ -468,15 +472,15 @@ def elegir_tramos(tramos: list[dict], objetivo: float, marca: str = "") -> list[
         + (f" de {marca}" if marca else "") + ". Estos son los tramos "
         "disponibles, con su duración y lo que se dice en cada uno:\n\n"
         + lista + f"\n\nEl reel entero dura {total:.0f}s y tiene que quedar en "
-        f"unos {objetivo:.0f}s. Elegí qué tramos entran.\n\n"
+        f"unos {objetivo:.0f}s, así que sobra material.\n\n"
+        "Ordená TODOS los tramos de más a menos importante: primero el que no "
+        "puede faltar, último el que menos se extraña. No calcules duraciones "
+        "ni recortes la lista — tienen que estar todos, ordenados.\n\n"
         "Criterios:\n"
-        "· Conservá el ORDEN. Reordenar una explicación la rompe.\n"
-        "· Que se entienda solo: el que mira no vio los tramos que sacaste.\n"
-        "· Sacá primero lo que se repite, lo que titubea y lo que no aporta "
-        "al punto principal.\n"
-        "· El primer tramo casi siempre entra: es el que engancha.\n"
-        "· Un tramo sin voz sólo entra si es la única imagen de algo.\n\n"
-        'Contestá SÓLO un JSON así: {"tramos": [0, 2, 3]}')
+        "· Lo que engancha y lo que explica el punto principal va primero.\n"
+        "· Lo que se repite, lo que titubea y lo que no aporta va último.\n"
+        "· Un tramo sin voz va último salvo que sea la única imagen de algo.\n\n"
+        'Contestá SÓLO un JSON así: {"orden": [0, 3, 1, 2]}')
 
     try:
         async def _pedir() -> str:
@@ -490,14 +494,30 @@ def elegir_tramos(tramos: list[dict], objetivo: float, marca: str = "") -> list[
             return t
         crudo = asyncio.run(_pedir())
         i, j = crudo.index("{"), crudo.rindex("}")
-        elegidos = [int(x) for x in _json.loads(crudo[i:j + 1]).get("tramos") or []]
+        orden = [int(x) for x in _json.loads(crudo[i:j + 1]).get("orden") or []]
     except Exception as e:                                   # noqa: BLE001
-        log.warning("no pude elegir los tramos, van todos: %s", e)
+        log.warning("no pude ordenar los tramos, van todos: %s", e)
         return todos
 
-    # Se ordenan y se limpian: un índice inventado o repetido no puede armar un
-    # reel con un tramo que no existe ni mostrar dos veces el mismo.
-    elegidos = sorted({i for i in elegidos if 0 <= i < len(tramos)})
+    # ── la cuenta la hace el código ──
+    #
+    # La primera versión le pedía al modelo que eligiera los tramos Y que la
+    # suma diera el objetivo. Le pedí 28 segundos y devolvió 50: elegir bien y
+    # sumar bien son dos habilidades distintas y se las estaba pidiendo juntas.
+    #
+    # Ahora el modelo hace sólo lo que sabe hacer —decidir qué vale más— y el
+    # presupuesto lo llena el código, de arriba hacia abajo. El largo queda
+    # garantizado por construcción.
+    orden = [i for i in dict.fromkeys(orden) if 0 <= i < len(tramos)]
+    orden += [i for i in todos if i not in orden]     # por si olvidó alguno
+
+    elegidos, suma = [], 0.0
+    for i in orden:
+        d = float(tramos[i].get("dura") or 0)
+        if not elegidos or suma + d <= objetivo:
+            elegidos.append(i)
+            suma += d
+    elegidos = sorted(elegidos)                       # se muestran en su orden
     if not elegidos:
         return todos
     log.info("de %d tramos entran %d (objetivo %.0fs)",
