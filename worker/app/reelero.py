@@ -581,7 +581,8 @@ def _pendientes(cli, estado: str, limite: int = 3) -> list[dict]:
                 # decía cero para siempre.
                 "select": "id,creado_en,actualizado_en,mensaje,foto,titulo,"
                           "kicker,bajada,musica,tarea,modelo,resolucion,"
-                          "duracion,clip_url,quien,metricas,creditos_estimados"})
+                          "duracion,clip_url,quien,metricas,creditos_estimados,"
+                          "clips,guion"})
     if r.status_code in (400, 404):
         return []            # esta base todavía no tiene la tabla
     r.raise_for_status()
@@ -795,6 +796,10 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         nuevos = []
 
     for fila in nuevos:
+        # Las filas que traen material propio son del otro camino
+        # (`atender_montajes`): no se les pide nada a ningún modelo.
+        if _es_montaje(fila):
+            continue
         if not _tomar(cli, fila["id"], "pendiente", "estimando"):
             continue
         try:
@@ -893,6 +898,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     # camino donde una fila puede quedar trabada en «montando_en_curso» si el
     # worker se muere en el medio, que es peor que renderizar dos veces.
     for fila in _pendientes(cli, "montando"):
+        # Los dos caminos comparten este estado. Una fila con material propio
+        # ya la está montando `atender_montajes`, y acá reventaría buscando un
+        # `clip_url` que nunca va a existir.
+        if _es_montaje(fila):
+            continue
         with tempfile.TemporaryDirectory() as tmp:
             t = pathlib.Path(tmp)
             try:
@@ -942,6 +952,172 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         movidas += 1
 
     return movidas
+
+
+# ═══ 3bis. El otro camino: clips que ya existen ══════════════════════════════
+#
+# Todo lo de arriba parte de UNA foto y le pide a un modelo que invente el
+# video. Este camino es el opuesto y es el que pidió Joaquín: el material ya
+# está —lo filmó el cliente, lo eligió una persona— y lo único que falta es
+# cortarlo, pegarlo, encuadrarlo en 9:16 y ponerle texto.
+#
+# **No gasta un solo crédito.** No hay modelo, no hay tarea que esperar, no hay
+# tope que chequear. Por eso salta derecho de `pendiente` a `listo` sin pasar
+# por `estimando` ni `generando`: esos estados existen para vigilar una compra
+# que acá no ocurre.
+#
+# El editor que hace el trabajo (`motor/video.py` + `motor/guion.py`, unas
+# 1.400 líneas) estaba escrito, documentado y probado desde antes — con
+# validación del guion ANTES de encodear, que es lo caro—, pero no lo llamaba
+# nadie: `desde_guion` decía en su docstring «es la puerta que usa el agente» y
+# ningún módulo de `app/` la importaba. Esto es esa puerta.
+
+def _es_montaje(fila: dict) -> bool:
+    """¿Esta fila trae material propio en vez de pedir uno inventado?"""
+    return bool(fila.get("clips"))
+
+
+def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
+    """Los reels armados con clips que ya existen. Devuelve cuántas filas movió.
+
+    `marca_mod` es el módulo de la marca, del que salen las tipografías y el
+    acento. Entra por parámetro por la misma razón que el resto: para poder
+    probar este módulo sin levantar el motor entero.
+    """
+    from motor import video as mvideo
+
+    movidas = 0
+    for fila in _pendientes(cli, "pendiente"):
+        if not _es_montaje(fila):
+            continue
+        if not _tomar(cli, fila["id"], "pendiente", "montando"):
+            continue
+        with tempfile.TemporaryDirectory() as tmp:
+            t = pathlib.Path(tmp)
+            material = t / "material"
+            material.mkdir()
+            try:
+                guion = fila.get("guion") or {}
+                clips = fila.get("clips") or []
+
+                # Los clips se bajan con el nombre que el guion usa para
+                # referirlos. El guion habla de «clip1.mp4», no de una URL: así
+                # el mismo guion sirve aunque el material se mueva, y el agente
+                # escribe algo legible en vez de pegar URLs firmadas.
+                nombres = _bajar_clips(clips, material)
+                guion = _renombrar(guion, nombres)
+
+                raiz = getattr(marca_mod, "AQUI", None) or pathlib.Path(".")
+                tipos = getattr(marca_mod, "TIPO_REEL", None) or ()
+                mvideo.configurar(
+                    raiz,
+                    **({"titulo": tipos[0], "pie": tipos[1]} if len(tipos) > 1 else {}),
+                    acento=getattr(marca_mod, "ACENTO_REEL", None),
+                    animo=getattr(marca_mod, "ANIMO_MUSICA", "club"),
+                    css_marca=getattr(marca_mod, "CSS_MARCA", "") or "")
+
+                final, avisos = mvideo.desde_guion(
+                    guion, str(fila["id"]), material, t)
+
+                _marcar(cli, fila["id"], "listo",
+                        url=subir(final, f"reels/{fila['id']}.mp4"),
+                        creditos_estimados=0, creditos_gastados=0,
+                        **({"notas": " · ".join(avisos)} if avisos else {}))
+            except Exception as e:                           # noqa: BLE001
+                # Acá NO hay nada pagado que rescatar —es la diferencia con el
+                # montaje del camino de IA—, así que un error es un error y se
+                # dice entero. El guion inválido llega con todos sus problemas
+                # juntos y en castellano: es lo que el agente necesita para
+                # arreglarlo en un turno y no en cinco.
+                log.exception("[%s] no pude montar el reel %s",
+                              getattr(cli, "marca", "?"), fila["id"])
+                _marcar(cli, fila["id"], "error", notas=f"al montar: {e}")
+        movidas += 1
+    return movidas
+
+
+def _marca_mod(marca: str):
+    """El módulo `marca.py` del cliente, o None si no se puede cargar.
+
+    Mismo camino que usa `rotulo()`: la carpeta de la skill entra al `sys.path`
+    y se importa `marca`. Devolver None en vez de reventar es a propósito —el
+    motor tiene valores por defecto para todo lo que sale de acá, así que una
+    marca a medio armar produce un reel con la tipografía de respaldo en vez de
+    ningún reel.
+    """
+    import importlib
+    import sys
+
+    from . import config
+    try:
+        carpeta = config.RAIZ / ".claude" / "skills" / marca
+        sys.path.insert(0, str(carpeta))
+        sys.path.insert(0, str(config.RAIZ))
+        return importlib.import_module("marca")
+    except Exception:                                        # noqa: BLE001
+        log.exception("no pude cargar el módulo de la marca %s", marca)
+        return None
+
+
+def _bajar_clips(clips: list, destino: pathlib.Path) -> dict:
+    """Baja el material y devuelve {como lo pueda nombrar el guion: archivo real}.
+
+    El nombre sale de la URL y no de un contador, y eso NO es cosmético: el
+    guion del agente dice «clipA.mp4» porque ese es el nombre que la persona vio
+    en el chat cuando lo mandó. Si acá los archivos se llamaran `clip1.mp4`, el
+    guion pediría un archivo que no existe y el reel fallaría en la validación
+    —con un mensaje correcto y desconcertante— sin que nadie hubiera escrito
+    nada mal. Pasó en la primera prueba de este camino.
+
+    El mapa que se devuelve tiene VARIAS llaves por clip —la URL entera, el
+    nombre del archivo, el nombre sin extensión— porque el agente va a
+    referirlos de cualquiera de esas formas y todas son razonables.
+
+    Acepta la lista como URLs sueltas o como `{"url": …, "nombre": …}`.
+    """
+    import urllib.parse
+
+    nombres, usados = {}, set()
+    for i, c in enumerate(clips, 1):
+        url = (c.get("url") if isinstance(c, dict) else str(c)) or ""
+        if not url:
+            continue
+        pedido = (c.get("nombre") if isinstance(c, dict) else None) or \
+            urllib.parse.unquote(urllib.parse.urlparse(url).path).rsplit("/", 1)[-1]
+
+        # Nada de rutas: el nombre es un nombre y va adentro de la carpeta del
+        # pedido. Sin esto, un «../../algo» escribiría fuera.
+        nombre = pathlib.Path(str(pedido or "")).name
+        # Sin caracteres raros: esto termina en una línea de comando de ffmpeg.
+        nombre = re.sub(r"[^A-Za-z0-9._-]", "_", nombre).lstrip(".")
+        if not nombre.lower().endswith((".mp4", ".mov", ".m4v", ".webm")):
+            nombre = (nombre or f"clip{i}") + ".mp4"
+        # Dos clips con el mismo nombre se pisarían y el segundo tramo mostraría
+        # el primer video, sin ningún error.
+        while nombre in usados:
+            raiz, punto, ext = nombre.rpartition(".")
+            nombre = f"{raiz}-{i}{punto}{ext}"
+        usados.add(nombre)
+
+        bajar(url, destino / nombre)
+        base = nombre.rsplit(".", 1)[0]
+        for llave in (url, pedido, nombre, base, f"clip{i}", f"clip{i}.mp4"):
+            if llave:
+                nombres.setdefault(str(llave), nombre)
+    return nombres
+
+
+def _renombrar(guion: dict, nombres: dict) -> dict:
+    """Cambia las URLs que el guion pueda traer por el nombre del archivo bajado.
+
+    El agente debería escribir nombres, pero va a escribir URLs alguna vez —son
+    lo que tiene a mano—. Traducirlas es una línea; que el reel falle por eso
+    es un pedido perdido.
+    """
+    g = dict(guion)
+    g["tramos"] = [{**t, "archivo": nombres.get(t.get("archivo"), t.get("archivo"))}
+                   for t in (guion.get("tramos") or [])]
+    return g
 
 
 # ═══ 4. El enganche con el worker ════════════════════════════════════════════
@@ -1096,7 +1272,8 @@ def atender(cli) -> int:
     ficha = _ficha(cli.marca)
     if not ficha:
         return 0
-    return atender_todos(
+    movidas = atender_montajes(cli, ficha, cli.subir, _marca_mod(cli.marca))
+    return movidas + atender_todos(
         cli, ficha,
         lambda fila, destino: rotulo(cli.marca, fila, destino),
         cli.subir,

@@ -182,6 +182,42 @@ def _rotulo_png(texto: str, emoji: str, tmp: Path, i: int, cuerpo: int = 96) -> 
     return salida
 
 
+def _velo(tmp: Path) -> Path:
+    """El degradado oscuro de abajo, que es lo que hace legible cualquier texto.
+
+    La marca puede traer el suyo en `assets/velo-reel.png`. Si no lo trae se
+    dibuja acá, y eso NO es un adorno defensivo: sin velo el motor de varios
+    clips no arranca —es una entrada obligada de la cadena de ffmpeg— y una
+    marca que nunca hizo reels no tiene por qué tener ese archivo. Descubrirlo
+    con un pedido real adentro sería un reel perdido por un PNG.
+
+    Se dibuja con Chromium, como todo lo demás acá, para no sumar una librería
+    de imágenes sólo por un degradado.
+    """
+    if VELO_PNG.exists():
+        return VELO_PNG
+    from playwright.sync_api import sync_playwright
+    salida = tmp / "velo.png"
+    if salida.exists():
+        return salida
+    html = f"""<html><head><style>
+      *{{margin:0;padding:0}} body{{background:transparent}}
+      .v{{width:{ANCHO}px;height:{ALTO}px;
+        background:linear-gradient(to bottom,
+          rgba(0,0,0,0) 56%, rgba(0,0,0,.30) 74%, rgba(0,0,0,.62) 100%)}}
+    </style></head><body><div class="v"></div></body></html>"""
+    arch = tmp / "velo.html"
+    arch.write_text(html, encoding="utf-8")
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": ANCHO, "height": ALTO})
+        pg.goto(f"file://{arch}")
+        pg.wait_for_timeout(150)
+        pg.locator(".v").screenshot(path=str(salida), omit_background=True)
+        b.close()
+    return salida
+
+
 # ── subtítulos ────────────────────────────────────────────────────────────
 # Un subtítulo NO se dibuja cuadro por cuadro como el rótulo, y es una decisión
 # de costo medida, no un atajo. El rótulo sale barato porque se queda quieto:
@@ -224,17 +260,23 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 54) -> Path:
     from .render import QUE_ENTRE, MARGEN_SEGURO
 
     salida = tmp / f"sub{i:02d}.png"
+    # El CSS de la marca va PRIMERO y las reglas de acá después, a propósito.
+    # Al revés, el `.canvas{background:#FFFFFF}` de la hoja de la marca —que
+    # para una placa está bien— pisaría el fondo transparente y el subtítulo
+    # saldría con un rectángulo blanco de 1080×300 tapando el video. Es
+    # exactamente la trampa que ya está anotada en `reelero.rotulo()`.
     html = f"""<html><head><meta charset="utf-8"><style>
+      {CSS_MARCA}
       @font-face{{font-family:'Sub';src:url('file://{TIPO_TITULO}');font-weight:900}}
       *{{margin:0;padding:0;box-sizing:border-box}}
       body{{background:transparent}}
       .canvas{{width:{ANCHO}px;height:{ALTO_SUBTITULO}px;position:relative;
+        background:transparent;
         display:flex;align-items:center;justify-content:center;padding:0 96px}}
       .txt{{font-family:'Sub',sans-serif;font-weight:900;font-size:{cuerpo}px;
         line-height:1.18;color:#fff;text-align:center;letter-spacing:-.01em;
         text-shadow:0 3px 10px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.85),
                     0 -2px 8px rgba(0,0,0,.8);}}
-      {CSS_MARCA}
     </style></head><body>
       <div class="canvas"><div class="txt">{texto}</div></div>
     </body></html>"""
@@ -438,7 +480,7 @@ def _segmento_video(t: dict, i: int, tmp: Path) -> Path:
                 # marco: las dos son un PNG del tamaño del cuadro que se
                 # superpone al final, así que ocupan el mismo lugar y el resto
                 # de la cadena no cambia.
-                "-i", str(marco_png or VELO_PNG),
+                "-i", str(marco_png or _velo(tmp)),
                 # La pista de silencio siempre está: para concatenar, todos los
                 # tramos tienen que tener las mismas pistas, y una foto o una
                 # placa no traen audio propio.
@@ -534,7 +576,7 @@ def _segmento_foto(t: dict, i: int, tmp: Path) -> Path:
     cadena += ",format=yuv420p[v]"
 
     _correr(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(dura), "-i", str(fuente),
-             "-i", str(VELO_PNG),
+             "-i", str(_velo(tmp)),
              "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
              *(["-loop", "1", "-t", str(dura), "-i", str(rot)] if rot else []),
              "-filter_complex", cadena, "-map", "[v]", "-map", "2:a",
