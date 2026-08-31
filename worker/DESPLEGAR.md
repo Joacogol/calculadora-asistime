@@ -1730,6 +1730,45 @@ toca nada, en vez de pisar un reel que salió bien con un error que no ocurrió.
 
 ---
 
+## El reel salía al revés (31/8/2026)
+
+El primer montaje que terminó bien contó la historia de atrás para adelante:
+abría con la respuesta y cerraba con la pregunta. Técnicamente impecable —hook,
+subtítulos, tiempos muertos, todo bien— y completamente inservible.
+
+Los tres videos llegaron así:
+
+```
+15.36.24  ·  15.36.15  ·  15.35.59
+```
+
+El más nuevo primero, que es como los lista la bandeja. El motor los pegaba «en
+el orden en que llegaron», una regla que suena neutral y no lo es: **nadie
+quiere nunca sus clips al revés.**
+
+El agente no puede arreglarlo — ve URLs, no relojes. El worker sí tiene los
+nombres, y los nombres traen la hora. `_en_orden` los ordena por ahí.
+
+Tres frenos, para que no invente un orden que no le consta:
+
+1. **Sólo reordena si TODOS los clips dicen cuándo se grabaron.** Si uno no lo
+   dice, se respeta entero el orden que vino: mezclar los que tienen hora con
+   los que no daría un orden peor que cualquiera de los dos, y sin manera de
+   explicarlo.
+2. **Sólo si todas las horas son distintas.** Con dos iguales no hay orden que
+   afirmar.
+3. **No toca nada si el guion trae `tramos`.** Ahí alguien ya miró el material
+   y dijo qué va primero; esto es el default para cuando nadie lo dijo.
+
+Y cuando reordena **lo dice** en las `notas` de la fila, así el agente se lo
+puede contar a la persona en vez de que parezca magia.
+
+Entiende `WhatsApp Video 2026-08-31 at 15.36.24.mp4`, `VID_20260831_153624.mp4`
+y `20260831_153624.mp4`, que es lo que manda la gente de verdad. Un número
+largo que no sea una fecha válida (`20261345`) no cuenta como fecha.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:

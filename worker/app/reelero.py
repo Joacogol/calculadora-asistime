@@ -1049,6 +1049,17 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 guion = fila.get("guion") or {}
                 clips = fila.get("clips") or []
 
+                # El orden en que llegan los clips no es el orden en que se
+                # grabaron: la bandeja los lista del más nuevo al más viejo, y
+                # pegarlos así cuenta la historia al revés. Ver `_en_orden`.
+                # Si el guion ya trae tramos, alguien miró el material y dijo
+                # qué va primero: ahí no se toca nada.
+                aviso_orden = ""
+                if not (guion.get("tramos") or []):
+                    clips, aviso_orden = _en_orden(clips)
+                    if aviso_orden:
+                        log.info("[%s] %s", getattr(cli, "marca", "?"), aviso_orden)
+
                 # Los clips se bajan con el nombre que el guion usa para
                 # referirlos. El guion habla de «clip1.mp4», no de una URL: así
                 # el mismo guion sirve aunque el material se mueva, y el agente
@@ -1092,10 +1103,11 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                     vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "",
                     marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "")
 
+                dichos = ([aviso_orden] if aviso_orden else []) + list(avisos)
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
                         creditos_estimados=0, creditos_gastados=0,
-                        **({"notas": " · ".join(avisos)} if avisos else {}))
+                        **({"notas": " · ".join(dichos)} if dichos else {}))
             except Exception as e:                           # noqa: BLE001
                 # Acá NO hay nada pagado que rescatar —es la diferencia con el
                 # montaje del camino de IA—, así que un error es un error y se
@@ -1130,6 +1142,75 @@ def _marca_mod(marca: str):
     except Exception:                                        # noqa: BLE001
         log.exception("no pude cargar el módulo de la marca %s", marca)
         return None
+
+
+#: La fecha y la hora escondidas en el nombre de un archivo de video.
+#:
+#: Cubre lo que manda la gente de verdad:
+#:   WhatsApp Video 2026-08-31 at 15.36.24.mp4
+#:   VID_20260831_153624.mp4
+#:   20260831_153624.mp4
+#: El «\\D{0,8}?» del medio es el «_at_» de WhatsApp o el guión bajo de la
+#: cámara. Va perezoso y con tope para que no se coma media línea buscando
+#: seis dígitos más adelante.
+_CUANDO = re.compile(r"(20\d\d)\D?(\d\d)\D?(\d\d)\D{0,8}?(\d\d)\D?(\d\d)\D?(\d\d)")
+
+
+def _fechado(nombre: str):
+    """Cuándo se grabó, si el nombre lo dice. `None` si no se puede afirmar."""
+    from datetime import datetime
+    m = _CUANDO.search(nombre or "")
+    if not m:
+        return None
+    try:
+        return datetime(*(int(x) for x in m.groups()))
+    except ValueError:
+        return None            # «2026-13-45» no es una fecha, es una coincidencia
+
+
+def _en_orden(clips: list) -> tuple[list, str]:
+    """Los clips en el orden en que se grabaron. Devuelve (lista, aviso).
+
+    **Esto existe porque el primer reel de verdad salió al revés.** El 31/8/2026
+    llegaron tres videos de WhatsApp así:
+
+        15.36.24  ·  15.36.15  ·  15.35.59
+
+    o sea el más nuevo primero, que es como los lista la bandeja. El motor los
+    pegó «en el orden en que llegaron» —una regla que suena neutral— y el reel
+    contó la historia de atrás para adelante: abría con la respuesta y cerraba
+    con la pregunta. Técnicamente impecable y completamente inservible.
+
+    El agente no puede arreglar esto: ve URLs, no relojes. El worker sí tiene
+    los nombres, y los nombres traen la hora. Así que se ordena acá.
+
+    **Sólo se reordena si TODOS los clips dicen cuándo se grabaron y todas las
+    horas son distintas.** Si uno solo no lo dice, se respeta el orden que vino
+    entero: mezclar los que tienen hora con los que no daría un orden peor que
+    cualquiera de los dos, y sin manera de explicarlo.
+
+    Y no toca nada si el guion trae `tramos`: ahí alguien ya miró el material y
+    dijo qué va primero. Esto es el default para cuando nadie lo dijo.
+    """
+    import urllib.parse
+
+    def nombre_de(c):
+        url = (c.get("url") if isinstance(c, dict) else str(c)) or ""
+        pedido = (c.get("nombre") if isinstance(c, dict) else None)
+        return pedido or urllib.parse.unquote(
+            urllib.parse.urlparse(url).path).rsplit("/", 1)[-1]
+
+    if len(clips) < 2:
+        return list(clips), ""
+    cuandos = [_fechado(nombre_de(c)) for c in clips]
+    if any(x is None for x in cuandos) or len(set(cuandos)) != len(cuandos):
+        return list(clips), ""
+
+    ordenados = [c for _, c in sorted(zip(cuandos, clips), key=lambda par: par[0])]
+    if ordenados == list(clips):
+        return list(clips), ""
+    return ordenados, ("los videos se ordenaron por la hora en que se grabaron, "
+                       "no por el orden en que llegaron")
 
 
 def _bajar_clips(clips: list, destino: pathlib.Path) -> dict:
