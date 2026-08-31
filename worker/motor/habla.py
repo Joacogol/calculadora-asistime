@@ -207,6 +207,30 @@ def frases(pals: list[dict]) -> list[dict]:
             if trozo:
                 salida.append(armar(trozo))
 
+    # Correrse para no cortar en «el» puede dejar una línea por encima del
+    # largo, y el reparto en partes iguales no lo garantiza tampoco: una parte
+    # con palabras largas se pasa aunque tenga la misma cantidad. Salía «que
+    # quiera un diseño genérico que diga feliz» — 44 caracteres.
+    #
+    # Se parte al medio, y esta vez sin buscar el corte lindo: acá ya se agotó
+    # la elegancia y lo que importa es que entre. Una línea que se pasa la
+    # parte el navegador donde le queda cómodo, que es peor.
+    def _partir(f):
+        if len(f["texto"]) <= MAX_CARACTERES:
+            return [f]
+        pal = f["texto"].split()
+        if len(pal) < 2:
+            return [f]
+        m = len(pal) // 2
+        # El tiempo se reparte por cantidad de letras y no de palabras: es más
+        # cerca de cuánto tarda alguien en decirlas.
+        izq, der = " ".join(pal[:m]), " ".join(pal[m:])
+        corte = f["desde"] + (f["hasta"] - f["desde"]) * len(izq) / len(f["texto"])
+        return _partir({"texto": izq, "desde": f["desde"], "hasta": round(corte, 3)}) + \
+               _partir({"texto": der, "desde": round(corte, 3), "hasta": f["hasta"]})
+
+    salida = [x for f in salida for x in _partir(f)]
+
     salida.sort(key=lambda f: f["desde"])
 
     # Una frase demasiado corta no se lee. Se estira hacia adelante hasta el

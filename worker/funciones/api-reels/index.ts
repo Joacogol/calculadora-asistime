@@ -219,19 +219,18 @@ Deno.serve(async (req) => {
         }, 400);
       }
     }
-    // El guion se chequea por encima acá y a fondo en el worker, que es el que
-    // tiene los archivos y sabe cuánto dura cada uno. Lo de acá es lo que se
-    // puede saber sin bajar nada, y vale la pena: este error le llega a alguien
-    // que lo puede arreglar en el mismo turno.
-    const tramos = Array.isArray(guion?.tramos) ? guion!.tramos as unknown[] : [];
-    if (!tramos.length) {
-      return json({
-        error: "faltan los tramos del guion: con los clips solos el motor no sabe " +
-          "qué pedazo de cada uno usar. Cada tramo lleva `archivo`, `desde` y " +
-          "`hasta`, en segundos del material original.",
-        codigo: "falta_el_guion",
-      }, 400);
-    }
+    // **El guion es OPCIONAL, y eso es deliberado.**
+    //
+    // Al principio esto exigía tramos con `desde` y `hasta`. Era un error: el
+    // agente que llama a esta función NO PUEDE VER los videos —recién se
+    // escuchan cuando el worker los transcribe—, así que pedirle el segundo
+    // exacto en el que empieza lo bueno es pedirle un dato que no tiene, y lo
+    // único que podía hacer era inventarlo.
+    //
+    // Sin guion, el worker usa los clips enteros en orden, les saca los
+    // tiempos muertos y los subtitula. Decir los tramos queda para cuando
+    // alguien SÍ miró el material —una persona, o el agente diseñador, que ve
+    // fotogramas— y sabe qué parte sirve.
   } else {
     if (!foto) {
       return json({

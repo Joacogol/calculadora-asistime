@@ -1007,6 +1007,27 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 nombres = _bajar_clips(clips, material)
                 guion = _renombrar(guion, nombres)
 
+                # Un guion SIN tramos no es un guion incompleto: es el caso
+                # normal. El agente del chat no puede ver los videos —recién se
+                # escuchan cuando este worker los transcribe—, así que pedirle
+                # que diga «del segundo 12,4 al 16,1» es pedirle un dato que no
+                # tiene. Si no los dice, se usan los clips enteros en el orden
+                # en que llegaron, y el recorte de silencios y la transcripción
+                # hacen el resto. Decir los tramos queda para cuando alguien SÍ
+                # miró el material y sabe qué parte sirve.
+                if not (guion.get("tramos") or []):
+                    orden = []
+                    for c in clips:
+                        url = c.get("url") if isinstance(c, dict) else str(c)
+                        arch = nombres.get(str(url))
+                        if arch and arch not in orden:
+                            orden.append(arch)
+                    guion = {**guion,
+                             "tramos": [{"archivo": a} for a in orden]}
+                    guion.setdefault("cortar_silencios", True)
+                    log.info("guion sin tramos: se usan los %d clips enteros",
+                             len(orden))
+
                 raiz = getattr(marca_mod, "AQUI", None) or pathlib.Path(".")
                 tipos = getattr(marca_mod, "TIPO_REEL", None) or ()
                 mvideo.configurar(

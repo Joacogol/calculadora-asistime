@@ -1001,6 +1001,23 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     base = Path(carpeta_material)
     avisos_previos: list[str] = []
 
+    # Un tramo sin `hasta` llega hasta el final del clip. Es lo que permite
+    # escribir «usá este video» sin haberlo mirado, y lo que hace que el guion
+    # mínimo sea una lista de archivos y nada más.
+    faltan = [t0 for t0 in (g.get("tramos") or []) if t0.get("hasta") is None]
+    if faltan:
+        from . import analisis as _an0
+        g = dict(g)
+        g["tramos"] = [dict(t0) for t0 in g["tramos"]]
+        for t0 in g["tramos"]:
+            if t0.get("hasta") is None:
+                ruta = base / (t0.get("archivo") or "")
+                try:
+                    t0["hasta"] = round(_an0.sondear(ruta)["duracion"], 2)
+                    t0.setdefault("desde", 0.0)
+                except Exception as e:                       # noqa: BLE001
+                    log.warning("no pude medir %s: %s", ruta, e)
+
     # `cortar_silencios` saca los tiempos muertos: un tramo se abre en varios,
     # uno por cada pedazo donde alguien habla. Va ANTES de los subtítulos
     # porque cambia los tramos, y los subtítulos se calculan sobre los tramos
