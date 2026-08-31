@@ -1272,6 +1272,85 @@ El agente es **Diseñador Stadium**. Probá con las dos cosas:
 
 ---
 
+## El texto que no entra (31/8/2026)
+
+Una placa de Clínica salió con **«PAPANICOLAOU» cortado contra el borde
+derecho**. Es el peor tipo de error de este sistema: la pieza se dibuja bien en
+todo lo demás, se publica igual que una correcta, y quien la descubre es el
+cliente en su propio feed.
+
+**No era un caso nuevo.** El 25/8 quedó anotado en los pedidos al motor que
+tres plantillas de Boss resolvían el mismo problema por su cuenta, cada una a
+su manera, y que hacía falta una sola forma de decir «este texto entra en esta
+caja». Nunca se construyó. Seis días después salió esto.
+
+**Por qué la plantilla no lo agarró aunque ya tenía su propio ajuste.** La
+`lateral` de Clínica llama a `achicar_titular(d.titulo, m.cuerpo)`, que decide
+por la **cantidad de letras** del título. «PAPANICOLAOU» tiene doce, que a esa
+cuenta le parecen pocas, así que lo dejó en 76 px. Pero son doce mayúsculas de
+una sola palabra —sin ningún lugar donde cortar el renglón— en un panel de
+480 px de ancho útil: se pasaban 115. Contar letras nunca iba a ver eso.
+
+**Dónde quedó el arreglo.** En `motor/render.py`, dentro de `Render._captura`,
+que es el cuello por el que pasa **toda** pieza de **toda** marca: una placa,
+una diapositiva de carrusel, una de secuencia, y también la vista previa que
+mira el diseñador cuando está creando una plantilla (`app/plantillero.py` llama
+al mismo `_captura`). No hay ninguna marca ni ningún formato que lo esquive, y
+no hay nada que una plantilla nueva tenga que acordarse de hacer.
+
+Con las fuentes ya cargadas y antes de sacar la foto, mide el texto **dibujado**
+y, si se sale, lo achica de a 4 % hasta que entre. Si llega al piso (55 % del
+tamaño original) y todavía se sale, **levanta `TextoNoEntra` y la pieza no se
+guarda**. Una placa con el título cortado no se publica.
+
+### Las tres decisiones, y por qué son ésas
+
+**Se mide la tinta, no la caja.** Con `Range.selectNodeContents()` y no con el
+rectángulo del elemento. Es exactamente el caso que falló: una palabra larga
+sin dónde cortar se desborda de su caja, pero la caja sigue midiendo lo que
+decía el CSS. El rectángulo habría dicho que estaba todo bien.
+
+**El límite es el lienzo, no la caja del contenedor.** Se probó con la caja
+—el interior del contenedor, ya sin padding— y hubo que descartarla midiendo:
+de las quince piezas reales de Stadium (cinco plantillas por tres formatos),
+**las quince** se pasan de su caja por arriba o por abajo, entre 1 y 37 px,
+porque la caja de línea incluye ascendentes y descendentes que un interlineado
+de 0.84 recorta a propósito. Con ese límite el motor achicaba «$ 3.990» de
+118 px a 64 y arruinaba piezas que estaban bien.
+
+**El margen de seguridad es de 16 px y sólo a los costados.** La tinta que toca
+el filo se lee como cortada aunque técnicamente entre. En esas mismas quince
+piezas, el texto que más se arrima a un costado queda a 21 px, así que 16 no
+toca nada. Verticalmente el límite es el borde pelado: ahí hay texto legítimo a
+13 px del borde de abajo, y exigir aire vertical es pelearse con la tipografía.
+
+### Cómo se probó
+
+| Prueba | Resultado |
+|---|---|
+| Las 15 piezas reales de Stadium, por el camino real | 15 dibujadas, **ninguna tocada, ninguna rechazada** |
+| «PAPANICOLAOU» en la geometría exacta de la `lateral` | se salía 115 px → de 76 px a 62 px, **entra** |
+| «Carné de salud» y «En el día», mismo panel | entran solas, el guardián no las toca |
+| Una sola palabra imposible de 21 letras | achica al piso, sigue afuera → **rechazada** |
+| La salida por línea de comandos al rechazar | código 2 y una frase, no un traceback |
+
+La geometría de la prueba no está inventada: sale del contrato de la `lateral`
+v1 publicada en el Supabase de Clínica —panel 56 % de 1080, padding 58/62,
+cuerpo 76—. La tipografía de Clínica no está en este repo, así que se usó
+Archivo variable en peso 900, que es la misma familia.
+
+**Un efecto de borde bueno:** el guardián corre también en la vista previa de
+`crear_plantilla`. Una plantilla nueva que apriete demasiado el título se lo
+dice al diseñador mientras la está haciendo, no al cliente en su feed.
+
+**Lo que este arreglo NO hace:** no reacomoda el diseño. Achica y, si no
+alcanza, se planta. «PAPANICOLAOU» entra pero queda más cerca del borde de lo
+que el padding del panel pedía —entero y legible, pero apretado—. Que la
+plantilla acomode mejor un título de una sola palabra larga es trabajo de la
+plantilla; que no salga cortado ya no depende de que nadie se acuerde.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:

@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 
 from playwright.sync_api import sync_playwright
 
@@ -52,6 +53,123 @@ def _inyectar_efecto(html: str, data: dict, w: int, h: int) -> str:
     return html[:corte] + extra + html[corte:]
 
 
+class TextoNoEntra(Exception):
+    """Una pieza cuyo texto se sale del lienzo. No se guarda: se levanta.
+
+    Es la única excepción del motor que existe para NO entregar algo que se
+    dibujó bien en todo lo demás. Vale la pena: una placa con el título
+    cortado se publica igual que una correcta —nadie la mira dos veces— y el
+    error se descubre en el feed del cliente.
+    """
+
+
+#: Cuánto aire se le exige al texto contra los costados del lienzo, en píxeles.
+#:
+#: No es un gusto: la tinta que TOCA el filo se lee como cortada aunque
+#: técnicamente entre. El número salió de medir las quince piezas reales de
+#: Stadium (cinco plantillas por tres formatos): el texto que más se arrima a
+#: un costado queda a 21 px. Con 16 no se toca ninguna pieza que hoy sale bien.
+#: Si alguna marca nueva dibuja más al filo que eso, este número baja — pero se
+#: baja midiendo, no a ojo.
+#:
+#: **Sólo a los costados.** Arriba y abajo el límite es el borde pelado, y no
+#: por olvido: en esas mismas quince piezas hay texto a 13 px del borde de
+#: abajo, y no está mal puesto. La caja de línea incluye ascendentes y
+#: descendentes que el interlineado recorta a propósito, así que exigir aire
+#: vertical es pelearse con la tipografía. Además el corte que hay que evitar
+#: es el de los costados: una palabra que se va por el lado. Un título que se
+#: fuera por arriba también se agarra —el borde sigue siendo límite—, sólo que
+#: sin franja de cortesía.
+MARGEN_SEGURO = 16
+
+#: Mide el texto YA DIBUJADO y lo achica hasta que entre. Corre adentro de
+#: Chromium, después de que cargaron las fuentes y antes de la foto.
+#:
+#: Por qué acá y no en cada plantilla: el 25/8/2026 quedó anotado que tres
+#: plantillas de Boss resolvían esto por su cuenta, cada una a su manera y sin
+#: enterarse de las otras. El 31/8 una placa de Clínica salió con
+#: «PAPANICOLAOU» cortado contra el borde —y esa plantilla YA llamaba a su
+#: propio `achicar_titular`, que decide por la CANTIDAD DE LETRAS del título:
+#: doce le parecieron pocas, y doce mayúsculas de una sola palabra en un panel
+#: de 480 px se pasaban 99. Contar letras nunca iba a ver eso. Una regla que
+#: cada plantilla aplica a su manera es una regla que algún día no se aplica;
+#: acá pasa TODA pieza de TODA marca y no hay dónde olvidarse.
+#:
+#: Se mide con un `Range` sobre el contenido y no con el rectángulo del
+#: elemento, y esa diferencia es justamente el caso que falló: una palabra
+#: larga sin dónde cortar se desborda de su caja, pero la CAJA sigue midiendo
+#: lo que decía el CSS. El rectángulo diría que está todo bien.
+#:
+#: El límite es el LIENZO y no la caja del elemento. Se probó con la caja —el
+#: interior del contenedor, ya sin padding— y hay que descartarla: medido
+#: contra las quince piezas reales de Stadium, TODAS se pasan de su caja por
+#: arriba y por abajo entre 1 y 37 px, porque la caja de línea incluye
+#: ascendentes y descendentes que un interlineado de 0.84 recorta a propósito.
+#: Con ese límite el motor achicaba «$ 3.990» de 118 px a 64 y arruinaba
+#: piezas que estaban bien. Contra el lienzo, esas mismas quince piezas dan
+#: cero: el guardián no toca nada de lo que hoy funciona.
+QUE_ENTRE = """
+(margen) => {
+  const canvas = document.querySelector('.canvas');
+  if (!canvas) return [];
+  const c = canvas.getBoundingClientRect();
+  const lim = {l: c.left + margen, r: c.right - margen,
+               t: c.top, b: c.bottom};
+
+  // Sólo los elementos que dibujan texto PROPIO. Un contenedor hereda el
+  // texto de sus hijos y contarlo sería achicar dos veces lo mismo.
+  //
+  // `<style>` está en la lista porque el logo de Stadium es un SVG con su CSS
+  // adentro: sin esto, el motor medía «.st0 { fill: #...» como si fuera un
+  // titular y podía rechazar una pieza impecable por un texto invisible.
+  const MUDOS = ['STYLE', 'SCRIPT', 'TITLE', 'DEFS', 'METADATA'];
+  const conTexto = [...canvas.querySelectorAll('*')].filter(
+    el => !MUDOS.includes(el.tagName.toUpperCase()) &&
+      getComputedStyle(el).visibility !== 'hidden' &&
+      [...el.childNodes].some(
+        n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()));
+
+  const tinta = (el) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    return r.getBoundingClientRect();
+  };
+  const afuera = (el) => {
+    const t = tinta(el);
+    // Sin caja no hay tinta: `display:none` o un nodo vacío.
+    if (!t.width && !t.height) return 0;
+    return Math.max(0, lim.l - t.left, t.right - lim.r,
+                       lim.t - t.top, t.bottom - lim.b);
+  };
+
+  const ajustados = [];
+  for (const el of conTexto) {
+    if (afuera(el) <= 1) continue;
+    const original = parseFloat(getComputedStyle(el).fontSize) || 0;
+    if (!original) continue;
+
+    // Se achica de a poco y se vuelve a medir. De a 4% para que el cambio no
+    // se note al lado de una pieza hecha antes; el piso es 55% porque más
+    // abajo el titular deja de ser un titular y el problema es otro.
+    let fs = original;
+    let vueltas = 0;
+    while (afuera(el) > 1 && vueltas < 60 && fs > original * 0.55) {
+      fs *= 0.96;
+      el.style.fontSize = fs + 'px';
+      vueltas++;
+    }
+    ajustados.push({
+      texto: el.textContent.trim().slice(0, 70),
+      de: Math.round(original),
+      a: Math.round(fs),
+      sigue_afuera: Math.round(afuera(el)),
+    });
+  }
+  return ajustados;
+}
+"""
+
+
 class Render:
     """Un Chromium abierto, renderizando piezas de UNA marca.
 
@@ -70,6 +188,10 @@ class Render:
         self.marca = marca
         self.raiz = pathlib.Path(raiz)
         self._tmp: list[pathlib.Path] = []
+        #: Lo que hubo que achicar para que entrara. Se cuenta en las notas de
+        #: la pieza: un texto que se achicó salió bien, pero que haya hecho
+        #: falta es una señal de que el pedido venía largo para esa plantilla.
+        self.ajustes: list[dict] = []
 
     def _temporal(self, sufijo: str) -> pathlib.Path:
         p = self.raiz / f"_tmp-{os.getpid()}{sufijo}"
@@ -82,6 +204,20 @@ class Render:
         pg.set_viewport_size({"width": w, "height": h})
         pg.goto(f"file://{tmp}")
         pg.wait_for_timeout(320)
+
+        # El texto se MIDE ya dibujado, justo antes de la foto. Ver `QUE_ENTRE`.
+        ajustes = pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
+        rotos = [a for a in ajustes if a["sigue_afuera"] > 1]
+        if rotos:
+            cuales = "; ".join(
+                f"«{a['texto']}» se sale {a['sigue_afuera']} px" for a in rotos)
+            raise TextoNoEntra(
+                f"en {destino.stem} el texto no entra en la pieza aunque se "
+                f"achicó al mínimo: {cuales}. Hay que acortarlo o corregir la "
+                f"plantilla — una pieza con el texto cortado no se publica.")
+        if ajustes:
+            self.ajustes.extend({**a, "pieza": destino.stem} for a in ajustes)
+
         pg.locator(".canvas").screenshot(path=str(destino))
         return destino
 
@@ -162,8 +298,24 @@ class Render:
 
 
 def desde_linea_de_comandos(marca, raiz, argv):
-    """El lanzador que cada marca expone como `render.py spec.json [salida]`."""
+    """El lanzador que cada marca expone como `render.py spec.json [salida]`.
+
+    Quien lee esta salida es el diseñador, así que un texto que no entra sale
+    como una frase y no como un traceback: el que tiene que acortar el título
+    es él, y una pila de llamadas de Python no le dice qué acortar.
+    """
     spec = json.loads(pathlib.Path(argv[1]).read_text(encoding="utf-8"))
     destino = argv[2] if len(argv) > 2 else pathlib.Path(raiz) / "out"
-    for p in Render(marca, raiz).correr(spec, destino):
+    r = Render(marca, raiz)
+    try:
+        hechas = r.correr(spec, destino)
+    except TextoNoEntra as e:
+        print(f"\nNO SE DIBUJÓ: {e}\n", file=sys.stderr)
+        raise SystemExit(2)
+    for p in hechas:
         print("→", p)
+    # Un texto que se achicó salió bien, pero conviene decirlo: significa que
+    # el pedido venía largo para esa plantilla y la próxima puede no entrar.
+    for a in r.ajustes:
+        print(f"   (se achicó «{a['texto'][:44]}» de {a['de']} a {a['a']} px "
+              f"en {a['pieza']} para que entrara)")
