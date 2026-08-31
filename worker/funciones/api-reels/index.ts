@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     for (;;) {
       const r = await fetch(
         `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,notas,` +
-          `creditos_estimados,creado_en,titulo`,
+          `creditos_estimados,creado_en,titulo,clips`,
         { headers: cab },
       );
       const filas = await r.json();
@@ -144,6 +144,11 @@ Deno.serve(async (req) => {
         estado: f.estado,
         listo: f.estado === "listo",
         terminado,
+        // De cuál de los dos caminos salió. Lo lee la tool para no decir
+        // cualquier cosa: un reel MONTADO con material del club no lo generó
+        // ninguna IA, así que la advertencia sobre caras y manos deformadas
+        // —correcta para el otro camino— ahí sería lisa y llanamente falsa.
+        montado: Array.isArray(f.clips) && f.clips.length > 0,
         url: f.url || null,
         titulo: f.titulo || null,
         creditos: f.creditos_estimados || null,

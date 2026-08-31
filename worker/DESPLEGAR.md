@@ -1351,6 +1351,105 @@ plantilla; que no salga cortado ya no depende de que nadie se acuerde.
 
 ---
 
+## Reels con material propio (31/8/2026)
+
+Pedido de Joaquín: «poder adjuntarle videos y que los pegue en base a lo que
+hay, y le agregue los subtítulos».
+
+**La mitad ya estaba construida y desconectada.** `motor/video.py` y
+`motor/guion.py` son unas 1.400 líneas de editor de verdad: corta un clip desde
+el segundo que se le diga, le cambia la velocidad con cámara lenta bien hecha,
+lo encuadra en 9:16 de tres maneras, pega los tramos y mezcla el audio con
+efectos. Hasta valida el guion ANTES de encodear, que es lo caro. Y
+`desde_guion` decía en su propio docstring **«es la puerta que usa el agente»**
+— pero ningún módulo de `app/` la importaba. Nadie la llamó nunca.
+
+**La otra mitad era un bug mudo.** `guion.py` declara `subtitulos` en su
+contrato y los valida con cuidado. `a_spec` no los copiaba al spec. O sea: el
+agente escribía subtítulos, el validador los aceptaba, y no aparecían en el
+video, sin ningún error que lo explicara.
+
+### Los dos caminos, y por qué están separados
+
+| | `crear_reel` | `montar_reel` |
+|---|---|---|
+| De dónde sale el video | una IA lo INVENTA a partir de una foto | se EDITA material que ya existe |
+| Qué cuesta | miles de créditos | **cero** |
+| Cuánto tarda | unos 5 minutos | menos de 1 minuto |
+
+Entre las dos hay **tres órdenes de magnitud de diferencia en plata**, así que
+son dos herramientas y dos ramas, no una con un «o esto o aquello» adentro. Un
+pedido que trae `clips` y `foto` juntos se rechaza y se pregunta: adivinar ahí
+es adivinar con la plata del cliente.
+
+En la tabla `reels` se distinguen por la columna `clips`. Comparten estados, así
+que las dos ramas se saltean explícitamente las filas de la otra — sin eso, el
+camino de IA le pediría un video a un modelo por una fila que ya tiene el
+material, y el montaje viejo reventaría buscando un `clip_url` inexistente.
+
+### Los subtítulos salen con la tipografía de la marca
+
+Una imagen por frase, dibujada con Chromium, que ffmpeg muestra en su ventana de
+tiempo con `enable=between(t,…)`. **No es cuadro por cuadro, y es una decisión
+de costo:** el rótulo sale barato porque se queda quieto (23 capturas de 90),
+pero un subtítulo cambia durante todo el reel y esa optimización no aplica —un
+reel de 60 s serían 1.800 capturas—. Doce frases son doce capturas.
+
+Si algún día se quiere el subtítulo animado palabra por palabra, eso sí necesita
+cuadro por cuadro, va en `rotulos.py`, y es otra decisión con otro costo.
+
+El tamaño lo decide el mismo guardián que las placas (`render.QUE_ENTRE`): la
+regla de 42 caracteres por línea que valida el guion es una cuenta de LETRAS,
+que es exactamente lo que dejó salir «PAPANICOLAOU» cortado esta misma mañana.
+
+**Todavía NO hay transcripción automática.** El agente escribe los subtítulos —
+que para material corto ya elegido es lo natural, porque conoce el guion. Poner
+las palabras de lo que se dice en el video necesita una API de reconocimiento de
+voz, que es un costo nuevo por minuto y una decisión aparte.
+
+### Tres cosas que salieron de probarlo, no de pensarlo
+
+**El nombre del archivo bajado sale de la URL, no de un contador.** El guion
+dice «clipA.mp4» porque ese es el nombre que la persona vio en el chat.
+Bajándolos como `clip1.mp4`, el guion pedía un archivo que no existe y el reel
+fallaba en la validación —con un mensaje correcto y desconcertante— sin que
+nadie hubiera escrito nada mal. Pasó en la primera corrida.
+
+**El velo se dibuja solo si la marca no lo tiene.** El degradado que hace
+legible el texto es una entrada obligada de la cadena de ffmpeg, y una marca que
+nunca hizo reels no tiene ese PNG. Stadium no lo tiene, y fue justo el caso de
+la prueba: sin esto, el primer montaje de un cliente nuevo falla por un archivo.
+
+**El CSS de la marca va ANTES que el del subtítulo.** Al revés, su
+`.canvas{background:#FFFFFF}` pisaba el fondo transparente y el subtítulo salía
+con un rectángulo blanco tapando el video. Es la misma trampa que ya estaba
+anotada en `reelero.rotulo()` y volvió a aparecer en otro lado.
+
+### Cómo se probó
+
+| Prueba | Resultado |
+|---|---|
+| El camino entero del worker, marca real de Stadium | dos clips cortados y pegados, el segundo en cámara lenta, dos subtítulos quemados, audio mezclado: 1080×1920 a 30 fps y **9,98 s**, que es lo que da la cuenta |
+| Una fila del camino viejo en la misma corrida | quedó intacta, las dos ramas no se pisan |
+| Un subtítulo de 57 caracteres cuya primera palabra tiene 26 | se achica solo, se parte en tres líneas y entra |
+| Los cinco rechazos de la puerta | `clips_y_foto`, `falta_el_guion`, `clip_invalido`, `demasiados_clips`, `falta_la_foto` |
+| `deno check` de `api-reels` | limpio |
+
+### Lo que hay que saber para el próximo
+
+**El agente sólo sabe lo que le dicen.** El catálogo se genera de las
+plantillas, así que todo lo que el motor sabe hacer y no es una plantilla es
+invisible — por eso el agente de Clínica juraba que no podía hacer carruseles.
+Por eso acá `montar_reel` es una herramienta propia con su descripción, y no un
+parámetro más escondido adentro de `crear_reel`.
+
+**`estado_reel` ahora distingue los dos casos.** Decía «el video lo genera una
+IA y a veces deforma caras y manos» — cierto para `crear_reel` y **falso** para
+un montaje con material real del club. La base devuelve `montado` y la
+herramienta dice lo que corresponde a cada uno.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:
