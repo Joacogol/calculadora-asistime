@@ -243,12 +243,17 @@ ALTO_SUBTITULO = 300
 PIE_SUBTITULO = 330
 
 
-def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 54) -> Path:
+def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
     """Una frase de subtítulo, con la tipografía de la marca y fondo transparente.
 
     El texto tiene que leerse sobre CUALQUIER cosa: un clip claro, uno oscuro,
     uno con la cámara moviéndose. Por eso no alcanza con el color: lleva una
     sombra dura y ancha que le hace borde por los cuatro lados.
+
+    El cuerpo por defecto es grande —68 px— porque un reel se mira en un
+    teléfono, con el pulgar encima y a veces sin sonido: el subtítulo ES el
+    mensaje, no una nota al pie. Poner un número grande es seguro justamente
+    porque abajo está el guardián: si la frase no entra, la achica sola.
 
     El tamaño lo termina de decidir `motor.render.QUE_ENTRE`, el mismo guardián
     que usan las placas. No es adorno: la regla de 42 caracteres por línea que
