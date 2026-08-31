@@ -1,5 +1,19 @@
 // La puerta de entrada para pedir un REEL desde el chat de Asistime.
 //
+// ── Dos formas de pedirlo, con precios que no se parecen ──────────────────
+//
+// Con `foto`: un modelo de video INVENTA el clip. Son miles de créditos y unos
+// cinco minutos. Es lo que existía desde el principio.
+//
+// Con `clips` + `guion`: el material YA existe —lo filmó el cliente, lo eligió
+// una persona— y el motor lo corta, lo pega, lo encuadra en 9:16 y le pone los
+// subtítulos con la tipografía de la marca. **No gasta un solo crédito** y
+// tarda menos de un minuto.
+//
+// Son excluyentes a propósito: entre las dos hay tres órdenes de magnitud de
+// diferencia en plata, así que un pedido que trae las dos se rechaza en vez de
+// elegir una en silencio.
+//
 // Hermana de `api-disenos`, y por las mismas razones: la tool no tiene dónde
 // guardar secretos, así que lo que queda expuesto en su código es una clave que
 // sólo sirve para encargar piezas en UNA base. Si se filtra, lo peor que pasa
@@ -38,6 +52,12 @@ const CORS = {
 // Supabase. En 0 no hay tope por hora y manda sólo el tope de créditos.
 const MAX_POR_HORA = Number(Deno.env.get("REELS_POR_HORA") ?? 12);
 
+// Cuántos clips propios se pueden pegar en un reel. Cada uno se baja entero y
+// se recodifica, así que el costo es tiempo de montaje, no plata. Doce tramos
+// en 90 segundos son siete segundos y medio cada uno: más que eso ya no es un
+// reel editado, es una lista de cortes.
+const MAX_CLIPS = Number(Deno.env.get("CLIPS_POR_REEL") ?? 12);
+
 // Cuánto espera el GET a que el reel esté antes de contestar «todavía no».
 // Un reel tarda unos cinco minutos, así que la espera no lo cubre entero: lo
 // que hace es que cada consulta valga por un minuto en vez de por un instante.
@@ -56,13 +76,13 @@ const json = (b: unknown, s = 200) =>
     headers: { ...CORS, "Content-Type": "application/json" },
   });
 
-/** ¿Es una URL de imagen que el worker va a poder bajar?
+/** ¿Es una URL que el worker va a poder bajar? Sirve para la foto y para los clips.
  *
  *  Se valida acá y no en el worker porque acá el error todavía le puede llegar
  *  a una persona que puede arreglarlo. Cuatro minutos después, cuando el worker
  *  descubra que la foto no existe, ya se gastaron los créditos.
  */
-function fotoValida(u: string): boolean {
+function urlDescargable(u: string): boolean {
   try {
     const url = new URL(u);
     if (url.protocol !== "https:") return false;
@@ -149,23 +169,80 @@ Deno.serve(async (req) => {
 
   const mensaje = String(c.mensaje ?? "").trim();
   const foto = String(c.foto ?? "").trim();
+  const clips = Array.isArray(c.clips) ? c.clips : [];
+  const guion = (c.guion && typeof c.guion === "object") ? c.guion as Record<string, unknown> : null;
 
   if (mensaje.length < 10) {
     return json({ error: "el pedido está vacío", codigo: "pedido_incompleto" }, 400);
   }
-  if (!foto) {
+
+  // ── Hay dos formas de pedir un reel y son excluyentes ────────────────────
+  //
+  //   con `clips`  → el material YA existe y sólo hay que editarlo. No gasta
+  //                  un crédito: no interviene ningún modelo de video.
+  //   con `foto`   → un modelo inventa el video a partir de esa foto. Cuesta
+  //                  miles de créditos.
+  //
+  // La diferencia de precio entre las dos es de tres órdenes de magnitud, así
+  // que mandar las dos no se resuelve eligiendo una en silencio: se rechaza y
+  // se pregunta. Adivinar acá es adivinar con la plata del cliente.
+  if (clips.length && foto) {
     return json({
-      error: "un reel se arma A PARTIR de una foto: sin foto no hay reel. " +
-        "Puede ser una del banco de la marca, una que hayan mandado en el " +
-        "chat, o una inventada con `crear_foto`.",
-      codigo: "falta_la_foto",
+      error: "llegaron `clips` y `foto` juntos, y son dos pedidos distintos: " +
+        "con `clips` se EDITA material que ya existe y no cuesta créditos; con " +
+        "`foto` un modelo INVENTA el video y cuesta miles. Mandá uno solo.",
+      codigo: "clips_y_foto",
     }, 400);
   }
-  if (!fotoValida(foto)) {
-    return json({
-      error: "la foto tiene que ser una URL https pública que se pueda descargar",
-      codigo: "foto_invalida",
-    }, 400);
+
+  if (clips.length) {
+    if (clips.length > MAX_CLIPS) {
+      return json({
+        error: `son ${clips.length} clips y el tope es ${MAX_CLIPS}. Cada uno se ` +
+          `baja y se recodifica: más que eso no es un reel, es un problema de ` +
+          `tiempo de montaje.`,
+        codigo: "demasiados_clips",
+      }, 400);
+    }
+    for (const c0 of clips) {
+      const u = typeof c0 === "string" ? c0 : String((c0 as Record<string, unknown>)?.url ?? "");
+      if (!urlDescargable(u)) {
+        return json({
+          error: `«${u.slice(0, 80)}» no sirve como clip: tiene que ser una URL ` +
+            `https pública que se pueda descargar.`,
+          codigo: "clip_invalido",
+        }, 400);
+      }
+    }
+    // El guion se chequea por encima acá y a fondo en el worker, que es el que
+    // tiene los archivos y sabe cuánto dura cada uno. Lo de acá es lo que se
+    // puede saber sin bajar nada, y vale la pena: este error le llega a alguien
+    // que lo puede arreglar en el mismo turno.
+    const tramos = Array.isArray(guion?.tramos) ? guion!.tramos as unknown[] : [];
+    if (!tramos.length) {
+      return json({
+        error: "faltan los tramos del guion: con los clips solos el motor no sabe " +
+          "qué pedazo de cada uno usar. Cada tramo lleva `archivo`, `desde` y " +
+          "`hasta`, en segundos del material original.",
+        codigo: "falta_el_guion",
+      }, 400);
+    }
+  } else {
+    if (!foto) {
+      return json({
+        error: "un reel se arma A PARTIR de una foto, o EDITANDO clips que ya " +
+          "existen. Sin una cosa ni la otra no hay reel. La foto puede ser una " +
+          "del banco de la marca, una que hayan mandado en el chat, o una " +
+          "inventada con `crear_foto`; los clips son videos que mandaron.",
+        codigo: "falta_la_foto",
+      }, 400);
+    }
+    if (!urlDescargable(foto)) {
+      return json({
+        error: "la foto tiene que ser una URL https pública que se pueda descargar",
+        codigo: "foto_invalida",
+      }, 400);
+    }
   }
 
   const desde = new Date(Date.now() - 3600_000).toISOString();
@@ -184,7 +261,13 @@ Deno.serve(async (req) => {
     }, 429);
   }
 
-  const fila: Record<string, unknown> = { mensaje, foto, quien: c.quien ?? "Asistime" };
+  const fila: Record<string, unknown> = { mensaje, quien: c.quien ?? "Asistime" };
+  if (clips.length) {
+    fila.clips = clips;
+    fila.guion = guion ?? {};
+  } else {
+    fila.foto = foto;
+  }
   for (const k of ["titulo", "kicker", "bajada", "musica"]) {
     if (c[k]) fila[k] = String(c[k]).trim();
   }
@@ -203,6 +286,10 @@ Deno.serve(async (req) => {
   return json({
     id: creada.id,
     estado: creada.estado,
-    demora_estimada_seg: 300,
+    // Montar material que ya existe es cortar y pegar: no hay que esperar a
+    // ningún modelo. Decir 300 acá haría que el agente avise «esto tarda cinco
+    // minutos» por algo que sale en menos de uno.
+    demora_estimada_seg: clips.length ? 60 : 300,
+    cuesta_creditos: !clips.length,
   }, 201);
 });
