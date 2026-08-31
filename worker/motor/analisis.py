@@ -482,7 +482,7 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     # como el `end` que declara Whisper, porque ese `end` está estirado hasta
     # la palabra siguiente: usarlo tal cual diría que nunca hay huecos.
     if palabras and len(palabras) > 1:
-        VENTANA = 0.60
+        VENTANA = 0.75
         for w, sig in zip(palabras, palabras[1:]):
             corta = min(w["hasta"], w["desde"] + VENTANA)
             if sig["desde"] - corta >= max(minimo, 0.5):
@@ -524,9 +524,11 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     # energía, que es la que sabe dónde hay silencio de verdad.
     #
     # El tope existe porque una palabra estirada puede declarar dos segundos de
-    # duración: sin él volveríamos a proteger la pausa entera.
+    # duración: sin él volveríamos a proteger la pausa entera. 0,75 s salió de
+    # medir: con 0,60 el recorte se comía «Y me gustaría» —una palabra de tres
+    # sílabas dura más que eso— y con 0,90 ya no recortaba lo suficiente.
     if palabras and tramos:
-        VENTANA = 0.60
+        VENTANA = 0.75
 
         def protegida(x):
             """El arranque de la palabra que este instante estaría partiendo."""
