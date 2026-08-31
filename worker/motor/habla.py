@@ -260,7 +260,49 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
 
         offset += dura
 
-    return [s for s in subs if s["hasta"] > s["desde"]]
+    subs = [s for s in subs if s["hasta"] > s["desde"]]
+    subs.sort(key=lambda s: s["desde"])
+
+    # ── las frases sueltas se juntan con una vecina ──
+    #
+    # Una frase de una o dos palabras cortas —«acá», «bueno»— no alcanza a
+    # leerse y parpadea. Se prueba con la anterior y, si no entra, con la
+    # siguiente: juntar sólo hacia atrás dejaba huérfanas justo en los
+    # empalmes entre clips, que es donde más aparecen.
+    juntadas: list[dict] = []
+    i = 0
+    while i < len(subs):
+        f = subs[i]
+        corta = len(f["texto"]) <= 8
+        if corta and juntadas and \
+                len(juntadas[-1]["texto"]) + 1 + len(f["texto"]) <= MAX_CARACTERES:
+            juntadas[-1]["texto"] += " " + f["texto"]
+            juntadas[-1]["hasta"] = max(juntadas[-1]["hasta"], f["hasta"])
+        elif corta and i + 1 < len(subs) and \
+                len(f["texto"]) + 1 + len(subs[i + 1]["texto"]) <= MAX_CARACTERES:
+            sig = subs[i + 1]
+            juntadas.append({"texto": f["texto"] + " " + sig["texto"],
+                             "desde": f["desde"], "hasta": sig["hasta"]})
+            i += 1
+        else:
+            juntadas.append(dict(f))
+        i += 1
+
+    # ── y recién ahora, que no haya dos en pantalla a la vez ──
+    #
+    # Va ÚLTIMO a propósito: juntar frases mueve los tiempos, así que limpiar
+    # las superposiciones antes deja pasar las que el juntado crea después.
+    # Ese fue el orden de la primera versión y por eso quedaba «Acá» pisando a
+    # la frase siguiente.
+    #
+    # El estirón que `frases()` le da a una frase corta mira sólo dentro de su
+    # propio tramo, así que la última frase de un tramo se estira por encima de
+    # la primera del siguiente. Es un empalme que ninguna de las dos partes ve,
+    # y dos textos superpuestos es el peor defecto posible: no se lee ninguno.
+    for a, b in zip(juntadas, juntadas[1:]):
+        if a["hasta"] > b["desde"] - 0.04:
+            a["hasta"] = round(max(a["desde"] + 0.25, b["desde"] - 0.04), 3)
+    return juntadas
 
 
 def vocabulario_de(marca) -> str:
