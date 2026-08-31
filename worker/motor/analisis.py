@@ -483,10 +483,29 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     # la palabra siguiente: usarlo tal cual diría que nunca hay huecos.
     if palabras and len(palabras) > 1:
         VENTANA = 0.75
+        # Sólo huecos GRANDES, y dejando aire generoso a los dos lados.
+        #
+        # Esto se calibró tres veces contra el mismo video y las tres primeras
+        # se comieron «Y me gustaría». La razón de fondo es que el `end` de
+        # Whisper no sirve para decidir dónde termina una palabra —viene
+        # estirado— y `desde + VENTANA` es una estimación, no una medición. Con
+        # márgenes de 0,10 s esa estimación se lleva la última sílaba.
+        #
+        # Así que el criterio final no es «apretar lo más posible» sino «cortar
+        # sólo lo que es indudable»: un hueco de menos de 0,9 s no se toca, y
+        # del que sí se toca se dejan 0,35 s a cada lado. Se recorta menos, y a
+        # cambio no hay ninguna forma de que se pierda una palabra.
+        #
+        # Lo que se recorta igual es lo que se ve: el hueco de 2,8 s entre dos
+        # frases, que es el que se siente como tiempo muerto. Los de medio
+        # segundo son la respiración de alguien hablando y sacarlos hace que
+        # suene atropellado.
+        HUECO_MINIMO = 0.90
+        AIRE = 0.35
         for w, sig in zip(palabras, palabras[1:]):
             corta = min(w["hasta"], w["desde"] + VENTANA)
-            if sig["desde"] - corta >= max(minimo, 0.5):
-                mudos.append((corta + 0.10, sig["desde"] - 0.10))
+            if sig["desde"] - corta >= HUECO_MINIMO:
+                mudos.append((corta + AIRE, sig["desde"] - AIRE))
         mudos.sort()
         juntos = []
         for x, y in mudos:
