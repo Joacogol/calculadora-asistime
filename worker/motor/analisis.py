@@ -429,3 +429,79 @@ def escribir(analisis: dict, destino: Path) -> Path:
     ruta.write_text(json.dumps(analisis, ensure_ascii=False, indent=1),
                     encoding="utf-8")
     return ruta
+
+
+def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
+                    aire: float = 0.12, min_tramo: float = 0.8,
+                    desde: float = 0.0, hasta: float | None = None,
+                    palabras: list[dict] | None = None) -> list[tuple]:
+    """Los pedazos donde alguien habla, salteando los tiempos muertos.
+
+    Es el complemento de `silencios()`: donde no hay silencio, hay algo que
+    decir. Sirve para lo que en edición se llama «sacar los tiempos muertos»,
+    que es la diferencia entre un video de 23 segundos y uno de 17 que se ve
+    mucho mejor.
+
+    **Se corta por ENERGÍA y no por los tiempos de la transcripción**, y esa
+    diferencia importa: Whisper estira las palabras sobre las pausas, así que
+    su idea de dónde termina una frase no coincide con dónde la persona se
+    calló de verdad. Cortar por ahí parte palabras al medio. Está documentado
+    en el pack de edición de reels de JordiGPT como una de sus trampas, y
+    coincide con lo que este módulo ya medía.
+
+    `aire` es lo que se deja a cada lado del habla. Sin eso el corte queda
+    pegado a la primera sílaba y suena mordido; con 0,12 s la palabra respira y
+    el tiempo muerto igual se va.
+
+    `min_tramo` descarta las esquirlas: medio segundo de audio suelto entre dos
+    silencios casi nunca es una palabra, es un ruido, y como tramo de video es
+    un parpadeo.
+    """
+    ficha = sondear(ruta)
+    fin = float(hasta if hasta is not None else ficha.get("duracion") or 0)
+    if fin <= desde:
+        return []
+    if not ficha.get("tiene_audio"):
+        return [(desde, fin)]
+
+    t, db = energia_audio(ruta)
+    mudos = silencios(t, db, umbral_db=umbral_db, minimo=minimo)
+
+    tramos, cursor = [], desde
+    for a, b in mudos:
+        if b <= desde or a >= fin:
+            continue
+        a, b = max(a, desde), min(b, fin)
+        if a - cursor >= min_tramo:
+            tramos.append((round(max(desde, cursor - aire), 2),
+                           round(min(fin, a + aire), 2)))
+        cursor = max(cursor, b)
+    if fin - cursor >= min_tramo:
+        tramos.append((round(max(desde, cursor - aire), 2), round(fin, 2)))
+
+    # ── que el primer y el último borde no partan una palabra ──
+    #
+    # Está medido en un video real: la palabra «Una» arranca en 1,74 pero el
+    # ataque es tan suave que la energía dice silencio hasta 2,25. Con
+    # cualquier `aire` razonable el corte cae adentro y el reel empieza con
+    # media sílaba — justo la primera, que es la que engancha o no. Subir el
+    # `aire` no lo arregla: con 0,45 s seguía mordiendo y ya casi no recortaba.
+    #
+    # **Sólo los bordes de afuera, y eso es deliberado.** La primera versión
+    # protegía TODOS los cortes y el resultado fue peor: de seis tramos quedaron
+    # dos y el recorte bajó de 4,6 s a 2,4. La causa es la trampa que el propio
+    # pack de JordiGPT advierte —Whisper ESTIRA las palabras sobre las pausas—,
+    # así que sus bordes dicen que dos frases separadas por un silencio real son
+    # una sola palabra larga. Adentro manda la energía, que para eso se mide;
+    # en las puntas manda la transcripción, que es donde la energía falla porque
+    # el que habla entra y sale bajito.
+    if palabras and tramos:
+        primera = min((w["desde"] for w in palabras), default=None)
+        ultima = max((w["hasta"] for w in palabras), default=None)
+        a0, b0 = tramos[0]
+        if primera is not None and primera < a0:
+            tramos[0] = (round(max(desde, primera - 0.06), 2), b0)
+        aN, bN = tramos[-1]
+        if ultima is not None and ultima > bN:
+            tramos[-1] = (aN, round(min(fin, ultima + 0.06), 2))
+    return tramos

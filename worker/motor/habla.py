@@ -64,6 +64,11 @@ MAX_SEGUNDOS = 3.2
 
 _modelo = None
 
+#: La transcripción de un clip, para no pagarla dos veces: la usan los
+#: subtítulos y también el corte de silencios, que la necesita para no partir
+#: una palabra al medio.
+_dicho: dict = {}
+
 
 def _cargar():
     """El modelo, una sola vez por proceso. Cargarlo son unos 9 segundos."""
@@ -85,15 +90,20 @@ def palabras(ruta, vocabulario: str = "") -> list[dict]:
     es un error: un peloteo de pádel no tiene nada que subtitular y el reel
     tiene que salir igual.
     """
+    llave = (str(ruta), vocabulario)
+    if llave in _dicho:
+        return _dicho[llave]
     try:
         segmentos, _ = _cargar().transcribe(
             str(ruta), language=IDIOMA, word_timestamps=True,
             initial_prompt=vocabulario or None)
-        return [{"texto": w.word.strip(),
-                 "desde": float(w.start), "hasta": float(w.end)}
-                for s in segmentos for w in (s.words or []) if w.word.strip()]
+        _dicho[llave] = [{"texto": w.word.strip(),
+                          "desde": float(w.start), "hasta": float(w.end)}
+                         for s in segmentos for w in (s.words or []) if w.word.strip()]
+        return _dicho[llave]
     except Exception as e:                                   # noqa: BLE001
         log.warning("no pude transcribir %s: %s", ruta, e)
+        _dicho[llave] = []
         return []
 
 

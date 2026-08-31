@@ -815,6 +815,43 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     base = Path(carpeta_material)
     avisos_previos: list[str] = []
 
+    # `cortar_silencios` saca los tiempos muertos: un tramo se abre en varios,
+    # uno por cada pedazo donde alguien habla. Va ANTES de los subtítulos
+    # porque cambia los tramos, y los subtítulos se calculan sobre los tramos
+    # finales — al revés, cada frase caería en el segundo equivocado.
+    if g.get("cortar_silencios"):
+        from . import analisis as _an
+        from . import habla as _habla
+        g = dict(g)
+        abiertos = []
+        for t0 in (g.get("tramos") or []):
+            arch = (t0.get("archivo") or "").strip()
+            ruta = base / arch
+            if not arch or not ruta.exists():
+                abiertos.append(t0)
+                continue
+            try:
+                pedazos = _an.tramos_hablados(
+                    ruta, desde=float(t0.get("desde", 0)),
+                    hasta=float(t0["hasta"]) if t0.get("hasta") is not None else None,
+                    palabras=_habla.palabras(ruta, vocabulario or ""))
+            except Exception as e:                           # noqa: BLE001
+                log.warning("no pude medir los silencios de %s: %s", arch, e)
+                pedazos = []
+            if not pedazos:
+                abiertos.append(t0)
+                continue
+            for a, b in pedazos:
+                abiertos.append({**t0, "desde": a, "hasta": b})
+        quitado = sum(float(x["hasta"]) - float(x["desde"]) for x in (g.get("tramos") or [])) \
+            - sum(float(x["hasta"]) - float(x["desde"]) for x in abiertos)
+        g["tramos"] = abiertos
+        if quitado > 0.2:
+            log.info("tiempos muertos sacados: %.1fs", quitado)
+            avisos_previos.append(
+                f"se sacaron {quitado:.1f}s de tiempos muertos y quedaron "
+                f"{len(abiertos)} tramos")
+
     # `subtitulos: "auto"` significa «sacalos de lo que se dice en el video».
     # Se resuelve ACÁ y no en cada puerta porque por acá pasan las dos: la tool
     # del chat y el agente diseñador que corre `video.py guion.json`. Una sola
