@@ -182,6 +182,109 @@ def _rotulo_png(texto: str, emoji: str, tmp: Path, i: int, cuerpo: int = 96) -> 
     return salida
 
 
+# ── subtítulos ────────────────────────────────────────────────────────────
+# Un subtítulo NO se dibuja cuadro por cuadro como el rótulo, y es una decisión
+# de costo medida, no un atajo. El rótulo sale barato porque se queda quieto:
+# de 90 cuadros se capturan 23 y el resto se copia. Un subtítulo cambia de
+# frase cada dos segundos durante TODO el reel, así que esa optimización no
+# aplica: un reel de 60 segundos serían 1.800 capturas de Chromium.
+#
+# Acá se dibuja UNA imagen por frase y ffmpeg la muestra en su ventana de
+# tiempo con `enable=between(t,…)`. Doce frases son doce capturas, y el texto
+# igual sale con la tipografía de la marca, que es todo el punto de dibujarlo
+# con Chromium en vez de con `drawtext`.
+#
+# Si algún día hace falta que el subtítulo ENTRE animado —palabra por palabra,
+# tipo karaoke—, eso sí necesita cuadro por cuadro y va en `rotulos.py`. Pero
+# es otra decisión, con otro costo, y conviene tomarla midiendo.
+
+#: Alto de la franja donde puede caer el subtítulo.
+ALTO_SUBTITULO = 300
+
+#: Lo que se deja libre abajo. Instagram tapa esa zona con los botones de me
+#: gusta, comentar y compartir, y con el pie de foto: un subtítulo ahí no se
+#: lee. Es el mismo criterio que usa `_capa_rotulo`.
+PIE_SUBTITULO = 330
+
+
+def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 54) -> Path:
+    """Una frase de subtítulo, con la tipografía de la marca y fondo transparente.
+
+    El texto tiene que leerse sobre CUALQUIER cosa: un clip claro, uno oscuro,
+    uno con la cámara moviéndose. Por eso no alcanza con el color: lleva una
+    sombra dura y ancha que le hace borde por los cuatro lados.
+
+    El tamaño lo termina de decidir `motor.render.QUE_ENTRE`, el mismo guardián
+    que usan las placas. No es adorno: la regla de 42 caracteres por línea que
+    valida el guion es una cuenta de LETRAS, y una cuenta de letras es
+    exactamente lo que dejó salir «PAPANICOLAOU» cortado el 31/8. Acá se mide
+    lo dibujado.
+    """
+    from playwright.sync_api import sync_playwright
+    from .render import QUE_ENTRE, MARGEN_SEGURO
+
+    salida = tmp / f"sub{i:02d}.png"
+    html = f"""<html><head><meta charset="utf-8"><style>
+      @font-face{{font-family:'Sub';src:url('file://{TIPO_TITULO}');font-weight:900}}
+      *{{margin:0;padding:0;box-sizing:border-box}}
+      body{{background:transparent}}
+      .canvas{{width:{ANCHO}px;height:{ALTO_SUBTITULO}px;position:relative;
+        display:flex;align-items:center;justify-content:center;padding:0 96px}}
+      .txt{{font-family:'Sub',sans-serif;font-weight:900;font-size:{cuerpo}px;
+        line-height:1.18;color:#fff;text-align:center;letter-spacing:-.01em;
+        text-shadow:0 3px 10px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.85),
+                    0 -2px 8px rgba(0,0,0,.8);}}
+      {CSS_MARCA}
+    </style></head><body>
+      <div class="canvas"><div class="txt">{texto}</div></div>
+    </body></html>"""
+    archivo = tmp / f"sub{i:02d}.html"
+    archivo.write_text(html, encoding="utf-8")
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_SUBTITULO})
+        pg.goto(f"file://{archivo}")
+        pg.wait_for_timeout(280)
+        pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
+        pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
+        b.close()
+    return salida
+
+
+def _quemar_subtitulos(mudo: Path, subs: list[dict], tmp: Path) -> Path:
+    """Superpone los subtítulos sobre el reel ya concatenado.
+
+    Va DESPUÉS del concatenado y no adentro de cada tramo porque un subtítulo
+    vive en la línea de tiempo del reel: puede empezar en un clip y terminar en
+    el siguiente. Y va ANTES de la mezcla de audio porque esa etapa copia el
+    video sin recodificar; si se hiciera al revés, no habría dónde dibujar.
+    """
+    if not subs:
+        return mudo
+    capas = [_subtitulo_png(s["texto"], tmp, i) for i, s in enumerate(subs)]
+    entradas = []
+    for c in capas:
+        entradas += ["-i", str(c)]
+
+    y = ALTO - ALTO_SUBTITULO - PIE_SUBTITULO
+    pasos, etiqueta = [], "0:v"
+    for i, s in enumerate(subs):
+        sig = f"v{i}"
+        pasos.append(
+            f"[{etiqueta}][{i+1}:v]overlay=x=0:y={y}:"
+            f"enable='between(t,{float(s['desde']):.3f},{float(s['hasta']):.3f})'"
+            f"[{sig}]")
+        etiqueta = sig
+
+    con = tmp / "con-subtitulos.mp4"
+    _correr(["ffmpeg", "-v", "error", "-y", "-i", str(mudo), *entradas,
+             "-filter_complex", ";".join(pasos),
+             "-map", f"[{etiqueta}]", "-map", "0:a?",
+             "-c:a", "copy", "-movflags", "+faststart", str(con)],
+            "subtítulos")
+    return con
+
+
 def _capa_rotulo(entrada: str, pos: str) -> str:
     """Superpone la secuencia del rótulo.
 
@@ -611,6 +714,11 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
     _correr(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0",
              "-i", str(lista), "-c", "copy", "-movflags", "+faststart",
              str(mudo)], "concatenado")
+
+    subs = spec.get("subtitulos") or []
+    if subs:
+        print(f"  quemando {len(subs)} subtítulos")
+        mudo = _quemar_subtitulos(mudo, subs, tmp)
 
     duraciones = [float(t.get("dura", 2.5)) for t in spec["tramos"]]
     if spec.get("sonido", {}).get("activo", True):

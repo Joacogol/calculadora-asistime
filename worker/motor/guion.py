@@ -340,4 +340,17 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
         if base and mus.get("archivo"):
             son["archivo_musica"] = str(base / mus["archivo"])
 
-    return {"nombre": nombre, "tramos": tramos, "sonido": son}
+    # Los subtítulos van en la escala del reel montado, así que pasan tal cual:
+    # no hay nada que traducir. Estuvieron declarados en el contrato y
+    # validados desde el primer día, pero esta línea no existía y el spec salía
+    # sin ellos — el agente escribía subtítulos, el validador los aceptaba y no
+    # aparecían en el video, sin ningún error que lo explicara.
+    subs = [{"texto": str(x["texto"]).strip(),
+             "desde": round(float(x["desde"]), 3),
+             "hasta": round(float(x["hasta"]), 3)}
+            for x in g.get("subtitulos") or []
+            if str(x.get("texto") or "").strip()
+            and x.get("desde") is not None and x.get("hasta") is not None]
+
+    return {"nombre": nombre, "tramos": tramos, "sonido": son,
+            "subtitulos": subs}
