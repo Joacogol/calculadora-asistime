@@ -190,8 +190,15 @@ def verificar(guion: dict, materiales: dict, tapas_seg: float = 0.0) -> list[str
 
     # ── los subtítulos, que van en la escala del reel montado ──
     subs = guion.get("subtitulos") or []
+    # «auto» es «transcribí el audio y armalos vos». Se resuelve en
+    # `video.desde_guion`, ANTES de validar, así que si llegó hasta acá como
+    # texto es porque no había nada que transcribir — y eso no es un error:
+    # un peloteo de pádel no tiene voz y el reel sale igual, sin subtítulos.
+    if isinstance(subs, str):
+        subs = []
     if not isinstance(subs, list):
-        problemas.append("«subtitulos» tiene que ser una lista.")
+        problemas.append("«subtitulos» tiene que ser una lista, o «auto» para "
+                         "sacarlos del audio.")
         subs = []
     previo = None
     for i, s in enumerate(sorted(
@@ -348,7 +355,8 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
     subs = [{"texto": str(x["texto"]).strip(),
              "desde": round(float(x["desde"]), 3),
              "hasta": round(float(x["hasta"]), 3)}
-            for x in g.get("subtitulos") or []
+            for x in (g.get("subtitulos") or [])
+            if isinstance(x, dict)
             if str(x.get("texto") or "").strip()
             and x.get("desde") is not None and x.get("hasta") is not None]
 

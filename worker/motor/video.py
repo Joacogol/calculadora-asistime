@@ -16,6 +16,7 @@ nada.
     python3 video.py reel.json
 """
 import json
+import logging
 import shutil
 import subprocess
 import sys
@@ -32,6 +33,8 @@ TIPO_TITULO = FUENTES / "Barlow-Black.ttf"
 TIPO_PIE = FUENTES / "BarlowCondensed-Medium.ttf"
 VELO_PNG = RAIZ / "assets" / "velo-reel.png"
 _BANCO: dict = {}
+
+log = logging.getLogger(__name__)
 
 ANCHO, ALTO, FPS = 1080, 1920, 30
 NEGRO = "0x0A0A0A"
@@ -795,7 +798,8 @@ if __name__ == "__main__":
 
 
 def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
-                materiales: dict | None = None) -> tuple[Path, list[str]]:
+                materiales: dict | None = None,
+                vocabulario: str = "") -> tuple[Path, list[str]]:
     """Valida un guion de edición, lo traduce y lo renderiza.
 
     Es la puerta que usa el agente. Existe para que el guion se valide SIEMPRE
@@ -809,6 +813,32 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     from . import guion as _guion
 
     base = Path(carpeta_material)
+    avisos_previos: list[str] = []
+
+    # `subtitulos: "auto"` significa «sacalos de lo que se dice en el video».
+    # Se resuelve ACÁ y no en cada puerta porque por acá pasan las dos: la tool
+    # del chat y el agente diseñador que corre `video.py guion.json`. Una sola
+    # vez, y ninguna de las dos se puede olvidar.
+    #
+    # Va ANTES de validar a propósito: lo que salga de la transcripción se
+    # valida igual que si lo hubiera escrito una persona. Si el audio no tiene
+    # voz, esto devuelve una lista vacía y el reel sale sin subtítulos, que es
+    # lo correcto — no todo video tiene algo que subtitular.
+    if isinstance(g.get("subtitulos"), str) and \
+            g["subtitulos"].strip().lower() in ("auto", "automatico", "automático"):
+        from . import habla as _habla
+        g = dict(g)
+        try:
+            g["subtitulos"] = _habla.para_guion(g, base, vocabulario or "")
+            log.info("subtítulos automáticos: %d frases", len(g["subtitulos"]))
+        except Exception as e:                               # noqa: BLE001
+            # Un reel sin subtítulos es peor que uno con subtítulos, pero es
+            # muchísimo mejor que ningún reel. Se sigue y se avisa.
+            log.warning("no pude sacar los subtítulos del audio: %s", e)
+            g["subtitulos"] = []
+            avisos_previos.append(
+                "no pude sacar los subtítulos del audio, así que el reel sale "
+                f"sin ellos ({e})")
     if materiales is None:
         # Si no vino el análisis hecho, se sondean los archivos del guion. Es
         # barato —leer cabeceras, no decodificar— y hace que la validación
@@ -826,6 +856,6 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
         if pista and (base / pista).exists():
             materiales.setdefault(pista, 0.0)
 
-    avisos = _guion.verificar(g, materiales)
+    avisos = avisos_previos + _guion.verificar(g, materiales)
     spec = _guion.a_spec(g, nombre, base)
     return reel(spec, salida), avisos
