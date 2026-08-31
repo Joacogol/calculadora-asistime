@@ -1271,10 +1271,23 @@ def atender(cli) -> int:
 
     **Es sync y tiene que llamarse con `asyncio.to_thread`**, por Playwright.
     """
+    # El MONTAJE va primero y NO depende de la ficha de video, a propósito.
+    #
+    # `_ficha` lee el bloque `reels` del `marca.json`, que dice qué modelo de IA
+    # usar, cuántos créditos tope y qué duración. Todo eso existe para vigilar
+    # una compra. Un montaje con material propio no compra nada: no hay modelo,
+    # no hay créditos, no hay clave de Magnific.
+    #
+    # Cuando esto estaba adentro del `if not ficha: return 0`, una marca que
+    # todavía no tenía prendido el motor de video —Clínica, por ejemplo— no
+    # podía ni pegar dos clips suyos, que es lo más barato que hace el sistema.
+    # Estaban atados dos permisos que no tienen nada que ver: «puede gastar
+    # créditos en generar video» y «puede editar sus propios videos».
+    movidas = atender_montajes(cli, {}, cli.subir, _marca_mod(cli.marca))
+
     ficha = _ficha(cli.marca)
     if not ficha:
-        return 0
-    movidas = atender_montajes(cli, ficha, cli.subir, _marca_mod(cli.marca))
+        return movidas
     return movidas + atender_todos(
         cli, ficha,
         lambda fila, destino: rotulo(cli.marca, fila, destino),

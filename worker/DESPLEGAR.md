@@ -1450,6 +1450,75 @@ herramienta dice lo que corresponde a cada uno.
 
 ---
 
+## Montaje de reels: darlo de alta en un cliente (31/8/2026)
+
+Editar videos que el cliente ya tiene es la capacidad más ancha que construimos:
+**toda empresa filma cosas y casi ninguna las edita.** No cuesta créditos, así
+que no hay ninguna razón para tenerla en un cliente sí y en otro no.
+
+### Lo primero: no confundirla con el motor de video
+
+Son dos permisos distintos y estuvieron atados por error hasta hoy.
+
+| | Generar video con IA | Montar material propio |
+|---|---|---|
+| Qué hace | un modelo INVENTA el video | corta y pega lo que ya existe |
+| Cuesta | miles de créditos por pieza | **nada** |
+| Necesita | bloque `reels` en `marca.json`, clave de Magnific, topes | sólo la tabla |
+| Se pide con | `crear_reel` | `montar_reel` |
+
+`atender()` chequeaba el bloque `reels` **antes** del montaje, así que una marca
+sin el motor de video prendido —Clínica— no podía ni pegar dos clips suyos, que
+es lo más barato que hace el sistema. El montaje ahora corre primero y con ficha
+vacía. Una base sin tabla `reels` tampoco rompe: `_pendientes` ya devolvía vacío
+ante un 404.
+
+### Los cuatro pasos
+
+**1 · La base.** Correr `migraciones/montaje-de-reels.sql` en el Supabase del
+cliente. Es idempotente y sirve para los dos casos: crea la tabla si no está, y
+si ya estaba le agrega `clips`, `guion` y vuelve `foto` opcional.
+
+**2 · La Edge Function.** Desplegar `api-reels`. Es el mismo código para todos;
+lo único propio del cliente son sus variables (`API_CLAVE`, `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`).
+
+**3 · El worker.** Un solo despliegue sirve para todos los clientes: es la misma
+imagen. Trae el motor, Whisper y el corte de tiempos muertos.
+
+**4 · Las herramientas en Asistime.** Dos, con el mismo código que Boss (tenant
+119, ids 2139 y 2132) cambiando la URL de la función y la `API_CLAVE`:
+
+· `montar_reel` — la puerta. Su descripción tiene que decir con todas las letras
+  que NO gasta créditos y que `crear_reel` sí: es la única forma de que el
+  agente elija bien cuando la persona mandó videos.
+· `estado_reel` — sirve para los dos caminos y los distingue por el campo
+  `montado` que devuelve la función. Importa: sin eso le dice a la persona que
+  «el video lo generó una IA y puede deformar caras», que en un montaje con
+  material real es falso.
+
+### Lo que hay que decidir por cliente
+
+**El vocabulario de la marca.** Sale de `NOMBRE` y de un `VOCABULARIO` opcional
+en el `marca.py`, y se le pasa a Whisper como pista. No es cosmético: medido,
+«Boss Padel» se transcribía «vos panel», y con la pista salió bien. Un cliente
+sin vocabulario propio va a ver su nombre mal escrito en su propio reel.
+
+**Nada más.** No hay modelo que elegir, ni tope de créditos, ni duración por
+defecto: todo eso es del otro camino.
+
+### Lo que conviene mirar antes de prometerlo
+
+**El material.** Esto brilla con alguien hablando a cámara. Un peloteo de pádel
+no tiene nada que subtitular y casi nada que recortar, así que en Boss el valor
+está en pegar y encuadrar, no en los subtítulos.
+
+**El audio de los clientes no sale a ningún lado.** Whisper corre adentro del
+worker. Para Clínica Preventiva eso no es un detalle: es la diferencia entre
+poder ofrecerlo y no poder.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:
