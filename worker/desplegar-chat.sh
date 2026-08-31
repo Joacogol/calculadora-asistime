@@ -148,13 +148,30 @@ if [ -n "$SOLICITAN_REELS" ]; then
 fi
 
 echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
+# ── Por qué 8 núcleos y no 2 ──────────────────────────────────────────────
+# Montar un reel es, casi todo, codificar video: es trabajo de CPU puro y se
+# reparte bien entre núcleos. Y Cloud Run cobra por NÚCLEO-SEGUNDO, no por
+# corrida: cuatro veces la máquina durante un tercio del tiempo sale
+# aproximadamente lo mismo por reel. La cuenta no da exactamente igual —x264
+# no escala perfecto y el reparto se pierde un poco— pero la diferencia de
+# precio es de centavos, y la de espera es de minutos.
+#
+# Con 2 núcleos, el primer reel que pidió un cliente de verdad se comió los 30
+# minutos de límite y murió sin terminar. Un cliente no espera media hora por
+# un reel: si esto tarda, no se vende.
+#
+# La memoria sube a 4 GiB por dos motivos. Uno, Cloud Run pide un mínimo de
+# memoria para dar 8 núcleos. Dos, en el peor momento conviven el modelo de
+# transcripción (~1 GB), un Chromium y un ffmpeg trabajando sobre cuadros de
+# 1080×1920: con 2 GiB eso estaba al filo, y quedarse sin memoria mata el
+# proceso igual que el reloj, y con menos rastro todavía.
 # El separador ^|^ es porque CLIENTES es un JSON con comas adentro y gcloud
 # usa la coma para separar variables: sin esto, parte el JSON al medio.
 gcloud run jobs deploy "$JOB" \
   --source . \
   --region "$REGION" \
   --service-account "$SA" \
-  --memory 2Gi --cpu 2 --task-timeout 30m --max-retries 1 \
+  --memory 4Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
   --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}" \
   --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \

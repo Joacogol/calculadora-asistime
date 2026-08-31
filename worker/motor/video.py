@@ -15,6 +15,7 @@ nada.
 
     python3 video.py reel.json
 """
+import contextlib
 import json
 import logging
 import shutil
@@ -128,8 +129,26 @@ def _texto_dibujado(texto: str, tmp: Path, i: int, pos="arriba") -> str:
 # cantidad de cuadros de referencia fijados a mano en vez de dejar que el preset
 # los deduzca. Así el `avcC` sirve para todo el archivo y el pegado sin
 # recodificar (`-c copy`) es válido. No tocar sin volver a probar en un Mac.
+#
+# El preset es `veryfast` y no `slow`, y eso NO es una concesión de calidad:
+# es la corrección de un error que costaba veinte minutos por reel.
+#
+# `slow` + `crf 18` es calidad de masterizado. Instagram recomprime todo lo
+# que se sube a una fracción de ese bitrate, así que esa calidad no la ve
+# NADIE: se paga entera en tiempo de máquina y se tira en el camino. Y no se
+# paga una vez — este juego de parámetros se aplica UNA VEZ POR TRAMO, así
+# que un reel de tres clips lo pagaba tres veces.
+#
+# Medido con los tres clips reales de Boss (61,3 s de material) en la máquina
+# del job: con `slow` el pedido se comía los 30 minutos de límite y moría sin
+# terminar. `veryfast` con `crf 20` da un archivo indistinguible después del
+# recomprimido de Instagram.
+#
+# Lo que NO se toca es `ref` y `bframes`: van fijos acá abajo justamente para
+# que el `avcC` siga siendo el mismo en todos los tramos. El preset cambia
+# cuánto busca el codificador, no la forma del flujo.
 VIDEO_X264 = [
-    "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
     "-profile:v", "high", "-level", "4.2", "-pix_fmt", "yuv420p",
     "-x264-params", "ref=4:bframes=3:keyint=60:min-keyint=30:scenecut=0",
     "-video_track_timescale", "30000",
@@ -141,6 +160,34 @@ VIDEO_X264 = [
     "-color_trc", "bt709", "-color_range", "tv",
 ]
 AUDIO_AAC = ["-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2"]
+
+
+def _con_preset(base: list[str], preset: str, crf: int) -> list[str]:
+    """El mismo juego de parámetros con otro preset. Se deriva y no se copia
+    para que no se separen: si mañana cambia el color o el nivel, cambia acá y
+    en el intermedio a la vez."""
+    v = list(base)
+    v[v.index("-preset") + 1] = preset
+    v[v.index("-crf") + 1] = str(crf)
+    return v
+
+
+#: El codificador para los tramos que DESPUÉS se vuelven a codificar.
+#:
+#: Cuando el reel lleva subtítulos o hook, cada tramo es un archivo de paso: se
+#: pega con los otros y esa unión se vuelve a codificar entera para quemarle el
+#: texto encima. Poner cuidado en comprimir un archivo de paso es trabajo que se
+#: tira: se paga la compresión buena y a los treinta segundos se descarta.
+#:
+#: `ultrafast` con un `crf` más fino invierte el trato: sale mucho más rápido y
+#: ocupa más, pero eso que ocupa vive un rato en `/tmp` y llega al paso final
+#: sin haber perdido nada que se note. Medido sobre un clip de 21 s: la misma
+#: cadena tarda 44,5 s con `veryfast` y 32,3 s con `ultrafast`.
+#:
+#: Si NO hay texto que quemar, el tramo ES el resultado: ahí se usa
+#: `VIDEO_X264` como siempre. Esa decisión la toma `reel()`, que es el único
+#: lugar que sabe si viene una pasada más.
+VIDEO_INTERMEDIO = _con_preset(VIDEO_X264, "ultrafast", 18)
 
 
 
@@ -246,7 +293,42 @@ ALTO_SUBTITULO = 300
 PIE_SUBTITULO = 330
 
 
-def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
+@contextlib.contextmanager
+def _chromium():
+    """Un solo Chromium para todas las capas de texto del reel.
+
+    Antes cada función de dibujo abría el suyo y lo cerraba. Para el hook, que
+    es uno, da igual. Para los subtítulos NO: un reel de un minuto lleva unos
+    treinta carteles, y eran treinta arranques de navegador —con su perfil
+    nuevo, su GPU de mentira y su primera compilación de la hoja de estilo—
+    para sacar treinta fotos de un texto blanco.
+    """
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        try:
+            yield b
+        finally:
+            b.close()
+
+
+def _esperar_tipografia(pg) -> None:
+    """Espera a que la tipografía esté cargada, en vez de dormir un rato fijo.
+
+    Acá había un `wait_for_timeout(280)`, que es lo peor de los dos mundos: de
+    más cuando la tipografía ya estaba —el caso normal, y con treinta
+    subtítulos son ocho segundos regalados— y de menos el día que tarde, en el
+    que `QUE_ENTRE` mediría la tipografía de reemplazo y achicaría la frase
+    contra un ancho que no es el que se va a dibujar. `document.fonts.ready`
+    es el dato exacto y llega apenas está.
+    """
+    try:
+        pg.evaluate("document.fonts.ready.then(() => true)")
+    except Exception:                                        # noqa: BLE001
+        pg.wait_for_timeout(280)
+
+
+def _html_subtitulo(texto: str, cuerpo: int = 68) -> str:
     """Una frase de subtítulo, con la tipografía de la marca y fondo transparente.
 
     El texto tiene que leerse sobre CUALQUIER cosa: un clip claro, uno oscuro,
@@ -256,7 +338,7 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
     El cuerpo por defecto es grande —68 px— porque un reel se mira en un
     teléfono, con el pulgar encima y a veces sin sonido: el subtítulo ES el
     mensaje, no una nota al pie. Poner un número grande es seguro justamente
-    porque abajo está el guardián: si la frase no entra, la achica sola.
+    porque después está el guardián: si la frase no entra, la achica sola.
 
     El tamaño lo termina de decidir `motor.render.QUE_ENTRE`, el mismo guardián
     que usan las placas. No es adorno: la regla de 42 caracteres por línea que
@@ -264,16 +346,12 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
     exactamente lo que dejó salir «PAPANICOLAOU» cortado el 31/8. Acá se mide
     lo dibujado.
     """
-    from playwright.sync_api import sync_playwright
-    from .render import QUE_ENTRE, MARGEN_SEGURO
-
-    salida = tmp / f"sub{i:02d}.png"
     # El CSS de la marca va PRIMERO y las reglas de acá después, a propósito.
     # Al revés, el `.canvas{background:#FFFFFF}` de la hoja de la marca —que
     # para una placa está bien— pisaría el fondo transparente y el subtítulo
     # saldría con un rectángulo blanco de 1080×300 tapando el video. Es
     # exactamente la trampa que ya está anotada en `reelero.rotulo()`.
-    html = f"""<html><head><meta charset="utf-8"><style>
+    return f"""<html><head><meta charset="utf-8"><style>
       {CSS_MARCA}
       @font-face{{font-family:'Sub';src:url('file://{TIPO_TITULO}');font-weight:900}}
       *{{margin:0;padding:0;box-sizing:border-box}}
@@ -288,17 +366,27 @@ def _subtitulo_png(texto: str, tmp: Path, i: int, cuerpo: int = 68) -> Path:
     </style></head><body>
       <div class="canvas"><div class="txt">{texto}</div></div>
     </body></html>"""
-    archivo = tmp / f"sub{i:02d}.html"
-    archivo.write_text(html, encoding="utf-8")
-    with sync_playwright() as p:
-        b = p.chromium.launch()
+
+
+def _subtitulos_png(textos: list[str], tmp: Path, cuerpo: int = 68) -> list[Path]:
+    """Los carteles de TODOS los subtítulos, en un solo navegador y una sola
+    pestaña: cada frase es un `goto` a otro archivo, que cuesta milisegundos.
+    """
+    from .render import QUE_ENTRE, MARGEN_SEGURO
+
+    salidas: list[Path] = []
+    with _chromium() as b:
         pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_SUBTITULO})
-        pg.goto(f"file://{archivo}")
-        pg.wait_for_timeout(280)
-        pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
-        pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
-        b.close()
-    return salida
+        for i, texto in enumerate(textos):
+            archivo = tmp / f"sub{i:02d}.html"
+            archivo.write_text(_html_subtitulo(texto, cuerpo), encoding="utf-8")
+            pg.goto(f"file://{archivo}")
+            _esperar_tipografia(pg)
+            pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
+            salida = tmp / f"sub{i:02d}.png"
+            pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
+            salidas.append(salida)
+    return salidas
 
 
 #: Cuánto se queda el hook en pantalla. Tres segundos es lo que tarda alguien
@@ -338,7 +426,6 @@ def _hook_png(texto: str, tmp: Path) -> Path:
     peso, el mismo interletrado apretado— y por eso usa la misma tipografía de
     título que las piezas.
     """
-    from playwright.sync_api import sync_playwright
     from .render import QUE_ENTRE, MARGEN_SEGURO
 
     salida = tmp / "hook.png"
@@ -362,18 +449,16 @@ def _hook_png(texto: str, tmp: Path) -> Path:
     </body></html>"""
     arch = tmp / "hook.html"
     arch.write_text(html, encoding="utf-8")
-    with sync_playwright() as p:
-        b = p.chromium.launch()
+    with _chromium() as b:
         pg = b.new_page(viewport={"width": ANCHO, "height": ALTO_HOOK})
         pg.goto(f"file://{arch}")
-        pg.wait_for_timeout(300)
+        _esperar_tipografia(pg)
         # Primero que entre en dos renglones, después que entre en el ancho.
         # En ese orden: achicar por el alto cambia cuántas líneas hay, así que
         # medir el ancho antes sería medir un texto que todavía va a cambiar.
         pg.evaluate(CABE_EN_DOS, LINEAS_HOOK)
         pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
         pg.locator(".canvas").screenshot(path=str(salida), omit_background=True)
-        b.close()
     return salida
 
 
@@ -414,7 +499,6 @@ def _cierre_png(texto: str, pie: str, tmp: Path) -> Path:
     La tapa no arregla el contenido, pero pone un punto final. Es lo mínimo que
     hace que una pieza parezca terminada.
     """
-    from playwright.sync_api import sync_playwright
     from .render import QUE_ENTRE, MARGEN_SEGURO
 
     salida = tmp / "cierre.png"
@@ -443,63 +527,73 @@ def _cierre_png(texto: str, pie: str, tmp: Path) -> Path:
     </body></html>"""
     arch = tmp / "cierre.html"
     arch.write_text(html, encoding="utf-8")
-    with sync_playwright() as p:
-        b = p.chromium.launch()
+    with _chromium() as b:
         pg = b.new_page(viewport={"width": ANCHO, "height": ALTO})
         pg.goto(f"file://{arch}")
-        pg.wait_for_timeout(300)
+        _esperar_tipografia(pg)
         pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
         pg.locator(".canvas").screenshot(path=str(salida))
-        b.close()
     return salida
 
 
-def _quemar_hook(entrada: Path, texto: str, tmp: Path) -> Path:
-    """Pone el hook encima de los primeros segundos del reel ya montado."""
-    if not texto:
-        return entrada
-    capa = _hook_png(texto, tmp)
-    con = tmp / "con-hook.mp4"
-    _correr(["ffmpeg", "-v", "error", "-y", "-i", str(entrada), "-i", str(capa),
-             "-filter_complex",
-             f"[0:v][1:v]overlay=x=0:y={ARRIBA_HOOK}:"
-             f"enable='between(t,0,{DURA_HOOK})'[v]",
-             "-map", "[v]", "-map", "0:a?", "-c:a", "copy",
-             "-movflags", "+faststart", str(con)], "hook")
-    return con
-
-
-def _quemar_subtitulos(mudo: Path, subs: list[dict], tmp: Path) -> Path:
-    """Superpone los subtítulos sobre el reel ya concatenado.
+def _quemar_textos(mudo: Path, subs: list[dict], hook: str, tmp: Path) -> Path:
+    """Quema los subtítulos Y el hook sobre el reel ya concatenado, en UNA pasada.
 
     Va DESPUÉS del concatenado y no adentro de cada tramo porque un subtítulo
     vive en la línea de tiempo del reel: puede empezar en un clip y terminar en
     el siguiente. Y va ANTES de la mezcla de audio porque esa etapa copia el
     video sin recodificar; si se hiciera al revés, no habría dónde dibujar.
+
+    **Los dos textos van juntos a propósito.** Antes eran dos funciones y dos
+    llamadas a ffmpeg, y cada una recodificaba el reel ENTERO: el hook —un
+    cartel que se ve tres segundos— costaba una pasada completa de codificación
+    sobre el minuto de video. Son la misma operación (pegar un PNG encima del
+    cuadro durante un rato) y el `filter_complex` encadena tantas capas como
+    haga falta, así que separarlas no compraba nada y costaba el doble.
+
+    Acá se fija el codificador con `VIDEO_X264` en vez de dejar el que ffmpeg
+    elige solo. No es cosmética: sin decirlo, ffmpeg usa `preset medium` y
+    `crf 23`, o sea que esta pasada —la última que toca la imagen— salía más
+    lenta Y peor que los tramos. Con el juego de parámetros de arriba también
+    quedan los mismos tags de color, que es lo que evita el salto de tono entre
+    un clip de cámara y una placa.
     """
-    if not subs:
+    if not subs and not hook:
         return mudo
-    capas = [_subtitulo_png(s["texto"], tmp, i) for i, s in enumerate(subs)]
+
+    # Todos los carteles se dibujan de una, con un solo Chromium.
+    capas: list[Path] = _subtitulos_png([s["texto"] for s in subs], tmp) if subs else []
+    #: (desde, hasta, y) de cada capa, en el mismo orden que `capas`.
+    cuando = [(float(s["desde"]), float(s["hasta"]),
+               ALTO - ALTO_SUBTITULO - PIE_SUBTITULO) for s in subs]
+
+    # El hook va ÚLTIMO en la cadena, o sea encima de todo. En los tres
+    # primeros segundos puede haber subtítulo y hook a la vez, y si se
+    # superponen el que tiene que ganar es el hook: es lo que decide si la
+    # persona se queda.
+    if hook:
+        capas.append(_hook_png(hook, tmp))
+        cuando.append((0.0, float(DURA_HOOK), ARRIBA_HOOK))
+
     entradas = []
     for c in capas:
         entradas += ["-i", str(c)]
 
-    y = ALTO - ALTO_SUBTITULO - PIE_SUBTITULO
     pasos, etiqueta = [], "0:v"
-    for i, s in enumerate(subs):
+    for i, (desde, hasta, y) in enumerate(cuando):
         sig = f"v{i}"
         pasos.append(
             f"[{etiqueta}][{i+1}:v]overlay=x=0:y={y}:"
-            f"enable='between(t,{float(s['desde']):.3f},{float(s['hasta']):.3f})'"
-            f"[{sig}]")
+            f"enable='between(t,{desde:.3f},{hasta:.3f})'[{sig}]")
         etiqueta = sig
 
-    con = tmp / "con-subtitulos.mp4"
+    con = tmp / "con-textos.mp4"
     _correr(["ffmpeg", "-v", "error", "-y", "-i", str(mudo), *entradas,
              "-filter_complex", ";".join(pasos),
              "-map", f"[{etiqueta}]", "-map", "0:a?",
-             "-c:a", "copy", "-movflags", "+faststart", str(con)],
-            "subtítulos")
+             *VIDEO_X264, "-c:a", "copy",
+             "-movflags", "+faststart", str(con)],
+            "subtítulos y hook")
     return con
 
 
@@ -534,8 +628,28 @@ def _fondo_y_frente(recorte: float, foco_x: float) -> str:
     """
     return (
         f"[0:v]split=2[bg][fg];"
-        f"[bg]scale={ANCHO}:{ALTO}:force_original_aspect_ratio=increase,"
-        f"crop={ANCHO}:{ALTO},gblur=sigma=42,eq=brightness=-0.16:saturation=0.65[bgb];"
+        # El fondo se desenfoca EN CHICO y recién después se agranda.
+        #
+        # Antes se hacía al derecho: agrandar la fuente hasta cubrir 1080×1920
+        # y aplicar `gblur=sigma=42` sobre esos dos millones de píxeles. Para
+        # un 16:9 eso significaba escalar a 3413×1920 —tres veces el cuadro
+        # final— y desenfocar todo eso, cuadro por cuadro. Era, de lejos, el
+        # filtro más caro del motor.
+        #
+        # Y era gratis de arreglar, porque **un desenfoque fuerte destruye
+        # justamente el detalle que la resolución aporta**: achicar a un sexto,
+        # desenfocar ahí con un sexto del radio y volver a agrandar da una
+        # imagen que no se distingue de la otra, con 36 veces menos píxeles que
+        # tocar. Es el mismo truco que usan los fondos difuminados de
+        # cualquier interfaz.
+        #
+        # El agrandado final va con `bilinear` a propósito: sobre una imagen ya
+        # desenfocada no hay borde que un escalador caro pueda conservar, así
+        # que lanczos acá sólo costaría tiempo.
+        f"[bg]scale={ANCHO//6}:{ALTO//6}:force_original_aspect_ratio=increase,"
+        f"crop={ANCHO//6}:{ALTO//6},gblur=sigma=7,"
+        f"eq=brightness=-0.16:saturation=0.65,"
+        f"scale={ANCHO}:{ALTO}:flags=bilinear[bgb];"
         # De un 16:9 recortado a vertical sólo quedan 608 px de ancho que hay
         # que estirar a 1080: un aumento de 1,78×. Con el escalador por
         # defecto la imagen queda blanda al lado de las fotos, que son
@@ -581,7 +695,7 @@ def _marco_y_frente(alto_ventana: int, fondo: str) -> str:
     )
 
 
-def _segmento_video(t: dict, i: int, tmp: Path) -> Path:
+def _segmento_video(t: dict, i: int, tmp: Path, codec=None) -> Path:
     desde = float(t.get("desde", 0))
     dura = float(t["dura"])
     fuente = (RAIZ / t["archivo"]) if not Path(t["archivo"]).is_absolute() else Path(t["archivo"])
@@ -664,7 +778,7 @@ def _segmento_video(t: dict, i: int, tmp: Path) -> Path:
                 *extra,
                 "-filter_complex", cadena,
                 "-map", "[v]", "-map", pista_audio,
-                *VIDEO_X264, *AUDIO_AAC,
+                *(codec or VIDEO_X264), *AUDIO_AAC,
                 "-shortest", str(salida)]
 
     # Un tramo a otra velocidad va MUDO a propósito. Estirar el audio con
@@ -699,7 +813,7 @@ def _foco_del_banco(nombre: str) -> tuple[float, float]:
         return 0.5, 0.5
 
 
-def _segmento_foto(t: dict, i: int, tmp: Path) -> Path:
+def _segmento_foto(t: dict, i: int, tmp: Path, codec=None) -> Path:
     """Una foto quieta en un reel se lee como un error. Siempre lleva un
     acercamiento lento — el ojo necesita movimiento para no leerlo como que el
     video se colgó."""
@@ -756,12 +870,12 @@ def _segmento_foto(t: dict, i: int, tmp: Path) -> Path:
              "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
              *(["-loop", "1", "-t", str(dura), "-i", str(rot)] if rot else []),
              "-filter_complex", cadena, "-map", "[v]", "-map", "2:a",
-             *VIDEO_X264, *AUDIO_AAC,
+             *(codec or VIDEO_X264), *AUDIO_AAC,
              "-shortest", str(salida)], f"tramo {i} (foto)")
     return salida
 
 
-def _segmento_placa(png: Path, dura: float, i: int, tmp: Path) -> Path:
+def _segmento_placa(png: Path, dura: float, i: int, tmp: Path, codec=None) -> Path:
     """Una placa ya dibujada por Chromium, convertida en tramo de video."""
     salida = tmp / f"seg{i:02d}.mp4"
     _correr(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(dura), "-i", str(png),
@@ -770,7 +884,7 @@ def _segmento_placa(png: Path, dura: float, i: int, tmp: Path) -> Path:
                     f"pad={ANCHO}:{ALTO}:(ow-iw)/2:(oh-ih)/2:color=#0A0A0A,"
                     f"fps={FPS},setsar=1,format=yuv420p"),
              "-map", "0:v", "-map", "1:a",
-             *VIDEO_X264, *AUDIO_AAC,
+             *(codec or VIDEO_X264), *AUDIO_AAC,
              "-shortest", str(salida)], f"tramo {i} (placa)")
     return salida
 
@@ -920,16 +1034,23 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
         tramos.append({"tipo": "placa", "archivo": str(png),
                        "dura": float(cierre.get("dura") or DURA_CIERRE)})
 
+    # Si después viene una pasada de texto, los tramos son archivos de paso y
+    # se codifican rápido: lo que se comprima con cuidado acá se descarta en
+    # esa pasada. Si no viene ninguna, el tramo es el resultado.
+    subs = spec.get("subtitulos") or []
+    hook = str(spec.get("hook") or "")
+    codec = VIDEO_INTERMEDIO if (subs or hook) else VIDEO_X264
+
     segmentos = []
     for i, t in enumerate(tramos):
         tipo = t.get("tipo", "video")
         if tipo == "video":
-            segmentos.append(_segmento_video(t, i, tmp))
+            segmentos.append(_segmento_video(t, i, tmp, codec))
         elif tipo == "foto":
-            segmentos.append(_segmento_foto(t, i, tmp))
+            segmentos.append(_segmento_foto(t, i, tmp, codec))
         elif tipo == "placa":
             ruta = (RAIZ / t["archivo"]) if not Path(t["archivo"]).is_absolute() else Path(t["archivo"])
-            segmentos.append(_segmento_placa(ruta, float(t.get("dura", 1.6)), i, tmp))
+            segmentos.append(_segmento_placa(ruta, float(t.get("dura", 1.6)), i, tmp, codec))
         else:
             raise ValueError(f"tipo de tramo desconocido: {tipo}")
         print(f"  tramo {i+1}/{len(tramos)} · {tipo}")
@@ -947,14 +1068,10 @@ def reel(spec: dict, salida: Path = SALIDA) -> Path:
              "-i", str(lista), "-c", "copy", "-movflags", "+faststart",
              str(mudo)], "concatenado")
 
-    subs = spec.get("subtitulos") or []
-    if subs:
-        print(f"  quemando {len(subs)} subtítulos")
-        mudo = _quemar_subtitulos(mudo, subs, tmp)
-
-    if spec.get("hook"):
-        print(f"  hook: «{spec['hook']}»")
-        mudo = _quemar_hook(mudo, str(spec["hook"]), tmp)
+    if subs or hook:
+        print(f"  quemando {len(subs)} subtítulos"
+              + (f" y el hook «{hook}»" if hook else ""))
+        mudo = _quemar_textos(mudo, subs, hook, tmp)
 
     duraciones = [float(t.get("dura", 2.5)) for t in tramos]
     if spec.get("sonido", {}).get("activo", True):

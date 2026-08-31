@@ -1536,6 +1536,183 @@ poder ofrecerlo y no poder.
 
 ---
 
+## Cuánto tarda un reel, y por qué tardaba veinte minutos (31/8/2026)
+
+El primer reel que pidió un cliente de verdad —Boss, tres videos de WhatsApp,
+61,3 segundos de material— **se comió los 30 minutos de límite del job y murió
+sin terminar**. La fila quedó en `montando` para siempre, sin error y sin
+avisarle a nadie.
+
+Esto es lo que estaba mal. Ninguna de las cuatro cosas era la máquina: las
+cuatro estaban escritas en el código.
+
+### 1 · `-preset slow -crf 18`
+
+La peor, y la más fácil de no ver. Es calidad de masterizado —la que usarías
+para un archivo que va a cine— aplicada a un video que Instagram vuelve a
+comprimir a una fracción de ese bitrate apenas se sube. **Esa calidad no la ve
+nadie**: se paga entera en tiempo de máquina y se tira en el camino.
+
+Y no se pagaba una vez: `VIDEO_X264` se aplica **una vez por tramo**, y el
+recorte de silencios convierte tres clips en diez tramos. Se pagaba diez veces.
+
+Ahora es `veryfast` + `crf 20`. Después del recomprimido de Instagram el
+archivo es indistinguible.
+
+### 2 · El desenfoque del fondo, a resolución completa
+
+`gblur=sigma=42` sobre 1080×1920, y para un 16:9 eso significaba primero
+agrandar la fuente a 3413×1920 —tres veces el cuadro final— y desenfocar todo
+eso, cuadro por cuadro. Era el filtro más caro del motor.
+
+Y era gratis de arreglar, porque un desenfoque fuerte destruye justamente el
+detalle que la resolución aporta: se achica a un sexto, se desenfoca ahí con un
+sexto del radio, y se agranda de vuelta. Se ve igual, con 36 veces menos
+píxeles que tocar.
+
+### 3 · Dos recodificaciones enteras para pegar texto
+
+Los subtítulos y el hook eran dos funciones y dos llamadas a ffmpeg, y **cada
+una recodificaba el reel entero**. El hook —un cartel que se ve tres segundos—
+costaba una pasada completa de codificación sobre el minuto de video.
+
+Son la misma operación (pegar un PNG encima del cuadro durante un rato) y el
+`filter_complex` encadena tantas capas como haga falta. Ahora es una sola
+pasada, `_quemar_textos`.
+
+De paso: esa pasada no decía con qué codificar, así que ffmpeg elegía solo
+—`preset medium`, `crf 23`— y la última etapa que toca la imagen salía más
+lenta **y** peor que los tramos. Ahora usa `VIDEO_X264` como todo lo demás.
+
+### 4 · Un Chromium por subtítulo
+
+`_subtitulo_png` abría un navegador, sacaba una foto y lo cerraba. Con 22
+subtítulos eran 22 arranques de Chromium —perfil nuevo, GPU de mentira,
+primera compilación de la hoja de estilo— para sacar 22 fotos de un texto
+blanco. Ahora `_subtitulos_png` los dibuja todos en una sola pestaña.
+
+Se aprovechó para cambiar el `wait_for_timeout(280)` por `document.fonts.ready`.
+Un rato dormido es lo peor de los dos mundos: de más cuando la tipografía ya
+estaba (el caso normal) y de menos el día que tarde, en el que `QUE_ENTRE`
+mediría la tipografía de reemplazo y achicaría la frase contra un ancho que no
+es el que se va a dibujar.
+
+### 5 · Los tramos se comprimían con cuidado para tirarlos
+
+Esta salió de medir, no de leer. Cuando el reel lleva subtítulos o hook, cada
+tramo es un archivo **de paso**: se pega con los otros y esa unión se vuelve a
+codificar entera para quemarle el texto encima. O sea que la compresión
+cuidadosa de cada tramo se pagaba y se descartaba treinta segundos después.
+
+`VIDEO_INTERMEDIO` (`ultrafast`, `crf 18`) invierte el trato para ese caso:
+sale rápido, ocupa más —un rato, en `/tmp`— y llega al paso final sin haber
+perdido nada que se note. La decisión la toma `reel()`, que es el único lugar
+que sabe si viene una pasada más; si no viene ninguna, el tramo **es** el
+resultado y se codifica con `VIDEO_X264` como siempre.
+
+### La medición
+
+Mismos tres clips reales de Boss, misma máquina de 4 núcleos, de punta a punta:
+transcribir, cortar tiempos muertos, 10 tramos, 22 subtítulos, hook y mezcla.
+Salen 55,3 segundos de reel.
+
+| | Antes | Ahora |
+|---|---|---|
+| Tiempo total | **7 min 6 s** | **2 min 43 s** |
+| Trabajo de máquina | ~1.224 s de CPU | ~490 s de CPU |
+| Archivo | 27,5 MB | 39,6 MB |
+
+**2,6 veces más rápido, con 2,5 veces menos trabajo de máquina.** El archivo
+pesa más porque `veryfast` comprime menos que `slow` — y se ve igual o un poco
+mejor, porque el bitrate más alto compensa de sobra en material de cámara en
+mano. 40 MB para un reel de un minuto no es problema para Instagram.
+
+El job además pasó de **2 núcleos a 8**, así que en producción el tiempo real
+va a ser bastante menor que esos 2 min 43 s.
+
+### Dónde queda el tiempo ahora
+
+Cronometrado etapa por etapa, sobre el mismo reel:
+
+| Etapa | Segundos | % |
+|---|---:|---:|
+| Codificar los tramos | 89,3 | 55 % |
+| Quemar subtítulos y hook | 41,5 | 26 % |
+| Transcribir (Whisper) | 23,3 | 14 % |
+| Mezclar el audio | 5,4 | 3 % |
+| Dibujar los subtítulos (Chromium) | 5,3 | 3 % |
+| Dibujar el hook (Chromium) | 1,1 | 1 % |
+
+Los 22 Chromium que antes eran minutos ahora son 5 segundos: ese frente está
+cerrado.
+
+**Lo que queda es codificar, y no hay mucho más para sacar sin romper algo.**
+Se midió aparte la cadena de filtros de un tramo, y de los 24,8 s que tarda,
+**13,6 son del `unsharp`** — más que la mitad. Se probó bajarlo a un núcleo de
+3×3 (ahorra 2,3 s: el costo no es el tamaño del núcleo) y reemplazarlo por
+`cas`, que se supone el sharpener más moderno y **tardó 38 s, mucho peor**. Así
+que el `unsharp` se queda: es caro y está comprando algo real — estos clips
+vienen en 464×832 y se agrandan 2,3 veces, que es exactamente el caso para el
+que está puesto.
+
+El golpe de zoom, que parecía el sospechoso obvio por rescalar cuadro a cuadro,
+cuesta **0,5 s**. No tocarlo.
+
+El job además pasó de **2 núcleos a 8** en `desplegar-chat.sh`. Cloud Run cobra
+por núcleo-segundo, no por corrida: cuatro veces la máquina durante un tercio
+del tiempo sale aproximadamente lo mismo por reel. La cuenta no da exactamente
+igual —x264 no escala perfecto— pero la diferencia de precio es de centavos y
+la de espera es de minutos.
+
+### Lo que queda por hacer, y no se puede desde este repo
+
+**El modelo de Whisper se baja en cada corrida.** El contenedor es efímero, así
+que los 464 MB del modelo `small` viajan de HuggingFace cada vez. Medido acá
+son ~9 segundos de descarga más 4 de carga; desde São Paulo puede ser bastante
+más, y encima es una dependencia de red que puede fallar.
+
+Se arregla en el `Dockerfile`, que **no está en este repo** —vive sólo en el
+worker— así que va escrito acá para pegarlo a mano:
+
+```dockerfile
+# Precarga el modelo de transcripción: el contenedor es efímero y sin esto se
+# bajan 464 MB de HuggingFace en cada corrida.
+ENV HF_HOME=/opt/modelos
+RUN python -c "from faster_whisper import WhisperModel; \
+      WhisperModel('small', device='cpu', compute_type='int8')" \
+    && chmod -R a+rX /opt/modelos
+```
+
+El `HF_HOME` explícito no es adorno: sin él la caché queda en el `$HOME` del
+usuario que corrió el `RUN`, y si el job corre con otro usuario no la puede
+leer — se baja igual y no se entera nadie.
+
+---
+
+## Un montaje que se muere tiene que decir que se murió (31/8/2026)
+
+El job se corta solo a los 30 minutos (`--task-timeout 30m`). Cuando eso pasa
+el proceso desaparece de golpe: no corre ningún `except`, no se escribe ningún
+error, y **la fila queda en `montando` para siempre**. Sin URL, sin motivo, y
+sin que nadie la vuelva a mirar, porque el bucle de montajes sólo levanta filas
+en `pendiente`.
+
+Le pasó al primer reel de verdad y no se enteró nadie hasta que fuimos a mirar
+la base a mano. Es la diferencia entre «perdón, falló, mandámelo de nuevo» y un
+cliente esperando un video que no va a llegar nunca.
+
+`_rescatar_montajes` corre ahora al principio de `atender_montajes`: busca
+montajes quietos en `montando` hace más de **35 minutos** y los pasa a `error`
+con un texto en castellano que el agente puede leerle al cliente.
+
+Los 35 minutos son a propósito más que el límite del job: **mientras el proceso
+todavía pueda estar vivo, la fila es suya y no se toca.** Y el cambio de estado
+va con el mismo `_tomar` con filtro por el estado viejo que usa el resto: si
+entre la consulta y el PATCH el proceso terminó y puso `listo`, este PATCH no
+toca nada, en vez de pisar un reel que salió bien con un error que no ocurrió.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:

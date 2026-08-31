@@ -624,8 +624,8 @@ def _marcar(cli, rid: str, estado: str, **campos):
 TOPE_GENERANDO = 2 * 60 * 60
 
 
-def _colgada(fila: dict) -> bool:
-    """¿Esta fila lleva demasiado ESPERANDO A MAGNIFIC?
+def _colgada(fila: dict, tope: float = TOPE_GENERANDO) -> bool:
+    """¿Esta fila lleva demasiado quieta en el estado en que está?
 
     Se mide contra `actualizado_en` —el trigger `reels_tocar` lo pone en cada
     UPDATE, así que es el momento en que la fila pasó a `generando`— y NO
@@ -647,7 +647,7 @@ def _colgada(fila: dict) -> bool:
         return False
     if cuando.tzinfo is None:
         cuando = cuando.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - cuando).total_seconds() > TOPE_GENERANDO
+    return (datetime.now(timezone.utc) - cuando).total_seconds() > tope
 
 
 def _gastado_este_mes(cli) -> int:
@@ -977,6 +977,55 @@ def _es_montaje(fila: dict) -> bool:
     return bool(fila.get("clips"))
 
 
+#: Cuánto puede estar un montaje quieto en «montando» antes de darlo por muerto.
+#:
+#: El job de Cloud Run se corta solo a los 30 minutos (`--task-timeout 30m` en
+#: `desplegar-chat.sh`). Cuando eso pasa el proceso desaparece de golpe: no
+#: corre ningún `except`, no se escribe ningún error, y la fila queda en
+#: «montando» PARA SIEMPRE. Sin URL, sin motivo, y sin que nadie la vuelva a
+#: mirar, porque el bucle de montajes sólo levanta filas en «pendiente».
+#:
+#: Pasó con el primer reel que pidió un cliente de verdad, el 31/8/2026: se
+#: quedó colgado y no se enteró nadie hasta que fuimos a mirar la base a mano.
+#: Un pedido que se muere tiene que DECIR que se murió — es la diferencia entre
+#: «perdón, falló, mandámelo de nuevo» y un cliente esperando un video que no
+#: va a llegar nunca.
+#:
+#: 35 minutos es a propósito MÁS que el límite del job: mientras el proceso
+#: todavía pueda estar vivo, la fila es suya y no se toca. Recién cuando ya no
+#: puede estarlo se la da por perdida.
+MONTAJE_PERDIDO = 35 * 60
+
+
+def _rescatar_montajes(cli) -> int:
+    """Destraba los montajes que quedaron colgados. Devuelve cuántos rescató.
+
+    Corre ANTES de tomar trabajo nuevo, por dos razones. Una: es barato —una
+    consulta— y deja la cola limpia antes de agregarle nada. Otra: si el motivo
+    del cuelgue es que el material era pesado, lo peor que se puede hacer es
+    apilarle encima otro pedido sin haber contado el anterior.
+    """
+    rescatados = 0
+    for fila in _pendientes(cli, "montando", limite=10):
+        if not _es_montaje(fila) or not _colgada(fila, MONTAJE_PERDIDO):
+            continue
+        # El `_tomar` no es paranoia: entre la consulta y este PATCH puede
+        # haber pasado que el proceso que la tenía terminara y la pusiera en
+        # «listo». El filtro por el estado viejo hace que en ese caso este
+        # PATCH no toque nada, en vez de pisar un reel que salió bien con un
+        # error que no ocurrió.
+        if not _tomar(cli, fila["id"], "montando", "error"):
+            continue
+        log.warning("[%s] montaje %s colgado: lo doy por perdido",
+                    getattr(cli, "marca", "?"), fila["id"])
+        _marcar(cli, fila["id"], "error",
+                notas="el montaje se cortó por tiempo y no llegó a terminar. "
+                      "Suele ser material muy largo: probá con menos videos o "
+                      "más cortos, o volvé a pedirlo.")
+        rescatados += 1
+    return rescatados
+
+
 def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
     """Los reels armados con clips que ya existen. Devuelve cuántas filas movió.
 
@@ -986,7 +1035,7 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
     """
     from motor import video as mvideo
 
-    movidas = 0
+    movidas = _rescatar_montajes(cli)
     for fila in _pendientes(cli, "pendiente"):
         if not _es_montaje(fila):
             continue
