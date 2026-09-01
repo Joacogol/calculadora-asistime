@@ -665,7 +665,20 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path
     # clip puede venir con MÚSICA propia, y mezclarla debajo de la nuestra no da
     # ambiente, da dos canciones a la vez. Con 2.5 se pide `no_music` y lo que
     # queda es sonido de ambiente de verdad, que sí suma.
-    ambiente = usar_ambiente and _tiene_audio(clip)
+    #
+    # **Pero esa regla habla de MEZCLAR, así que sólo vale si hay con qué.** Sin
+    # música nuestra no hay dos canciones que se peleen: hay una sola pista
+    # posible, la del clip, y descartarla no deja un reel más limpio, deja un
+    # reel MUDO. Pasó el 1/9/2026 con el reel `50c7b68e` de Boss: el crudo traía
+    # ambiente de verdad —‑21,4 dB de media, ‑6,1 de pico— y el archivo final
+    # salió sin una sola pista de audio, porque Boss todavía no tiene banco de
+    # música y Mini 2.0 está marcado `manda_el_audio: False`. Las dos cosas por
+    # separado eran correctas; juntas daban silencio.
+    #
+    # Un reel mudo en el feed no se lee como una decisión estética: se lee como
+    # que algo se rompió. Entre el sonido que trajo el modelo y nada, el sonido
+    # que trajo el modelo gana siempre.
+    ambiente = (usar_ambiente or musica is None) and _tiene_audio(clip)
     filtro = [f"[0:v]scale=1080:1920:flags=lanczos,"
               f"fade=t=out:st={dur-0.5:.2f}:d=0.5[vout]"]
     orden = ["-i", str(clip)]
@@ -1155,6 +1168,24 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             try:
                 clip = bajar(fila["clip_url"], t / "clip.mp4")
 
+                # ── Se pidió el VIDEO, no la pieza ────────────────────────
+                #
+                # Acá termina el trabajo: se guarda el archivo y se entrega.
+                # No se le monta nada encima porque nadie lo pidió, y ponerle
+                # un título que no se pidió a un material que va a editarse
+                # después no es un extra, es tener que rehacerlo.
+                #
+                # `url` queda en NULL y eso es la señal, no un olvido: una
+                # fila con `url` es una pieza terminada —lista para publicar—
+                # y esto no lo es. Lo que hay es `clip_url`, que la API
+                # devuelve como `video_crudo`.
+                if _solo_video(fila):
+                    _marcar(cli, fila["id"], "listo",
+                            clip_url=subir(clip, f"reels/{fila['id']}-crudo.mp4"),
+                            creditos_gastados=fila.get("creditos_estimados"))
+                    movidas += 1
+                    continue
+
                 # El rótulo va en su propio try por la misma razón que la
                 # música: acá el video YA está generado y pagado. Que el texto
                 # no se pueda dibujar es un problema; perder por eso un clip de
@@ -1245,6 +1276,30 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
 def _es_montaje(fila: dict) -> bool:
     """¿Esta fila trae material propio en vez de pedir uno inventado?"""
     return bool(fila.get("clips"))
+
+
+def _solo_video(fila: dict) -> bool:
+    """¿Lo que se pidió es el VIDEO, no la pieza?
+
+    Un archivo y una pieza son dos cosas distintas, y hasta el 1/9/2026 acá
+    había una sola salida: se generaba el clip y en la misma operación se le
+    montaba título y música encima. Quien quería «un video para usar después»
+    recibía un reel cerrado, con una frase que no había pedido tapando la
+    imagen que sí.
+
+    Con las fotos esto ya estaba bien resuelto y por eso se copia: `crear_foto`
+    da un ARCHIVO —se mira, se descarta, se usa en otra cosa— y `crear_diseno`
+    arma la PIEZA. Ahora el video tiene los dos: `pieza: "video"` genera el clip
+    y **para ahí**. Sin rótulo, sin música, sin montaje. Ni siquiera pasa por
+    ffmpeg: se baja del CDN del proveedor, se guarda en nuestro bucket y se
+    entrega.
+
+    Viaja en `metricas` y no en una columna propia a propósito. `metricas` ya
+    se lee y se escribe en todo el recorrido, así que esto entra sin una
+    migración en las bases de los tres clientes — y una migración por cliente
+    es el tipo de paso manual que alguien se olvida de correr en el tercero.
+    """
+    return ((fila.get("metricas") or {}).get("pieza") or "reel") == "video"
 
 
 #: Cuánto puede estar un montaje quieto en «montando» antes de darlo por muerto.

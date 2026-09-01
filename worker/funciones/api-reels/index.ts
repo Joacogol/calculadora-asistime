@@ -37,6 +37,87 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+// ── Los dos sistemas que pueden generar el video ───────────────────────────
+//
+// Se pregunta cuál usar ANTES de gastar, y no se elige uno en silencio. No es
+// una preferencia técnica: son dos productos distintos —uno cobra en créditos
+// y hace hasta 30 segundos, el otro cobra en dólares y hace 5— y quien paga es
+// el cliente. Elegir por él es decidir cuánto gasta sin preguntarle.
+//
+// **El precio de verdad vive en `MODELOS`, en `app/reelero.py`.** Esto es una
+// copia para poder decirlo en el chat, porque una función de Supabase no puede
+// leer el Python del worker. Una copia se desincroniza sola, así que hay una
+// prueba que compara las dos y falla si se separan:
+// `herramientas/probar-precios.py`. Si tocás un precio acá o allá, corré eso.
+//
+// `desde` es lo que sale el video más corto de esa calidad — el número que una
+// persona necesita para elegir. El cobro exacto lo calcula el worker con la
+// duración real y vuelve en `creditos` cuando el pedido se acepta.
+const PROVEEDORES = {
+  magnific: {
+    nombre: "Magnific (Seedance)",
+    moneda: "creditos",
+    calidades: {
+      borrador: { modelo: "seedance-2-mini", resolucion: "480p", por_segundo: 70 },
+      normal: { modelo: "seedance-2-mini", resolucion: "720p", por_segundo: 140 },
+      maxima: { modelo: "seedance-2-5-pro", resolucion: "720p", por_segundo: 440 },
+    },
+    duraciones: "5 o 10 segundos; en calidad máxima, hasta 30",
+    demora_estimada_seg: 300,
+    nota: "Es el que está probado en producción: todos los videos que salieron " +
+      "hasta hoy se hicieron con este.",
+  },
+  fal: {
+    nombre: "fal.ai (MiniMax H3 Max)",
+    moneda: "usd",
+    calidades: {
+      borrador: { modelo: "h3-max", resolucion: "480p", por_segundo: 0.05 },
+      normal: { modelo: "h3-max", resolucion: "768p", por_segundo: 0.08 },
+      // H3 Max tiene dos resoluciones y nada más. `maxima` y `normal` son la
+      // misma: poner tres nombres para dos cosas haría que alguien pague
+      // «máxima» creyendo que compró algo distinto.
+      maxima: { modelo: "h3-max", resolucion: "768p", por_segundo: 0.08 },
+    },
+    duraciones: "5 segundos, y nada más",
+    demora_estimada_seg: 300,
+    nota: "Más barato. Todavía NO se probó con un video real: si falla, el " +
+      "pedido se marca con error y no se cobra nada.",
+  },
+} as const;
+
+type Proveedor = keyof typeof PROVEEDORES;
+
+/** Las dos opciones escritas para que las lea una persona en un chat. */
+function opcionesDeProveedor() {
+  return Object.entries(PROVEEDORES).map(([clave, p]) => {
+    const plata = (m: number) =>
+      p.moneda === "usd" ? `US$ ${m.toFixed(2)}` : `${Math.round(m)} créditos`;
+    // Los dos arrancan en 5 segundos, así que ese es el piso comparable.
+    const CORTO = 5;
+    return {
+      clave,
+      nombre: p.nombre,
+      duraciones: p.duraciones,
+      desde: plata(p.calidades.normal.por_segundo * CORTO),
+      desde_detalle: `${CORTO} segundos en calidad normal`,
+      diez_segundos: clave === "fal"
+        ? "no llega: sólo hace 5"
+        : plata(p.calidades.normal.por_segundo * 10),
+      demora_estimada_seg: p.demora_estimada_seg,
+      nota: p.nota,
+    };
+  });
+}
+
+const PREGUNTA_PROVEEDOR = {
+  codigo: "elegi_proveedor",
+  pregunta: "¿Con cuál de los dos sistemas lo genero? Mostrale las dos " +
+    "opciones con su precio y su duración, y volvé a llamarme con " +
+    "`proveedor` en «magnific» o «fal». Sin eso no se anota nada y no se " +
+    "gasta nada.",
+  opciones: opcionesDeProveedor(),
+};
+
 // Cuántos reels se pueden pedir por hora. Es un freno contra un bucle del chat,
 // NO el control de gasto: el que corta por plata es `creditos_maximos` del
 // `marca.json`, que mira los créditos de CADA pieza. El techo mensual que
@@ -123,6 +204,15 @@ Deno.serve(async (req) => {
   if (req.method === "GET") {
     const url0 = new URL(req.url);
 
+    // ── Con qué sistema se puede generar, y qué sale cada uno ────────────
+    //
+    // Está acá para que el agente pueda mostrar las opciones ANTES de
+    // encargar nada, sin tener los precios escritos en el código de la tool
+    // —donde quedarían viejos el día que cambien y nadie se enteraría—.
+    if (url0.searchParams.get("opciones")) {
+      return json({ proveedores: opcionesDeProveedor() });
+    }
+
     // ── Qué aprendió la marca ────────────────────────────────────────────
     //
     // Una memoria que no se puede mirar es una memoria en la que no se puede
@@ -195,7 +285,7 @@ Deno.serve(async (req) => {
     for (;;) {
       const r = await fetch(
         `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,notas,` +
-          `creditos_estimados,creado_en,titulo,clips,clip_url`,
+          `creditos_estimados,creado_en,titulo,clips,clip_url,metricas`,
         { headers: cab },
       );
       const filas = await r.json();
@@ -204,11 +294,19 @@ Deno.serve(async (req) => {
       }
       const f = filas[0];
       const terminado = ["listo", "error", "rechazado"].includes(f.estado);
+      const met = (f.metricas ?? {}) as Record<string, unknown>;
+      // Qué se pidió: el material o la pieza. La tool lo necesita para no
+      // decir cualquier cosa — a quien pidió un VIDEO no se le anuncia «tu
+      // reel está listo» y se le manda un archivo con un título encima que no
+      // pidió, ni se le ofrece publicarlo tal cual.
+      const pieza = met.pieza === "video" ? "video" : "reel";
       const cuerpo = {
         id: f.id,
         estado: f.estado,
         listo: f.estado === "listo",
         terminado,
+        pieza,
+        proveedor: (met.proveedor as string) ?? null,
         // De cuál de los dos caminos salió. Lo lee la tool para no decir
         // cualquier cosa: un reel MONTADO con material del club no lo generó
         // ninguna IA, así que la advertencia sobre caras y manos deformadas
@@ -223,9 +321,23 @@ Deno.serve(async (req) => {
         // un reel con otra frase, editado con material propio— y lo que le
         // llegaba era un reel cerrado con título y música encima.
         //
-        // Sale sólo en los generados: en un montaje `clip_url` no existe, y
-        // el crudo es el material que la persona ya tiene.
-        video_crudo: (Array.isArray(f.clips) && f.clips.length) ? null
+        // Cuando `pieza` es «video» esto es TODO el resultado: `url` queda en
+        // null porque no se armó ninguna pieza, y este archivo es lo que se
+        // pidió.
+        //
+        // Dos condiciones para mostrarlo, y las dos por la misma razón —que
+        // el link que se entrega tiene que servir mañana—:
+        //
+        // · sólo en los generados: en un montaje `clip_url` no existe, y el
+        //   crudo es material que la persona ya tiene;
+        // · sólo cuando el pedido terminó: mientras está en «montando»,
+        //   `clip_url` todavía apunta al CDN del proveedor con una firma que
+        //   vence —una de Magnific duró 53 minutos—. El worker recién lo pisa
+        //   con la copia nuestra al guardar. Un link que vence entregado como
+        //   si fuera permanente es peor que no darlo.
+        video_crudo: (Array.isArray(f.clips) && f.clips.length) ||
+            f.estado !== "listo"
+          ? null
           : (f.clip_url || null),
         titulo: f.titulo || null,
         creditos: f.creditos_estimados || null,
@@ -432,6 +544,31 @@ Deno.serve(async (req) => {
   const clips = Array.isArray(c.clips) ? c.clips : [];
   const guion = (c.guion && typeof c.guion === "object") ? c.guion as Record<string, unknown> : null;
 
+  // ── ¿Se pide el MATERIAL o la PIEZA? ─────────────────────────────────────
+  //
+  //   pieza: "video" → el archivo. Se genera el clip y se entrega tal cual.
+  //   pieza: "reel"  → la pieza terminada, con título y música. Lo de siempre.
+  //
+  // Son dos pedidos distintos y hasta ahora había uno solo. Quien va a editar
+  // el video después no quiere un título encima; quien va a publicarlo sí.
+  const pieza = String(c.pieza ?? "reel").trim().toLowerCase();
+  if (pieza !== "reel" && pieza !== "video") {
+    return json({
+      error: `«${pieza}» no es nada que sepa hacer: «video» devuelve el ` +
+        `archivo crudo para usar después, «reel» arma la pieza con título y ` +
+        `música.`,
+      codigo: "pieza_invalida",
+    }, 400);
+  }
+  if (pieza === "video" && clips.length) {
+    return json({
+      error: "`pieza: \"video\"` es para GENERAR un video con IA a partir de " +
+        "una foto. Los `clips` son material que ya existe: eso no hay que " +
+        "generarlo, ya lo tenés.",
+      codigo: "video_con_clips",
+    }, 400);
+  }
+
   if (mensaje.length < 10) {
     return json({ error: "el pedido está vacío", codigo: "pedido_incompleto" }, 400);
   }
@@ -504,6 +641,34 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Con qué sistema, y que lo elija quien paga ──────────────────────────
+  //
+  // Sólo en el camino que GENERA. Montar material propio no le pide nada a
+  // ningún proveedor, así que preguntarle a alguien cuál usar sería hacerle
+  // elegir entre dos cosas que no van a pasar.
+  //
+  // Sin `proveedor` no se anota nada y se devuelve la pregunta con las dos
+  // opciones. Que sea la API la que frena, y no una regla escrita en el
+  // prompt, es a propósito: un prompt se puede ignorar en el medio de una
+  // conversación larga, y acá lo que está del otro lado es la plata del
+  // cliente. La respuesta es 200 y no 400 porque esto no es un error: es una
+  // pregunta, y una tool que devuelve error hace que el agente pida disculpas
+  // en vez de preguntar.
+  let proveedor: Proveedor | null = null;
+  if (!clips.length) {
+    const p = String(c.proveedor ?? "").trim().toLowerCase();
+    if (!p) return json(PREGUNTA_PROVEEDOR);
+    if (!(p in PROVEEDORES)) {
+      return json({
+        ...PREGUNTA_PROVEEDOR,
+        codigo: "proveedor_desconocido",
+        pregunta: `«${p}» no es ninguno de los dos sistemas. Preguntá de nuevo ` +
+          `con estas opciones.`,
+      });
+    }
+    proveedor = p as Proveedor;
+  }
+
   const desde = new Date(Date.now() - 3600_000).toISOString();
   const rc = await fetch(
     `${tabla}?creado_en=gte.${desde}&estado=not.in.(rechazado,error)&select=id`,
@@ -527,8 +692,23 @@ Deno.serve(async (req) => {
   } else {
     fila.foto = foto;
   }
+
+  // Lo que eligió la persona viaja en `metricas`, que es el campo que el
+  // worker ya lee de punta a punta. Sin columnas nuevas: una migración por
+  // cliente es un paso manual que alguien se olvida de correr en el tercero.
+  const met: Record<string, unknown> = {};
+  if (proveedor) met.proveedor = proveedor;
+  if (pieza === "video") met.pieza = "video";
+  if (Object.keys(met).length) fila.metricas = met;
+
+  // Un video crudo no lleva texto encima: no hay dónde ponerlo. Si vinieron,
+  // no se guardan en silencio —se avisa—, porque quien los mandó cree que va
+  // a verlos y no verlos sin explicación se lee como que algo falló.
+  const sobran: string[] = [];
   for (const k of ["titulo", "kicker", "bajada", "musica"]) {
-    if (c[k]) fila[k] = String(c[k]).trim();
+    if (!c[k]) continue;
+    if (pieza === "video") sobran.push(k);
+    else fila[k] = String(c[k]).trim();
   }
   if (usuario) fila.user_id = usuario;
 
@@ -545,10 +725,26 @@ Deno.serve(async (req) => {
   return json({
     id: creada.id,
     estado: creada.estado,
+    pieza,
+    proveedor,
     // Montar material que ya existe es cortar y pegar: no hay que esperar a
     // ningún modelo. Decir 300 acá haría que el agente avise «esto tarda cinco
     // minutos» por algo que sale en menos de uno.
-    demora_estimada_seg: clips.length ? 60 : 300,
+    demora_estimada_seg: clips.length
+      ? 60
+      : PROVEEDORES[proveedor!].demora_estimada_seg,
     cuesta_creditos: !clips.length,
+    // Lo que va a volver cuando termine, dicho ahora para que el agente no
+    // prometa lo que no va a llegar.
+    devuelve: pieza === "video"
+      ? "el archivo de video, sin título ni música (`video_crudo`)"
+      : "la pieza terminada, con título y música (`url`)",
+    ...(sobran.length
+      ? {
+        aviso: `un video crudo no lleva texto encima, así que ${sobran.join(", ")} ` +
+          `no se usan. Si querés la pieza con título, pedila con ` +
+          `\`pieza: "reel"\` — o armala después con este mismo video.`,
+      }
+      : {}),
   }, 201);
 });
