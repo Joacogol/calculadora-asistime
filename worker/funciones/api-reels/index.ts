@@ -237,18 +237,6 @@ Deno.serve(async (req) => {
     return json({ error: "cuerpo inválido" }, 400);
   }
 
-  // ── Retocar un reel que ya salió ─────────────────────────────────────────
-  //
-  // No rehace el reel: le cambia lo que se pidió cambiar. Toma el guion que el
-  // motor guardó la vuelta anterior —tramos, frases y hook YA resueltos— y
-  // anota qué corregir encima. Por eso un retoque **no vuelve a escuchar el
-  // audio**: si lo hiciera, volvería a equivocarse exactamente igual (el
-  // modelo es determinista con el mismo audio) y de paso tiraría las frases
-  // que estaban bien.
-  //
-  // Y NO pisa el original: crea una fila nueva que apunta a él con `origen`.
-  // Una corrección que salió peor no tiene que llevarse puesto lo que ya
-  // estaba bien.
   // ── Olvidar una corrección ───────────────────────────────────────────────
   //
   // Existe porque la memoria es útil justamente cuando se puede deshacer. Una
@@ -270,6 +258,18 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── Retocar un reel que ya salió ─────────────────────────────────────────
+  //
+  // No rehace el reel: le cambia lo que se pidió cambiar. Toma el guion que el
+  // motor guardó la vuelta anterior —tramos, frases y hook YA resueltos— y
+  // anota qué corregir encima. Por eso un retoque **no vuelve a escuchar el
+  // audio**: si lo hiciera, volvería a equivocarse exactamente igual (el
+  // modelo es determinista con el mismo audio) y de paso tiraría las frases
+  // que estaban bien.
+  //
+  // Y NO pisa el original: crea una fila nueva que apunta a él con `origen`.
+  // Una corrección que salió peor no tiene que llevarse puesto lo que ya
+  // estaba bien.
   const retocar = String(c.retocar ?? "").trim();
   if (retocar) {
     const cambios = (c.cambios && typeof c.cambios === "object")
