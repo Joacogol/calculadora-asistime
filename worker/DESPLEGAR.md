@@ -1691,7 +1691,20 @@ así que el modelo viaja de HuggingFace cada vez. Con `small` eran 464 MB y
 del job antes de que empiece a trabajar.
 
 Se arregla en el `Dockerfile`, que **no está en este repo** —vive sólo en el
-worker, en `~/worker/Dockerfile`— así que va escrito acá para pegarlo a mano:
+worker, en `~/worker/Dockerfile`—. **No lo pegues a mano:**
+
+```bash
+python3 ~/worker/herramientas/hornear-modelo.py
+```
+
+Lo agrega en el lugar correcto, deja una copia de seguridad y es idempotente.
+Esto es un comando y no una instrucción por una razón: la instrucción estuvo
+escrita acá desde el principio y **nunca se siguió**. El modelo se venía
+bajando en cada corrida desde siempre, sin que nadie lo notara, porque con
+`small` sólo costaba unos segundos. Una instrucción que hay que acordarse de
+seguir no es una instrucción, es una apuesta.
+
+Esto es lo que agrega:
 
 ```dockerfile
 # Precarga el modelo de transcripción: el contenedor es efímero y sin esto el
