@@ -2699,7 +2699,7 @@ Y, aparte:
 | Verbo | Devuelve | Cuesta |
 |---|---|---|
 | `crear_foto` | un archivo de imagen | 100 créditos |
-| `crear_video` | **un archivo de video**, sin nada encima | desde 350 créditos / US$ 0,40 |
+| `crear_video` | **un archivo de video**, sin nada encima | desde 700 créditos / US$ 0,40 |
 | `crear_reel` | la **pieza** terminada, con título y música | ídem |
 | `montar_reel` | una pieza a partir de material que ya existe | nada |
 
