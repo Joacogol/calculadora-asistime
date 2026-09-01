@@ -223,6 +223,42 @@ gcloud scheduler jobs create http "${JOB}-red-seguridad" \
   --uri "$URL" --http-method POST \
   --oauth-service-account-email "$SA" --quiet
 
+# ── El catálogo que lee el agente ────────────────────────────────────────
+#
+# El catálogo de plantillas es un documento en Asistime que el agente consulta
+# antes de decidir qué hacer, y **manda sobre su propio prompt**: si el
+# documento dice una cosa y el prompt otra, el agente le cree al documento.
+#
+# Lo genera `motor/plantillas.catalogo` desde los contratos de las plantillas,
+# pero republicarlo era un comando aparte que había que acordarse de correr, y
+# nadie lo corrió. El 1/9/2026 el de Boss llevaba una semana viejo diciendo que
+# **el video necesitaba código**; alguien pidió un video, el agente leyó eso,
+# contestó que no se podía y anotó un pedido de cambio de motor. Una hora antes
+# el sistema había hecho exactamente ese video.
+#
+# Un documento que se declara «generado por el motor» y que en realidad hay que
+# acordarse de subir a mano no está generado por el motor: es un archivo suelto
+# que envejece mintiendo. Por eso ahora se republica acá, en cada despliegue,
+# que es lo que su propia descripción decía que pasaba.
+#
+# Si falla, el despliegue NO se cae: el catálogo anterior sigue sirviendo y lo
+# que se pierde es que esté al día. Se avisa y se sigue.
+echo "▸ 3b/4  Catálogo de plantillas al día en Asistime"
+while read -r MARCA VARIABLE SECRETO <&3; do
+  if [ -z "${MARCA:-}" ]; then continue; fi
+  if ! CLAVE="$(gcloud secrets versions access latest --secret="$SECRETO" 2>/dev/null)"; then
+    echo "  ⚠ $MARCA: sin clave de Asistime, su catálogo queda como estaba"
+    continue
+  fi
+  if SALIDA="$(env "$VARIABLE=$CLAVE" python3 herramientas/publicar-catalogo.py "$MARCA" 2>&1)"; then
+    echo "  · $MARCA: catálogo republicado"
+  else
+    echo "  ⚠ $MARCA: no pude republicar el catálogo (sigue el anterior):"
+    printf '%s\n' "$SALIDA" | tail -3 | sed 's/^/      /'
+  fi
+  unset CLAVE
+done 3< <(python3 clientes.py asistime)
+
 echo "▸ 4/4  Listo — clientes: ${MARCAS}"
 echo
 echo "Probalo insertando una fila en 'disenos' desde alguna app, o a mano:"

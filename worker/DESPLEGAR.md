@@ -1939,6 +1939,59 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## El agente dijo que no se podía algo que sí se puede (1/9/2026)
+
+Se pidió «un video de una paleta de pádel creciendo como un árbol en un
+parque». El agente contestó que eso necesitaba un cambio de motor y anotó un
+pedido en `avisar_cambio_motor`. **Una hora antes el sistema había hecho
+exactamente ese video**, con `crear_reel`.
+
+Y no fue por falta de instrucciones. El prompt de Boss lo dice literal:
+
+> El video ya se puede: generarlo, EDITARLO, CORREGIRLO y publicarlo — nunca
+> mandes un pedido de video a `avisar_cambio_motor`.
+
+Lo que pasó es que **antes de decidir, el agente consultó el catálogo de
+plantillas**, y ese documento terminaba diciendo:
+
+> `avisar_cambio_motor` queda para lo que de verdad necesita código: **el
+> video**, los efectos, un formato que no existe…
+
+El prompt del agente dice que el catálogo «manda sobre lo que vos supongas».
+Así que hizo lo correcto con la información que tenía: le creyó al documento.
+
+### El documento tenía una semana y mentía
+
+El texto de `motor/plantillas.py` se había corregido hacía días. El documento
+publicado en Asistime era de **la semana anterior**, versión 2 del 24/8. Su
+propia descripción dice que «lo republica en cada despliegue» — y no era
+cierto: republicarlo era `herramientas/publicar-catalogo.py`, un comando
+aparte que había que acordarse de correr.
+
+Es el mismo error que la línea del `Dockerfile`, dos veces en el mismo día:
+**un paso que hay que acordarse de hacer no es un paso, es una apuesta.** Y
+uno que además se declara automático es peor, porque nadie lo va a revisar.
+
+### Los dos arreglos
+
+1. **`desplegar-chat.sh` republica el catálogo de cada cliente**, sacando la
+   clave de Secret Manager. Si falla no tira abajo el despliegue: avisa, deja
+   el catálogo anterior y sigue.
+2. **El texto ahora dice en positivo que el video se puede**, con las tres
+   herramientas nombradas. Antes se había arreglado sacando la palabra
+   «video» de la lista de lo que necesita código, y eso no alcanza: omitir no
+   es afirmar, y el agente que duda entre dos documentos elige el que dice
+   algo.
+
+### La lección, que es de diseño y no de código
+
+**Un documento que el agente lee como autoridad es código en producción.**
+Envejece igual, rompe igual y hay que desplegarlo igual. La diferencia es que
+cuando falla no tira una excepción: el sistema contesta con seguridad que algo
+no se puede hacer, y quien pregunta se lo cree.
+
+---
+
 ## El rótulo tapaba el video que se pagó (1/9/2026)
 
 Salió un reel de Boss donde el video se veía **el primer segundo y el último**,

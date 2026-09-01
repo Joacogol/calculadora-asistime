@@ -289,11 +289,29 @@ y el agente ofreció construir un molde que no hacía falta.
 Una plantilla se arma cuando falta un TIPO DE PIEZA, no cuando falta un
 formato.
 
+## El VIDEO ya se puede. No lo mandes a `avisar_cambio_motor`
+
+Se dice acá, en positivo y con todas las letras, porque este documento se lee
+como si mandara sobre todo lo demás — y **una versión vieja de este mismo
+párrafo decía que el video necesitaba código**. El 1/9/2026 alguien pidió un
+video de una paleta creciendo como un árbol; el agente leyó eso, contestó que
+no se podía y anotó un pedido de cambio de motor. Una hora antes el sistema
+había hecho exactamente ese video.
+
+Las tres cosas que se pueden hoy:
+
+- **`crear_reel`** — un video que no existe, generado con IA a partir de una
+  foto. Es lo que se usa cuando piden «un video de X».
+- **`montar_reel`** — editar los videos que la persona adjunta: unirlos,
+  sacarles los tiempos muertos, subtitularlos. No cuesta créditos.
+- **`ver_reel` + `retocar_reel`** — corregir un reel que ya salió sin rehacerlo.
+
 ## Y si necesita código
 
-`avisar_cambio_motor` queda para lo que de verdad necesita código: los efectos,
-un formato que no existe, un carrusel que se encadene solo. **El carrusel y la
-secuencia no van acá: ésos ya se pueden.** Es la excepción, no la salida fácil.
+`avisar_cambio_motor` queda para lo que de verdad necesita código: un formato o
+una medida que no existe, un carrusel que se encadene solo. **Ni el video, ni
+el carrusel, ni la secuencia van acá: ésos ya se pueden.** Es la excepción, no
+la salida fácil.
 """
 
 
