@@ -147,6 +147,29 @@ if [ -n "$SOLICITAN_REELS" ]; then
   fi
 fi
 
+# ── Antes de gastar cinco minutos de build ────────────────────────────────
+#
+# El 1/9/2026 un despliegue murió con «dockerfile parse error line 1: unknown
+# instruction: ≈≈». La primera línea del Dockerfile decía `≈≈`: dos caracteres
+# que se escribieron sin querer adentro de nano —en un Mac `Option+X` produce
+# `≈`— buscando el `Ctrl+X` que lo cierra.
+#
+# Cloud Build lo detectó igual, pero recién después de subir el contexto y
+# arrancar Docker, y con un mensaje que no dice de dónde salió. Preguntarlo
+# acá cuesta un segundo.
+if [[ -f Dockerfile ]]; then
+  primera="$(grep -vE '^\s*(#|$)' Dockerfile | head -1)"
+  if [[ ! "$primera" =~ ^([Aa][Rr][Gg]|[Ff][Rr][Oo][Mm])[[:space:]] ]]; then
+    echo "✗ El Dockerfile no arranca con FROM. La primera línea con algo dice:"
+    echo "    $primera"
+    echo
+    echo "  Docker no va a poder leerlo. Casi siempre es basura que quedó de"
+    echo "  editarlo a mano. Se saca con:"
+    echo "    python3 herramientas/limpiar-dockerfile.py $(pwd)/Dockerfile"
+    exit 1
+  fi
+fi
+
 echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # ── Por qué 8 núcleos y no 2 ──────────────────────────────────────────────
 # Montar un reel es, casi todo, codificar video: es trabajo de CPU puro y se

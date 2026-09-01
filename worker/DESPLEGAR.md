@@ -1928,6 +1928,42 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## Dos caracteres tiraron abajo un despliegue (1/9/2026)
+
+El build murió con esto:
+
+```
+dockerfile parse error line 1: unknown instruction: ≈≈
+```
+
+La primera línea del `Dockerfile` decía `≈≈`. Nadie escribió eso: en un Mac
+`Option+X` produce `≈`, y buscando el `Ctrl+X` que cierra nano se escribieron
+dos adentro del archivo, que después se guardó.
+
+Lo caro no fue el error, fue cuándo se supo. Cloud Build lo detectó **después**
+de subir 36 MB de contexto y arrancar Docker: cinco minutos, un mensaje que no
+dice de dónde salieron esos caracteres, y mientras tanto el worker siguió
+corriendo la imagen vieja sin que nada avisara que el despliegue no había
+llegado. Se pidió un reel para probar y salió igual que siempre — con lo cual
+el síntoma parecía ser del motor y no del despliegue.
+
+Dos arreglos, y el segundo importa más:
+
+1. **`herramientas/limpiar-dockerfile.py`** saca lo que haya quedado arriba del
+   `FROM`, y sólo eso: comentarios, `ARG` y líneas en blanco los respeta,
+   porque es lo único que Docker permite ahí.
+2. **`desplegar-chat.sh` lo revisa antes de construir nada.** Un segundo de
+   `grep` contra cinco minutos de build. Si la primera línea con contenido no
+   es `FROM` ni `ARG`, corta y dice qué encontró y cómo sacarlo.
+
+La lección no es sobre nano. Es que **un despliegue que falla tiene que
+fallar temprano y decir por qué**, sobre todo cuando quien lo corre no lee
+logs de build: si no, el sistema queda mintiendo en silencio —la versión vieja
+andando como si nada— y el siguiente rato se va en buscar el problema en el
+lugar equivocado.
+
+---
+
 ## La transcripción inventaba frases (1/9/2026)
 
 Joaquín marcó que los subtítulos «erran en cosas muy básicas». Tenía razón, y
