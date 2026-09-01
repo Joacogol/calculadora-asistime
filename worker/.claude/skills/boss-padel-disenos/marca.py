@@ -47,6 +47,20 @@ ACENTO_POR_DEFECTO = "lima"
 
 NOMBRE = "Boss Padel"
 
+#: Lo que el motor le dice al modelo de transcripción ANTES de escuchar un
+#: video de este cliente. **Va en prosa y con sus signos, no como una lista**:
+#: `initial_prompt` es «el texto que venía antes» y el modelo copia su estilo,
+#: puntuación incluida. Con una lista separada por comas empieza a escribir
+#: «cual elegirías?» sin abrir el signo. Ver `motor/habla.py`.
+#:
+#: Van los términos del deporte y del club, NO nombres de jugadores: una lista
+#: de nombres sesga al modelo a escribirlos donde no se dijeron.
+VOCABULARIO = (
+    "Hablamos de pádel en Boss Padel, con canchas en Carrasco, Hípico y "
+    "Punta del Este. ¿Jugamos un americano? Buena pala, lindo revés."
+)
+
+
 # Con qué tipografías dibuja ffmpeg los rótulos de los reels. Tienen que ser
 # TTF de peso fijo: freetype no entiende fuentes variables y Archivo lo es, así
 # que saldría siempre en regular.

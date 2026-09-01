@@ -55,6 +55,14 @@ ACENTO_POR_DEFECTO = "naranja"
 
 NOMBRE = "Stadium"
 
+#: Lo que se le dice al modelo de transcripción antes de escuchar. En prosa y
+#: con signos: el modelo copia la puntuación de este texto. Ver `motor/habla.py`.
+VOCABULARIO = (
+    "Hablamos de Stadium, la tienda de deportes. ¿Buscás championes, camiseta, "
+    "buzo o campera? Tenemos Nike, adidas, Puma y Vans."
+)
+
+
 #: Con qué dibuja ffmpeg los rótulos de los reels. TTF de peso fijo: freetype
 #: no entiende fuentes variables, así que Archivo —que es variable— saldría
 #: siempre en regular. Montserrat es lo más cercano que hay en peso fijo.

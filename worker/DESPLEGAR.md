@@ -1905,6 +1905,84 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## La transcripción inventaba frases (1/9/2026)
+
+Joaquín marcó que los subtítulos «erran en cosas muy básicas». Tenía razón, y
+medido contra el material real era peor de lo que parecía.
+
+Tres clips de Boss, lo que se dice contra lo que escribió el motor:
+
+| se dice | `small` (lo que había) |
+|---|---|
+| teletransportarme | «Te le transportarme» |
+| ¿para ir hacia dónde? | «¿Pareita sea donde?» |
+| poder volar | «por volar» |
+| el campeón del siglo | «El Campeón de Silo» |
+| ¿cuál elegirías? | «cuáles digirías» |
+| para revivir lo del campeón del siglo | «Para reivir los campeones del siglo» |
+| *(nadie lo dijo)* | **«futbol es un superpoder»** |
+
+La última fila es de otra categoría. No entendió mal: **inventó una frase que
+nadie dijo** y la puso de subtítulo en un video de un cliente.
+
+### Tres cosas, medidas
+
+**1 · El modelo.** Con `medium`, sobre los mismos tres clips, no queda ni un
+error. `large-v3` devuelve exactamente el mismo texto —una interjección más—
+por casi el doble de tiempo y el doble de peso: no se paga.
+
+| | error | transcribir (4 núcleos) | modelo |
+|---|---|---|---|
+| `small` int8 | 6 errores + 1 frase inventada | 20 s | 464 MB |
+| **`medium` int8** | **ninguno** | **45 s** | 1,5 GB |
+| `large-v3` int8 | ninguno | 80 s | 2,9 GB |
+
+El comentario que había en `habla.py` decía que `medium` «no se nota en frases
+cortas». Era falso. Lo que había cambiado no era el modelo sino el
+presupuesto: `small` se eligió cuando un reel tardaba siete minutos y cada
+segundo contaba; hoy tarda minuto y medio, y el worker corre en ocho núcleos.
+
+**2 · El vocabulario iba como lista, y eso empeoraba la puntuación.**
+`initial_prompt` no es una lista de palabras clave: es «el texto que venía
+justo antes», y el modelo **copia su estilo, puntuación incluida**. Con
+`"Boss Padel, pádel, Carrasco, …"` empezó a escribir «cual elegirías?», «Para
+ir a donde?» — sin abrir los signos. Le estábamos enseñando, sin querer, que
+en este texto no se abren interrogaciones.
+
+Escrito como una frase normal con sus signos, la puntuación sale perfecta:
+
+```
+Hablamos de pádel en Boss Padel, con canchas en Carrasco, Hípico y
+Punta del Este. ¿Jugamos un americano? Buena pala, lindo revés.
+```
+
+Por eso `VOCABULARIO` en `marca.py` es una frase y no una tupla, y por eso las
+correcciones aprendidas se pegan con `habla.en_frase()` en vez de con comas.
+
+**3 · Ninguna marca tenía vocabulario.** El motor estaba preparado para que
+cada cliente listara sus nombres propios y no lo usaba nadie: los tres
+`marca.py` no definían `VOCABULARIO`, así que al modelo le llegaba sólo el
+nombre de la marca. Ahora los tres lo tienen. En Clínica es donde más rinde
+—psicotécnico, espirometría, Papanicolaou se repiten en cada video—.
+
+### Lo que NO se hizo, y por qué
+
+**No se prendió el VAD.** Filtrar el audio por detección de voz mejora a
+`small`, pero recorta lo que juzga silencio — y la transcripción es
+justamente lo que le prohíbe al recorte comerse una palabra (ver el caso de
+Bruno, más abajo). Un VAD que se traga media frase reabre ese agujero desde
+el otro lado. Con `medium` no hace falta.
+
+### Al desplegar
+
+`medium` pesa 1,5 GB y se baja en el primer reel después de cada despliegue.
+Vale más que antes hornearlo en el `Dockerfile` —que vive en `~/worker` y no
+en este repo— con la línea que ya está documentada más arriba.
+
+Y se puede volver atrás sin tocar código: `WHISPER_MODELO=small` en el job.
+
+---
+
 ## «A mídia não está pronta para ser publicada» (1/9/2026)
 
 Se pidió publicar una placa de Clínica y volvió ese error, en portugués. La

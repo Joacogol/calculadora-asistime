@@ -1137,9 +1137,12 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     correcciones = [c for c in (correcciones or [])
                     if str(c.get("de") or "").strip()]
     if correcciones:
-        propios = ", ".join(sorted({str(c["a"]).strip() for c in correcciones
-                                    if str(c.get("a") or "").strip()}))
-        vocabulario = ", ".join(x for x in (vocabulario, propios) if x)
+        # Se pega como una FRASE, no como una lista separada por comas: el
+        # modelo copia la puntuación de lo que se le pasa, y una lista le
+        # enseña a escribir sin signos. Ver `habla.vocabulario_de`.
+        propios = _habla.en_frase(sorted({str(c["a"]).strip() for c in correcciones
+                                          if str(c.get("a") or "").strip()}))
+        vocabulario = " ".join(x for x in (vocabulario, propios) if x)
 
     def _corregido(texto: str) -> str:
         for c in correcciones:

@@ -43,11 +43,25 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-#: Cuál modelo. `small` es el punto de equilibrio medido: `tiny` y `base`
-#: pierden acentos y números —que en un reel son el precio y el horario— y
-#: `medium` es tres veces más lento por una mejora que no se nota en frases
-#: cortas. Se puede cambiar sin tocar código con `WHISPER_MODELO`.
-MODELO = os.environ.get("WHISPER_MODELO", "small")
+#: Cuál modelo. Se puede cambiar sin tocar código con `WHISPER_MODELO`.
+#:
+#: Esto decía `small`, y decía que `medium` no valía la pena. **Medido contra
+#: material real el 1/9/2026, era falso**, y el costo de la equivocación no fue
+#: ortográfico: en un reel de Boss, `small` escribió «futbol es un superpoder»,
+#: una frase que nadie dijo. No entendió mal — inventó. Y escribió «Te le
+#: transportarme», «El Campeón de Silo» y «Para reivir los campeones del siglo»
+#: donde se decía «teletransportarme», «el campeón del siglo» y «para revivir
+#: lo del campeón del siglo».
+#:
+#: Con `medium`, sobre los mismos tres clips, no queda ni un error. Con
+#: `large-v3` sale exactamente el mismo texto —una sola interjección más— por
+#: casi el doble de tiempo y un modelo el doble de pesado: no se paga.
+#:
+#: Lo que cambió no es el modelo, es el presupuesto. `small` se eligió cuando
+#: un reel tardaba siete minutos y cada segundo contaba; hoy tarda minuto y
+#: medio. La transcripción pasó de 20 s a 45 s en cuatro núcleos —el worker
+#: tiene ocho—, y eso, sobre un reel que nadie mira armarse, se paga solo.
+MODELO = os.environ.get("WHISPER_MODELO", "medium")
 
 #: Nunca con sufijo `.en`. Ver la trampa 1.
 IDIOMA = os.environ.get("WHISPER_IDIOMA", "es")
@@ -329,15 +343,43 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     return juntadas
 
 
-def vocabulario_de(marca) -> str:
-    """Los nombres propios de la marca, para que Whisper no los escriba mal.
+def en_frase(palabras) -> str:
+    """Una lista de términos, convertida en una oración normal.
 
-    Sale del módulo de la marca, así que cada cliente aporta el suyo sin que
-    nadie mantenga una lista aparte.
+    Ver `vocabulario_de`: al modelo no se le puede pasar una lista.
     """
-    partes = [getattr(marca, "NOMBRE", "") or ""]
-    partes += list(getattr(marca, "VOCABULARIO", ()) or ())
-    return ", ".join(p for p in partes if p).strip(", ")
+    ps = [str(p).strip() for p in palabras if str(p or "").strip()]
+    if not ps:
+        return ""
+    if len(ps) == 1:
+        return f"Se escribe {ps[0]}."
+    return "Se escriben " + ", ".join(ps[:-1]) + " y " + ps[-1] + "."
+
+
+def vocabulario_de(marca) -> str:
+    """El contexto que se le da al modelo ANTES de escuchar. **En prosa.**
+
+    `initial_prompt` no es una lista de palabras clave: es «el texto que venía
+    justo antes de esto». El modelo lo lee y copia su ESTILO — puntuación
+    incluida.
+
+    Eso se midió y sorprende. Con una lista separada por comas —que es como
+    estaba escrito acá— el modelo empezó a escribir sin signos: «cual
+    elegirías?», «Para ir a donde?». Le habíamos enseñado, sin querer, que en
+    este texto no se abren interrogaciones. En un subtítulo eso se ve.
+
+    Escrito como una frase normal, con sus signos, la puntuación sale perfecta
+    y los nombres propios se siguen escribiendo bien. Por eso `VOCABULARIO` es
+    una frase y no una lista, y por eso lo que se agrega acá también lo es.
+    """
+    voc = getattr(marca, "VOCABULARIO", "") or ""
+    if not isinstance(voc, str):        # una lista, de cuando esto era otra cosa
+        voc = en_frase(voc)
+    voc = voc.strip()
+    nombre = (getattr(marca, "NOMBRE", "") or "").strip()
+    if nombre and nombre.lower() not in voc.lower():
+        voc = (f"Esto es material de {nombre}. " + voc).strip()
+    return voc
 
 
 def hook_de(texto: str, marca: str = "") -> str:

@@ -59,6 +59,19 @@ ACENTO_POR_DEFECTO = "rojo"
 
 NOMBRE = "Clínica Preventiva"
 
+#: Lo que se le dice al modelo de transcripción antes de escuchar. En prosa y
+#: con signos: el modelo copia la puntuación de este texto. Ver `motor/habla.py`.
+#:
+#: Acá los términos importan más que en las otras marcas: los que la
+#: transcripción erra son siempre los mismos nombres de estudios, y un
+#: subtítulo que dice mal «psicotécnico» en una cuenta de salud se nota.
+VOCABULARIO = (
+    "Hablamos de la Clínica Preventiva, en Casa Central y Costa Urbana. "
+    "¿Venís por el carné de salud, el psicotécnico o la libreta de conducir? "
+    "También hacemos espirometría, Papanicolaou y medicina laboral."
+)
+
+
 # Con qué dibuja ffmpeg los rótulos de los reels. TTF de peso fijo: freetype no
 # entiende fuentes variables. Los seis pesos se instanciaron desde la
 # Montserrat variable de Google Fonts.
