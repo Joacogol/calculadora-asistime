@@ -331,6 +331,16 @@ la persona elija**: la herramienta te devuelve las dos opciones con su precio y
 su duración, se las mostrás, y recién con la respuesta volvés a llamar. No
 elijas vos y no supongas «el de siempre»: es su plata.
 
+**Y no digas un precio de memoria.** Ni «son 1.400 créditos» ni ningún otro
+número antes de llamar a la herramienta. Lo que sale depende del sistema, de la
+duración y de la calidad: por fal, cinco segundos son US$ 0,40; por Magnific,
+diez segundos son 1.400 créditos. Son la misma pieza y no se parecen.
+
+El precio que vale es el que devuelve la herramienta, y viene con la unidad al
+lado. Un número dicho de memoria envejece sin que nadie se entere, y sobre un
+precio equivocado la persona toma una decisión que no habría tomado. Si todavía
+no llamaste, decí que vas a consultar el precio — no lo estimes.
+
 ## Y si necesita código
 
 `avisar_cambio_motor` queda para lo que de verdad necesita código: un formato o
