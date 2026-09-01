@@ -35,6 +35,7 @@ Esta prueba fija las dos mitades del contrato, que tiran para lados opuestos:
    trivialmente con un recorte que no recorta nada.
 """
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -101,6 +102,19 @@ def _palabras():
 
 
 def main() -> int:
+    # Esta prueba arma su propio audio, así que necesita ffmpeg. El worker lo
+    # tiene adentro de su contenedor, pero Cloud Shell no — y ahí es donde
+    # alguien la va a correr después de copiar el código. Un traceback de
+    # `FileNotFoundError: ffmpeg` no dice nada de eso y parece que el motor se
+    # rompió, cuando lo único que falta es una herramienta de la máquina.
+    if shutil.which("ffmpeg") is None:
+        print("⚠ No hay ffmpeg en esta máquina, así que esta prueba no puede")
+        print("  correr acá. NO es un problema del código: el worker lleva su")
+        print("  propio ffmpeg adentro del contenedor.")
+        print()
+        print("  Si la querés correr igual:  sudo apt-get install -y ffmpeg")
+        return 0
+
     with tempfile.TemporaryDirectory() as tmp:
         audio = pathlib.Path(tmp) / "laboratorio.mp4"
         _armar(audio)
