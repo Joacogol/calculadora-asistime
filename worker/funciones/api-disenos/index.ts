@@ -228,6 +228,50 @@ function limpiar(b: Uint8Array, fmt: string): Uint8Array {
 /** ¿Es una URL que tiene sentido ir a buscar? Nadie de afuera llega acá sin
  *  la clave, pero una función que baja cualquier dirección que le dicten es
  *  una función que puede ser usada para mirar adentro de la red. */
+// ── Un link de Google Drive no es una imagen ──────────────────────────────
+//
+// Lo que Drive le da a una persona cuando comparte una foto es
+// `drive.google.com/file/d/<id>/view`, y eso NO es la foto: es una PÁGINA que
+// muestra la foto. Bajarla trae HTML, o un 401 si además hay que iniciar
+// sesión. El 1/9/2026 alguien pidió un carrusel con cinco fotos de una carpeta
+// de Drive y las cinco rebotaron; la respuesta razonable del agente fue pedirle
+// que las descargara y las subiera de nuevo a mano, que es exactamente el
+// trabajo que esta herramienta existe para no hacer.
+//
+// Drive sí tiene direcciones que devuelven los bytes. Se prueban en orden:
+//
+//   1. `uc?export=download` → el archivo original, tal cual se subió;
+//   2. `thumbnail?sz=w2000`  → un JPG que Drive arma al vuelo. Aguanta casos
+//      donde la primera contesta con la pantalla de «no pudimos analizar este
+//      archivo», que pasa con los archivos grandes.
+//
+// **Lo que esto NO arregla:** una carpeta privada. Si el archivo no está
+// compartido como «cualquiera con el enlace», Drive no lo entrega a nadie que
+// no haya iniciado sesión, y este servidor nunca la inicia. Ahí no hay truco
+// posible y lo único honesto es decirlo con esas palabras.
+function idDeDrive(u: string): string | null {
+  let url: URL;
+  try { url = new URL(u); } catch { return null; }
+  const h = url.hostname.toLowerCase();
+  if (h !== "drive.google.com" && h !== "docs.google.com") return null;
+  // Las dos formas en que Drive pone el id en la ruta: `/file/d/<id>/view`,
+  // que es la que copia una persona, y `/d/<id>` de los documentos.
+  const enLaRuta = url.pathname.match(/\/(?:file\/)?d\/([A-Za-z0-9_-]{20,})/);
+  if (enLaRuta) return enLaRuta[1];
+  const q = url.searchParams.get("id");
+  return q && /^[A-Za-z0-9_-]{20,}$/.test(q) ? q : null;
+}
+
+/** Las direcciones a probar para UNA foto, en orden. */
+function candidatas(u: string): string[] {
+  const id = idDeDrive(u);
+  if (!id) return [u];
+  return [
+    `https://drive.google.com/uc?export=download&id=${id}`,
+    `https://drive.google.com/thumbnail?id=${id}&sz=w2000`,
+  ];
+}
+
 function direccion_valida(u: string): boolean {
   let url: URL;
   try { url = new URL(u); } catch { return false; }
@@ -410,13 +454,45 @@ Deno.serve(async (req) => {
   // por qué no se usó la que mandaron.
   const copiar = async (u: string, n: number) => {
     if (!direccion_valida(u)) throw new Error("no es una dirección válida");
-    const r = await fetch(u, { signal: AbortSignal.timeout(20000) });
-    if (!r.ok) throw new Error(`el servidor contestó ${r.status}`);
-    const crudo = new Uint8Array(await r.arrayBuffer());
-    if (crudo.length > MAX_BYTES) throw new Error("pesa más de 12 MB");
-    const fmt = formato(crudo);
-    if (!fmt) {
-      throw new Error("no es una imagen que sirva (mandala en JPG o PNG)");
+
+    // Se prueban las direcciones en orden y gana la primera que traiga una
+    // imagen de verdad. Para una URL normal la lista tiene una sola.
+    let crudo: Uint8Array<ArrayBuffer> | null = null;
+    let fmt: string | null = null;
+    let ultimo = "";
+    for (const c of candidatas(u)) {
+      let r: Response;
+      try {
+        r = await fetch(c, { signal: AbortSignal.timeout(20000) });
+      } catch (e) {
+        ultimo = `no pude llegar a la dirección (${e})`;
+        continue;
+      }
+      if (!r.ok) { ultimo = `el servidor contestó ${r.status}`; continue; }
+      const bytes = new Uint8Array(await r.arrayBuffer());
+      if (bytes.length > MAX_BYTES) throw new Error("pesa más de 12 MB");
+      const f = formato(bytes);
+      if (!f) {
+        ultimo = "no es una imagen que sirva (mandala en JPG o PNG)";
+        continue;
+      }
+      crudo = bytes;
+      fmt = f;
+      break;
+    }
+    if (!crudo || !fmt) {
+      // Si venía de Drive, el motivo casi siempre es el mismo y se puede
+      // arreglar en diez segundos. Decirlo con esas palabras vale más que
+      // repetir el código de error.
+      if (idDeDrive(u)) {
+        throw new Error(
+          "es un archivo de Google Drive que no está compartido. Abrí la " +
+          "carpeta en Drive → Compartir → «Cualquier persona con el enlace» " +
+          "→ Lector, y volvé a mandarme el mismo link. No hace falta que " +
+          "descargues nada",
+        );
+      }
+      throw new Error(ultimo || "no la pude bajar");
     }
     const ruta = `adjuntos/${usuario || "asistime"}/${crypto.randomUUID()}.${fmt}`;
     const up = await fetch(`${base}/storage/v1/object/disenos/${ruta}`, {
