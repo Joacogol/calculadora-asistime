@@ -225,9 +225,6 @@ function limpiar(b: Uint8Array, fmt: string): Uint8Array {
   }
 }
 
-/** ¿Es una URL que tiene sentido ir a buscar? Nadie de afuera llega acá sin
- *  la clave, pero una función que baja cualquier dirección que le dicten es
- *  una función que puede ser usada para mirar adentro de la red. */
 // ── Un link de Google Drive no es una imagen ──────────────────────────────
 //
 // Lo que Drive le da a una persona cuando comparte una foto es
@@ -272,6 +269,9 @@ function candidatas(u: string): string[] {
   ];
 }
 
+/** ¿Es una URL que tiene sentido ir a buscar? Nadie de afuera llega acá sin
+ *  la clave, pero una función que baja cualquier dirección que le dicten es
+ *  una función que puede ser usada para mirar adentro de la red. */
 function direccion_valida(u: string): boolean {
   let url: URL;
   try { url = new URL(u); } catch { return false; }
