@@ -1115,9 +1115,49 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                               f"{ya} comprometidos y el tope mensual es {tope_mes}.")
             else:
                 tarea = pedir_clip(con_foto, plan, planos)
+
+                # ── Primero, lo que hace falta para no perder el video ───
+                #
+                # Entre esto y la contabilidad hay una asimetría que se pagó
+                # para descubrir: si se pierde la contabilidad, se arregla
+                # mirando; si se pierde el id de la tarea, se perdió un video
+                # que el proveedor ya cobró y del que no queda ni rastro.
+                #
+                # Pasó el 1/9/2026 con el primer pedido a fal: `pedir_clip`
+                # salió bien —fal tenía el video— y el PATCH que venía después
+                # se cayó con un 400 por un campo mal tipado, así que el id se
+                # fue con la excepción. En un solo PATCH, un centavo mal
+                # escrito se lleva puesto el video entero.
+                #
+                # Van los cuatro campos que hacen falta para ir a buscarlo, y
+                # ninguno más. `modelo` está acá y no en el otro PATCH porque
+                # `estado_clip` decide con él a qué proveedor preguntarle: sin
+                # eso, una tarea de fal se consultaría contra Magnific. Los
+                # cuatro son texto o enteros, así que este PATCH no puede
+                # fallar por un tipo.
                 _marcar(cli, fila["id"], "generando", tarea=tarea,
                         modelo=plan["modelo"], resolucion=plan["resolucion"],
-                        duracion=plan["duracion"], creditos_estimados=cuesta,
+                        duracion=plan["duracion"])
+
+                # ── Y después la plata, en la moneda que sea ─────────────
+                #
+                # `creditos_estimados` es una columna ENTERA y se llama
+                # créditos: los dólares de fal no entran ahí, ni por tipo ni
+                # por significado. Un `0.40` contra esa columna es un 400 de
+                # PostgREST — fue exactamente lo que rompió el primer pedido a
+                # fal, y la razón por la que un `0.40` no se redondea a 0: un
+                # gasto que se anota en cero es peor que uno que no se anota.
+                #
+                # Cada moneda va donde le corresponde: los créditos a su
+                # columna —que es la que suma el tope mensual— y el monto
+                # completo, con su unidad al lado, a `metricas.costo`. Un
+                # número sin unidad al lado es una trampa esperando.
+                moneda = ficha_modelo(plan["modelo"])["moneda"]
+                _marcar(cli, fila["id"], "generando",
+                        metricas={**(fila.get("metricas") or {}),
+                                  "costo": {"monto": cuesta, "moneda": moneda}},
+                        **({"creditos_estimados": int(cuesta)}
+                           if moneda == "creditos" else {}),
                         **({"notas": aviso} if aviso else {}))
         except Exception as e:                               # noqa: BLE001
             # A `error` y NO de vuelta a `pendiente`, aunque reintentar sería

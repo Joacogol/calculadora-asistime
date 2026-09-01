@@ -58,8 +58,31 @@ def correr(fila):
     def _pendientes(c, estado, limite=3):
         return [f for f in cli.filas.values() if f["estado"] == estado]
 
+    # ── El falso desconfía, como la base de verdad ────────────────────────
+    #
+    # `creditos_estimados`, `creditos_gastados` y `duracion` son columnas
+    # ENTERAS. Un falso que acepta cualquier cosa deja pasar exactamente el
+    # error que costó un video: el 1/9/2026 el primer pedido a fal escribió
+    # `0.40` —dólares— en una columna de créditos enteros, PostgREST contestó
+    # 400, y el id de la tarea se perdió con la excepción. fal ya tenía el
+    # video pedido.
+    #
+    # Una prueba que no puede fallar no prueba nada, así que acá el falso
+    # rechaza lo mismo que rechaza Postgres.
+    ENTERAS = ("creditos_estimados", "creditos_gastados", "duracion")
+
     def _marcar(c, rid, estado, **campos):
-        cli.escrito[rid] = {"estado": estado, **campos}
+        for col in ENTERAS:
+            v = campos.get(col)
+            if v is None or isinstance(v, bool):
+                continue
+            if not isinstance(v, int):
+                raise AssertionError(
+                    f"la columna «{col}» es entera y le escribieron {v!r} "
+                    f"({type(v).__name__}). Esto en producción es un 400.")
+        # Un PATCH pisa los campos que trae y deja los otros, como el de verdad.
+        cli.escrito.setdefault(rid, {})
+        cli.escrito[rid].update({"estado": estado, **campos})
 
     def bajar(url, destino):
         destino.write_bytes(b"no importa el contenido")
@@ -143,6 +166,89 @@ print("\n■ Pero si el proveedor lo puso la marca, sigue esperando callado")
 escrito, _ = correr({**BASE, "id": "sinclave2", "estado": "pendiente",
                      "metricas": {}})
 ok(escrito == {}, "no se toca la fila: sale sola cuando llegue el secreto", escrito)
+
+# ═══ El tramo que pide el video: qué se anota y de qué tipo ═════════════════
+#
+# Es el que rompió el 1/9. Se corre con `pedir_clip` y el guionista falsos —no
+# se le pide nada a ningún proveedor ni a ningún modelo de texto— y lo que se
+# mira es qué queda escrito y en qué columna.
+
+def pedir(fila, prov):
+    """Pasa una fila nueva por el tramo de estimar y pedir."""
+    cli = ClienteFalso([fila])
+    pedidos = []
+
+    def _pendientes(c, estado, limite=3):
+        return [f for f in cli.filas.values() if f["estado"] == estado]
+
+    def _tomar(c, rid, de, a):
+        cli.filas[rid]["estado"] = a
+        return True
+
+    ENTERAS = ("creditos_estimados", "creditos_gastados", "duracion")
+
+    def _marcar(c, rid, estado, **campos):
+        for col in ENTERAS:
+            v = campos.get(col)
+            if v is None or isinstance(v, bool):
+                continue
+            if not isinstance(v, int):
+                raise AssertionError(
+                    f"la columna «{col}» es entera y le escribieron {v!r}")
+        cli.escrito.setdefault(rid, {})
+        cli.escrito[rid].update({"estado": estado, **campos})
+        cli.filas[rid].update({"estado": estado, **campos})
+
+    def pedir_clip(f, plan, planos):
+        pedidos.append(plan)
+        return "tarea-de-mentira"
+
+    viejo = {n: getattr(reelero, n)
+             for n in ("_pendientes", "_marcar", "_tomar", "pedir_clip",
+                       "guionar", "_planos", "estado_clip")}
+    reelero._pendientes, reelero._marcar = _pendientes, _marcar
+    reelero._tomar, reelero.pedir_clip = _tomar, pedir_clip
+    # Sin esto la misma corrida sigue de largo y le pregunta a los proveedores
+    # DE VERDAD por una tarea inventada. Una prueba que sale a la red no es una
+    # prueba: falla cuando no hay internet y pasa cuando no debería.
+    reelero.estado_clip = lambda tarea, modelo, res: ("PROCESSING", None)
+    reelero.guionar = lambda f, d: {"calidad": "normal", "planos": []}
+    reelero._planos = lambda f, d: [{"prompt": "un plano", "duration": d}]
+    try:
+        reelero.atender_todos(
+            cli, {"calidad": "normal", "duracion": 5, "proveedor": prov},
+            armar_rotulo=lambda f, d: None, subir=lambda a, r: "https://x",
+            musica_de_fila=lambda f: None)
+    finally:
+        for n, v in viejo.items():
+            setattr(reelero, n, v)
+    return cli.escrito.get(fila["id"], {}), pedidos
+
+
+os.environ["MAGNIFIC_CLAVE"] = "de-mentira"
+os.environ["FAL_CLAVE"] = "de-mentira"
+
+NUEVA = {"id": "nueva", "estado": "pendiente", "mensaje": "un video de 5 segundos",
+         "foto": "https://x/f.jpg"}
+
+print("\n■ Un pedido a fal se cobra en dólares, y los dólares no son créditos")
+escrito, pedidos = pedir({**NUEVA, "metricas": {"proveedor": "fal"}}, "fal")
+ok(pedidos and pedidos[0]["modelo"] == "h3-max", "se le pide a h3-max", pedidos)
+ok(escrito.get("tarea") == "tarea-de-mentira", "queda el id de la tarea", escrito.get("tarea"))
+ok(escrito.get("modelo") == "h3-max",
+   "y el modelo, que es con lo que después se sabe a quién preguntarle", escrito.get("modelo"))
+ok("creditos_estimados" not in escrito,
+   "NO se escriben dólares en la columna de créditos", escrito.get("creditos_estimados"))
+costo = (escrito.get("metricas") or {}).get("costo") or {}
+ok(costo.get("moneda") == "usd" and abs(costo.get("monto", 0) - 0.40) < 1e-9,
+   "el gasto queda anotado con su unidad al lado", costo)
+
+print("\n■ Y uno a Magnific sigue contándose en créditos enteros")
+escrito, pedidos = pedir({**NUEVA, "metricas": {"proveedor": "magnific"}}, "magnific")
+ok(pedidos and pedidos[0]["modelo"] == "seedance-2-mini", "se le pide a Seedance", pedidos)
+ok(escrito.get("creditos_estimados") == 700, "700 créditos por 5 segundos", escrito.get("creditos_estimados"))
+costo = (escrito.get("metricas") or {}).get("costo") or {}
+ok(costo.get("moneda") == "creditos", "y también con su unidad", costo)
 
 print(f"\n✗ {fallos} fallo(s)\n" if fallos else "\n✓ todo bien\n")
 sys.exit(1 if fallos else 0)

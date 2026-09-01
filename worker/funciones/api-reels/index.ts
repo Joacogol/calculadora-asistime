@@ -341,6 +341,11 @@ Deno.serve(async (req) => {
           : (f.clip_url || null),
         titulo: f.titulo || null,
         creditos: f.creditos_estimados || null,
+        // Lo que salió, CON su unidad al lado. `creditos` sólo puede hablar de
+        // Magnific —es una columna entera que se llama créditos—, así que un
+        // video de fal se veía como «creditos: null» y parecía gratis. Acá
+        // viene el monto en la moneda que corresponda.
+        costo: (met.costo as Record<string, unknown>) ?? null,
         mensaje: f.notas || null,
         esperando_seg: Math.round(
           (Date.now() - new Date(f.creado_en).getTime()) / 1000,
