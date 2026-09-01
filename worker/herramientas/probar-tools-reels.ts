@@ -78,6 +78,14 @@ function ok(c: unknown, que: string, detalle?: unknown) {
 const PEDIDO = "la paleta apoyada en el pasto que crece como un árbol";
 const FOTO = "https://ejemplo.com/paleta.jpg";
 
+/** El valor sellado que hay que devolver para encargar con ese sistema. */
+async function elegir(tool: string, clave: string) {
+  const d = await correrTool(tool, { mensaje: PEDIDO });
+  const o = ((d.opciones ?? []) as Record<string, unknown>[])
+    .find((x) => String(x.elegir).startsWith(clave + ":"));
+  return String(o?.elegir ?? "");
+}
+
 console.log("\n■ crear_video pregunta el sistema SIN pedir foto primero");
 //
 // El orden importa y costó 100 créditos aprenderlo: cuando la foto se exigía
@@ -108,11 +116,29 @@ console.log("\n■ crear_video pregunta con qué sistema antes de gastar");
   ok(filas.size === 0, "no se anotó ningún pedido", [...filas.keys()]);
 }
 
+console.log("\n■ Elegir de memoria NO alcanza");
+//
+// El 1/9/2026 el agente encargó un video por fal sin preguntarle nada a nadie.
+// No desobedeció: el parámetro declaraba `enum: ["magnific", "fal"]`, así que
+// tenía los dos valores válidos sin necesidad de consultar. Un dato que se
+// puede adivinar se adivina, y por eso ahora la elección va sellada.
+{
+  const d = await correrTool("crear_video.js",
+    { mensaje: PEDIDO, foto: FOTO, proveedor: "fal" });
+  ok(d.falta_elegir === "proveedor", "un «fal» escrito a mano se rechaza", d.falta_elegir);
+  ok(filas.size === 0, "y no encarga nada", [...filas.keys()]);
+  const ops = (d.opciones ?? []) as Record<string, unknown>[];
+  ok(ops.every((o) => String(o.elegir).includes(":")),
+    "devolviendo las opciones ya selladas", ops.map((o) => o.elegir));
+}
+
 console.log("\n■ crear_video con la elección hecha");
 let idVideo = "";
 {
-  const d = await correrTool("crear_video.js",
-    { mensaje: PEDIDO, foto: FOTO, proveedor: "magnific", quien: "Joaquín" });
+  const d = await correrTool("crear_video.js", {
+    mensaje: PEDIDO, foto: FOTO, quien: "Joaquín",
+    proveedor: await elegir("crear_video.js", "magnific"),
+  });
   idVideo = String(d.id ?? "");
   ok(d.success === true && d.id, "encarga", d);
   const f = filas.get(idVideo)!;
@@ -131,8 +157,10 @@ let idReel = "";
   ok(d0.falta_foto === false, "y no pide una foto que ya tiene", d0.falta_foto);
   ok(filas.size === 1, "sin anotar nada", filas.size);
 
-  const d = await correrTool("crear_reel.js",
-    { mensaje: PEDIDO, foto: FOTO, titulo: "Un título", proveedor: "fal" });
+  const d = await correrTool("crear_reel.js", {
+    mensaje: PEDIDO, foto: FOTO, titulo: "Un título",
+    proveedor: await elegir("crear_reel.js", "fal"),
+  });
   idReel = String(d.id ?? "");
   ok(d.success === true && d.id, "con proveedor, encarga", d);
   ok(d.proveedor === "fal", "con el que se eligió", d.proveedor);
@@ -167,8 +195,10 @@ console.log("\n■ estado_reel: una PIEZA terminada entrega el reel");
 
 console.log("\n■ estado_reel: mientras genera, no inventa nada");
 {
-  const nuevo = await correrTool("crear_video.js",
-    { mensaje: PEDIDO, foto: FOTO, proveedor: "fal" });
+  const nuevo = await correrTool("crear_video.js", {
+    mensaje: PEDIDO, foto: FOTO,
+    proveedor: await elegir("crear_video.js", "fal"),
+  });
   const d = await correrTool("estado_reel.js", { id: String(nuevo.id) });
   ok(d.listo === false, "dice que todavía no", d.listo);
   ok(!d.video, "y no entrega ningún link", d.video);

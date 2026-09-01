@@ -87,36 +87,89 @@ const PROVEEDORES = {
 
 type Proveedor = keyof typeof PROVEEDORES;
 
-/** Las dos opciones escritas para que las lea una persona en un chat. */
-function opcionesDeProveedor() {
-  return Object.entries(PROVEEDORES).map(([clave, p]) => {
-    const plata = (m: number) =>
-      p.moneda === "usd" ? `US$ ${m.toFixed(2)}` : `${Math.round(m)} créditos`;
-    // Los dos arrancan en 5 segundos, así que ese es el piso comparable.
-    const CORTO = 5;
-    return {
-      clave,
-      nombre: p.nombre,
-      duraciones: p.duraciones,
-      desde: plata(p.calidades.normal.por_segundo * CORTO),
-      desde_detalle: `${CORTO} segundos en calidad normal`,
-      diez_segundos: clave === "fal"
-        ? "no llega: sólo hace 5"
-        : plata(p.calidades.normal.por_segundo * 10),
-      demora_estimada_seg: p.demora_estimada_seg,
-      nota: p.nota,
-    };
-  });
+/** Un sello corto que sólo puede tener quien PREGUNTÓ por las opciones.
+ *
+ *  ── Por qué las opciones vienen selladas ─────────────────────────────────
+ *
+ *  Porque decirle al agente «preguntale a la persona» no alcanza, y está
+ *  medido: el 1/9/2026, con la instrucción escrita en la herramienta, en el
+ *  catálogo y en el prompt, el agente eligió fal por su cuenta y encargó el
+ *  video sin preguntar nada. No fue desobediencia: el parámetro declaraba
+ *  `enum: ["magnific", "fal"]`, así que sabía los dos valores válidos sin
+ *  necesidad de consultar. Un dato que se puede adivinar se adivina.
+ *
+ *  El sello no se puede adivinar. Sale de la clave de esta función, así que
+ *  para tener uno válido hay que haber pedido las opciones — y pedirlas es
+ *  gratis, no anota nada, y devuelve el mensaje que dice que hay que
+ *  mostrárselas a la persona.
+ *
+ *  **Lo que esto NO hace:** obligar a que el agente hable con nadie. Puede
+ *  pedir las opciones y volver a llamar en el mismo turno. Lo que sí hace es
+ *  que no pueda saltearse el paso, que es donde estaba fallando. Del resto se
+ *  encarga el mensaje, que ahora sí llega siempre.
+ *
+ *  Rota cada hora y se aceptan la hora actual y la anterior: un pedido de
+ *  video son minutos, no horas, y así un sello nunca vence en el medio de una
+ *  conversación por caer justo en el cambio de hora.
+ */
+async function sello(clave: string, secreto: string, hace = 0): Promise<string> {
+  const hora = Math.floor(Date.now() / 3_600_000) - hace;
+  const datos = new TextEncoder().encode(`${secreto}|${hora}|${clave}`);
+  const hash = await crypto.subtle.digest("SHA-256", datos);
+  return Array.from(new Uint8Array(hash).slice(0, 4))
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const PREGUNTA_PROVEEDOR = {
-  codigo: "elegi_proveedor",
-  pregunta: "¿Con cuál de los dos sistemas lo genero? Mostrale las dos " +
-    "opciones con su precio y su duración, y volvé a llamarme con " +
-    "`proveedor` en «magnific» o «fal». Sin eso no se anota nada y no se " +
-    "gasta nada.",
-  opciones: opcionesDeProveedor(),
-};
+/** Las dos opciones escritas para que las lea una persona en un chat. */
+async function opcionesDeProveedor(secreto: string) {
+  return await Promise.all(
+    Object.entries(PROVEEDORES).map(async ([clave, p]) => {
+      const plata = (m: number) =>
+        p.moneda === "usd" ? `US$ ${m.toFixed(2)}` : `${Math.round(m)} créditos`;
+      // Los dos arrancan en 5 segundos, así que ese es el piso comparable.
+      const CORTO = 5;
+      return {
+        clave,
+        // Lo que hay que devolver para encargar con este sistema. Va sellado y
+        // se manda TAL CUAL: escribir «fal» a secas no alcanza, justamente
+        // para que no se pueda elegir sin haber preguntado.
+        elegir: `${clave}:${await sello(clave, secreto)}`,
+        nombre: p.nombre,
+        duraciones: p.duraciones,
+        desde: plata(p.calidades.normal.por_segundo * CORTO),
+        desde_detalle: `${CORTO} segundos en calidad normal`,
+        diez_segundos: clave === "fal"
+          ? "no llega: sólo hace 5"
+          : plata(p.calidades.normal.por_segundo * 10),
+        demora_estimada_seg: p.demora_estimada_seg,
+        nota: p.nota,
+      };
+    }),
+  );
+}
+
+/** `magnific` | `fal` | null, a partir de lo que mandó la herramienta. */
+async function proveedorSellado(dado: string, secreto: string): Promise<Proveedor | null> {
+  const [clave, marca] = String(dado).trim().toLowerCase().split(":");
+  if (!(clave in PROVEEDORES) || !marca) return null;
+  for (const hace of [0, 1]) {
+    if (marca === await sello(clave, secreto, hace)) return clave as Proveedor;
+  }
+  return null;
+}
+
+async function preguntaProveedor(secreto: string, extra?: Record<string, unknown>) {
+  return {
+    codigo: "elegi_proveedor",
+    pregunta: "¿Con cuál de los dos sistemas lo genero? Mostrale a la persona " +
+      "las dos opciones con su precio y su duración, preguntale cuál prefiere, " +
+      "y volvé a llamarme poniendo en `proveedor` el valor de `elegir` TAL " +
+      "CUAL viene — no lo escribas de memoria, no sirve. Sin eso no se anota " +
+      "nada y no se gasta nada.",
+    opciones: await opcionesDeProveedor(secreto),
+    ...(extra ?? {}),
+  };
+}
 
 // Cuántos reels se pueden pedir por hora. Es un freno contra un bucle del chat,
 // NO el control de gasto: el que corta por plata es `creditos_maximos` del
@@ -210,7 +263,7 @@ Deno.serve(async (req) => {
     // encargar nada, sin tener los precios escritos en el código de la tool
     // —donde quedarían viejos el día que cambien y nadie se enteraría—.
     if (url0.searchParams.get("opciones")) {
-      return json({ proveedores: opcionesDeProveedor() });
+      return json({ proveedores: await opcionesDeProveedor(esperada) });
     }
 
     // ── Qué aprendió la marca ────────────────────────────────────────────
@@ -661,17 +714,19 @@ Deno.serve(async (req) => {
   // en vez de preguntar.
   let proveedor: Proveedor | null = null;
   if (!clips.length) {
-    const p = String(c.proveedor ?? "").trim().toLowerCase();
-    if (!p) return json(PREGUNTA_PROVEEDOR);
-    if (!(p in PROVEEDORES)) {
-      return json({
-        ...PREGUNTA_PROVEEDOR,
-        codigo: "proveedor_desconocido",
-        pregunta: `«${p}» no es ninguno de los dos sistemas. Preguntá de nuevo ` +
-          `con estas opciones.`,
-      });
+    const p = String(c.proveedor ?? "").trim();
+    if (!p) return json(await preguntaProveedor(esperada));
+    proveedor = await proveedorSellado(p, esperada);
+    if (!proveedor) {
+      return json(await preguntaProveedor(esperada, {
+        codigo: "proveedor_sin_sello",
+        pregunta: `«${p.slice(0, 40)}» no sirve como elección. El valor va con ` +
+          `su sello y se copia TAL CUAL del campo \`elegir\` — escribirlo de ` +
+          `memoria no alcanza, a propósito: es la forma de que nadie elija por ` +
+          `la persona. Mostrale las dos opciones, preguntale, y volvé con la ` +
+          `que elija.`,
+      }));
     }
-    proveedor = p as Proveedor;
   }
 
   const desde = new Date(Date.now() - 3600_000).toISOString();

@@ -47,7 +47,8 @@ try {
       const d0 = await ro.json();
       ops = (d0.proveedores || []).map(function (o) {
         return {
-          elegir: o.clave,
+          // Se copia TAL CUAL: viene sellado y sin el sello no sirve.
+          elegir: o.elegir,
           sistema: o.nombre,
           duracion: o.duraciones,
           desde: o.desde + " (" + o.desde_detalle + ")",
@@ -68,7 +69,9 @@ try {
         "ningún pedido y no se gastó nada todavía. Mostrale a la persona las " +
         "dos opciones de `opciones` con su precio y su duración, en tus " +
         "palabras y en dos líneas, y preguntale cuál prefiere. No elijas vos: " +
-        "es su plata." +
+        "es su plata. Cuando te conteste, volvé a llamarme poniendo en " +
+        "`proveedor` el valor de `elegir` COPIADO TAL CUAL — escribir «fal» o " +
+        "«magnific» de memoria no funciona, y es a propósito." +
         (String(input.foto || "").trim()
           ? ""
           : " Y avisale en el mismo mensaje que además hace falta una foto de " +
@@ -121,6 +124,30 @@ try {
 
   let d = {};
   try { d = await r.json(); } catch (e) { d = {}; }
+
+  // La red de atrás: si la elección llegó sin sello —escrita de memoria— la API
+  // no anota nada y devuelve las opciones de nuevo. Contesta 200 porque no es
+  // un error, es la pregunta otra vez.
+  if (d.codigo === "elegi_proveedor" || d.codigo === "proveedor_sin_sello") {
+    return {
+      success: true,
+      falta_elegir: "proveedor",
+      opciones: (d.opciones || []).map(function (o) {
+        return {
+          elegir: o.elegir,
+          sistema: o.nombre,
+          duracion: o.duraciones,
+          desde: o.desde + " (" + o.desde_detalle + ")",
+          diez_segundos: o.diez_segundos,
+          a_tener_en_cuenta: o.nota,
+        };
+      }),
+      message:
+        (d.pregunta || "Falta elegir el sistema.") + " NO se anotó ningún " +
+        "pedido y no se gastó nada. Mostrale las dos opciones a la persona, " +
+        "preguntale, y volvé con el valor de `elegir` copiado tal cual.",
+    };
+  }
 
   if (!r.ok) {
     const codigos = {
