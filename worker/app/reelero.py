@@ -679,7 +679,26 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path
     # que algo se rompió. Entre el sonido que trajo el modelo y nada, el sonido
     # que trajo el modelo gana siempre.
     ambiente = (usar_ambiente or musica is None) and _tiene_audio(clip)
-    filtro = [f"[0:v]scale=1080:1920:flags=lanczos,"
+    # ── Llenar el cuadro sin deformar ───────────────────────────────────
+    #
+    # Acá decía `scale=1080:1920` a secas, que NO respeta la proporción: le
+    # dice a ffmpeg «poné exactamente estos píxeles» y estira lo que haga
+    # falta. Funcionó mientras el único proveedor devolvía 9:16 —Seedance da
+    # 720×1280, que es la proporción justa y el estirado no hacía nada—, y se
+    # rompió el día que entró otro: H3 Max devuelve 768×1024, que es 3:4.
+    # Estirar eso a 9:16 son 33% de más alto: caras largas, pelotas ovaladas,
+    # todo flaco. Y lo peor es que no falla — sale un video perfecto y mal.
+    #
+    # `force_original_aspect_ratio=increase` agranda hasta TAPAR el cuadro y
+    # `crop` recorta lo que sobra por el centro. Se pierden los costados de un
+    # 3:4 —es inevitable: no hay forma de llenar un 9:16 con un 3:4 sin perder
+    # ancho o sin agregar barras— y se elige perder ancho, que es lo que hace
+    # cualquiera que sube material a un reel. Con un 9:16 de entrada las dos
+    # operaciones no hacen nada, así que Seedance sale exactamente igual que
+    # antes.
+    filtro = [f"[0:v]scale=1080:1920:flags=lanczos:"
+              f"force_original_aspect_ratio=increase,"
+              f"crop=1080:1920,"
               f"fade=t=out:st={dur-0.5:.2f}:d=0.5[vout]"]
     orden = ["-i", str(clip)]
     # El índice de la música depende de si hay rótulo, porque el rótulo es una
