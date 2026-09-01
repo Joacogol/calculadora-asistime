@@ -31,9 +31,24 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from app import instagram as I                                # noqa: E402
-from app import publicador                                    # noqa: E402
-from app.instagram import _traducir                           # noqa: E402
+try:
+    from app import instagram as I                            # noqa: E402
+    from app import publicador                                # noqa: E402
+    from app.instagram import _traducir                       # noqa: E402
+except ImportError as falta:
+    # `publicador` importa Pillow arriba de todo, porque convierte las placas a
+    # JPEG antes de subirlas. El contenedor del worker lo lleva adentro; Cloud
+    # Shell no —y Cloud Shell es donde alguien va a correr esto después de
+    # copiar el código—. Un `ModuleNotFoundError: No module named 'PIL'` no
+    # dice nada de eso: parece que el worker está roto cuando lo único que
+    # falta es una biblioteca de la máquina.
+    print(f"⚠ No se pudo importar el worker acá: {falta}")
+    print()
+    print("  NO es un problema del código: el worker lleva sus dependencias")
+    print("  adentro del contenedor, y esta máquina no las tiene.")
+    print()
+    print("  Para correr la prueba igual:  pip3 install --quiet pillow requests")
+    raise SystemExit(0)
 
 # `esperar` duerme entre pregunta y pregunta, que es lo correcto contra Meta y
 # una pérdida de tiempo contra un Instagram de mentira. Se anula acá y no

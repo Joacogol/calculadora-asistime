@@ -1956,6 +1956,11 @@ un «esperá un momento» se reintente, y que **un rechazo de verdad se siga
 informando como error** —sin lo tercero, la prueba pasaría con un publicador
 que reintenta todo para siempre y nunca avisa nada.
 
+En Cloud Shell hace falta `pip3 install --quiet pillow requests` una vez:
+`publicador` importa Pillow arriba de todo y esa máquina no lo tiene. Si falta,
+la prueba lo dice y sale bien en vez de tirar un `ModuleNotFoundError` que
+parece que el worker está roto — igual que `probar-recorte.py` con ffmpeg.
+
 **El Instagram de mentira rechaza publicar un contenedor que no está listo, y
 eso es lo que hace que la prueba sirva.** La primera versión dejaba publicar
 siempre, así que pasaba también contra el código roto. Un doble más amable que
