@@ -431,6 +431,37 @@ def escribir(analisis: dict, destino: Path) -> Path:
     return ruta
 
 
+def _restar(intervalos, quitar):
+    """Lo que queda de `intervalos` después de sacarles `quitar`."""
+    salida = []
+    for a, b in intervalos:
+        pedazos = [(a, b)]
+        for x, y in quitar:
+            siguientes = []
+            for p, q in pedazos:
+                if y <= p or x >= q:
+                    siguientes.append((p, q))
+                    continue
+                if x > p:
+                    siguientes.append((p, x))
+                if y < q:
+                    siguientes.append((y, q))
+            pedazos = siguientes
+        salida += pedazos
+    return salida
+
+
+def _juntar(intervalos, pegue: float = 0.0):
+    """Los mismos intervalos, ordenados y sin superposiciones."""
+    juntos = []
+    for a, b in sorted(intervalos):
+        if juntos and a <= juntos[-1][1] + pegue:
+            juntos[-1] = (juntos[-1][0], max(juntos[-1][1], b))
+        else:
+            juntos.append((a, b))
+    return juntos
+
+
 def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
                     aire: float = 0.12, min_tramo: float = 0.8,
                     desde: float = 0.0, hasta: float | None = None,
@@ -555,33 +586,90 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
         # que costaba no saber dónde terminaba la palabra—.
         HUECO_MINIMO = 0.50
         AIRE = 0.18
-        for w, sig in zip(palabras, palabras[1:]):
-            # La ventana sigue como tope: si la energía no encuentra el final
-            # —un clip con ruido de fondo parejo—, no se corta de más.
-            corta = min(_fin_real(w["desde"], sig["desde"]),
-                        w["desde"] + VENTANA * 2)
-            corta = max(corta, w["desde"] + 0.10)
-            if sig["desde"] - corta >= HUECO_MINIMO:
-                mudos.append((corta + AIRE, sig["desde"] - AIRE))
-        mudos.sort()
-        juntos = []
-        for x, y in mudos:
-            if juntos and x <= juntos[-1][1]:
-                juntos[-1] = (juntos[-1][0], max(juntos[-1][1], y))
-            else:
-                juntos.append((x, y))
-        mudos = juntos
+
+        # Dónde termina de verdad CADA palabra, calculado una sola vez. Sirve
+        # para dos cosas distintas y opuestas: para saber dónde hay hueco que
+        # cortar, y para saber qué no se puede cortar nunca.
+        finales = []
+        for i, w in enumerate(palabras):
+            tope = palabras[i + 1]["desde"] if i + 1 < len(palabras) else fin
+            c = min(_fin_real(w["desde"], tope), w["desde"] + VENTANA * 2)
+            finales.append(max(c, w["desde"] + 0.10))
+
+        for i, (w, sig) in enumerate(zip(palabras, palabras[1:])):
+            if sig["desde"] - finales[i] >= HUECO_MINIMO:
+                mudos.append((finales[i] + AIRE, sig["desde"] - AIRE))
+        mudos = _juntar(mudos)
+
+        # ── ningún corte puede COMERSE una palabra ────────────────────────
+        #
+        # Ésta es la regla que faltaba, y su ausencia arruinó un reel el
+        # 31/8/2026. En el clip de Bruno la respuesta —«eh, por volar»— se
+        # dijo más lejos del micrófono que la pregunta, así que su energía
+        # quedó por debajo del umbral y `silencios()` marcó seis segundos y
+        # medio como callados. El reel salió con la pregunta hecha, la
+        # respuesta borrada y el remate colgando: técnicamente prolijo y sin
+        # sentido.
+        #
+        # El error de fondo estaba en cómo se usaban las palabras. Servían
+        # para AGREGAR cortes —los huecos que la energía no oye— y para que un
+        # corte no partiera una palabra por la mitad. Pero nada impedía que un
+        # corte se tragara palabras ENTERAS: si ninguna caía justo sobre el
+        # borde, los dos bordes parecían limpios y nueve palabras desaparecían
+        # en el medio sin que nada lo notara.
+        #
+        # Así que acá las palabras dejan de ser sólo un cortador y pasan a ser
+        # un VETO: se le resta a los silencios todo lo que sea habla. La
+        # energía sigue proponiendo dónde cortar; la transcripción tiene la
+        # última palabra sobre dónde NO.
+        #
+        # Lo que queda afuera de este veto es lo único que no se puede
+        # arreglar acá: una palabra que la transcripción tampoco escuchó. Para
+        # eso está el retoque, que deja sacar o rehacer un tramo a mano.
+        RESPIRO = 0.06
+        habla = _juntar([(w["desde"] - RESPIRO, finales[i] + RESPIRO)
+                         for i, w in enumerate(palabras)])
+        # Después de sacarle el habla, un silencio puede quedar partido en
+        # pedacitos. Los cortos no se cortan: un tijeretazo de dos décimas no
+        # se siente como que sacaron un tiempo muerto, se siente como que el
+        # video se trabó.
+        mudos = [(a, b) for a, b in _restar(mudos, habla) if b - a >= minimo]
+
+    # `min_tramo` descarta las esquirlas — pero NUNCA si adentro hay una
+    # palabra.
+    #
+    # **Esto fue lo que arruinó el reel del 31/8/2026, y no lo que parecía.**
+    # La primera lectura fue que la respuesta de Bruno se había dicho más
+    # flojo que la pregunta y la energía no la había oído. Falso: medida, se
+    # oye a −28 dB, igual que todo lo demás.
+    #
+    # Lo que pasó es más sutil. Bruno contesta a las corridas —pregunta,
+    # respuesta, repregunta— con pausas cortas en el medio, así que quedaron
+    # cinco islas de habla de unos 0,75 s cada una. `min_tramo` vale 0,8. Cada
+    # isla, por sí sola, no llegaba al mínimo, así que se descartaron **las
+    # cinco**: seis segundos y medio de diálogo desaparecieron uno por uno,
+    # cada descarte defendible y el conjunto un desastre.
+    #
+    # La regla estaba pensada para basura —medio segundo de audio suelto entre
+    # dos silencios casi nunca es una palabra— y el error fue no darle una
+    # excepción para cuando SÍ lo es. Si adentro hay una palabra, el tramo
+    # entra aunque sea corto: un parpadeo de video es un problema estético, y
+    # perder lo que alguien dijo es un problema de otra categoría.
+    arranques = [w["desde"] for w in (palabras or [])]
+
+    def _vale(a: float, b: float) -> bool:
+        return (b - a >= min_tramo) or any(a <= x <= b for x in arranques)
 
     tramos, cursor = [], desde
     for a, b in mudos:
         if b <= desde or a >= fin:
             continue
         a, b = max(a, desde), min(b, fin)
-        if a - cursor >= min_tramo:
+        if _vale(cursor, a):
             tramos.append((round(max(desde, cursor - aire), 2),
                            round(min(fin, a + aire), 2)))
         cursor = max(cursor, b)
-    if fin - cursor >= min_tramo:
+    if _vale(cursor, fin):
         tramos.append((round(max(desde, cursor - aire), 2), round(fin, 2)))
 
     # ── que ningún corte parta una palabra ──

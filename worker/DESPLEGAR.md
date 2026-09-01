@@ -1883,6 +1883,71 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## El recorte se comió la respuesta (31/8/2026)
+
+Salió un reel donde alguien le pregunta a Bruno qué superpoder elegiría **y la
+respuesta no está**. Quedó la pregunta hecha, un remate colgando y ningún
+sentido. Desaparecieron 6,4 segundos con nueve palabras adentro.
+
+### La causa no era la que parecía
+
+La primera lectura fue que la respuesta se había dicho más lejos del micrófono
+y la energía no la había oído. **Falso, y conviene que quede escrito porque era
+una explicación creíble:** medida, la respuesta se oye a −28 dB, igual de fuerte
+que todo lo demás.
+
+Lo que pasó es más sutil. Bruno contesta a las corridas —pregunta, respuesta,
+repregunta— con pausas cortas en el medio, así que el clip quedó partido en
+**cinco islas de habla de unos 0,75 s cada una**. Y `min_tramo` valía 0,8.
+
+Ninguna isla llegaba al mínimo, así que se descartaron **las cinco**, una por
+una. Cada descarte era defendible por separado; el conjunto fue un desastre.
+
+`min_tramo` está para tirar basura —medio segundo de audio suelto entre dos
+silencios casi nunca es una palabra, es un ruido, y como tramo de video es un
+parpadeo—. El error fue no darle la excepción obvia: **si adentro hay una
+palabra, no es basura.** Un parpadeo es un problema estético; perder lo que
+alguien dijo es de otra categoría.
+
+### Los dos arreglos
+
+1. **`min_tramo` no descarta un tramo que contenga una palabra.** Es el arreglo
+   del caso de Bruno.
+2. **La transcripción vetea los silencios.** Antes las palabras servían para
+   AGREGAR cortes y para que un corte no partiera una palabra al medio, pero
+   nada impedía que un corte se tragara palabras **enteras**: si ninguna caía
+   justo sobre el borde, los dos bordes parecían limpios. Ahora se le resta a
+   los silencios todo lo que sea habla. La energía propone dónde cortar; la
+   transcripción tiene la última palabra sobre dónde **no**.
+
+### El guardián
+
+```bash
+python3 herramientas/probar-recorte.py
+```
+
+Arma un audio de laboratorio con ffmpeg y comprueba las dos mitades del
+contrato, que tiran para lados opuestos: **que no se pierda ninguna palabra** y
+**que el silencio de verdad se siga yendo** —sin lo segundo, la prueba pasaría
+con un recorte que no recorta.
+
+**El libreto son ráfagas cortas y no bloques largos, y eso importa.** La primera
+versión de esta prueba usaba dos segundos seguidos de habla floja y **pasaba
+también con el código roto**: no reproducía nada. Un test que no falla contra el
+bug que dice cubrir es peor que no tener test, porque da permiso para no mirar.
+
+Medido después del arreglo, sobre el material real de Bruno: 33,6 s → 30,2 s, y
+**cero palabras perdidas** en los tres clips.
+
+### Lo que cuesta
+
+Se recorta menos: donde antes decía «saqué 9,2 s» ahora saca 3,4 s. **Ese número
+viejo era mentira**: 6,4 de esos 9,2 eran diálogo, no tiempo muerto. Un reel
+sale un poco más largo y entero, que es el único orden aceptable de esas dos
+cosas.
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:
