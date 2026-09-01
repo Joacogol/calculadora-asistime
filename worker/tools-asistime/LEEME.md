@@ -12,6 +12,28 @@ cambió, cuándo y por qué, que es justamente lo que no se ve del otro lado.
 Si las dos copias se separan, la que manda es la de Asistime (es la que corre) y
 ésta pasa a ser una mentira prolija, que es peor que no tener nada.
 
+## Dos reglas del sandbox, que costaron caro
+
+El sandbox de Asistime **no es Node ni el navegador**, y se parece lo suficiente
+como para engañar. El 1/9/2026 `ver_reel` devolvió «Error» en el simulador, sin
+una línea más, mientras los registros del otro lado mostraban que la API había
+contestado 200: la respuesta llegaba bien y algo se rompía después. El mismo
+código corre sin una queja fuera de ahí, así que no había forma de reproducirlo.
+
+1. **Leer el cuerpo con `try { d = await r.json() } catch`,** nunca con
+   `await r.json().catch(...)`. Es el único idioma que usan las herramientas
+   que funcionan hace semanas, y era lo único que estas dos hacían distinto.
+2. **Nunca devolver `null`.** Un reel sin placa de cierre devolvía
+   `cierre: null`; mandar `""` cuesta nada.
+
+Y la que vale para todas: **envolver la herramienta entera en un `try`** que
+devuelva el error en castellano. Una tool que muere diciendo «Error» y nada más
+no se puede arreglar desde afuera — ni por quien la usa, ni por quien la
+escribió. Si se rompe, que diga por qué.
+
+En general: **no estrenar construcciones de JavaScript acá.** Copiá el idioma de
+una tool que ya esté corriendo en producción.
+
 | Archivo | Tool | Tenant | Id |
 |---|---|---|---|
 | `ver_reel.js` | `ver_reel` | 119 (Boss Padel) | 2143 |
