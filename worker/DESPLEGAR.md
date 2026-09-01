@@ -1683,26 +1683,36 @@ la de espera es de minutos.
 
 ### Lo que queda por hacer, y no se puede desde este repo
 
-**El modelo de Whisper se baja en cada corrida.** El contenedor es efímero, así
-que los 464 MB del modelo `small` viajan de HuggingFace cada vez. Medido acá
-son ~9 segundos de descarga más 4 de carga; desde São Paulo puede ser bastante
-más, y encima es una dependencia de red que puede fallar.
+**El modelo de Whisper se baja en cada corrida, y con `medium` eso ya no es
+un detalle de velocidad: es lo que rompe el job.** El contenedor es efímero,
+así que el modelo viaja de HuggingFace cada vez. Con `small` eran 464 MB y
+~9 segundos, molesto y nada más. Con `medium` son 1,5 GB — y en Cloud Run
+**el disco del contenedor es memoria**, así que esos 1,5 GB salen del límite
+del job antes de que empiece a trabajar.
 
 Se arregla en el `Dockerfile`, que **no está en este repo** —vive sólo en el
-worker— así que va escrito acá para pegarlo a mano:
+worker, en `~/worker/Dockerfile`— así que va escrito acá para pegarlo a mano:
 
 ```dockerfile
-# Precarga el modelo de transcripción: el contenedor es efímero y sin esto se
-# bajan 464 MB de HuggingFace en cada corrida.
+# Precarga el modelo de transcripción: el contenedor es efímero y sin esto el
+# modelo se baja de HuggingFace en CADA corrida. Con `medium` son 1,5 GB, y en
+# Cloud Run el disco del contenedor es memoria: sin esta línea el job se queda
+# sin memoria en vez de tardar un poco más.
 ENV HF_HOME=/opt/modelos
 RUN python -c "from faster_whisper import WhisperModel; \
-      WhisperModel('small', device='cpu', compute_type='int8')" \
+      WhisperModel('medium', device='cpu', compute_type='int8')" \
     && chmod -R a+rX /opt/modelos
 ```
 
 El `HF_HOME` explícito no es adorno: sin él la caché queda en el `$HOME` del
 usuario que corrió el `RUN`, y si el job corre con otro usuario no la puede
 leer — se baja igual y no se entera nadie.
+
+**Si el modelo tuvo que bajarse, el worker ahora lo dice.** `habla._cargar()`
+mide cuánto tardó y, si pasa de 20 segundos, escribe un `warning` diciendo que
+casi seguro no está horneado. Un aviso no arregla nada, pero convierte «el reel
+se colgó» en «se está bajando el modelo», que es la diferencia entre media hora
+de búsqueda y treinta segundos.
 
 ---
 
@@ -1973,7 +1983,7 @@ justamente lo que le prohíbe al recorte comerse una palabra (ver el caso de
 Bruno, más abajo). Un VAD que se traga media frase reabre ese agujero desde
 el otro lado. Con `medium` no hace falta.
 
-### Y se tuvo que volver atrás el mismo día
+### Se tuvo que volver atrás el mismo día, y después volver a entrar bien
 
 Se desplegó con `medium` y **un reel que tardaba 1 m 23 s pasó de largo los
 ocho minutos** — el mismo pedido, los mismos tres clips. Se volvió a `small`.
@@ -1989,23 +1999,42 @@ entra en un contenedor de 4 GiB es exactamente el error que este archivo
 existe para no repetir. **Un modelo no se elige por su calidad sino por su
 calidad dentro del presupuesto que hay.**
 
-### Qué hace falta para prenderlo
+### La cuenta que faltaba, ahora medida
 
-1. **Hornear el modelo en el `Dockerfile`** —que vive en `~/worker`, no en
-   este repo— para que no se baje en cada despliegue. La línea está más
-   arriba en este mismo archivo.
-2. **Revisar la memoria del job** en `desplegar-chat.sh` (hoy 4 GiB).
-3. Recién ahí: `WHISPER_MODELO=medium ./desplegar-chat.sh`, y medir un reel
-   real de punta a punta antes de darlo por bueno.
+| | pico de memoria | transcribir (4 núcleos) | modelo en disco |
+|---|---|---|---|
+| `small` | 781 MiB | 34 s | 464 MB |
+| `medium` | **2.102 MiB** | 78 s | 1,5 GB |
 
-Mientras tanto, lo que SÍ quedó y no cuesta nada es el vocabulario en prosa y
-los tres `VOCABULARIO` de las marcas: con `small`, eso solo ya arregla «el
-campeón del siglo» y no toca la memoria.
+Con el modelo sin hornear hay que sumarle los 1,5 GiB que ocupa bajarlo:
+**3,6 GiB de los 4 GiB que tenía el job**, con un Chromium y un ffmpeg todavía
+por arrancar. Ahí murió.
 
-`WHISPER_MODELO` ahora se fija en `desplegar-chat.sh` y no en el código,
-porque `--set-env-vars` reemplaza la lista entera: una variable puesta a mano
-con `--update-env-vars` sobrevive hasta el próximo despliegue y después
-desaparece sin que nadie lo note.
+### Las tres cosas que van juntas
+
+`medium` no se prende solo. Va con las dos sin las cuales no se sostiene:
+
+1. **El modelo horneado en el `Dockerfile`** (la línea está más arriba en este
+   mismo archivo, ya apuntando a `medium`). Sin esto se baja 1,5 GB en cada
+   reel.
+2. **El job en 8 GiB**, ya puesto en `desplegar-chat.sh`. 2,1 GiB de pico más
+   Chromium más ffmpeg entra en 4 GiB por poco, y «por poco» es como se
+   llegó acá.
+3. **`WHISPER_MODELO` fijado en `desplegar-chat.sh`**, no en el código:
+   `--set-env-vars` reemplaza la lista entera, así que una variable puesta a
+   mano con `--update-env-vars` sobrevive hasta el próximo despliegue y
+   después desaparece sin que nadie lo note.
+
+Y si algo sale mal se vuelve sin tocar código:
+`WHISPER_MODELO=small ./desplegar-chat.sh`.
+
+### Lo que se aprendió, que vale más que el modelo
+
+Medir la calidad de un modelo en una máquina con 26 GB libres y deducir que
+entra en un contenedor de 4 GiB fue el error. **Un modelo no se elige por su
+calidad: se elige por su calidad dentro del presupuesto que hay**, y el
+presupuesto se mide igual que la calidad. Los 2.102 MiB de la tabla de arriba
+son treinta segundos de trabajo que habrían evitado un despliegue roto.
 
 ---
 

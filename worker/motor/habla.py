@@ -39,6 +39,7 @@ son exactamente el tipo de error que sale bien en la prueba y mal en producción
 import logging
 import os
 import re
+import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -57,24 +58,30 @@ log = logging.getLogger(__name__)
 #: `large-v3` sale exactamente el mismo texto —una sola interjección más— por
 #: casi el doble de tiempo y un modelo el doble de pesado: no se paga.
 #:
-#: **Y sin embargo el valor por defecto sigue siendo `small`, por ahora.** Se
-#: puso `medium` el 1/9/2026 y hubo que volver atrás el mismo día: un reel que
-#: tardaba 1 m 23 s pasó de largo los ocho minutos. La calidad medida era real;
-#: lo que faltó medir es que el worker no puede pagar ese modelo TODAVÍA.
+#: **Se intentó una vez y hubo que volver atrás el mismo día**, y conviene que
+#: quede escrito. Se puso `medium` sin tocar nada más y un reel que tardaba
+#: 1 m 23 s pasó de largo los ocho minutos. La medición de calidad era buena;
+#: lo que no se midió es si el modelo ENTRABA.
 #:
-#: `medium` pesa 1,5 GB contra los 464 MB de `small`, y en Cloud Run el disco
-#: del contenedor **es memoria**: bajarlo consume 1,5 GiB de los 4 GiB del job,
-#: y cargarlo consume otro tanto, con un Chromium y un ffmpeg al lado. No es
-#: que tarde: es que no entra.
+#: La cuenta, ahora sí medida sobre estos mismos tres clips:
 #:
-#: Para prenderlo hacen falta dos cosas, y ninguna se hace desde este archivo:
+#:   | | pico de memoria | transcribir |
+#:   |---|---|---|
+#:   | `small`  |   781 MiB | 34 s |
+#:   | `medium` | 2.102 MiB | 78 s |
 #:
-#:   1. **Hornear el modelo en el `Dockerfile`** —que vive en `~/worker` y no
-#:      en este repo— para que no se baje en cada despliegue.
-#:   2. **Revisar la memoria del job** en `desplegar-chat.sh`.
+#: A eso, si el modelo NO está horneado en la imagen, hay que sumarle 1,5 GiB
+#: más: en Cloud Run el disco del contenedor **es memoria**, así que bajarlo
+#: lo cuenta el job. 2,1 + 1,5 son 3,6 GiB de los 4 GiB que había, con un
+#: Chromium y un ffmpeg todavía por arrancar. No es que tardara: no entraba.
 #:
-#: Con eso hecho, se prende sin tocar código: `WHISPER_MODELO=medium`.
-MODELO = os.environ.get("WHISPER_MODELO", "small")
+#: Por eso `medium` vuelve JUNTO con las dos cosas sin las cuales no se
+#: sostiene: el modelo horneado en el `Dockerfile` —ver `DESPLEGAR.md`— y el
+#: job en 8 GiB. Ninguna de las dos se hace desde este archivo, y por eso
+#: `_cargar()` avisa en el log si el modelo tuvo que bajarse.
+#:
+#: Si algo sale mal se vuelve sin tocar código: `WHISPER_MODELO=small`.
+MODELO = os.environ.get("WHISPER_MODELO", "medium")
 
 #: Nunca con sufijo `.en`. Ver la trampa 1.
 IDIOMA = os.environ.get("WHISPER_IDIOMA", "es")
@@ -97,13 +104,39 @@ _modelo = None
 _dicho: dict = {}
 
 
+#: A partir de acá, cargar el modelo tardó tanto que seguro se bajó de
+#: internet en vez de leerse del disco del contenedor.
+AVISO_CARGA = 20.0
+
+
 def _cargar():
-    """El modelo, una sola vez por proceso. Cargarlo son unos 9 segundos."""
+    """El modelo, una sola vez por proceso.
+
+    Horneado en la imagen tarda unos segundos. Si NO está horneado se baja de
+    HuggingFace **en cada corrida** —el contenedor es efímero— y ahí no sólo
+    tarda: en Cloud Run el disco del contenedor es memoria, así que un modelo
+    de 1,5 GB se come 1,5 GiB del límite del job antes de empezar a trabajar.
+
+    Eso pasó el 1/9/2026 y no dejó ningún rastro: el reel simplemente no
+    terminaba nunca. Por eso ahora se mide y se avisa. Un aviso en el log no
+    arregla nada, pero convierte «se colgó» en «se está bajando el modelo».
+    """
     global _modelo
     if _modelo is None:
         from faster_whisper import WhisperModel
         log.info("cargando el modelo de transcripción %s", MODELO)
+        t0 = time.monotonic()
         _modelo = WhisperModel(MODELO, device="cpu", compute_type="int8")
+        tardo = time.monotonic() - t0
+        if tardo > AVISO_CARGA:
+            log.warning(
+                "el modelo %s tardó %.0fs en cargar: casi seguro NO está "
+                "horneado en la imagen y se bajó de internet. Se va a bajar "
+                "otra vez en cada corrida, y en Cloud Run ocupa memoria del "
+                "job. Ver la sección del Dockerfile en DESPLEGAR.md",
+                MODELO, tardo)
+        else:
+            log.info("modelo %s listo en %.1fs", MODELO, tardo)
     return _modelo
 
 

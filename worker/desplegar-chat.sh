@@ -175,16 +175,20 @@ echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # y después desaparece sin que nadie lo note. Con la variable acá, lo que
 # manda es este archivo y se ve de un vistazo.
 #
-# Para probar otro modelo:  WHISPER_MODELO=medium ./desplegar-chat.sh
-# Antes de dejarlo fijo, leer la nota de `motor/habla.py`: `medium` pesa
-# 1,5 GB y en Cloud Run el disco del contenedor es memoria.
+# Para volver al modelo chico:  WHISPER_MODELO=small ./desplegar-chat.sh
+#
+# La memoria pasó de 4 a 8 GiB junto con `medium`, y no es por las dudas:
+# medido, `medium` tiene un pico de 2,1 GiB contra los 781 MiB de `small`, y
+# si el modelo no está horneado en la imagen se le suman los 1,5 GiB que
+# ocupa bajarlo —en Cloud Run el disco del contenedor es memoria—. Con 4 GiB
+# eso no entraba y el reel no terminaba nunca. Ver `DESPLEGAR.md`.
 gcloud run jobs deploy "$JOB" \
   --source . \
   --region "$REGION" \
   --service-account "$SA" \
-  --memory 4Gi --cpu 8 --task-timeout 30m --max-retries 1 \
+  --memory 8Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
-  --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-small}" \
+  --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
   --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 
