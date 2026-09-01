@@ -119,5 +119,30 @@ print("\n■ Una fila sin `metricas` es una pieza, como siempre fue")
 escrito, espia = correr({**BASE, "metricas": None})
 ok(espia["monto"] and escrito.get("url"), "se monta", escrito.get("url"))
 
+print("\n■ Eligió un proveedor que el motor no tiene prendido")
+#
+# Antes esta fila se quedaba callada en «pendiente» para siempre, que estaba
+# bien mientras el proveedor lo ponía la marca: el día que llegara el secreto
+# salía sola. Desde que la persona elige en el chat, ese silencio es una
+# trampa — eligió, espera, y nadie le dice que ese video no va a llegar nunca.
+import os                                                      # noqa: E402
+
+# Ninguna de las dos claves: así ninguna fila de estas llega a pedirle un video
+# a nadie, que es justo lo que se está probando.
+os.environ.pop("FAL_CLAVE", None)
+os.environ.pop("MAGNIFIC_CLAVE", None)
+
+escrito, _ = correr({**BASE, "id": "sinclave", "estado": "pendiente",
+                     "metricas": {"proveedor": "fal"}})
+notas = escrito.get("notas", "")
+ok(escrito.get("estado") == "rechazado", "se rechaza en vez de colgarse", escrito.get("estado"))
+ok("no se gastó nada" in notas.lower(), "diciendo que no se gastó nada", notas)
+ok("Magnific" in notas, "y ofreciendo el otro sistema", notas)
+
+print("\n■ Pero si el proveedor lo puso la marca, sigue esperando callado")
+escrito, _ = correr({**BASE, "id": "sinclave2", "estado": "pendiente",
+                     "metricas": {}})
+ok(escrito == {}, "no se toca la fila: sale sola cuando llegue el secreto", escrito)
+
 print(f"\n✗ {fallos} fallo(s)\n" if fallos else "\n✓ todo bien\n")
 sys.exit(1 if fallos else 0)

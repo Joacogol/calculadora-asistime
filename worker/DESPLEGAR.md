@@ -2678,3 +2678,134 @@ conectado, y no es un olvido: la política de la organización bloquea el webhoo
 | Un pedido queda `pendiente` para siempre | el reloj no está corriendo: `gcloud scheduler jobs list --location southamerica-east1` |
 | Un pedido queda `generando` para siempre | ya no pasa: se rescata solo a los 30 minutos |
 | Las piezas salen sin las reglas del club | falta `ASISTIME_CLAVE`. Ver el paso 2 |
+
+---
+
+## Tres verbos para el video, y el sistema lo elige quien paga (1/9/2026)
+
+Lo pidió Joaquín pensando en quién va a usar esto todos los días:
+
+> «hay veces que puede que se quiera pedir un video solo o una foto sola, para
+> esa luego usarla, eso debe estar separado, y ajustado. Recorda esto que lo
+> van a usar los de marketing que van a generar contenido por aca.»
+
+Y, aparte:
+
+> «Seria bueno que cuando se pide un video, que diga que sistema quiere usar si
+> el de fall o magnific y ahi arranque.»
+
+### Cómo quedó
+
+| Verbo | Devuelve | Cuesta |
+|---|---|---|
+| `crear_foto` | un archivo de imagen | 100 créditos |
+| `crear_video` | **un archivo de video**, sin nada encima | desde 350 créditos / US$ 0,40 |
+| `crear_reel` | la **pieza** terminada, con título y música | ídem |
+| `montar_reel` | una pieza a partir de material que ya existe | nada |
+
+Las dos de abajo son la misma pieza vista de dos maneras, y `montar_reel` es la
+que las une: **el archivo que devuelve `crear_video` es una URL pública, así que
+`montar_reel` lo toma como un clip más.** Por eso «hacemos el video, lo miramos,
+y después le ponemos el texto» es un camino de verdad y no una promesa: la
+generación se paga una vez y el título se cambia todas las veces que haga falta.
+
+### Elegir el sistema
+
+Un pedido que genera y no trae `proveedor` **no anota nada**: la API contesta
+200 con las dos opciones, su precio y su duración, y el agente pregunta.
+
+Frena la API y no una regla del prompt, a propósito: un prompt se puede ignorar
+en el medio de una conversación larga, y del otro lado está la plata del
+cliente. Y contesta 200 y no 400 porque **no es un error, es una pregunta** —
+una tool que devuelve error hace que el agente pida disculpas en vez de
+preguntar.
+
+Los precios se dicen desde la API y no desde el código de la tool. Un precio
+copiado en una tool queda viejo el día que cambie y nadie se entera hasta la
+factura. Igual quedó duplicado —una función de Supabase no puede leer el Python
+del worker— así que `herramientas/probar-precios.py` compara las dos tablas y
+falla si se separan. Corre en el despliegue.
+
+### El agujero que esto abría, tapado
+
+Si alguien elegía fal y la clave no había llegado al motor, la fila se quedaba
+callada en `pendiente` **para siempre**. Ese silencio estaba bien mientras el
+proveedor lo ponía la marca —el día que llegara el secreto el pedido salía
+solo—, pero con una persona esperando en un chat es una trampa.
+
+Ahora se distingue: si el proveedor lo **eligió la persona** y falta su clave,
+la fila se rechaza con el motivo, diciendo que no se gastó nada y ofreciendo el
+otro sistema. Si lo puso la marca, sigue esperando callado como antes.
+
+### Y el reel salía mudo
+
+Medido en el reel `50c7b68e` de Boss: **el archivo final no tenía ninguna pista
+de audio**, y el crudo traía ambiente de verdad (‑21,4 dB de media, ‑6,1 de
+pico).
+
+Dos reglas correctas que juntas daban silencio: Boss no tiene banco de música,
+y Seedance Mini está marcado `manda_el_audio: False` para que su música propia
+no suene debajo de la nuestra. Pero esa regla habla de **mezclar**, así que sólo
+vale si hay con qué. Sin música nuestra no hay dos canciones peleando: hay una
+sola pista posible, y descartarla no deja un reel más limpio, deja un reel mudo.
+
+Verificado sobre el clip real: antes `-an`, ahora audio a ‑14 LUFS. Con música
+nuestra el ambiente sigue afuera, como estaba.
+
+**Pendiente:** cargarle un banco de música a Boss. Stadium tiene una pista
+(`street`, hip-hop de calle); Boss tiene la lista vacía y esa no le pega.
+
+### Las pruebas
+
+Cuatro, todas contra el archivo que va a producción y todas comprobadas
+**fallando** contra la versión anterior. Eso último no es ceremonia: el 1/9 una
+prueba de publicación pasó contra el código roto porque el Instagram falso
+decía que sí a todo.
+
+| Prueba | Qué fija |
+|---|---|
+| `probar-precios.py` | que el precio que se dice sea el que se cobra |
+| `probar-video-solo.py` | que un pedido de video entregue el archivo y no monte nada, y que un proveedor sin clave se rechace |
+| `probar-api-reels.ts` | la API entera, con un Supabase de mentira detrás |
+| `probar-tools-reels.ts` | el código de las tools contra esa misma API |
+
+La última cubre el pegamento entre la tool y la API, que es donde vivió el error
+que no se veía: el 31/8 `ver_reel` devolvía «Error» en el simulador mientras la
+API registraba un 200 limpio.
+
+### Desplegar esto (Boss primero)
+
+**El orden importa.** Las tools ya están arriba y mandan `pieza` y `proveedor`;
+la función desplegada todavía no los entiende.
+
+```bash
+# 1 · La función, primero
+npx supabase functions deploy api-reels --no-verify-jwt
+
+# 2 · El worker (corre las cuatro pruebas antes de compilar)
+./desplegar-chat.sh
+```
+
+**3 · Tildar `crear_video` (2163) en el panel del agente 364.** Las tools se
+crean a nivel del tenant y se asocian a cada agente por separado; `PUT
+/agents/{a}/tools` reemplaza la lista entera y el GET que la trae viene
+truncado, así que esto se hace a mano.
+
+Recién cuando funcione en Boss, replicar en Stadium (176) y Clínica (73).
+
+| | Boss (119 / ag. 364) |
+|---|---|
+| `crear_video` | 2163 — creada, **falta tildar** |
+| `crear_reel` | 2133 — actualizada |
+| `estado_reel` | 2132 — actualizada |
+| `api-reels` | escrita, **falta desplegar** |
+| worker | escrito, **falta desplegar** |
+
+### Lo que sigue sin probarse
+
+**fal nunca se ejecutó contra su API de verdad.** Está escrita la cola, el
+pedido y el sondeo, y la lógica de plata está medida — pero ningún video salió
+por ahí. El primero que se pida con fal es la prueba. Y `h3-max` está declarado
+con una sola duración (5 s) porque es la única que fal documenta: ampliarlo se
+hace midiendo, no suponiendo. Ya se quemó una vez este archivo suponiendo el
+rango de Seedance 2.5.

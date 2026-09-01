@@ -1035,11 +1035,33 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         return ((f.get("metricas") or {}).get("proveedor")
                 or ficha.get("proveedor") or PROVEEDOR_POR_DEFECTO)
 
+    # ── Esperar callado sirve, salvo cuando alguien eligió y está esperando ──
+    #
+    # Quedarse quieto en `pendiente` es lo correcto cuando el proveedor lo puso
+    # la marca o el default: nadie pidió ese en particular, y el día que llegue
+    # el secreto el pedido sale solo.
+    #
+    # Pero desde que la persona ELIGE en el chat con cuál generar, ese mismo
+    # silencio se vuelve una trampa: eligió fal, se queda esperando un video que
+    # no va a llegar nunca, y nadie le dice por qué. Que falte un secreto no se
+    # arregla solo — necesita un despliegue— así que ahí no hay nada que
+    # esperar. Se rechaza y se dice, con la salida a mano: pedirlo con el otro.
+    def _lo_eligio_la_persona(f: dict) -> bool:
+        return bool((f.get("metricas") or {}).get("proveedor"))
+
     listos, sin_clave = [], {}
     for f in nuevos:
         prov = _proveedor_de_fila(f)
         if (os.environ.get(CLAVES.get(prov, "MAGNIFIC_CLAVE")) or "").strip():
             listos.append(f)
+        elif _lo_eligio_la_persona(f):
+            otro = "fal" if prov == "magnific" else "Magnific"
+            _marcar(cli, f["id"], "rechazado",
+                    notas=f"el motor todavía no tiene configurado «{prov}», así "
+                          f"que ese video no se puede generar por ahí. No se "
+                          f"gastó nada. Se puede pedir el mismo video con "
+                          f"{otro}, o avisar al equipo para que lo prendan.")
+            movidas += 1
         else:
             sin_clave[prov] = sin_clave.get(prov, 0) + 1
     for prov, cuantos in sin_clave.items():
