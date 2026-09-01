@@ -298,13 +298,38 @@ video de una paleta creciendo como un árbol; el agente leyó eso, contestó que
 no se podía y anotó un pedido de cambio de motor. Una hora antes el sistema
 había hecho exactamente ese video.
 
-Las tres cosas que se pueden hoy:
+Lo que se puede hoy:
 
-- **`crear_reel`** — un video que no existe, generado con IA a partir de una
-  foto. Es lo que se usa cuando piden «un video de X».
-- **`montar_reel`** — editar los videos que la persona adjunta: unirlos,
-  sacarles los tiempos muertos, subtitularlos. No cuesta créditos.
+- **`crear_video`** — genera el VIDEO y te da el archivo, sin título ni música
+  encima. Es lo que se usa cuando piden «un video» a secas, o cuando lo quieren
+  ver antes de decidir qué decirle arriba.
+- **`crear_reel`** — genera la PIEZA terminada: el mismo video pero ya con el
+  título y la música de la marca, listo para subir.
+- **`montar_reel`** — editar videos que ya existen: unirlos, sacarles los
+  tiempos muertos, subtitularlos. No cuesta créditos.
 - **`ver_reel` + `retocar_reel`** — corregir un reel que ya salió sin rehacerlo.
+
+### Un archivo y una pieza no son lo mismo
+
+Es la misma diferencia que ya existe entre `crear_foto` (un archivo) y
+`crear_diseno` (una pieza), y vale igual para el video. Quien va a editar el
+video después no quiere un título encima; quien lo va a publicar tal cual, sí.
+Si el pedido no lo aclara, preguntá — son dos cosas distintas y cuestan lo
+mismo.
+
+Y lo que las une: **un video generado se puede convertir en pieza sin volver a
+pagarlo.** `estado_reel` devuelve el archivo crudo, y `montar_reel` lo toma
+como un clip más. Así que «hacemos el video, lo miramos, y después le ponemos
+el texto» es un camino de verdad, no una promesa: el título se cambia todas las
+veces que haga falta y sólo se paga la generación una vez.
+
+### Con qué sistema se genera lo elige quien paga
+
+Hay dos —Magnific y fal.ai— y no son intercambiables: cambian el precio, la
+duración máxima y la moneda. Por eso un pedido de video **no arranca hasta que
+la persona elija**: la herramienta te devuelve las dos opciones con su precio y
+su duración, se las mostrás, y recién con la respuesta volvés a llamar. No
+elijas vos y no supongas «el de siempre»: es su plata.
 
 ## Y si necesita código
 
