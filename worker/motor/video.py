@@ -1262,6 +1262,29 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                              arregladas)
             g["subtitulos"] = frases
             log.info("subtítulos automáticos: %d frases", len(g["subtitulos"]))
+
+            # ── Si NADIE habla, el reel sale con música ─────────────────
+            #
+            # La música quedó apagada por defecto el 31/8/2026 y por una razón
+            # buena, que sigue estando escrita en `_mezclar`: encima de alguien
+            # hablando a cámara, una cama musical no adorna, ensucia.
+            #
+            # Pero ese argumento vale sólo cuando hay una voz. Un clip generado
+            # por IA, o un peloteo filmado sin nadie hablando, sale mudo — y un
+            # reel mudo en Instagram es un reel que se pasa de largo: no hay
+            # nada que sostenga los tres segundos que decide el pulgar.
+            #
+            # Así que la regla completa es: **la música se apaga porque hay una
+            # voz, no porque sí.** Si se escuchó el material y no se dijo una
+            # sola palabra, vuelve. Y si el guion ya opinó —en un sentido o en
+            # el otro— manda el guion: esto no pisa una decisión, llena un
+            # hueco.
+            if not frases:
+                son = dict(g.get("sonido") or {})
+                if "musica" not in son:
+                    son["musica"] = True
+                    g["sonido"] = son
+                    log.info("nadie habla en el material: el reel va con música")
         except Exception as e:                               # noqa: BLE001
             # Un reel sin subtítulos es peor que uno con subtítulos, pero es
             # muchísimo mejor que ningún reel. Se sigue y se avisa.

@@ -1939,6 +1939,73 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## Generar un video y después usarlo: el material se separa de la pieza
+
+Pedido de Joaquín, 1/9/2026: *«tenés que poder decirle: con este video y esa
+frase, armame el reel»*. Lo mismo que ya existe con las fotos.
+
+Y ahí estaba el defecto de diseño. Con las fotos hay dos pasos separados
+—`crear_foto` da un ARCHIVO, `crear_diseno` arma la PIEZA— y por eso la foto se
+puede mirar, descartar, reusar en otra cosa. Con el video había uno solo:
+`crear_reel` generaba el clip **y** le montaba título y música en la misma
+operación, y lo que salía era una pieza cerrada. El material que se pagó no
+existía por separado.
+
+**Un archivo y una pieza son dos cosas distintas, y confundirlas cuesta.** No
+sólo por la flexibilidad: cuando el montaje salió mal —el rótulo negro de más
+arriba— no había clip del que rehacerlo, porque el original vivía en un link
+firmado de Magnific que vence a la hora.
+
+### La cadena, ahora
+
+1. **`crear_reel`** genera el video. Además del reel montado, guarda el clip
+   crudo en `reels/<id>-crudo.mp4`, una copia nuestra que no vence.
+2. **`estado_reel`** devuelve las dos cosas: el reel y `video_crudo`.
+3. **`montar_reel`** toma ese crudo como un clip más —es una URL, y `clips` ya
+   acepta URLs— junto con el `hook` que la persona quiera. También se puede
+   mezclar con material filmado por el cliente.
+
+No hizo falta una capacidad nueva en el motor: hacía falta **dejar de tirar el
+material**. Casi todo lo que sigue son dos cosas que sí había que arreglar para
+que el resultado no fuera malo.
+
+### Un clip donde nadie habla no se recorta
+
+`montar_reel` saca los tiempos muertos midiendo dónde se apagó la voz. Pasado
+un video generado, el recorte le comía **los primeros 0,88 s de 10,08** —
+medido— porque el arranque es más callado que el resto.
+
+Ahí no se ahorró tiempo muerto: se tiró un segundo de un video que se pagó.
+«Sacar los tiempos muertos» es una operación sobre gente hablando: el tiempo
+muerto es la pausa entre dos frases. Sin una sola palabra no hay pausas, hay
+**plano**, y lo que la energía llama silencio es el ambiente — que es
+justamente lo que se quería filmar.
+
+Ahora, si se escuchó el material y no se dijo una palabra, el clip queda
+entero. `herramientas/probar-recorte.py` lo fija; contra el código anterior la
+prueba falla partiendo el clip en tres pedazos.
+
+### Y sale con música
+
+La música se apagó por defecto el 31/8 porque encima de alguien hablando a
+cámara ensucia. Ese argumento vale **sólo cuando hay una voz**.
+
+Un clip generado sale mudo, y un reel mudo en Instagram es un reel que se pasa
+de largo: no hay nada que sostenga los tres segundos donde se decide el pulgar.
+La regla completa es que **la música se apaga porque hay una voz, no porque
+sí**: si se escuchó y nadie habló, vuelve. Si el guion ya opinó —en cualquier
+sentido— manda el guion; esto llena un hueco, no pisa una decisión.
+
+### Lo que falta para que se pueda pedir desde el chat
+
+El motor y la API ya están. Falta que `estado_reel` muestre el `video_crudo` y
+que los prompts cuenten la cadena, en los tres clientes. Va después de este
+despliegue a propósito: **hasta que el worker no corra, ningún reel tiene
+crudo guardado**, y una herramienta que ofrece un archivo que no existe es peor
+que no ofrecerlo.
+
+---
+
 ## El agente dijo que no se podía algo que sí se puede (1/9/2026)
 
 Se pidió «un video de una paleta de pádel creciendo como un árbol en un

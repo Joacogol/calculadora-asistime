@@ -156,6 +156,24 @@ def main() -> int:
         if not any(f.startswith("✗ el silencio") for f in fallas):
             print("✓ los dos silencios de verdad se recortaron")
 
+        # ── 3 · un clip donde NADIE habla no se toca ─────────────────────
+        #
+        # El mismo audio, pero diciéndole que la transcripción no encontró una
+        # sola palabra. Eso es un video generado por IA, o un peloteo filmado
+        # sin nadie hablando: no hay tiempos muertos que sacar, hay plano. Sin
+        # esta guarda el recorte se comía el arranque —medido: 0,88 s de un
+        # video generado de 10— por ser más callado que el resto.
+        enteros = A.tramos_hablados(audio, palabras=[])
+        largo = LIBRETO[-1][1]
+        if enteros != [(0.0, largo)]:
+            fallas.append(
+                f"✗ un clip sin una sola palabra tendría que quedar entero "
+                f"(0–{largo:.1f}s)\n  y quedó en {enteros}. En un clip sin "
+                f"habla no hay tiempo muerto: hay plano,\n  y si es generado, "
+                f"cada cuadro se pagó.")
+        else:
+            print("✓ un clip donde nadie habla queda entero, sin recortar")
+
         if fallas:
             print("\n" + "\n".join(fallas))
             return 1

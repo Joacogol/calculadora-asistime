@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     for (;;) {
       const r = await fetch(
         `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,notas,` +
-          `creditos_estimados,creado_en,titulo,clips`,
+          `creditos_estimados,creado_en,titulo,clips,clip_url`,
         { headers: cab },
       );
       const filas = await r.json();
@@ -215,6 +215,18 @@ Deno.serve(async (req) => {
         // —correcta para el otro camino— ahí sería lisa y llanamente falsa.
         montado: Array.isArray(f.clips) && f.clips.length > 0,
         url: f.url || null,
+        // El video GENERADO, sin rótulo ni música: el material crudo.
+        //
+        // Existe porque «hacé un video» y «hacé un reel» son dos pedidos
+        // distintos que hasta ahora tenían una sola salida. Quien pide un
+        // video muchas veces lo quiere para usarlo DESPUÉS —en otra pieza, en
+        // un reel con otra frase, editado con material propio— y lo que le
+        // llegaba era un reel cerrado con título y música encima.
+        //
+        // Sale sólo en los generados: en un montaje `clip_url` no existe, y
+        // el crudo es el material que la persona ya tiene.
+        video_crudo: (Array.isArray(f.clips) && f.clips.length) ? null
+          : (f.clip_url || null),
         titulo: f.titulo || null,
         creditos: f.creditos_estimados || null,
         mensaje: f.notas || null,

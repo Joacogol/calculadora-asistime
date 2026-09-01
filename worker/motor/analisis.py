@@ -495,6 +495,23 @@ def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
     if not ficha.get("tiene_audio"):
         return [(desde, fin)]
 
+    # ── Un clip donde NADIE habla no se recorta ──────────────────────────
+    #
+    # «Sacar los tiempos muertos» es una operación sobre gente hablando: el
+    # tiempo muerto es la pausa entre dos frases. En un clip sin una sola
+    # palabra no hay pausas, hay PLANO — y lo que la energía llama silencio es
+    # el ambiente, que es justamente lo que se quería filmar.
+    #
+    # Medido sobre un video generado por IA de 10,08 s: sin esta guarda el
+    # recorte se comía los primeros 0,88 s, porque el arranque es más callado.
+    # Ahí no se ahorró tiempo muerto: se tiró un segundo de un video que se
+    # pagó, y en un clip generado **cada cuadro se pagó**.
+    #
+    # `palabras=None` es «no se transcribió» y no dice nada; `[]` es «se
+    # escuchó y no se dijo una palabra», que es lo que decide.
+    if palabras is not None and not palabras:
+        return [(desde, fin)]
+
     t, db = energia_audio(ruta)
     mudos = silencios(t, db, umbral_db=umbral_db, minimo=minimo)
 
