@@ -1769,6 +1769,105 @@ largo que no sea una fecha válida (`20261345`) no cuenta como fecha.
 
 ---
 
+## Corregir un reel sin rehacerlo (1/9/2026)
+
+Había una asimetría al revés de como tenía que estar: **acertar era caro y
+corregir era todavía más caro.**
+
+Armar un reel con subtítulos automáticos cuesta escuchar el audio entero,
+partirlo en frases, medir los silencios y escribir un hook. Cuando de 22 frases
+salían 2 mal transcritas, lo único que hacía falta era cambiar dos textos. Pero
+el motor tiraba lo que había resuelto, así que la única salida era rehacerlo
+entero: volver a escuchar —y **equivocarse exactamente igual**, porque el modelo
+es determinista con el mismo audio— y de paso tirar las 20 que estaban bien.
+
+### Las tres piezas
+
+**1 · El motor guarda lo que armó** (`armado`, ver `motor.video.desde_guion`).
+No es un formato nuevo: es un guion válido, el mismo que entra por arriba, con
+lo automático ya decidido. Devolvérselo lo redibuja igual.
+
+Se le sacan `cortar_silencios` y `duracion_objetivo`. **No es un detalle**: si
+quedaran, cada retoque volvería a recortar tramos ya recortados y a elegir
+dentro de una selección ya hecha. El reel se iría comiendo solo un poco en cada
+corrección hasta quedar en nada.
+
+**2 · El retoque** (`motor/retoque.py`). Lo que aporta no son los cambios de
+texto —eso es un `replace`— sino los de estructura:
+
+> **Sacar un tramo no es sacar un tramo.** Los subtítulos viven en el reloj del
+> reel. Si se saca el tercero de diez, todo lo que venía después se adelanta y
+> las frases empiezan a aparecer tarde, cada vez más desfasadas hasta el final.
+> El reel sale PEOR que antes de corregirlo y nadie entiende por qué. Así que
+> al tocar la estructura, cada frase se ata al tramo donde suena y viaja con
+> él; las que sonaban en lo que se sacó se van con él.
+
+El orden de aplicación tampoco es el que venga: reemplazos globales, después
+frases por número (lo específico pisa lo general), después hook y cierre, y la
+estructura sola al final, que es la única que mueve los tiempos.
+
+Un cambio imposible falla **en el segundo cero**, en castellano —«no existe la
+frase 99: este reel tiene 22»— y no a los dos minutos con un video mal hecho.
+
+Y el retoque **no pisa el original**: crea una fila nueva que lo apunta con
+`origen`. Una corrección que salió peor no tiene que llevarse puesto lo que ya
+estaba bien.
+
+**3 · La marca aprende** (tabla `correcciones`). Un reemplazo casi siempre es un
+nombre propio que la transcripción entiende mal, y lo entiende mal SIEMPRE
+igual: «Boss Padel» sale «vos panel» en este reel y en todos los que vengan.
+
+Lo aprendido se usa **de dos maneras, y las dos hacen falta**:
+
+- **Antes de escuchar**, como vocabulario para el modelo. Eso *evita* el error.
+- **Después de escribir**, como reemplazo sobre el texto. Eso lo *tapa*, y hace
+  falta igual: el vocabulario ayuda pero no garantiza nada, y quien corrigió
+  «vos panel» una vez tiene derecho a no volver a verlo nunca.
+
+`recordar: false` es para el caso contrario: reescribir una frase para que suene
+mejor en ESTE reel no es cómo se escribe esa palabra siempre. Y se puede
+olvidar (`{"olvidar": "vos panel"}`), porque una memoria que no se puede
+deshacer ensucia todos los reels que vengan sin que nadie sepa por qué.
+
+### La API
+
+| Qué | Cómo |
+|---|---|
+| Ver lo que armó | `GET ?id=<reel>&ver=1` — frases y tramos numerados **desde 1** |
+| Corregir | `POST {"retocar":"<reel>","cambios":{…}}` |
+| Ver la memoria | `GET ?correcciones=1` |
+| Olvidar | `POST {"olvidar":"vos panel"}` |
+
+Los `cambios` que entiende:
+
+```json
+{
+  "reemplazar":  [{"de": "vos panel", "a": "Boss Padel"}],
+  "subtitulos":  [{"n": 4, "texto": "la frase corregida"}],
+  "hook":        "otro hook",
+  "cierre":      "",
+  "quitar":      [3],
+  "orden":       [2, 1, 3],
+  "recordar":    false
+}
+```
+
+Una frase con `texto` vacío se saca. `cierre` vacío saca la placa final.
+
+Los números van **desde 1** porque los va a decir una persona en un chat: nadie
+cuenta desde cero fuera de la programación.
+
+### Antes de usarlo
+
+`migraciones/retoque-de-reels.sql` en el SQL Editor de cada cliente. Agrega
+`armado`, `origen` y la tabla `correcciones`. Es idempotente.
+
+**Los reels hechos antes de esto no se pueden retocar** — no tienen `armado`
+guardado. La API lo dice con esas palabras en vez de fallar raro: «se armó antes
+de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
+
+---
+
 ## La receta, cuando venga el cliente número cuatro
 
 El orden importa y no es obvio, así que queda escrito:

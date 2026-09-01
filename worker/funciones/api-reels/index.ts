@@ -122,6 +122,21 @@ Deno.serve(async (req) => {
   // ── Cómo va un pedido ──────────────────────────────────────────────────
   if (req.method === "GET") {
     const url0 = new URL(req.url);
+
+    // ── Qué aprendió la marca ────────────────────────────────────────────
+    //
+    // Una memoria que no se puede mirar es una memoria en la que no se puede
+    // confiar: si un día un reel escribe algo raro, hay que poder ver si es
+    // culpa de una corrección vieja y sacarla.
+    if (url0.searchParams.get("correcciones")) {
+      const r = await fetch(
+        `${base}/rest/v1/correcciones?select=de,a,quien,creado_en&order=creado_en.asc`,
+        { headers: cab },
+      );
+      if (!r.ok) return json({ correcciones: [], nota: "esta marca todavía no tiene memoria de correcciones" });
+      return json({ correcciones: await r.json() });
+    }
+
     const id = url0.searchParams.get("id");
     if (!id) return json({ error: "falta id" }, 400);
     const esperar = url0.searchParams.get("esperar") !== "no";
@@ -234,6 +249,27 @@ Deno.serve(async (req) => {
   // Y NO pisa el original: crea una fila nueva que apunta a él con `origen`.
   // Una corrección que salió peor no tiene que llevarse puesto lo que ya
   // estaba bien.
+  // ── Olvidar una corrección ───────────────────────────────────────────────
+  //
+  // Existe porque la memoria es útil justamente cuando se puede deshacer. Una
+  // corrección mal anotada —«que donde diga X diga Y» dicho para un solo
+  // reel— si no, ensucia todos los que vengan y nadie sabe por qué.
+  const olvidar = String(c.olvidar ?? "").trim();
+  if (olvidar) {
+    const r = await fetch(
+      `${base}/rest/v1/correcciones?de=eq.${encodeURIComponent(olvidar)}`,
+      { method: "DELETE", headers: { ...cab, Prefer: "return=representation" } },
+    );
+    if (!r.ok) return json({ error: "no se pudo olvidar", detalle: await r.text() }, 500);
+    const fuera = await r.json();
+    return json({
+      olvidadas: Array.isArray(fuera) ? fuera.length : 0,
+      nota: Array.isArray(fuera) && fuera.length
+        ? `ya no voy a cambiar «${olvidar}» por nada.`
+        : `no tenía anotada ninguna corrección para «${olvidar}».`,
+    });
+  }
+
   const retocar = String(c.retocar ?? "").trim();
   if (retocar) {
     const cambios = (c.cambios && typeof c.cambios === "object")
@@ -324,8 +360,51 @@ Deno.serve(async (req) => {
       return json({ error: "no se pudo anotar el retoque", detalle: await rr.text() }, 500);
     }
     const hecha = (await rr.json())[0];
+
+    // ── Que no haya que corregir lo mismo dos veces ─────────────────────────
+    //
+    // Un reemplazo casi siempre es un nombre propio que la transcripción
+    // entiende mal, y lo entiende mal SIEMPRE igual: «Boss Padel» sale «vos
+    // panel» en este reel y en todos los que vengan. Corregirlo una vez y que
+    // vuelva a salir mal es la clase de detalle que hace que una herramienta
+    // se sienta tonta.
+    //
+    // Por eso el reemplazo queda anotado y a partir de ahí se aplica solo. El
+    // worker lo usa de dos maneras: como vocabulario ANTES de escuchar —que
+    // evita el error en vez de taparlo— y como reemplazo después de escribir.
+    //
+    // `recordar: false` es para el caso contrario, y existe porque no todo
+    // reemplazo es una regla: reescribir una frase para que suene mejor en
+    // ESTE reel no es cómo se escribe esa palabra siempre.
+    const aprender = (cambios.reemplazar ?? []) as Record<string, unknown>[];
+    let aprendidas = 0;
+    if (cambios.recordar !== false && aprender.length) {
+      const filas = aprender
+        .map((x) => ({
+          de: String(x?.de ?? "").trim(),
+          a: String(x?.a ?? "").trim(),
+          quien: String(c.quien ?? "Asistime"),
+        }))
+        .filter((x) => x.de && x.a);
+      if (filas.length) {
+        // `merge-duplicates` sobre la clave única: corregir de nuevo la misma
+        // palabra pisa lo anterior en vez de fallar. Alguien que se corrige a
+        // sí mismo tiene razón la segunda vez.
+        const ra = await fetch(`${base}/rest/v1/correcciones?on_conflict=de`, {
+          method: "POST",
+          headers: { ...cab, Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify(filas),
+        });
+        // Que no se pueda anotar la memoria NO tira abajo el retoque: el reel
+        // se corrige igual, sólo que habrá que volver a decirlo la próxima.
+        if (ra.ok) aprendidas = filas.length;
+        else console.warn("no pude anotar las correcciones:", await ra.text());
+      }
+    }
+
     return json({
       id: hecha.id,
+      aprendidas,
       estado: hecha.estado,
       origen: orig.id,
       // Un retoque tarda casi lo mismo que un reel: lo que se ahorra es

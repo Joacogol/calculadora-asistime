@@ -1026,6 +1026,33 @@ def _rescatar_montajes(cli) -> int:
     return rescatados
 
 
+def _correcciones(cli) -> list[dict]:
+    """Cómo se escribe cada palabra que la transcripción viene entendiendo mal.
+
+    Las carga la persona corrigiendo un reel: la corrección queda anotada y a
+    partir de ahí se aplica sola en todos los que vengan. Es la diferencia
+    entre un sistema que se equivoca una vez y uno que se equivoca siempre en
+    lo mismo.
+
+    Una base sin la tabla contesta 404 y acá se devuelve una lista vacía, no un
+    error: un cliente que todavía no corrió la migración tiene que poder hacer
+    reels igual, sólo que sin memoria.
+    """
+    try:
+        r = requests.get(cli._url("correcciones"), headers=cli._cab(), timeout=15,
+                         params={"select": "de,a", "order": "creado_en.asc"})
+        if r.status_code in (400, 404):
+            return []
+        r.raise_for_status()
+        return [c for c in r.json() if (c.get("de") or "").strip()]
+    except Exception as e:                                   # noqa: BLE001
+        # Que no se puedan leer las correcciones no puede impedir un reel: sale
+        # como salía antes de que esto existiera.
+        log.warning("[%s] no pude leer las correcciones: %s",
+                    getattr(cli, "marca", "?"), e)
+        return []
+
+
 def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
     """Los reels armados con clips que ya existen. Devuelve cuántas filas movió.
 
@@ -1036,11 +1063,19 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
     from motor import video as mvideo
 
     movidas = _rescatar_montajes(cli)
+    aprendido = None
     for fila in _pendientes(cli, "pendiente"):
         if not _es_montaje(fila):
             continue
         if not _tomar(cli, fila["id"], "pendiente", "montando"):
             continue
+        # Se leen recién acá y una sola vez por corrida: si en este ciclo no
+        # hay ningún montaje, no se consulta nada.
+        if aprendido is None:
+            aprendido = _correcciones(cli)
+            if aprendido:
+                log.info("[%s] %d correcciones aprendidas",
+                         getattr(cli, "marca", "?"), len(aprendido))
         with tempfile.TemporaryDirectory() as tmp:
             t = pathlib.Path(tmp)
             material = t / "material"
@@ -1123,7 +1158,8 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 final, avisos, armado = mvideo.desde_guion(
                     guion, str(fila["id"]), material, t,
                     vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "",
-                    marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "")
+                    marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "",
+                    correcciones=aprendido)
 
                 dichos = hecho + ([aviso_orden] if aviso_orden else []) + list(avisos)
                 # `armado` es el guion ya resuelto. Se guarda para poder

@@ -1102,7 +1102,8 @@ if __name__ == "__main__":
 
 def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                 materiales: dict | None = None,
-                vocabulario: str = "", marca: str = ""
+                vocabulario: str = "", marca: str = "",
+                correcciones: list[dict] | None = None
                 ) -> tuple[Path, list[str], dict]:
     """Valida un guion de edición, lo traduce y lo renderiza.
 
@@ -1121,6 +1122,29 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
 
     base = Path(carpeta_material)
     avisos_previos: list[str] = []
+
+    # Las correcciones que la marca ya aprendió entran DOS veces, y las dos
+    # hacen falta.
+    #
+    # **Antes de escuchar**, como vocabulario: al modelo se le dice que estas
+    # palabras existen, y muchas veces con eso ya las escribe bien. Eso es
+    # evitar el error.
+    #
+    # **Después de escribir**, como reemplazo sobre el texto. Eso es taparlo,
+    # y hace falta igual: el vocabulario ayuda pero no garantiza nada, y la
+    # persona que corrigió «vos panel» una vez tiene derecho a no volver a
+    # verlo nunca más.
+    correcciones = [c for c in (correcciones or [])
+                    if str(c.get("de") or "").strip()]
+    if correcciones:
+        propios = ", ".join(sorted({str(c["a"]).strip() for c in correcciones
+                                    if str(c.get("a") or "").strip()}))
+        vocabulario = ", ".join(x for x in (vocabulario, propios) if x)
+
+    def _corregido(texto: str) -> str:
+        for c in correcciones:
+            texto = texto.replace(str(c["de"]).strip(), str(c.get("a") or "").strip())
+        return texto
 
     # Un tramo sin `hasta` llega hasta el final del clip. Es lo que permite
     # escribir «usá este video» sin haberlo mirado, y lo que hace que el guion
@@ -1223,7 +1247,17 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
         from . import habla as _habla
         g = dict(g)
         try:
-            g["subtitulos"] = _habla.para_guion(g, base, vocabulario or "")
+            frases = _habla.para_guion(g, base, vocabulario or "")
+            if correcciones:
+                arregladas = 0
+                for f in frases:
+                    antes = f.get("texto", "")
+                    f["texto"] = _corregido(antes)
+                    arregladas += f["texto"] != antes
+                if arregladas:
+                    log.info("%d frases arregladas con lo que la marca ya sabe",
+                             arregladas)
+            g["subtitulos"] = frases
             log.info("subtítulos automáticos: %d frases", len(g["subtitulos"]))
         except Exception as e:                               # noqa: BLE001
             # Un reel sin subtítulos es peor que uno con subtítulos, pero es
@@ -1247,7 +1281,7 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
         from . import habla as _habla
         g = dict(g)
         dicho = " ".join(s.get("texto", "") for s in (g.get("subtitulos") or []))
-        g["hook"] = _habla.hook_de(dicho, marca) if dicho else ""
+        g["hook"] = _corregido(_habla.hook_de(dicho, marca)) if dicho else ""
         if g["hook"]:
             log.info("hook automático: «%s»", g["hook"])
         else:
