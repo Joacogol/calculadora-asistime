@@ -676,9 +676,26 @@ def montar(clip: pathlib.Path, rotulo: pathlib.Path | None, musica: pathlib.Path
     i_musica = 1
     if rotulo:
         filtro[0] = filtro[0].replace("[vout]", "[base]")
+        # ── El rótulo está DESDE EL CUADRO CERO ────────────────────────
+        #
+        # Acá había un `fade=t=in:st=0.3:d=0.5`. Medido aislando el rótulo
+        # sobre un video negro: a los 0,00 s y a los 0,30 s el brillo del
+        # cartel era **0 de 255**, y recién a los 0,80 s llegaba a 236. O sea
+        # que el reel arrancaba sin una palabra encima durante casi un segundo.
+        #
+        # Son los dos peores lugares posibles para no decir nada:
+        #
+        # · **El primer cuadro es la portada.** Instagram lo usa como tapa en
+        #   la grilla del perfil, y esa tapa salía siendo una foto sin mensaje.
+        # · **El primer segundo decide el scroll.** Es lo único que se ve antes
+        #   de que el pulgar siga de largo, y lo estábamos gastando en una
+        #   transición que nadie pidió.
+        #
+        # La salida sí se funde: ahí el trabajo ya está hecho y cerrar limpio
+        # es lo correcto. Entrar fundido es elegancia de otro medio — en un
+        # feed, es empezar callado.
         filtro += [
-            f"[1:v]format=rgba,fade=t=in:st=0.3:d=0.5:alpha=1,"
-            f"fade=t=out:st={dur-0.8:.2f}:d=0.6:alpha=1[rot]",
+            f"[1:v]format=rgba,fade=t=out:st={dur-0.8:.2f}:d=0.6:alpha=1[rot]",
             "[base][rot]overlay=0:0:shortest=1[vout]",
         ]
         orden += ["-loop", "1", "-t", f"{dur+0.1:.2f}", "-i", str(rotulo)]

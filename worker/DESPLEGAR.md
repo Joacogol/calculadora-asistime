@@ -1939,6 +1939,45 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## El reel arrancaba callado (1/9/2026)
+
+El rótulo de un reel generado entraba con `fade=t=in:st=0.3:d=0.5`. Medido
+aislando el cartel sobre un video negro:
+
+| | brillo del rótulo |
+|---|---|
+| 0,00 s | **0 de 255** |
+| 0,30 s | **0 de 255** |
+| 0,80 s | 236 de 255 |
+
+O sea que el reel arrancaba **sin una palabra encima durante casi un segundo**,
+y son los dos peores lugares posibles para no decir nada:
+
+- **El primer cuadro es la portada.** Instagram lo usa como tapa en la grilla
+  del perfil. Esa tapa salía siendo una foto sin mensaje.
+- **El primer segundo decide el scroll.** Es lo único que se ve antes de que el
+  pulgar siga de largo, y se estaba gastando en una transición que nadie pidió.
+
+Ahora el rótulo está desde el cuadro cero. **La salida sí se funde**: ahí el
+trabajo ya está hecho y cerrar limpio es lo correcto. Entrar fundido es
+elegancia de otro medio — en un feed, es empezar callado.
+
+El hook del camino de montaje ya estaba bien (`between(t,0,3)`, desde el cuadro
+cero): esto era sólo del video generado.
+
+### Lo que se midió y NO se cambió: el logo
+
+En el mismo reel, el logo cae a **264 px del borde de abajo** de 1920. Ahí es
+donde Instagram dibuja el usuario y el pie de foto, así que es probable que
+quede tapado — pero **cuánto ocupa esa franja es de Instagram**, cambia con el
+largo del caption y con el teléfono, y no encontré una cifra oficial que citar.
+
+No se tocó por eso y por algo más: mover el logo es una decisión de identidad
+de la marca, no una corrección técnica. Queda medido y anotado para que lo
+decida quien corresponde, con el número a la vista.
+
+---
+
 ## Dos proveedores de video: Magnific y fal.ai (1/9/2026)
 
 Pedido de Joaquín: tener los dos disponibles y elegir. El motor ya era una
