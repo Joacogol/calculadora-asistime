@@ -1939,6 +1939,77 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## El rótulo tapaba el video que se pagó (1/9/2026)
+
+Salió un reel de Boss donde el video se veía **el primer segundo y el último**,
+y en el medio había ocho segundos de placa negra con el título encima.
+
+Medido cuadro a cuadro, el brillo del reel se congelaba en 29 de 0 a 255 entre
+el segundo 1 y el 9 —el mismo valor exacto durante doscientos cuadros, o sea
+una imagen fija— mientras que **el clip que devolvió el generador estaba
+perfecto**: brillo parejo entre 91 y 98 de punta a punta. No lo rompía el
+modelo de video: lo rompíamos nosotros al montarlo.
+
+### El rótulo salía opaco
+
+El rótulo es una captura de pantalla de la plantilla `campana` en modo
+`sobre_video`, con fondo transparente. Pero `omit_background` de Playwright
+sólo hace transparente **el fondo que pone el navegador por su cuenta**: contra
+un `background` declarado en la hoja de estilos no puede nada.
+
+`rotulo()` pisaba el de `.canvas` y no el de `body`. Y la hoja de Boss pinta
+los dos:
+
+```css
+body{width:1080px;overflow:hidden;background:#0A0A0A}
+.canvas{position:relative;width:1080px;overflow:hidden;background:#0A0A0A}
+```
+
+Stadium declara sólo `.canvas`, y Clínica ninguno — por eso el pisado a medias
+alcanzaba y nadie lo notó. **Boss es la única marca que pinta `body` y la
+única con el motor de video prendido.** Un defecto que sólo aparece en la
+intersección de dos cosas poco frecuentes se esconde mucho tiempo.
+
+Y el alfa explica hasta el detalle de que se viera el principio y el final: el
+rótulo entra con `fade:alpha` a los 0,3 s y sale a los 9,2 s. Mientras el alfa
+subía y bajaba, el video asomaba.
+
+### Dos redes, no una
+
+1. **Se pisan los tres fondos** —`html`, `body` y `.canvas`—. Medido: antes el
+   PNG salía con opacidad media 255 sobre 255; ahora, 2,8.
+2. **Se mide el PNG antes de usarlo.** Si sale opaco no se monta: el reel sale
+   sin título y con una línea de error en el log. Un reel sin título es
+   imperfecto; un reel que es una placa negra durante ocho segundos no es un
+   reel, y costó 1.400 créditos.
+
+La segunda existe porque la primera depende de que ninguna marca invente una
+tercera forma de pintar el fondo, y eso es exactamente lo que pasó esta vez.
+
+```bash
+python3 herramientas/probar-rotulo.py
+```
+
+Dibuja el rótulo con la hoja de Boss tal cual, comprueba que el guardián
+detecta el caso roto, que pisando los tres sale transparente, y que el umbral
+no se come un rótulo normal —sin lo tercero, la prueba pasaría con un guardián
+que descarta todos y ningún reel saldría con título—.
+
+### De paso: el video crudo ahora se guarda
+
+`clip_url` apuntaba al CDN de Magnific con un link firmado que **vence**: el de
+ese reel expiraba 53 minutos después de generarse. O sea que el video crudo
+—lo que de verdad se pagó— dejaba de existir para nosotros a la hora, y lo
+único que quedaba era el reel ya montado.
+
+Ahora se sube una copia propia a `reels/<id>-crudo.mp4` y `clip_url` apunta
+ahí. Sirve para dos cosas: quien pide un video muchas veces quiere el VIDEO,
+para usarlo en otra cosa, y no un reel cerrado con título y música encima; y el
+día que el montaje salga mal, tener el crudo es la diferencia entre rehacerlo
+y no.
+
+---
+
 ## Dos caracteres tiraron abajo un despliegue (1/9/2026)
 
 El build murió con esto:

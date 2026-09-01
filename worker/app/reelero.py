@@ -942,10 +942,33 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                                float(fila.get("duracion") or dur),
                                usar_ambiente=ficha_modelo(
                                    fila.get("modelo") or "").get("manda_el_audio", True))
+                # Una copia NUESTRA del clip sin rótulo ni música.
+                #
+                # `clip_url` venía apuntando al CDN de Magnific, con un link
+                # firmado que vence: uno del 1/9/2026 expiraba 53 minutos
+                # después de generarse. O sea que el video crudo —lo que de
+                # verdad se pagó— dejaba de existir para nosotros a la hora, y
+                # lo único que quedaba era el reel ya montado.
+                #
+                # Eso es un problema de producto, no de almacenamiento: quien
+                # pide un video muchas veces quiere el VIDEO, para usarlo
+                # después en otra cosa, y no un reel cerrado con título y
+                # música encima. Y el día que el montaje salga mal —pasó— tener
+                # el crudo es la diferencia entre rehacerlo y no.
+                #
+                # Si la copia falla no se pierde el reel: se anota y sigue.
+                crudo = None
+                try:
+                    crudo = subir(clip, f"reels/{fila['id']}-crudo.mp4")
+                except Exception as e:                       # noqa: BLE001
+                    log.warning("[%s] no pude guardar el clip crudo de %s: %s",
+                                getattr(cli, "marca", "?"), fila["id"], e)
+
                 aviso = " · ".join(x for x in (falta_rotulo, falta_musica) if x)
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
                         creditos_gastados=fila.get("creditos_estimados"),
+                        **({"clip_url": crudo} if crudo else {}),
                         **({"notas": aviso} if aviso else {}))
             except Exception as e:                       # noqa: BLE001
                 _marcar(cli, fila["id"], "error", notas=f"al montar: {e}")
@@ -1416,13 +1439,26 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
 
     Dos detalles que sin ellos no funciona:
 
-    · `.canvas` viene con `background:#FFFFFF` en la hoja de la marca —lo que
-      corresponde para una pieza— así que hay que pisarlo. Sin eso el
-      `omit_background` de Playwright no sirve de nada: el PNG sale con un
-      rectángulo blanco de 1080×1920 y tapa el video entero.
+    · **Hay que pisar el fondo de `html`, `body` Y `.canvas`.** La hoja de la
+      marca los pinta —lo que corresponde para una pieza— y `omit_background`
+      de Playwright no puede contra un fondo declarado: sólo hace transparente
+      el que pone el navegador por su cuenta. Si queda uno sin pisar, el PNG
+      sale opaco de 1080×1920 y tapa el video entero.
+
+      Esto estaba a medias y se pagó caro el 1/9/2026: se pisaba `.canvas` y
+      no `body`. Boss es la única marca que pinta los dos (`#0A0A0A` en
+      ambos), y la única con el motor de video prendido, así que el reel salió
+      **negro durante ocho de sus diez segundos** —el video generado se veía
+      sólo en el primer segundo y en el último, mientras el alfa del rótulo
+      subía y bajaba—. Medido: el PNG salía con opacidad media 255 sobre 255;
+      pisando también `body`, sale 0,5.
+
     · Es **sync**. Playwright se niega a correr su API sync adentro de un loop
       de asyncio, y el ciclo del worker es async: hay que entrar por
       `asyncio.to_thread`, igual que el dibujo de plantillas.
+
+    Y por si algún día una marca encuentra otra forma de pintar el fondo, el
+    PNG se mide antes de devolverlo: uno opaco no se usa. Ver `_tapa_todo`.
 
     Y el título: `campana` lo declara `requerido`, así que una fila sin título
     no dibuja, revienta. Eso costó un video pagado —4.400 créditos, el
@@ -1467,7 +1503,11 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
         if valor and valor != texto:
             datos[campo] = valor
     html = plantillas["campana"](datos, "reel")
-    html += "<style>.canvas{background:transparent !important}</style>"
+    # Los tres, no uno: ver la nota de arriba. `html` también, porque el fondo
+    # del elemento raíz se propaga al lienzo del navegador aunque `body` sea
+    # transparente.
+    html += ("<style>html,body,.canvas{background:transparent !important}"
+             "</style>")
 
     with sync_playwright() as p:
         nav = p.chromium.launch()
@@ -1488,7 +1528,44 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
                 tmp.unlink(missing_ok=True)
         finally:
             nav.close()
+
+    if _tapa_todo(destino):
+        # Un rótulo opaco no es un rótulo con un defecto: es una placa negra
+        # encima de un video que se pagó. Entre un reel sin título y un reel
+        # que no se ve, gana el primero por lejos.
+        log.error("el rótulo del reel %s salió OPACO y taparía el video "
+                  "entero: lo descarto y el reel sale sin título. Es un fondo "
+                  "de la hoja de la marca que no se está pisando — ver la "
+                  "nota de `rotulo()`", fila.get("id"))
+        return None
     return destino
+
+
+#: Desde qué opacidad media un rótulo deja de ser un rótulo. Uno normal —dos
+#: degradados suaves y texto— mide menos de 40 sobre 255; el que tapaba el
+#: video entero medía 255 redondo. No hay zona gris entre esas dos cosas.
+TAPA_TODO = 250.0
+
+
+def _tapa_todo(png: pathlib.Path) -> bool:
+    """¿Este PNG es tan opaco que taparía el video de abajo?
+
+    Se mira el canal alfa, que es exactamente lo que decide si se ve el clip.
+    Si no se puede medir se contesta que NO: ante la duda se deja pasar el
+    rótulo, porque descartarlo por un error de lectura sería perder el título
+    de un reel que está bien.
+    """
+    try:
+        from PIL import Image
+        with Image.open(png) as im:
+            alfa = im.convert("RGBA").getchannel("A")
+        datos = list(alfa.getdata())
+        media = sum(datos) / len(datos)
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude medir la transparencia del rótulo: %s", e)
+        return False
+    log.info("opacidad media del rótulo: %.1f de 255", media)
+    return media >= TAPA_TODO
 
 
 def atender(cli) -> int:
