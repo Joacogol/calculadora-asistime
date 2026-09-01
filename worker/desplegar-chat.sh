@@ -124,6 +124,7 @@ fi
 # la fila—, así que no se pierde ningún pedido ni se gasta nada, y salen solos
 # en la primera corrida después de cargarla.
 MAGNIFIC_SECRETO=""
+FAL_SECRETO=""
 SOLICITAN_REELS=$(python3 clientes.py reels 2>/dev/null || true)
 if [ -n "$SOLICITAN_REELS" ]; then
   echo "▸ 1c/4  La clave de Magnific (reels de video) — la piden: ${SOLICITAN_REELS}"
@@ -144,6 +145,34 @@ if [ -n "$SOLICITAN_REELS" ]; then
       --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
     MAGNIFIC_SECRETO="MAGNIFIC_CLAVE=magnific-api-key:latest,"
     echo "  · magnific-api-key listo → MAGNIFIC_CLAVE"
+  fi
+
+  # ── El segundo proveedor de video: fal.ai ───────────────────────────────
+  #
+  # Igual de opcional que Magnific y por el mismo motivo: sin la clave, los
+  # pedidos que pidan fal se quedan quietos en `pendiente` sin gastar nada, y
+  # los de Magnific siguen saliendo. El worker mira la clave del proveedor de
+  # CADA fila, no una sola.
+  #
+  # La clave se pega acá, en la terminal, y va derecho a Secret Manager. Nunca
+  # al código, nunca a un chat.
+  if ! gcloud secrets describe fal-api-key --quiet >/dev/null 2>&1; then
+    echo "  fal.ai es el otro proveedor de video (MiniMax H3 Max). Es opcional:"
+    echo "  dejá vacío y Enter si todavía no lo vas a usar."
+    read -rs -p "  Pegá la API key de fal.ai y Enter (no se ve): " K; echo
+    if [ -n "$K" ]; then
+      printf '%s' "$K" | gcloud secrets create fal-api-key --data-file=- --quiet
+    else
+      echo "  · sin fal: los reels siguen saliendo por Magnific"
+    fi
+    unset K
+  fi
+  if gcloud secrets describe fal-api-key --quiet >/dev/null 2>&1; then
+    gcloud secrets add-iam-policy-binding fal-api-key \
+      --member="serviceAccount:${SA}" \
+      --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
+    FAL_SECRETO="FAL_CLAVE=fal-api-key:latest,"
+    echo "  · fal-api-key listo → FAL_CLAVE"
   fi
 fi
 
@@ -212,7 +241,7 @@ gcloud run jobs deploy "$JOB" \
   --memory 8Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
   --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
-  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
+  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${FAL_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 
 echo "▸ 3/4  Reloj: una corrida por minuto (el webhook está bloqueado por política de la org)"

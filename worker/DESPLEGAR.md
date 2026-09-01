@@ -1939,6 +1939,68 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## Dos proveedores de video: Magnific y fal.ai (1/9/2026)
+
+Pedido de Joaquín: tener los dos disponibles y elegir. El motor ya era una
+tabla de modelos, así que sumar `h3-max` de fal fue agregar una fila — salvo
+por una decisión que había que tomar bien.
+
+### No hay tipo de cambio, y no hay que inventarlo
+
+Magnific cobra en **créditos** y fal en **dólares**. La tentación es poner una
+equivalencia para comparar los dos en un solo número y dejar que el algoritmo
+elija «el más barato». Eso sería inventar un dato que nadie midió — el mismo
+error que este repo ya cometió suponiendo las duraciones de Seedance 2.5 — y el
+costo sería peor: el tope de gasto protegería a un proveedor y mentiría sobre
+el otro sin que se note.
+
+Así que **el proveedor lo elige la persona o la marca, no el algoritmo**, y
+cada uno tiene su propio tope en su propia moneda:
+
+| | Magnific | fal.ai |
+|---|---|---|
+| tope por pieza | `creditos_maximos` (4.500) | `usd_maximo` (US$ 1,00) |
+| 5 s en calidad normal | 700 créditos | US$ 0,40 |
+| tope mensual | `creditos_maximos_mes` | **no aplica** |
+
+El tope mensual cuenta créditos, así que sólo vigila a Magnific. Sumarle
+dólares daría un número que no es de nada.
+
+Quién decide, en orden: lo que pidió la persona (viaja en `metricas.proveedor`)
+→ lo que dice `marca.json` → `magnific`, que es el que está probado.
+
+### Dos cosas que se cargaron a propósito «peor» de lo que dice la web
+
+**El precio de fal es el de LISTA, no el promocional.** H3 Max salió con 75% de
+descuento hasta el 7/9/2026: $0,02 el segundo a 768p contra $0,08 de lista.
+Guardar el promocional habría hecho que, a partir del 8, cada video costara
+cuatro veces lo que el tope cree — y el tope es lo único que hay entre un bucle
+y la tarjeta.
+
+**Y sólo 5 segundos.** Es el único valor que documenta fal; el esquema dice
+«entero» sin declarar mínimo ni máximo. Para ampliarlo hay que pedir uno de 10,
+ver si la API lo acepta, y recién ahí tocar la tabla. **Los límites de un
+modelo se miden, no se suponen** — está escrito tres veces en este archivo por
+algo.
+
+Con 5 segundos y la cadena de multi-shot, un reel de fal se arma encadenando
+dos o tres clips, que además es lo que conviene en redes.
+
+### Lo que falta, y hay que decirlo
+
+**El camino de fal no se probó contra la API real**, porque hace falta la
+clave. Lo que sí está probado es todo lo que decide la plata:
+`herramientas/probar-proveedores.py` comprueba que un plan nunca cambie de
+proveedor por su cuenta, que cada tope frene en su moneda, y que el precio
+cargado no sea el promocional.
+
+La clave se carga en el despliegue —`▸ 1c/4`, junto a la de Magnific— y va
+derecho a Secret Manager. Sin ella, los pedidos que pidan fal esperan quietos
+en `pendiente` sin gastar nada, y **los de Magnific siguen saliendo**: el
+worker mira la clave del proveedor de cada fila, no una sola.
+
+---
+
 ## Generar un video y después usarlo: el material se separa de la pieza
 
 Pedido de Joaquín, 1/9/2026: *«tenés que poder decirle: con este video y esa

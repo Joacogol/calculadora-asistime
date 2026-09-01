@@ -74,9 +74,22 @@ API = "https://api.magnific.com/v1/ai/video"
 #: La diferencia entre Mini 2.0 y 2.5 es de tres veces por el mismo reel —1.400
 #: contra 4.400 en diez segundos a 720p— y Magnific misma marca a Mini como su
 #: mejor relación calidad/precio para clips de 4 a 15 segundos.
+#: Los modelos de video, de los DOS proveedores.
+#:
+#: `proveedor` y `moneda` van juntos y no es casualidad: Magnific cobra en
+#: créditos y fal.ai en dólares, y **acá no hay ninguna tabla de conversión
+#: entre las dos**. Inventar un tipo de cambio para poder compararlas en un
+#: solo número sería exactamente el error que este archivo ya cometió con las
+#: duraciones de Seedance 2.5: suponer un límite en vez de medirlo.
+#:
+#: Por eso la elección de proveedor es de la PERSONA —o de la marca en su
+#: `marca.json`— y no del algoritmo. Cada proveedor tiene su tope, en su
+#: propia moneda, y `_plan` nunca mezcla los dos.
 MODELOS = {
     "seedance-2-mini": {
         "nombre": "Seedance 2.0 Mini",
+        "proveedor": "magnific",
+        "moneda": "creditos",
         "ruta": "seedance-2-mini-{res}",
         "ruta_estado": "seedance-2-mini",     # el estado NO lleva resolución
         "precio": {"480p": 70, "720p": 140},
@@ -99,6 +112,36 @@ MODELOS = {
         "multishot": True,
         "referencias": True,
         "manda_el_audio": True,               # acepta `no_music`
+        "proveedor": "magnific",
+        "moneda": "creditos",
+    },
+    "h3-max": {
+        "nombre": "MiniMax H3 Max",
+        "proveedor": "fal",
+        "moneda": "usd",
+        # El id del modelo tal cual lo nombra fal, y la cola REST se arma
+        # colgándolo de `queue.fal.run`. No lleva resolución en la ruta: va
+        # como parámetro.
+        "ruta": "minimax/h3-max/image-to-video",
+        "resoluciones": {"480p": "480P", "768p": "768P"},
+        # **Precio de lista, no el promocional.** El 1/9/2026 fal lo lanzó con
+        # 75% de descuento hasta el 7/9: $0,0125 y $0,02 por segundo. Poner esos
+        # números acá haría que el tope pagara el cuádruple de lo que cree a
+        # partir del 8, que es la forma más silenciosa de gastar de más.
+        "precio": {"480p": 0.05, "768p": 0.08},
+        # **Sólo 5 segundos, hasta que se mida otra cosa.** Es el único valor
+        # que documenta fal; el esquema dice «entero» y no declara ni mínimo ni
+        # máximo. Este mismo archivo ya se quemó suponiendo el rango de
+        # Seedance 2.5 —decía 4–12 y el modelo hace hasta 30, así que un pedido
+        # de 15 segundos no se podía cumplir nunca—. Para ampliarlo: pedir uno
+        # de 10, ver si la API lo acepta, y recién ahí agregarlo acá.
+        "duraciones": (5,),
+        "multishot": False,
+        "referencias": True,
+        # No documenta que devuelva audio. Da igual para el montaje: pregunta
+        # con `ffprobe` antes de mezclar, así que un clip mudo no lo rompe — y
+        # desde el 1/9 un clip donde nadie habla sale con nuestra música.
+        "manda_el_audio": False,
     },
 }
 
@@ -106,11 +149,38 @@ MODELOS = {
 #:
 #: Son tres y no diez porque quien escribe en el chat no elige un modelo: dice
 #: si esto es una prueba o si va a publicarse. Traducir eso es trabajo nuestro.
+#: Y una tabla por proveedor, porque «calidad» es una palabra del chat y cada
+#: proveedor la resuelve con sus propios modelos. Quien escribe no elige un
+#: modelo: dice si esto es una prueba o si va a publicarse.
 CALIDADES = {
-    "borrador": ("seedance-2-mini", "480p"),
-    "normal":   ("seedance-2-mini", "720p"),
-    "maxima":   ("seedance-2-5-pro", "720p"),
+    "magnific": {
+        "borrador": ("seedance-2-mini", "480p"),
+        "normal":   ("seedance-2-mini", "720p"),
+        "maxima":   ("seedance-2-5-pro", "720p"),
+    },
+    "fal": {
+        # H3 Max tiene dos resoluciones y nada más, así que `normal` y `maxima`
+        # son la misma: mentir con tres nombres para dos cosas haría que
+        # alguien pague «máxima» creyendo que compró algo distinto.
+        "borrador": ("h3-max", "480p"),
+        "normal":   ("h3-max", "768p"),
+        "maxima":   ("h3-max", "768p"),
+    },
 }
+
+#: Con qué proveedor se genera si la marca no dice otra cosa. Magnific es el
+#: que está probado en producción; fal entra por elección explícita hasta que
+#: haya un reel real medido contra el otro.
+PROVEEDOR_POR_DEFECTO = "magnific"
+
+#: Cómo se escribe la plata de cada proveedor cuando hay que decírsela a una
+#: persona. Un «4500» sin unidad al lado de un «0.8» es una trampa.
+def plata(monto: float, moneda: str) -> str:
+    return f"US$ {monto:.2f}" if moneda == "usd" else f"{int(monto)} créditos"
+
+
+def proveedor_de(modelo: str) -> str:
+    return ficha_modelo(modelo).get("proveedor") or PROVEEDOR_POR_DEFECTO
 
 #: Lo que se le pide a Magnific si la marca no dice otra cosa.
 #:
@@ -142,15 +212,22 @@ def ficha_modelo(modelo: str) -> dict:
     return MODELOS.get(modelo) or MODELOS["seedance-2-5-pro"]
 
 
-def precio(modelo: str, resolucion: str, duracion: int) -> int:
-    """Lo que va a salir este video, antes de pedirlo.
+def precio(modelo: str, resolucion: str, duracion: int) -> float:
+    """Lo que va a salir este video, antes de pedirlo, EN SU MONEDA.
+
+    Créditos para los modelos de Magnific, dólares para los de fal. El número
+    no se puede leer sin saber cuál es: `ficha_modelo(modelo)["moneda"]` lo
+    dice, y `plata()` lo escribe.
 
     Si no conoce la combinación devuelve el precio más caro que conoce, no cero.
     Un precio desconocido que se estima en cero pasa cualquier tope y se entera
     con la factura.
     """
     tabla = ficha_modelo(modelo)["precio"]
-    return tabla.get(resolucion, max(tabla.values())) * duracion
+    monto = tabla.get(resolucion, max(tabla.values())) * duracion
+    # Los créditos son enteros y los dólares no. Redondear los centavos evita
+    # que un tope de 0,80 rechace un video de 0,8000000000000001.
+    return round(monto, 4) if ficha_modelo(modelo)["moneda"] == "usd" else monto
 
 
 def duracion_valida(modelo: str, pedida: int) -> int:
@@ -230,6 +307,99 @@ def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST") -> dict:
             + (f": {detalle}" if detalle else "")) from None
 
 
+# ═══ 0bis. El otro proveedor: fal.ai ═════════════════════════════════════════
+#
+# Magnific y fal hacen lo mismo —una foto entra, un video sale— y no se parecen
+# en nada más. Magnific da un `task_id` y se le pregunta por una ruta que
+# depende del modelo; fal devuelve las URLs de estado y de resultado en la
+# misma respuesta, así que el «id de tarea» que guardamos ES esa URL.
+#
+# Eso último no es un atajo: guardar la URL que el propio proveedor dijo que
+# hay que consultar es más robusto que rearmarla, porque si mañana fal cambia
+# el prefijo de la cola, las filas que ya estaban en curso siguen andando.
+
+FAL_COLA = "https://queue.fal.run"
+
+
+def _clave_fal() -> str:
+    c = (os.environ.get("FAL_CLAVE") or "").strip()
+    if not c:
+        raise RuntimeError(
+            "falta FAL_CLAVE. Es la clave de API de fal.ai. Se carga en el "
+            "despliegue, igual que la de Magnific — nunca en el código ni en "
+            "el chat.")
+    return c
+
+
+def _pedir_fal(url: str, cuerpo: dict | None = None) -> dict:
+    """Una llamada a fal, con el CUERPO del error cuando falla.
+
+    Mismo criterio que `_pedir` con Magnific: un «HTTP 422» pelado obliga a
+    reproducir la llamada a mano para enterarse de qué campo no le gustó, y
+    para entonces el video —si salió— ya se pagó.
+    """
+    datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
+    pedido = urllib.request.Request(
+        url, data=datos, method="POST" if datos is not None else "GET",
+        headers={"Authorization": f"Key {_clave_fal()}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(pedido, timeout=60) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        detalle = ""
+        try:
+            detalle = e.read().decode("utf-8", "replace")[:300]
+        except Exception:                                        # noqa: BLE001
+            pass
+        raise RuntimeError(
+            f"fal contestó {e.code} en {url}" + (f": {detalle}" if detalle else "")
+        ) from None
+
+
+def _pedir_clip_fal(fila: dict, plan: dict, planos: list[dict]) -> str:
+    """Encarga el video a fal y devuelve la URL de estado, que hace de tarea."""
+    m = ficha_modelo(plan["modelo"])
+    cuerpo = {
+        "prompt": _un_solo_prompt(planos),
+        "duration": plan["duracion"],
+        "resolution": m["resoluciones"][plan["resolucion"]],
+    }
+    if m["referencias"] and fila.get("foto"):
+        # `image_url` es el PRIMER CUADRO, no una referencia de estilo: fal lo
+        # dice explícito y el encuadre del video sale de esa imagen. Es lo
+        # contrario de `reference_images` en Magnific, donde la foto describe
+        # el producto y el modelo compone la escena. Misma foto, dos
+        # significados: por eso el prompt de los planos importa más acá.
+        cuerpo["image_url"] = fila["foto"]
+
+    d = _pedir_fal(f"{FAL_COLA}/{m['ruta']}", cuerpo)
+    tarea = d.get("status_url") or ""
+    if not tarea:
+        raise RuntimeError(f"fal no devolvió `status_url`: {str(d)[:200]}")
+    return tarea
+
+
+def _estado_clip_fal(tarea: str) -> tuple[str, str | None]:
+    """(estado, url del video). Traduce el vocabulario de fal al nuestro."""
+    d = _pedir_fal(tarea)
+    estado = str(d.get("status") or "").upper()
+    if estado != "COMPLETED":
+        # IN_QUEUE / IN_PROGRESS y cualquier cosa que aparezca mañana: sigue en
+        # curso. Lo que NO se hace es inventar un `FAILED` por no reconocer una
+        # palabra, porque eso daría por perdido un video que se está haciendo.
+        return ("FAILED" if estado in ("ERROR", "FAILED") else estado or "IN_QUEUE"), None
+
+    # El resultado vive en otra URL. `response_url` viene desde el primer
+    # POST, pero la fila sólo guardó la de estado: fal la repite acá.
+    salida = _pedir_fal(d.get("response_url") or tarea.replace("/status", ""))
+    url = ((salida.get("video") or {}).get("url")
+           or (salida.get("videos") or [{}])[0].get("url"))
+    if not url:
+        raise RuntimeError(f"fal dijo COMPLETED y no trajo video: {str(salida)[:200]}")
+    return "COMPLETED", url
+
+
 # ═══ 1. Pedir el video ═══════════════════════════════════════════════════════
 
 def pedir_clip(fila: dict, plan: dict, planos: list[dict]) -> str:
@@ -249,6 +419,9 @@ def pedir_clip(fila: dict, plan: dict, planos: list[dict]) -> str:
     hacer sin el campo.
     """
     m = ficha_modelo(plan["modelo"])
+    if m.get("proveedor") == "fal":
+        return _pedir_clip_fal(fila, plan, planos)
+
     cuerpo = {
         "duration": plan["duracion"],
         "aspect_ratio": POR_DEFECTO["relacion"],
@@ -454,6 +627,11 @@ def estado_clip(tarea: str, modelo: str, resolucion: str) -> tuple[str, str | No
     la ruta equivocada da 404, o sea «no existe» para una tarea que existe y se
     está generando — y el reel se daría por perdido con el video ya pagado.
     """
+    if ficha_modelo(modelo).get("proveedor") == "fal":
+        # En fal la «tarea» es la URL que el propio proveedor dijo que hay que
+        # consultar, así que no hay ninguna ruta que armar ni que equivocar.
+        return _estado_clip_fal(tarea)
+
     ruta = ficha_modelo(modelo)["ruta_estado"].format(res=resolucion)
     d = _pedir(f"{ruta}/{tarea}", metodo="GET")["data"]
     urls = d.get("generated") or []
@@ -669,8 +847,15 @@ def _gastado_este_mes(cli) -> int:
     return sum((f.get("creditos_estimados") or 0) for f in r.json())
 
 
-def _plan(calidad: str, dur_pedida: int, tope_pieza: int) -> tuple[dict | None, str]:
+def _plan(calidad: str, dur_pedida: int, tope_pieza: float,
+          proveedor: str = PROVEEDOR_POR_DEFECTO) -> tuple[dict | None, str]:
     """Qué modelo, qué resolución y cuántos segundos, dentro del tope.
+
+    **Trabaja dentro de UN proveedor.** Magnific cobra en créditos y fal en
+    dólares, y no hay tipo de cambio entre los dos: comparar «4.400» con «0,80»
+    para elegir «el mejor» sería inventar una equivalencia que nadie midió. El
+    proveedor lo elige la persona o la marca; acá adentro ya está elegido, y
+    `tope_pieza` viene en la moneda que corresponde.
 
     Devuelve `(plan, aviso)`. El aviso es para la persona: si acá se cambió
     algo de lo que pidió, tiene que poder leer qué y por qué. Un pedido que
@@ -698,32 +883,37 @@ def _plan(calidad: str, dur_pedida: int, tope_pieza: int) -> tuple[dict | None, 
     if calidad not in orden:
         calidad = POR_DEFECTO["calidad"]
     candidatas = orden[orden.index(calidad):]
+    tabla = CALIDADES.get(proveedor) or CALIDADES[PROVEEDOR_POR_DEFECTO]
 
     opciones = []
     for rango, c in enumerate(candidatas):
-        modelo, res = CALIDADES[c]
+        modelo, res = tabla[c]
         for dur in ficha_modelo(modelo)["duraciones"]:
             cuesta = precio(modelo, res, dur)
             if cuesta <= tope_pieza:
                 opciones.append((abs(dur - dur_pedida), rango, dur, c, modelo,
                                  res, cuesta))
     if not opciones:
-        barato_m, barato_r = CALIDADES[candidatas[-1]]
+        barato_m, barato_r = tabla[candidatas[-1]]
         barato_d = min(ficha_modelo(barato_m)["duraciones"])
+        moneda = ficha_modelo(barato_m)["moneda"]
         return None, (f"ni el reel más barato ({barato_d}s en {barato_r}, "
-                      f"{precio(barato_m, barato_r, barato_d)} créditos) entra "
-                      f"en el tope por pieza ({tope_pieza}). Subilo en marca.json.")
+                      f"{plata(precio(barato_m, barato_r, barato_d), moneda)}) "
+                      f"entra en el tope por pieza "
+                      f"({plata(tope_pieza, moneda)}). Subilo en marca.json.")
 
     _, _, dur, c, modelo, res, cuesta = min(opciones)
+    moneda = ficha_modelo(modelo)["moneda"]
     avisos = []
     if c != calidad:
         avisos.append(f"lo bajé a calidad {c} para que entrara en el tope de "
-                      f"{tope_pieza} créditos")
+                      f"{plata(tope_pieza, moneda)}")
     if dur != dur_pedida:
         avisos.append(f"pediste {dur_pedida} segundos y sale de {dur}: es lo "
                       f"que hace {ficha_modelo(modelo)['nombre']}")
     return ({"modelo": modelo, "resolucion": res, "duracion": dur,
-             "creditos": cuesta, "calidad": c}, " · ".join(avisos))
+             "creditos": cuesta, "calidad": c, "moneda": moneda,
+             "proveedor": proveedor_de(modelo)}, " · ".join(avisos))
 
 
 def _ajustar(planos: list[dict], dur: int) -> list[dict]:
@@ -769,7 +959,19 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     """
     # El tope por pieza tiene que ser MAYOR que lo que cuesta el default, o
     # todo se rechaza y nadie entiende por qué.
-    tope_pieza = int(ficha.get("creditos_maximos") or 4500)
+    #
+    # Hay uno por proveedor y cada uno en SU moneda. No hay un tope único
+    # porque no hay tipo de cambio: un solo número tendría que estar en
+    # créditos o en dólares, y en cualquiera de los dos casos protegería a un
+    # proveedor y mentiría sobre el otro.
+    #
+    # El de fal arranca en un dólar, que a precio de lista ($0,08 el segundo a
+    # 768p) paga doce segundos y medio. Un video de cinco sale 0,40: entra
+    # holgado, y una fuga se frena antes del segundo video.
+    TOPES = {
+        "magnific": float(ficha.get("creditos_maximos") or 4500),
+        "fal": float(ficha.get("usd_maximo") or 1.00),
+    }
     # Opcional, y por defecto no hay: ver el comentario gemelo en `fotero`.
     # Acá pesa más que allá —un reel sale miles y una foto cientos—, y por eso
     # mismo el tope por pieza se queda: lo que no puede pasar es que UN pedido
@@ -790,10 +992,31 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
     # trabado para siempre y el día que aparezca el secreto no se destrabaría
     # solo. Así, en cambio, las filas se quedan quietas en `pendiente`, el log
     # dice qué falta, y salen solas en la primera corrida después del secreto.
-    if nuevos and not (os.environ.get("MAGNIFIC_CLAVE") or "").strip():
-        log.warning("[%s] %d reel(s) esperando: falta MAGNIFIC_CLAVE en el job",
-                    getattr(cli, "marca", "?"), len(nuevos))
-        nuevos = []
+    #
+    # Se mira la del proveedor de CADA fila, no una sola: con dos proveedores
+    # prendidos, que falte la de fal no puede frenar los reels de Magnific.
+    CLAVES = {"magnific": "MAGNIFIC_CLAVE", "fal": "FAL_CLAVE"}
+
+    def _proveedor_de_fila(f: dict) -> str:
+        # Lo que pidió la persona manda sobre lo que dice la marca, y lo de la
+        # marca sobre el default. El pedido viaja en `metricas` porque es el
+        # campo que la API ya escribe y el worker ya lee: no hace falta una
+        # columna nueva para una preferencia.
+        return ((f.get("metricas") or {}).get("proveedor")
+                or ficha.get("proveedor") or PROVEEDOR_POR_DEFECTO)
+
+    listos, sin_clave = [], {}
+    for f in nuevos:
+        prov = _proveedor_de_fila(f)
+        if (os.environ.get(CLAVES.get(prov, "MAGNIFIC_CLAVE")) or "").strip():
+            listos.append(f)
+        else:
+            sin_clave[prov] = sin_clave.get(prov, 0) + 1
+    for prov, cuantos in sin_clave.items():
+        log.warning("[%s] %d reel(s) esperando: falta %s en el job",
+                    getattr(cli, "marca", "?"), cuantos,
+                    CLAVES.get(prov, "MAGNIFIC_CLAVE"))
+    nuevos = listos
 
     for fila in nuevos:
         # Las filas que traen material propio son del otro camino
@@ -815,7 +1038,8 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             calidad = guion.get("calidad") or calidad_marca
             planos = guion.get("planos") or _planos(con_foto, dur_pedida)
 
-            plan, aviso = _plan(calidad, dur_pedida, tope_pieza)
+            prov = _proveedor_de_fila(fila)
+            plan, aviso = _plan(calidad, dur_pedida, TOPES[prov], prov)
             if not plan:
                 _marcar(cli, fila["id"], "rechazado", notas=aviso)
                 movidas += 1
@@ -826,8 +1050,14 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             planos = _ajustar(planos, plan["duracion"])
             cuesta = plan["creditos"]
 
-            ya = _gastado_este_mes(cli) if tope_mes else 0
-            if tope_mes and ya + cuesta > tope_mes:
+            # El tope MENSUAL cuenta créditos, así que sólo puede vigilar a
+            # Magnific. Sumarle dólares de fal daría un número que no es de
+            # nada: 4.500 «unidades» donde 4.400 son créditos y 100 dólares.
+            # Un tope que miente es peor que no tener tope, porque nadie
+            # vuelve a mirarlo.
+            mensual = tope_mes and prov == "magnific"
+            ya = _gastado_este_mes(cli) if mensual else 0
+            if mensual and ya + cuesta > tope_mes:
                 _marcar(cli, fila["id"], "rechazado", creditos_estimados=cuesta,
                         notas=f"este reel sale {cuesta} créditos, este mes ya hay "
                               f"{ya} comprometidos y el tope mensual es {tope_mes}.")
