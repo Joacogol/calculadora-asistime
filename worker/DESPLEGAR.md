@@ -45,10 +45,17 @@ cp -r /tmp/nuevo/worker/estudio      .
 cp    /tmp/nuevo/worker/*.sql /tmp/nuevo/worker/*.md .
 cp    /tmp/nuevo/worker/requirements.txt .
 cp    /tmp/nuevo/worker/clientes.py /tmp/nuevo/worker/desplegar-chat.sh .
+cp    /tmp/nuevo/worker/Dockerfile .
 chmod +x desplegar-chat.sh
 
 pip install jinja2
 ```
+
+**El `Dockerfile` también va, y faltaba.** Desde el 1/9/2026 está versionado
+acá, después de que una edición a mano le dejara `≈≈` en la primera línea y
+después le borrara el `FROM`. Si no se copia, la máquina sigue compilando con
+el suyo: puede andar y puede no tener lo nuevo, y las dos cosas se ven igual
+desde afuera.
 
 **`clientes.py` y `desplegar-chat.sh` van en la lista, y faltaban.** El
 despliegue no es sólo el código que corre en el job: los pasos previos —qué
