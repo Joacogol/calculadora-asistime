@@ -11,10 +11,11 @@
 //  sandbox corta mucho antes. Devuelve el `id` y después se consulta con
 //  `estado_reel`.
 //
-//  Y no elige el proveedor. Si no vino `proveedor`, la API contesta 200 con
-//  las dos opciones y sin anotar nada — hay que mostrárselas a la persona y
-//  volver a llamar. Esto no es un rodeo: son dos productos con precios y
-//  duraciones distintas, y el que paga es el cliente.
+//  Y no elige el proveedor: si no vino, lo PRIMERO que hace es leer las dos
+//  opciones y devolverlas para que la persona elija. Antes que la foto, a
+//  propósito — la plata se decide primero y el material después.
+//  No es un rodeo: son dos productos con precios, duraciones y monedas
+//  distintas, y el que paga es el cliente.
 
 const API = "https://ndulchsiqutxibiwzzlc.supabase.co/functions/v1/api-reels";
 const CLAVE = "705fdf8433d7cb33ffaba7e95333c664bf8fd904bbea4fc5c211cf52f01a7e94";
@@ -28,6 +29,59 @@ try {
         "Todavía no tengo qué tiene que pasar en el video. Escribilo vos: qué " +
         "se ve, cómo se mueve la cámara, con qué luz. No se lo preguntes así a " +
         "la persona — armá la idea con lo que ya dijo y confirmásela.",
+    };
+  }
+
+  // ── Antes que nada: con qué sistema ─────────────────────────────────
+  //
+  // Esto va PRIMERO, antes de pedir la foto, y el orden importa. Estaba al
+  // revés y el 1/9/2026 costó 100 créditos: alguien pidió ver los precios
+  // antes de decidir, y como la herramienta exigía una foto para llegar a la
+  // pregunta, el agente tuvo que encargar una foto —y gastarla— para poder
+  // mostrar un precio. La plata se decide primero; el material después.
+  //
+  // Las opciones se LEEN, no se encargan: esta consulta no anota nada ni
+  // gasta nada, así que se puede hacer con el pedido a medio armar.
+  if (!input.proveedor) {
+    let ops = [];
+    try {
+      const ro = await fetch(API + "?opciones=1", { headers: { "x-api-clave": CLAVE } });
+      const d0 = await ro.json();
+      ops = (d0.proveedores || []).map(function (o) {
+        return {
+          elegir: o.clave,
+          sistema: o.nombre,
+          duracion: o.duraciones,
+          desde: o.desde + " (" + o.desde_detalle + ")",
+          diez_segundos: o.diez_segundos,
+          a_tener_en_cuenta: o.nota,
+        };
+      });
+    } catch (e) {
+      ops = [];
+    }
+    return {
+      success: true,
+      falta_elegir: "proveedor",
+      opciones: ops,
+      falta_foto: !String(input.foto || "").trim(),
+      message:
+        "Antes de gastar hay que elegir con qué sistema se genera. NO se anotó " +
+        "ningún pedido y no se gastó nada todavía. Mostrale a la persona las " +
+        "dos opciones de `opciones` con su precio y su duración, en tus " +
+        "palabras y en dos líneas, y preguntale cuál prefiere. No elijas vos: " +
+        "es su plata." +
+        (String(input.foto || "").trim()
+          ? ""
+          : " Y avisale en el mismo mensaje que además hace falta una foto de " +
+            "la que parta el video: puede ser una que mande en el chat, o una " +
+            "que armemos con `crear_foto` por 100 créditos. Que decida las dos " +
+            "cosas juntas, no una y después la otra.") +
+        (ops.length
+          ? ""
+          : " OJO: no pude leer los precios. Decile que hay dos sistemas " +
+            "—Magnific y fal.ai— y que uno cobra en créditos y el otro en " +
+            "dólares, pero NO inventes ningún número."),
     };
   }
 
@@ -70,37 +124,6 @@ try {
 
   let d = {};
   try { d = await r.json(); } catch (e) { d = {}; }
-
-  // ── Falta elegir con qué sistema ────────────────────────────────────
-  //
-  // Llega como 200, no como error, porque no falló nada: falta un dato que
-  // sólo puede dar la persona. Las opciones vienen de la API y no están
-  // escritas acá a propósito — un precio copiado en la tool queda viejo el
-  // día que cambie y nadie se entera.
-  if (d.codigo === "elegi_proveedor" || d.codigo === "proveedor_desconocido") {
-    const ops = (d.opciones || []).map(function (o) {
-      return {
-        elegir: o.clave,
-        sistema: o.nombre,
-        duracion: o.duraciones,
-        desde: o.desde + " (" + o.desde_detalle + ")",
-        diez_segundos: o.diez_segundos,
-        a_tener_en_cuenta: o.nota,
-      };
-    });
-    return {
-      success: true,
-      falta_elegir: "proveedor",
-      opciones: ops,
-      message:
-        "Antes de gastar hay que elegir con qué sistema se genera. NO se " +
-        "anotó ningún pedido y no se gastó nada todavía. Mostrale a la " +
-        "persona las dos opciones de `opciones` con su precio y su duración, " +
-        "en tus palabras y en dos líneas, y preguntale cuál prefiere. Cuando " +
-        "te conteste, volvé a llamar a `crear_video` con exactamente el mismo " +
-        "`mensaje` y la misma `foto`, agregando `proveedor`. No elijas vos.",
-    };
-  }
 
   if (!r.ok) {
     const codigos = {

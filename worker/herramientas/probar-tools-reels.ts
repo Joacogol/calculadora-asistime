@@ -78,6 +78,22 @@ function ok(c: unknown, que: string, detalle?: unknown) {
 const PEDIDO = "la paleta apoyada en el pasto que crece como un árbol";
 const FOTO = "https://ejemplo.com/paleta.jpg";
 
+console.log("\n■ crear_video pregunta el sistema SIN pedir foto primero");
+//
+// El orden importa y costó 100 créditos aprenderlo: cuando la foto se exigía
+// antes de la pregunta, alguien que quería ver los precios tenía que encargar
+// —y pagar— una foto para poder verlos.
+{
+  const d = await correrTool("crear_video.js", { mensaje: PEDIDO });
+  ok(d.falta_elegir === "proveedor", "pregunta el sistema sin foto", d.falta_elegir);
+  ok(d.falta_foto === true, "y avisa que además va a hacer falta una foto", d.falta_foto);
+  const ops = (d.opciones ?? []) as Record<string, unknown>[];
+  ok(ops.length === 2 && ops.every((o) => o.desde), "con los dos precios", ops);
+  ok(String(d.message).includes("crear_foto"),
+    "diciéndole que las decida juntas, no una y después la otra", d.message);
+  ok(filas.size === 0, "sin anotar ni gastar nada", [...filas.keys()]);
+}
+
 console.log("\n■ crear_video pregunta con qué sistema antes de gastar");
 {
   const d = await correrTool("crear_video.js", { mensaje: PEDIDO, foto: FOTO });
@@ -112,6 +128,7 @@ let idReel = "";
   const d0 = await correrTool("crear_reel.js",
     { mensaje: PEDIDO, foto: FOTO, titulo: "Un título" });
   ok(d0.falta_elegir === "proveedor", "sin proveedor, pregunta", d0.falta_elegir);
+  ok(d0.falta_foto === false, "y no pide una foto que ya tiene", d0.falta_foto);
   ok(filas.size === 1, "sin anotar nada", filas.size);
 
   const d = await correrTool("crear_reel.js",
