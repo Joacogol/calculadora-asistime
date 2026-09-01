@@ -43,11 +43,22 @@ for (const u of [
   `https://docs.google.com/document/d/${ID}/edit`,
 ]) ok(idDeDrive(u) === ID, u.slice(0, 55) + "…", idDeDrive(u));
 
+console.log("\n■ El id pelado, que es lo que el agente mandó la segunda vez");
+{
+  ok(idDeDrive(ID) === ID, "se reconoce sin URL", idDeDrive(ID));
+  const c2 = candidatas(ID);
+  ok(c2.length === 2 && c2[0].includes("uc?export=download"),
+    "y sale la misma lista que con el link", c2);
+}
+
 console.log("\n■ Y NO toca lo que no es Drive");
 for (const u of [
   "https://ndulchsiqutxibiwzzlc.supabase.co/storage/v1/object/public/disenos/x.jpg",
   "https://ejemplo.com/foto.jpg",
   "https://drive.google.com.malo.com/file/d/abcdefghij1234567890/view",
+  // Un texto corto NO es un id: si lo fuera, cualquier palabra suelta se
+  // convertiría en un pedido a Drive.
+  "hola",
 ]) ok(idDeDrive(u) === null && candidatas(u).length === 1 && candidatas(u)[0] === u,
       "se deja igual: " + u.slice(0, 45) + "…", candidatas(u));
 

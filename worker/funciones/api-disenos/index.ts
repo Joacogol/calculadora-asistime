@@ -52,7 +52,13 @@ const FORMATOS = ["post", "vertical", "story", "reel", "video",
 // Cuántas fotos puede mandar una persona en un pedido, y cuánto puede pesar
 // cada una. Una foto de celular pesa entre 2 y 5 MB; 12 deja margen para una
 // cámara buena sin abrir la puerta a que alguien nos mande un video disfrazado.
-const MAX_FOTOS = 4;
+//
+// Seis y no cuatro porque seis es lo que entra en un carrusel. Con cuatro, un
+// pedido de cinco fotos perdía la quinta —se recortaba en silencio con un
+// `slice`— y lo único que lo delataba era el `fotos_recibidas` de la
+// respuesta. Un tope que no se corresponde con nada de lo que la pieza puede
+// mostrar es un tope puesto de más.
+const MAX_FOTOS = 6;
 const MAX_BYTES = 12 * 1024 * 1024;
 
 const TIPOS: Record<string, string> = {
@@ -247,8 +253,24 @@ function limpiar(b: Uint8Array, fmt: string): Uint8Array {
 // no haya iniciado sesión, y este servidor nunca la inicia. Ahí no hay truco
 // posible y lo único honesto es decirlo con esas palabras.
 function idDeDrive(u: string): string | null {
+  const s = u.trim();
+
+  // ── Y a veces ni siquiera manda un link ────────────────────────────────
+  //
+  // El 1/9/2026, después de arreglar lo de `/view`, el agente mandó los IDs
+  // PELADOS: `168LYZlAjdYJT2YbQJs3liyuYCq-IAJxq`, sin `https://` ni nada. No
+  // es capricho: la herramienta de Drive le devuelve el id Y el link, nadie le
+  // dijo cuál de los dos va, y probó el otro.
+  //
+  // La conclusión es la de siempre: si el formato no lo fija el mecanismo, se
+  // improvisa. Así que se aceptan las tres formas —el id, el link de ver y el
+  // de descarga— y se termina la adivinanza. Un id de Drive es inconfundible:
+  // 25 a 60 caracteres de letras, números, guión y guión bajo, sin barras ni
+  // puntos. Ninguna dirección se parece a eso.
+  if (/^[A-Za-z0-9_-]{25,60}$/.test(s)) return s;
+
   let url: URL;
-  try { url = new URL(u); } catch { return null; }
+  try { url = new URL(s); } catch { return null; }
   const h = url.hostname.toLowerCase();
   if (h !== "drive.google.com" && h !== "docs.google.com") return null;
   // Las dos formas en que Drive pone el id en la ruta: `/file/d/<id>/view`,
@@ -453,14 +475,20 @@ Deno.serve(async (req) => {
   // la pieza salga dos minutos después con una foto del banco y nadie sepa
   // por qué no se usó la que mandaron.
   const copiar = async (u: string, n: number) => {
-    if (!direccion_valida(u)) throw new Error("no es una dirección válida");
-
     // Se prueban las direcciones en orden y gana la primera que traiga una
     // imagen de verdad. Para una URL normal la lista tiene una sola.
+    //
+    // El chequeo de dirección va sobre las CANDIDATAS y no sobre lo que llegó:
+    // un id pelado de Drive no es una dirección —ni tiene por qué serlo— pero
+    // las dos que salen de él sí, y son las que se van a ir a buscar.
     let crudo: Uint8Array<ArrayBuffer> | null = null;
     let fmt: string | null = null;
     let ultimo = "";
     for (const c of candidatas(u)) {
+      if (!direccion_valida(c)) {
+        ultimo = "no es una dirección válida";
+        continue;
+      }
       let r: Response;
       try {
         r = await fetch(c, { signal: AbortSignal.timeout(20000) });
