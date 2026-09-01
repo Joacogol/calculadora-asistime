@@ -1973,13 +1973,39 @@ justamente lo que le prohíbe al recorte comerse una palabra (ver el caso de
 Bruno, más abajo). Un VAD que se traga media frase reabre ese agujero desde
 el otro lado. Con `medium` no hace falta.
 
-### Al desplegar
+### Y se tuvo que volver atrás el mismo día
 
-`medium` pesa 1,5 GB y se baja en el primer reel después de cada despliegue.
-Vale más que antes hornearlo en el `Dockerfile` —que vive en `~/worker` y no
-en este repo— con la línea que ya está documentada más arriba.
+Se desplegó con `medium` y **un reel que tardaba 1 m 23 s pasó de largo los
+ocho minutos** — el mismo pedido, los mismos tres clips. Se volvió a `small`.
 
-Y se puede volver atrás sin tocar código: `WHISPER_MODELO=small` en el job.
+La medición de calidad era correcta; lo que no se midió es si el worker podía
+pagar ese modelo. **En Cloud Run el disco del contenedor es memoria.** Bajar
+`medium` consume 1,5 GiB de los 4 GiB del job, cargarlo consume otro tanto, y
+al lado hay un Chromium dibujando subtítulos y un ffmpeg trabajando sobre
+cuadros de 1080×1920. No es que tarde más: es que no entra.
+
+Medir la calidad de un modelo en una máquina con 26 GB libres y deducir que
+entra en un contenedor de 4 GiB es exactamente el error que este archivo
+existe para no repetir. **Un modelo no se elige por su calidad sino por su
+calidad dentro del presupuesto que hay.**
+
+### Qué hace falta para prenderlo
+
+1. **Hornear el modelo en el `Dockerfile`** —que vive en `~/worker`, no en
+   este repo— para que no se baje en cada despliegue. La línea está más
+   arriba en este mismo archivo.
+2. **Revisar la memoria del job** en `desplegar-chat.sh` (hoy 4 GiB).
+3. Recién ahí: `WHISPER_MODELO=medium ./desplegar-chat.sh`, y medir un reel
+   real de punta a punta antes de darlo por bueno.
+
+Mientras tanto, lo que SÍ quedó y no cuesta nada es el vocabulario en prosa y
+los tres `VOCABULARIO` de las marcas: con `small`, eso solo ya arregla «el
+campeón del siglo» y no toca la memoria.
+
+`WHISPER_MODELO` ahora se fija en `desplegar-chat.sh` y no en el código,
+porque `--set-env-vars` reemplaza la lista entera: una variable puesta a mano
+con `--update-env-vars` sobrevive hasta el próximo despliegue y después
+desaparece sin que nadie lo note.
 
 ---
 

@@ -167,13 +167,24 @@ echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # proceso igual que el reloj, y con menos rastro todavía.
 # El separador ^|^ es porque CLIENTES es un JSON con comas adentro y gcloud
 # usa la coma para separar variables: sin esto, parte el JSON al medio.
+#
+# `WHISPER_MODELO` va acá EXPLÍCITO, y no confiado al valor por defecto del
+# código, por una razón que costó un susto: `--set-env-vars` **reemplaza la
+# lista entera**. Un `gcloud run jobs update --update-env-vars` hecho a mano
+# —por ejemplo para probar otro modelo— sobrevive hasta el próximo despliegue
+# y después desaparece sin que nadie lo note. Con la variable acá, lo que
+# manda es este archivo y se ve de un vistazo.
+#
+# Para probar otro modelo:  WHISPER_MODELO=medium ./desplegar-chat.sh
+# Antes de dejarlo fijo, leer la nota de `motor/habla.py`: `medium` pesa
+# 1,5 GB y en Cloud Run el disco del contenedor es memoria.
 gcloud run jobs deploy "$JOB" \
   --source . \
   --region "$REGION" \
   --service-account "$SA" \
   --memory 4Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
-  --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}" \
+  --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-small}" \
   --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 

@@ -57,11 +57,24 @@ log = logging.getLogger(__name__)
 #: `large-v3` sale exactamente el mismo texto —una sola interjección más— por
 #: casi el doble de tiempo y un modelo el doble de pesado: no se paga.
 #:
-#: Lo que cambió no es el modelo, es el presupuesto. `small` se eligió cuando
-#: un reel tardaba siete minutos y cada segundo contaba; hoy tarda minuto y
-#: medio. La transcripción pasó de 20 s a 45 s en cuatro núcleos —el worker
-#: tiene ocho—, y eso, sobre un reel que nadie mira armarse, se paga solo.
-MODELO = os.environ.get("WHISPER_MODELO", "medium")
+#: **Y sin embargo el valor por defecto sigue siendo `small`, por ahora.** Se
+#: puso `medium` el 1/9/2026 y hubo que volver atrás el mismo día: un reel que
+#: tardaba 1 m 23 s pasó de largo los ocho minutos. La calidad medida era real;
+#: lo que faltó medir es que el worker no puede pagar ese modelo TODAVÍA.
+#:
+#: `medium` pesa 1,5 GB contra los 464 MB de `small`, y en Cloud Run el disco
+#: del contenedor **es memoria**: bajarlo consume 1,5 GiB de los 4 GiB del job,
+#: y cargarlo consume otro tanto, con un Chromium y un ffmpeg al lado. No es
+#: que tarde: es que no entra.
+#:
+#: Para prenderlo hacen falta dos cosas, y ninguna se hace desde este archivo:
+#:
+#:   1. **Hornear el modelo en el `Dockerfile`** —que vive en `~/worker` y no
+#:      en este repo— para que no se baje en cada despliegue.
+#:   2. **Revisar la memoria del job** en `desplegar-chat.sh`.
+#:
+#: Con eso hecho, se prende sin tocar código: `WHISPER_MODELO=medium`.
+MODELO = os.environ.get("WHISPER_MODELO", "small")
 
 #: Nunca con sufijo `.en`. Ver la trampa 1.
 IDIOMA = os.environ.get("WHISPER_IDIOMA", "es")
