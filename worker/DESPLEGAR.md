@@ -1690,21 +1690,32 @@ así que el modelo viaja de HuggingFace cada vez. Con `small` eran 464 MB y
 **el disco del contenedor es memoria**, así que esos 1,5 GB salen del límite
 del job antes de que empiece a trabajar.
 
-Se arregla en el `Dockerfile`, que **no está en este repo** —vive sólo en el
-worker, en `~/worker/Dockerfile`—. **No lo pegues a mano:**
+Ya está hecho: el `Dockerfile` **ahora vive en este repo** y trae la precarga.
+Copiándolo con el resto del código queda puesto solo.
+
+Antes no estaba, y esa fue la causa de tres problemas seguidos el 1/9/2026: la
+línea de precarga estaba escrita acá para pegarla a mano y **nunca se pegó**,
+así que el modelo se venía bajando en cada corrida desde siempre; cuando se
+intentó pegarla, se rompió el archivo editándolo; y como no había copia buena
+en ningún lado, no había de dónde restaurarlo. Un archivo del que depende el
+despliegue y que vive en una sola máquina, sin historial, es un problema
+esperando.
+
+Si el que está en `~/worker` quedó dañado, se restaura copiando el del repo:
+
+```bash
+cp /tmp/nuevo/worker/Dockerfile ~/worker/Dockerfile
+```
+
+Y si hace falta ponerle la precarga a un Dockerfile que no la tiene:
 
 ```bash
 python3 ~/worker/herramientas/hornear-modelo.py
 ```
 
-Lo agrega en el lugar correcto, deja una copia de seguridad y es idempotente.
-Esto es un comando y no una instrucción por una razón: la instrucción estuvo
-escrita acá desde el principio y **nunca se siguió**. El modelo se venía
-bajando en cada corrida desde siempre, sin que nadie lo notara, porque con
-`small` sólo costaba unos segundos. Una instrucción que hay que acordarse de
-seguir no es una instrucción, es una apuesta.
+Lo agrega en el lugar correcto, deja copia de seguridad y es idempotente.
 
-Esto es lo que agrega:
+Esto es lo que lleva:
 
 ```dockerfile
 # Precarga el modelo de transcripción: el contenedor es efímero y sin esto el
