@@ -1857,10 +1857,25 @@ Una frase con `texto` vacío se saca. `cierre` vacío saca la placa final.
 Los números van **desde 1** porque los va a decir una persona en un chat: nadie
 cuenta desde cero fuera de la programación.
 
-### Antes de usarlo
+### Cómo se prende en un cliente
 
-`migraciones/retoque-de-reels.sql` en el SQL Editor de cada cliente. Agrega
-`armado`, `origen` y la tabla `correcciones`. Es idempotente.
+1. **`migraciones/retoque-de-reels.sql`** en el SQL Editor de ese cliente. Agrega `armado`, `origen` y la
+   tabla `correcciones`. Es idempotente.
+2. **Desplegar el worker** (`./desplegar-chat.sh`) y **la Edge Function**
+   `api-reels`, que es donde viven `?ver=1`, `retocar` y la memoria.
+3. **Crear las dos tools** con el código de `tools-asistime/` — cambiándoles la
+   URL y la `API_CLAVE` por las de ESE cliente.
+4. **Marcarlas en el agente**, en Agentes → Herramientas. Este paso va a mano:
+   `PUT /agents/{id}/tools` reemplaza la lista entera y el `GET` que la leería
+   viene cortado, así que mandarlo a ciegas le sacaría al agente herramientas
+   que hoy funcionan.
+5. **Agregarle al prompt del agente** la sección «Corregir un reel que ya
+   salió», la fila en la tabla de puertas y la línea de «no rehagas un reel para
+   corregirle una frase». Sin eso las tools existen y el agente no las llama —
+   es exactamente lo que pasó con `montar_reel` el 31/8.
+
+En Boss (tenant 119) ya está hecho: tools **2143** (`ver_reel`) y **2144**
+(`retocar_reel`), prompt **versión 15**. Falta el paso 4, que es del panel.
 
 **Los reels hechos antes de esto no se pueden retocar** — no tienen `armado`
 guardado. La API lo dice con esas palabras en vez de fallar raro: «se armó antes
