@@ -1863,7 +1863,7 @@ cuenta desde cero fuera de la programación.
    tabla `correcciones`. Es idempotente.
 2. **Desplegar el worker** (`./desplegar-chat.sh`) y **la Edge Function**
    `api-reels`, que es donde viven `?ver=1`, `retocar` y la memoria.
-3. **Crear las dos tools** con el código de `tools-asistime/` — cambiándoles la
+3. **Crear las tools** con el código de `tools-asistime/` — cambiándoles la
    URL y la `API_CLAVE` por las de ESE cliente.
 4. **Marcarlas en el agente**, en Agentes → Herramientas. Este paso va a mano:
    `PUT /agents/{id}/tools` reemplaza la lista entera y el `GET` que la leería
@@ -1874,8 +1874,30 @@ cuenta desde cero fuera de la programación.
    corregirle una frase». Sin eso las tools existen y el agente no las llama —
    es exactamente lo que pasó con `montar_reel` el 31/8.
 
-En Boss (tenant 119) ya está hecho: tools **2143** (`ver_reel`) y **2144**
-(`retocar_reel`), prompt **versión 15**. Falta el paso 4, que es del panel.
+### Cómo quedó en los tres clientes (1/9/2026)
+
+Los pasos 1, 2, 3 y 5 están hechos en los tres. **Falta el paso 4 en los tres**,
+que es el del panel:
+
+| | Boss (119 / ag. 364) | Stadium (176 / ag. 544) | Clínica (73 / ag. 542) |
+|---|---|---|---|
+| migración | ✅ | ✅ | ✅ |
+| `api-reels` | ✅ | ✅ v5 | ✅ v1, nueva |
+| `montar_reel` | ya estaba | 2149 | 2153 |
+| `ver_reel` | 2143 | 2150 | 2154 |
+| `retocar_reel` | 2144 | 2151 | 2155 |
+| `estado_reel` | ya estaba | 2076 | 2152 |
+| prompt | v15 | v4 (4775) | v6 (4776) |
+| **tildar en el panel** | ❌ | ❌ | ❌ |
+
+Dos cosas que no son iguales en los tres:
+
+- **Stadium tiene las dos formas de hacer un reel** y una sola `estado_reel` que
+  contesta por las dos. Se ramifica con el `montado` de la API; el porqué está
+  en `tools-asistime/LEEME.md`.
+- **Clínica no puede publicar video.** Sus tools de publicación suben fotos y
+  piezas, no reels. El prompt lo dice con todas las letras y le prohíbe
+  prometerlo: el reel se entrega como link y lo suben ellos.
 
 **Los reels hechos antes de esto no se pueden retocar** — no tienen `armado`
 guardado. La API lo dice con esas palabras en vez de fallar raro: «se armó antes
