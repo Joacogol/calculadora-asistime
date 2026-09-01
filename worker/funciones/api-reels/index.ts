@@ -126,6 +126,56 @@ Deno.serve(async (req) => {
     if (!id) return json({ error: "falta id" }, 400);
     const esperar = url0.searchParams.get("esperar") !== "no";
 
+    // ── Ver lo que el motor armó, para poder corregirlo ──────────────────
+    //
+    // Numerado desde 1 y no desde 0, a propósito: estos números los va a
+    // decir una persona en un chat («la frase 4 está mal»), y nadie cuenta
+    // desde cero fuera de la programación.
+    if (url0.searchParams.get("ver")) {
+      const r = await fetch(
+        `${tabla}?id=eq.${encodeURIComponent(id)}&select=id,estado,url,armado,origen`,
+        { headers: cab },
+      );
+      const filas = await r.json();
+      if (!Array.isArray(filas) || !filas.length) {
+        return json({ error: "no existe", codigo: "no_existe" }, 404);
+      }
+      const f = filas[0];
+      const a = (f.armado ?? {}) as Record<string, unknown>;
+      if (!f.armado) {
+        return json({
+          error: f.estado === "listo"
+            ? "este reel se armó antes de que el motor guardara su guion, así " +
+              "que no hay nada que mostrar ni que corregir. Pedilo de nuevo y " +
+              "el nuevo sí se va a poder retocar."
+            : `todavía no hay nada que ver: el reel está en «${f.estado}».`,
+          codigo: "sin_armado",
+        }, 409);
+      }
+      const tramos = (a.tramos ?? []) as Record<string, unknown>[];
+      const subs = (a.subtitulos ?? []) as Record<string, unknown>[];
+      return json({
+        id: f.id,
+        estado: f.estado,
+        url: f.url || null,
+        origen: f.origen || null,
+        hook: a.hook ?? "",
+        cierre: a.cierre ?? "",
+        tramos: tramos.map((t, i) => ({
+          n: i + 1,
+          archivo: t.archivo,
+          desde: t.desde,
+          hasta: t.hasta,
+        })),
+        subtitulos: subs.map((x, i) => ({
+          n: i + 1,
+          desde: x.desde,
+          hasta: x.hasta,
+          texto: x.texto,
+        })),
+      });
+    }
+
     const hasta = Date.now() + (esperar ? ESPERA_MAX_MS : 0);
     for (;;) {
       const r = await fetch(
@@ -170,6 +220,120 @@ Deno.serve(async (req) => {
     c = await req.json();
   } catch {
     return json({ error: "cuerpo inválido" }, 400);
+  }
+
+  // ── Retocar un reel que ya salió ─────────────────────────────────────────
+  //
+  // No rehace el reel: le cambia lo que se pidió cambiar. Toma el guion que el
+  // motor guardó la vuelta anterior —tramos, frases y hook YA resueltos— y
+  // anota qué corregir encima. Por eso un retoque **no vuelve a escuchar el
+  // audio**: si lo hiciera, volvería a equivocarse exactamente igual (el
+  // modelo es determinista con el mismo audio) y de paso tiraría las frases
+  // que estaban bien.
+  //
+  // Y NO pisa el original: crea una fila nueva que apunta a él con `origen`.
+  // Una corrección que salió peor no tiene que llevarse puesto lo que ya
+  // estaba bien.
+  const retocar = String(c.retocar ?? "").trim();
+  if (retocar) {
+    const cambios = (c.cambios && typeof c.cambios === "object")
+      ? c.cambios as Record<string, unknown>
+      : null;
+    if (!cambios || !Object.keys(cambios).length) {
+      return json({
+        error: "falta `cambios`: qué corregir. Por ejemplo " +
+          `{"reemplazar":[{"de":"vos panel","a":"Boss Padel"}]}, ` +
+          `{"subtitulos":[{"n":4,"texto":"la frase corregida"}]}, ` +
+          `{"hook":"otro hook"} o {"quitar":[3]}.`,
+        codigo: "sin_cambios",
+      }, 400);
+    }
+
+    const r0 = await fetch(
+      `${tabla}?id=eq.${encodeURIComponent(retocar)}&select=id,estado,armado,clips,titulo`,
+      { headers: cab },
+    );
+    const filas = await r0.json();
+    if (!Array.isArray(filas) || !filas.length) {
+      return json({ error: "ese reel no existe", codigo: "no_existe" }, 404);
+    }
+    const orig = filas[0];
+    if (!orig.armado) {
+      return json({
+        error: orig.estado === "listo"
+          ? "ese reel se armó antes de que el motor guardara su guion, así que " +
+            "no se puede retocar. Pedilo de nuevo y el nuevo sí."
+          : `ese reel todavía está en «${orig.estado}»: no hay nada armado que ` +
+            `retocar.`,
+        codigo: "sin_armado",
+      }, 409);
+    }
+
+    // Un chequeo rápido de los números ANTES de anotar nada. La cuenta de
+    // verdad la hace el worker en Python —que es donde vive la lógica y donde
+    // se recalculan los tiempos al sacar un tramo—, pero un «la frase 40» en
+    // un reel de 22 se puede contestar acá mismo, en el momento, en vez de
+    // hacer esperar un minuto para decir lo mismo.
+    const a = orig.armado as Record<string, unknown>;
+    const nSubs = ((a.subtitulos ?? []) as unknown[]).length;
+    const nTramos = ((a.tramos ?? []) as unknown[]).length;
+    const fuera = (ns: unknown[], tope: number) =>
+      ns.filter((n) => !Number.isInteger(n) || (n as number) < 1 || (n as number) > tope);
+
+    const malSub = fuera(
+      ((cambios.subtitulos ?? []) as Record<string, unknown>[]).map((x) => x?.n),
+      nSubs,
+    );
+    if (malSub.length) {
+      return json({
+        error: `no existe la frase número ${malSub.join(", ")}: este reel tiene ` +
+          `${nSubs}, del 1 al ${nSubs}.`,
+        codigo: "fuera_de_rango",
+      }, 400);
+    }
+    const malTramo = fuera(
+      [...((cambios.quitar ?? []) as unknown[]), ...((cambios.orden ?? []) as unknown[])],
+      nTramos,
+    );
+    if (malTramo.length) {
+      return json({
+        error: `no existe el tramo número ${malTramo.join(", ")}: este reel tiene ` +
+          `${nTramos}, del 1 al ${nTramos}.`,
+        codigo: "fuera_de_rango",
+      }, 400);
+    }
+
+    const nueva: Record<string, unknown> = {
+      mensaje: String(c.mensaje ?? "").trim() ||
+        `Retoque del reel ${retocar}`,
+      quien: c.quien ?? "Asistime",
+      clips: orig.clips,
+      armado: orig.armado,
+      guion: { cambios },
+      origen: orig.id,
+    };
+    if (orig.titulo) nueva.titulo = orig.titulo;
+    if (usuario) nueva.user_id = usuario;
+
+    const rr = await fetch(tabla, {
+      method: "POST",
+      headers: { ...cab, Prefer: "return=representation" },
+      body: JSON.stringify(nueva),
+    });
+    if (!rr.ok) {
+      return json({ error: "no se pudo anotar el retoque", detalle: await rr.text() }, 500);
+    }
+    const hecha = (await rr.json())[0];
+    return json({
+      id: hecha.id,
+      estado: hecha.estado,
+      origen: orig.id,
+      // Un retoque tarda casi lo mismo que un reel: lo que se ahorra es
+      // equivocarse de nuevo, no el tiempo de dibujar. Decir menos sería
+      // prometer algo que no se cumple.
+      demora_estimada_seg: 90,
+      cuesta_creditos: false,
+    }, 201);
   }
 
   const mensaje = String(c.mensaje ?? "").trim();

@@ -1046,13 +1046,29 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
             material = t / "material"
             material.mkdir()
             try:
-                # Un retoque llega con el guion YA armado de la vuelta
-                # anterior, con un cambio adentro. Ese manda sobre lo que pidió
-                # el agente: trae los tramos, las frases y el hook concretos, y
-                # justamente por eso el reel no se vuelve a transcribir ni a
-                # medir. Cambia lo que se cambió y nada más. Ver
-                # `motor.video.desde_guion`.
-                guion = fila.get("armado") or fila.get("guion") or {}
+                # Tres formas de llegar acá, y se distinguen por lo que trae
+                # la fila:
+                #
+                #   pedido nuevo   → sólo `guion`: lo que escribió el agente.
+                #   retoque        → `armado` (el guion resuelto de la vuelta
+                #                    anterior) + `guion.cambios` (qué corregir).
+                #   reintento      → sólo `armado`: se redibuja igual.
+                #
+                # El `armado` manda sobre el pedido porque trae los tramos, las
+                # frases y el hook YA concretos: por eso un retoque no vuelve a
+                # transcribir ni a medir silencios, y cambia lo que se pidió
+                # cambiar y nada más. Ver `motor.video.desde_guion`.
+                armado_previo = fila.get("armado") or {}
+                pedido = fila.get("guion") or {}
+                cambios = pedido.get("cambios") if isinstance(pedido, dict) else None
+                hecho: list[str] = []
+                if armado_previo and cambios:
+                    from motor import retoque as mretoque
+                    guion, hecho = mretoque.retocar(armado_previo, cambios)
+                    log.info("[%s] retoque de %s: %s", getattr(cli, "marca", "?"),
+                             fila.get("origen"), " · ".join(hecho))
+                else:
+                    guion = armado_previo or pedido
                 clips = fila.get("clips") or []
 
                 # El orden en que llegan los clips no es el orden en que se
@@ -1109,7 +1125,7 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                     vocabulario=mhabla.vocabulario_de(marca_mod) if marca_mod else "",
                     marca=getattr(marca_mod, "NOMBRE", "") if marca_mod else "")
 
-                dichos = ([aviso_orden] if aviso_orden else []) + list(avisos)
+                dichos = hecho + ([aviso_orden] if aviso_orden else []) + list(avisos)
                 # `armado` es el guion ya resuelto. Se guarda para poder
                 # retocar el reel después —corregir una frase, sacar un tramo—
                 # sin volver a escuchar el audio, que daría los mismos errores
@@ -1120,6 +1136,16 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                         creditos_estimados=0, creditos_gastados=0,
                         **({"notas": " · ".join(dichos)} if dichos else {}))
             except Exception as e:                           # noqa: BLE001
+                from motor.retoque import CambioImposible
+                if isinstance(e, CambioImposible):
+                    # Esto no es una falla del motor: es un pedido que no se
+                    # puede cumplir, ya explicado en castellano. Va tal cual,
+                    # sin el «al montar:» adelante, porque el agente se lo va a
+                    # leer a la persona y «al montar: no existe la frase 99» le
+                    # suena a que algo se rompió.
+                    log.info("[%s] retoque imposible en %s: %s",
+                             getattr(cli, "marca", "?"), fila["id"], e)
+                    _marcar(cli, fila["id"], "error", notas=str(e))
                 # Acá NO hay nada pagado que rescatar —es la diferencia con el
                 # montaje del camino de IA—, así que un error es un error y se
                 # dice entero. El guion inválido llega con todos sus problemas
