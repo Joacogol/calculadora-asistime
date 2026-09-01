@@ -1905,6 +1905,65 @@ de que el motor guardara su guion; pedilo de nuevo y el nuevo sí».
 
 ---
 
+## «A mídia não está pronta para ser publicada» (1/9/2026)
+
+Se pidió publicar una placa de Clínica y volvió ese error, en portugués. La
+pieza estaba bien, la cuenta estaba bien, el pie de foto estaba escrito. Meta
+todavía estaba terminando de procesarla, y nada más.
+
+Fila `63f9c45a` de `publicaciones`: `estado = error`, `intentos = 1`,
+`esperas = 0`. Los tres números cuentan la historia.
+
+### Eran dos errores encimados
+
+**Uno: no se le preguntaba a Meta si la pieza estaba lista.** Al crear un
+contenedor, Meta lo procesa antes de dejarlo publicar, y se pregunta con
+`status_code` hasta que diga `FINISHED`. El worker sólo lo preguntaba para
+videos. Una foto se publicaba derecho —está lista al instante— que es verdad
+tantas veces seguidas que parecía una regla en vez de una probabilidad.
+
+**Dos: cuando Meta avisó, se tomó como definitivo.** El código 9007 no estaba
+en `CODIGOS_TEMPORALES`, así que el posteo fue a `error`, que es el estado del
+que no se vuelve. El mensaje decía textualmente «aguarde um momento» y se lo
+dio por perdido: con reintentar a los cinco minutos alcanzaba.
+
+El primero es la causa. El segundo es lo que convirtió una demora de un segundo
+en un posteo perdido, y es el que más importa: sin él, esto habría sido un
+reintento que nadie miraba.
+
+### Los dos arreglos
+
+1. **Se espera a todo contenedor, no sólo a los videos.** `ESPERA_FOTO` son 20
+   segundos —una foto contesta `FINISHED` en la primera pregunta casi siempre—
+   contra los 90 de un video. Si no llegó, la fila queda en `subiendo` con su
+   contenedor guardado y la corrida siguiente la retoma, igual que los videos.
+2. **9007 es temporal**, y su texto se traduce: «Instagram todavía estaba
+   terminando de procesar la pieza. Se reintenta solo en unos minutos.» Meta
+   contesta en el idioma de la app, y un error en portugués no le dice nada a
+   nadie.
+
+Lo segundo hace falta igual que lo primero: entre preguntar y publicar hay una
+carrera que ninguna espera cierra.
+
+### El guardián
+
+```bash
+python3 herramientas/probar-publicacion.py
+```
+
+No toca Instagram ni la base. Fija las tres cosas: que la foto se espere, que
+un «esperá un momento» se reintente, y que **un rechazo de verdad se siga
+informando como error** —sin lo tercero, la prueba pasaría con un publicador
+que reintenta todo para siempre y nunca avisa nada.
+
+**El Instagram de mentira rechaza publicar un contenedor que no está listo, y
+eso es lo que hace que la prueba sirva.** La primera versión dejaba publicar
+siempre, así que pasaba también contra el código roto. Un doble más amable que
+el original convierte la prueba en un adorno — el mismo error que la primera
+versión de `probar-recorte.py`.
+
+---
+
 ## El recorte se comió la respuesta (31/8/2026)
 
 Salió un reel donde alguien le pregunta a Bruno qué superpoder elegiría **y la

@@ -50,11 +50,18 @@ TIEMPO = 60
 # cortarlo nosotros y que se note en el log.
 MAX_CAPTION = 2200
 
-# Cuánto esperamos a que Instagram termine de procesar un video DENTRO de una
-# corrida. Si no llegó, el contenedor queda guardado y la corrida siguiente lo
-# retoma: el worker arranca cada minuto, así que no se pierde nada. Bloquear
+# Cuánto esperamos a que Instagram termine de procesar un contenedor DENTRO de
+# una corrida. Si no llegó, el contenedor queda guardado y la corrida siguiente
+# lo retoma: el worker arranca cada minuto, así que no se pierde nada. Bloquear
 # quince minutos esperando un video frenaría los diseños de los demás clientes.
 ESPERA_VIDEO = 90
+
+# Una foto se procesa en un segundo o dos, así que veinte es de sobra y no vale
+# la pena frenar la corrida más que eso. Pero **no es cero**: el 1/9/2026 una
+# placa de Clínica se dio por perdida porque se publicó sin preguntar si estaba
+# lista y Meta contestó «a mídia não está pronta». Casi siempre lo está; casi
+# siempre no es siempre.
+ESPERA_FOTO = 20
 
 
 class ErrorInstagram(RuntimeError):
@@ -69,7 +76,9 @@ class ErrorInstagram(RuntimeError):
 
 # Los códigos que significan «volvé a intentar más tarde» y no «esto está mal».
 # La diferencia decide si el publicador reintenta o si le avisa a la persona.
-CODIGOS_TEMPORALES = {1, 2, 4, 17, 32, 341, 613}
+# 9007 es «la media todavía no está lista»: el propio mensaje de Meta dice que
+# esperes un momento, así que darlo por perdido es no leer lo que dice.
+CODIGOS_TEMPORALES = {1, 2, 4, 9007, 17, 32, 341, 613}
 # 190 es token vencido o revocado: no se arregla reintentando, hay que
 # reconectar la cuenta. Se trata aparte porque desactiva la cuenta entera.
 CODIGO_TOKEN = 190
@@ -100,6 +109,12 @@ def _traducir(error: dict) -> ErrorInstagram:
     elif sub in (2207005, 2207009, 2207023):
         texto = ("Formato o proporción que Instagram no acepta para este tipo "
                  "de posteo.")
+    elif codigo == 9007 or sub == 2207027:
+        # Meta lo contesta en el idioma de la app, que acá sale en portugués:
+        # «A mídia não está pronta para ser publicada». Mostrárselo así a
+        # alguien que quiso subir una foto no le dice nada.
+        texto = ("Instagram todavía estaba terminando de procesar la pieza. "
+                 "Se reintenta solo en unos minutos.")
 
     return ErrorInstagram(
         texto, codigo, sub,
@@ -226,11 +241,16 @@ class Instagram:
         return d.get("status_code", ""), d.get("status", "")
 
     def esperar(self, contenedor: str, limite: int = ESPERA_VIDEO) -> bool:
-        """Espera a que un video termine de procesarse. True si quedó listo.
+        """Espera a que el contenedor termine de procesarse. True si quedó listo.
 
         Devuelve False —sin error— si se acabó el tiempo pero sigue
         procesando: eso no es una falla, es un video largo, y la corrida
         siguiente lo retoma.
+
+        **Va para todo, no sólo para los videos.** Una foto está lista casi
+        siempre al instante, y por eso durante meses se publicó sin preguntar;
+        el día que una no lo estuvo, Meta contestó «la media no está lista» y
+        el posteo se dio por perdido. Preguntar cuesta una llamada.
         """
         empezo = time.monotonic()
         espera = 3
@@ -240,7 +260,7 @@ class Instagram:
                 return True
             if code in ("ERROR", "EXPIRED"):
                 raise ErrorInstagram(
-                    f"Instagram no pudo procesar el video ({code}). {detalle}")
+                    f"Instagram no pudo procesar la pieza ({code}). {detalle}")
             time.sleep(espera)
             espera = min(espera * 1.5, 15)
         return False

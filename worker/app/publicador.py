@@ -42,7 +42,8 @@ import requests
 from PIL import Image
 
 from . import config, supa
-from .instagram import CODIGO_TOKEN, ErrorInstagram, Instagram
+from .instagram import (CODIGO_TOKEN, ESPERA_FOTO, ESPERA_VIDEO,
+                        ErrorInstagram, Instagram)
 from .supa import Cliente
 
 log = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ ESPERA_BASE = 5          # minutos; se multiplica por el número de intento
 # sobre la misma fila y publicarían dos veces.
 RANCIO = timedelta(minutes=4)
 
-# Cuántas veces se retoma un video que sigue procesando antes de darlo por
+# Cuántas veces se retoma un contenedor que sigue procesando antes de darlo por
 # perdido. Con RANCIO de 4 minutos, 15 vueltas son una hora. Un video nuestro
 # de 30 segundos tarda menos de dos minutos; si pasó una hora, no se está
 # procesando, se colgó, y dejarlo girando para siempre es peor que decirlo.
@@ -220,28 +221,37 @@ def procesar(cli: Cliente, ig: Instagram, fila: dict):
             # todo — y sobre todo, no crea un segundo posteo.
             cli.marcar_publicacion(pub_id, "subiendo", contenedor=contenedor)
 
-        # Los videos tardan del lado de Meta. Si no llegó a terminar, se deja
-        # como está: la corrida del minuto que viene lo encuentra en `subiendo`
-        # con su contenedor y sigue esperando.
+        # Meta procesa el contenedor de su lado antes de dejar publicarlo. Si
+        # no llegó a terminar, se deja como está: la corrida del minuto que
+        # viene lo encuentra en `subiendo` con su contenedor y sigue esperando.
+        #
+        # **Esto se le pregunta a todo, no sólo a los videos.** Antes las fotos
+        # se publicaban derecho, porque una foto está lista al instante — hasta
+        # el 1/9/2026, cuando una placa de Clínica no lo estuvo, Meta contestó
+        # «a mídia não está pronta para ser publicada» y el posteo se dio por
+        # perdido con ese texto en portugués como toda explicación. Preguntar
+        # cuesta una llamada y, cuando la foto ya está lista —que es casi
+        # siempre—, esa llamada contesta FINISHED en el primer intento.
         tipo = fila.get("tipo") or "post"
         urls = fila.get("urls") or []
-        if tipo == "reel" or (tipo == "story" and urls and _es_video(urls[0])):
-            if not ig.esperar(contenedor):
-                esperas = int(fila.get("esperas") or 0) + 1
-                if esperas >= MAX_ESPERAS:
-                    raise ErrorInstagram(
-                        "Instagram lleva más de una hora procesando el video y "
-                        "no termina. Probá con un video más corto o más liviano.")
-                # Se cuenta aparte de `intentos` a propósito: esperar a un
-                # video no es haber fallado, y mezclarlos haría que un error de
-                # red pasajero después de tres esperas se diera por perdido.
-                # La marca de tiempo se refresca sola con el disparador: la
-                # fila queda protegida otros cuatro minutos y después se
-                # retoma.
-                cli.marcar_publicacion(pub_id, "subiendo", esperas=esperas)
-                log.info("[%s] publicación %s: el video sigue procesando (%d)",
-                         cli.marca, pub_id, esperas)
-                return
+        lento = tipo == "reel" or (urls and _es_video(urls[0]))
+        if not ig.esperar(contenedor, ESPERA_VIDEO if lento else ESPERA_FOTO):
+            esperas = int(fila.get("esperas") or 0) + 1
+            if esperas >= MAX_ESPERAS:
+                raise ErrorInstagram(
+                    "Instagram lleva más de una hora procesando la pieza y no "
+                    "termina. " + ("Probá con un video más corto o más liviano."
+                                   if lento else
+                                   "Probá pidiéndola de nuevo."))
+            # Se cuenta aparte de `intentos` a propósito: esperar a que Meta
+            # termine no es haber fallado, y mezclarlos haría que un error de
+            # red pasajero después de tres esperas se diera por perdido.
+            # La marca de tiempo se refresca sola con el disparador: la fila
+            # queda protegida otros cuatro minutos y después se retoma.
+            cli.marcar_publicacion(pub_id, "subiendo", esperas=esperas)
+            log.info("[%s] publicación %s: Instagram sigue procesando (%d)",
+                     cli.marca, pub_id, esperas)
+            return
 
         media = ig.publicar(contenedor)
         cli.marcar_publicacion(pub_id, "publicado", ig_id=media,
