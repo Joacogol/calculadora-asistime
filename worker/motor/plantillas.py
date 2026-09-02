@@ -236,7 +236,13 @@ no tienen `?` son obligatorios y el motor rechaza la pieza sin ellos.
 ---
 """
 
-CIERRE = """
+#: El catálogo termina siempre igual, salvo por el bloque del carrusel que
+#: va justo en el medio — y por eso son dos y no uno. Pegados en ese orden
+#: dan el texto de siempre, carácter por carácter: mover ese bloque al final
+#: le cambiaría el documento a Boss y a Clínica sin motivo, y además dejaría
+#: la última línea contra el `---` del cierre, que en markdown convierte esa
+#: línea en un título.
+CIERRE_ANTES = """
 ---
 
 ## Si falta una plantilla
@@ -268,28 +274,9 @@ No repitas para qué sirve la plantilla: eso ya está.
 Lo que vuelve es otra vez un borrador, y vale lo mismo: **la plantilla que se
 usa hoy no cambió** hasta que alguien publique la versión nueva.
 
-## Un carrusel NO necesita una plantilla de carrusel
+"""
 
-Esta lista son las plantillas de UNA pieza. `carrusel` y `secuencia` no están
-—ni tienen que estar— porque **son formatos, no plantillas**: los arma el motor
-encadenando diapositivas, con la portada y el cierre que ya tiene la marca.
-
-Se piden como cualquier otro formato, en `formatos` de `crear_diseno`:
-
-- **`carrusel`** — de 3 a 6 imágenes para el feed, que se leen deslizando.
-- **`secuencia`** — 3 stories que se ven una atrás de otra.
-
-Contá en `mensaje` qué va en cada diapositiva, en orden. Eso alcanza.
-
-**No armes una plantilla nueva para hacer un carrusel.** Es el error que da
-esta lista si se la lee sola: como no aparece `carrusel`, parece que falta.
-Pasó el 28/8/2026 — se pidió un carrusel de seis diapositivas para un servicio
-y el agente ofreció construir un molde que no hacía falta.
-
-Una plantilla se arma cuando falta un TIPO DE PIEZA, no cuando falta un
-formato.
-
-## El VIDEO ya se puede. No lo mandes a `avisar_cambio_motor`
+CIERRE_DESPUES = """## El VIDEO ya se puede. No lo mandes a `avisar_cambio_motor`
 
 Se dice acá, en positivo y con todas las letras, porque este documento se lee
 como si mandara sobre todo lo demás — y **una versión vieja de este mismo
@@ -343,14 +330,60 @@ no llamaste, decí que vas a consultar el precio — no lo estimes.
 
 ## Y si necesita código
 
-`avisar_cambio_motor` queda para lo que de verdad necesita código: un formato o
-una medida que no existe, un carrusel que se encadene solo. **Ni el video, ni
-el carrusel, ni la secuencia van acá: ésos ya se pueden.** Es la excepción, no
-la salida fácil.
+{codigo}
 """
 
 
-def catalogo(raiz, escritas_en_python=()):
+#: Lo que se dice del carrusel y la secuencia — SÓLO si la marca los sabe
+#: hacer. Un carrusel se arma encadenando diapositivas, y eso necesita `DIAPOS`
+#: en la marca: Boss y Clínica lo tienen, Stadium y Asistime no.
+#:
+#: Antes esto iba en el CIERRE, o sea en el catálogo de TODAS las marcas. El
+#: 2/9/2026, al dar de alta a Asistime, el catálogo le prometía carruseles a
+#: una marca cuyo motor los rechaza. Es la peor forma del error: el agente lee
+#: que se puede, lo ofrece, y la pieza falla cuatro minutos después con un
+#: mensaje que él no puede explicar. Un catálogo que promete de más es peor que
+#: uno corto.
+CARRUSEL = """## Un carrusel NO necesita una plantilla de carrusel
+
+Esta lista son las plantillas de UNA pieza. `carrusel` y `secuencia` no están
+—ni tienen que estar— porque **son formatos, no plantillas**: los arma el motor
+encadenando diapositivas, con la portada y el cierre que ya tiene la marca.
+
+Se piden como cualquier otro formato, en `formatos` de `crear_diseno`:
+
+- **`carrusel`** — de 3 a 6 imágenes para el feed, que se leen deslizando.
+- **`secuencia`** — 3 stories que se ven una atrás de otra.
+
+Contá en `mensaje` qué va en cada diapositiva, en orden. Eso alcanza.
+
+**No armes una plantilla nueva para hacer un carrusel.** Es el error que da
+esta lista si se la lee sola: como no aparece `carrusel`, parece que falta.
+Pasó el 28/8/2026 — se pidió un carrusel de seis diapositivas para un servicio
+y el agente ofreció construir un molde que no hacía falta.
+
+Una plantilla se arma cuando falta un TIPO DE PIEZA, no cuando falta un
+formato.
+
+"""
+
+#: El último párrafo, en sus dos versiones. Para una marca sin `DIAPOS` el
+#: carrusel SÍ es un pedido de cambio de motor —es exactamente lo que le
+#: falta—, así que el ejemplo cambia de lado en vez de desaparecer.
+CODIGO_CON_CARRUSEL = """\
+`avisar_cambio_motor` queda para lo que de verdad necesita código: un formato o
+una medida que no existe, un carrusel que se encadene solo. **Ni el video, ni
+el carrusel, ni la secuencia van acá: ésos ya se pueden.** Es la excepción, no
+la salida fácil."""
+
+CODIGO_SIN_CARRUSEL = """\
+`avisar_cambio_motor` queda para lo que de verdad necesita código: un formato o
+una medida que no existe, o el carrusel — esta marca todavía no lo sabe armar y
+es un pedido válido. **El video no va acá: ése ya se puede.** Es la excepción,
+no la salida fácil."""
+
+
+def catalogo(raiz, escritas_en_python=(), con_carrusel=True):
     """El catálogo de plantillas de una marca, generado de los contratos.
 
     Es la mitad del punto de todo esto: el mismo archivo que dibuja el
@@ -360,6 +393,10 @@ def catalogo(raiz, escritas_en_python=()):
 
     `notas` sale del contrato y se escribe a mano: los campos se declaran, el
     oficio se cuenta. Sin eso el catálogo pierde lo mejor del skill.
+
+    `con_carrusel` decide si el catálogo cuenta que se pueden pedir carruseles
+    y secuencias. Es `False` para una marca sin `DIAPOS`: el motor los rechaza,
+    y prometerlos hace que el agente los ofrezca y la pieza falle después.
     """
     partes = [ENCABEZADO.strip()]
     for cid, c in sorted(_contratos(pathlib.Path(raiz)).items()):
@@ -377,5 +414,8 @@ def catalogo(raiz, escritas_en_python=()):
         partes.append(
             f"### `{nombre}`\nEscrita en Python — no se edita desde el estudio. "
             f"Ver el SKILL.md.\n")
-    partes.append(CIERRE.strip())
+    cierre = (CIERRE_ANTES + (CARRUSEL if con_carrusel else "") + CIERRE_DESPUES)
+    cierre = cierre.replace(
+        "{codigo}", CODIGO_CON_CARRUSEL if con_carrusel else CODIGO_SIN_CARRUSEL)
+    partes.append(cierre.strip())
     return "\n".join(partes)

@@ -11,14 +11,22 @@
   "telefono_por_defecto": false,
   "regla_telefono": "No lleva teléfono. El llamado a la acción de la marca es «Hablá con Tony» y la web asistime.ai.",
   "quien_es": "Trabajás para Asistime.ai, la plataforma de agentes de IA de LAiB: un negocio crea agentes conversando, y esos agentes atienden por WhatsApp, Instagram, Facebook y TikTok. Le habla a dueños de pymes y emprendedores, no a técnicos. Lo que cada pieza tiene que dejar es alivio: «esto me devuelve tiempo». El tagline es «más tiempo para lo que amas».",
-  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Un solo azul, y el oscuro una vez.** La marca es clara por defecto. El slide oscuro es el del dato que duele —la plantilla `dato`— y va una vez por carrusel como máximo. No uses violeta: el manual viejo lo tenía y las piezas publicadas no.\n\n**4 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.",
+  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Un solo azul, y el oscuro una vez.** La marca es clara por defecto. El slide oscuro es el del dato que duele —la plantilla `dato`— y va salteado: nunca dos veces seguidas en una misma serie. No uses violeta: el manual viejo lo tenía y las piezas publicadas no.\n\n**4 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.",
   "como_habla": "Voseo rioplatense, frases cortas, cálido y concreto. Le hablás a quien tiene un negocio y poco tiempo, así que sin jerga: no decís «orquestación» ni «LLM», decís «un agente que atiende». Sin viñetas para lo que entra en dos renglones.",
   "fotos": {
     "creditos_maximos": 100
   },
   "asistime": {
     "tenant": 1,
-    "_nota": "Asistime ya era el tenant 1 en su propia plataforma desde el 2/3/2026, con su perfil de negocio cargado. El alta lo reusa: crear un segundo «Asistime» partiría la cuenta en dos."
+    "agente": 594,
+    "documento": 860,
+    "catalogo": 861,
+    "clave_env": "ASISTIME_CLAVE_ASISTIME_DISENOS",
+    "clave_secreto": "asistime-api-asistime",
+    "_nota": "Asistime ya era el tenant 1 en su propia plataforma desde el 2/3/2026, con su perfil de negocio cargado. El alta lo reusa: crear un segundo «Asistime» partiría la cuenta en dos.",
+    "_documentos": "`documento` es el manual de marca que edita Asistime. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_agente": "El id del agente queda anotado acá porque esta alta se hizo a mano, sin `alta.json`. Las otras tres marcas no lo tienen y no hace falta que lo tengan: no lo lee ningún script.",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
   },
   "identidad": {
     "colores": {

@@ -35,7 +35,9 @@ Es la pregunta que ordena todo lo demás, y la más cara de equivocar — porque
 | marcan que algo está mal en un reel que **ya les diste** | hay que CORREGIR → `ver_reel` y `retocar_reel` |
 | piden un reel que **no existe**, a partir de una foto, para publicar tal cual | hay que GENERAR la pieza → `crear_reel` — **cuesta** |
 | piden el **video** para editarlo o usarlo después, sin título encima | hay que GENERAR el archivo → `crear_video` — **cuesta** |
-| piden una placa, una story, un carrusel | hay que DISEÑAR → `crear_diseno` |
+| piden una placa, una story, cualquier pieza que no sea video | hay que DISEÑAR → `crear_diseno` |
+
+Qué formatos entran en esa última fila lo dice el **catálogo de plantillas**, no esta tabla: no todas las marcas hacen las mismas piezas.
 
 Si no está claro, **preguntá**. Nunca elijas vos el camino caro y lo cuentes después.
 

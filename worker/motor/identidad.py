@@ -190,5 +190,9 @@ def cargar(archivo_marca) -> types.SimpleNamespace:
     # Las plantillas, todas como datos: no queda ninguna escrita en Python.
     m.PLANTILLAS = _plantillas.cargar(carpeta, m)
     m.ESCRITAS_EN_PYTHON = ()
-    m.CATALOGO = lambda: _plantillas.catalogo(carpeta, ())
+    # El catálogo cuenta lo del carrusel sólo si la marca lo sabe hacer. Una
+    # marca de datos no tiene `DIAPOS` salvo que su `marca.py` lo agregue al
+    # lado del `cargar`, así que se mira sobre el módulo ya armado y no acá.
+    m.CATALOGO = lambda: _plantillas.catalogo(
+        carpeta, (), con_carrusel=hasattr(m, "DIAPOS"))
     return m

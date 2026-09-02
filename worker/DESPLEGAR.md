@@ -204,6 +204,25 @@ Es lo que le cuenta al agente qué plantillas existen. Es idempotente: si el
 catálogo no cambió, no escribe una versión nueva. **Conviene dejarlo al final
 de `desplegar-chat.sh`** para no tener que acordarse.
 
+### Y el prompt, para las marcas que lo generan del repo
+
+```bash
+ASISTIME_CLAVE_ASISTIME_DISENOS=… python3 herramientas/publicar-prompt.py asistime-disenos
+```
+
+Mismo criterio y mismas garantías que el catálogo: idempotente, y con
+`--probar` muestra el diff sin escribir.
+
+**Sólo corre para la marca que declara `asistime.agente` en su `marca.json`.**
+Hoy es Asistime y nadie más. Boss, Clínica y Stadium tienen el prompt escrito
+a mano en el panel de Asistime, con cosas que este repo no sabe: publicarles
+el generado se las borraría, así que el script se niega antes de tocar nada.
+
+Existe porque `alta.py` sabía crear un agente pero no actualizarlo, y eso
+alcanzaba mientras el prompt se escribía una sola vez. El 2/9/2026 cambió
+`alta/prompt-disenador.md` —prometía carruseles a marcas que no los saben
+hacer— y no había forma de bajar el arreglo al agente que ya existía.
+
 ---
 
 ## Verificar que quedó andando

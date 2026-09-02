@@ -2,7 +2,7 @@
   "id": "cierre",
   "nombre": "Cierre",
   "descripcion": "el llamado a la acción: «Hablá con Tony», el logo y la web",
-  "cuando_usarla": "Al final de un carrusel, o como placa suelta cuando la pieza ES el llamado a la acción. Siempre con el botón «Hablá con Tony». Tony aparece acá —es el alivio, va en los cierres y en las soluciones, nunca en los problemas— si le pasás una imagen suya en `tony`; sin imagen, el cierre sale igual de bien con el logo.",
+  "cuando_usarla": "Cuando la pieza ES el llamado a la acción, o para cerrar una serie de placas. Siempre con el botón «Hablá con Tony». Tony aparece acá —es el alivio, va en los cierres y en las soluciones, nunca en los problemas— si le pasás una imagen suya en `tony`; sin imagen, el cierre sale igual de bien con el logo.",
   "acento_por_defecto": "azul",
   "medidas": {
     "post":  {"alto": 1080, "pad": 80, "titulo": 88,  "bajada": 34, "boton": 32, "iso": 0.9,  "logo": 0.8,  "tony": 0.52, "legal": 20},

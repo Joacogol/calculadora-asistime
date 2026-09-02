@@ -2,7 +2,7 @@
   "id": "titular",
   "nombre": "Titular",
   "descripcion": "un claim grande, con o sin foto; la pieza de todos los días",
-  "cuando_usarla": "Para casi todo: un beneficio, una idea, la apertura de un carrusel, una placa suelta. Sobre fondo claro por defecto —que es como se ve la marca—, o sobre una foto con un velo medido. `destacado` pinta de azul UNA palabra o frase del título: usalo para la que importa, no para dos. Si lo que manda es un número, usá `dato`; si es el cierre con el llamado a la acción, `cierre`.",
+  "cuando_usarla": "Para casi todo: un beneficio, una idea, la apertura de una serie, una placa suelta. Sobre fondo claro por defecto —que es como se ve la marca—, o sobre una foto con un velo medido. `destacado` pinta de azul UNA palabra o frase del título: usalo para la que importa, no para dos. Si lo que manda es un número, usá `dato`; si es el cierre con el llamado a la acción, `cierre`.",
   "acento_por_defecto": "azul",
   "medidas": {
     "post":  {"alto": 1080, "pad": 80, "titulo": 92,  "kicker": 24, "bajada": 34, "boton": 30, "iso": 0.9,  "legal": 20},
