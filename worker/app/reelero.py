@@ -1679,6 +1679,11 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 # escribe algo legible en vez de pegar URLs firmadas.
                 nombres = _bajar_clips(clips, material)
                 guion = _renombrar(guion, nombres)
+                # El hook lo escribe el sistema si nadie lo trajo. La tool manda
+                # `hook` sólo cuando la persona dijo una frase; sin ese default el
+                # reel salía sin gancho aunque el prompt prometiera que se escribía.
+                if not str(guion.get("hook") or "").strip():
+                    guion = {**guion, "hook": "auto"}
                 # El encuadre lo declara la marca; el guion puede pisarlo.
                 enc = getattr(marca_mod, "ENCUADRE_REEL", "") if marca_mod else ""
                 if enc and "encuadre" not in guion:
@@ -1836,10 +1841,16 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     abrir el log.
     """
     from motor import mirar as mmirar
-    instruccion = str(guion.get("instruccion") or fila.get("mensaje") or "").strip()
-    objetivo = float(guion.get("duracion_objetivo") or OBJETIVO_POR_DEFECTO)
+    # Con instrucción propia se usa ésa; sin ella, el mensaje del pedido más un
+    # encargo editorial estándar. Antes, sin instrucción no se llamaba a nadie:
+    # el 2/9/2026 se decidió que Gemini mira SIEMPRE que haya con qué —lo que
+    # cambia según el largo es la pregunta (limpiar o elegir), no si se hace.
+    instruccion = str(guion.get("instruccion") or "").strip()
     if not instruccion:
-        return guion, ""
+        instruccion = ("Armá el mejor reel posible con este material"
+                       + (f". Pedido: «{str(fila.get('mensaje')).strip()}»" if fila.get("mensaje") else "")
+                       + ". Mantené las frases enteras y sacá lo que no aporta.")
+    objetivo = float(guion.get("duracion_objetivo") or OBJETIVO_POR_DEFECTO)
     if not mmirar.disponible():
         return guion, ""                     # sin clave no es un error: es como hasta hoy
     archivos = []
@@ -1856,8 +1867,8 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     except Exception as e:                                   # noqa: BLE001
         log.warning("no pude medir el material antes de mirarlo: %s", e)
         total = 0.0
-    if total and total <= objetivo * 1.1:
-        return guion, ""                     # entra entero: no hay nada que elegir
+    if total and total < mmirar.MATERIAL_MINIMO:
+        return guion, ""                     # unos segundos: no hay nada que cortar
     try:
         r = mmirar.elegir_tramos(archivos, instruccion, objetivo, carpeta=material / "_mirar")
     except mmirar.NoPudeMirar as e:

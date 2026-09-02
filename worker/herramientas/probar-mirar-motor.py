@@ -56,6 +56,9 @@ q = m.pregunta("lo más fuerte sobre IA", 60, pedazos)
 ok("lo más fuerte sobre IA" in q and "60 segundos" in q, "instrucción y objetivo")
 ok("archivo 1" in q and "en 2 partes" in q and "archivo 2" in q, "archivos numerados con sus partes", q[:400])
 ok('"archivo": 1' in q and "SOLAMENTE" in q, "pide JSON y nada más")
+ok("ELEGIR" in q and "LIMPIAR" not in q, "material largo → modo elegir")
+q_corto = m.pregunta("x", 60, pedazos[2:])          # corto.mp4 dura 40 s
+ok("LIMPIAR" in q_corto and "ELEGIR" not in q_corto, "material que entra → modo limpiar", q_corto[:300])
 q1 = m.pregunta("x", 30, pedazos[2:])
 ok("partes" not in q1.lower().replace("apartes", ""), "sin partes no habla de partes")
 

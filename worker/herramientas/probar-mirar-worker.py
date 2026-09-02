@@ -45,20 +45,35 @@ try:
     mmirar.elegir_tramos = _elegir_ok
     mmirar.disponible = lambda: True
 
-    print("\n■ Sin instrucción no se llama a nadie")
+    print("\n■ Sin instrucción ni mensaje: se mira igual, con el encargo estándar")
     g, nota = reelero._mirar_si_hace_falta({}, {"mensaje": ""}, CLIPS, NOMBRES, tmp)
-    ok(g == {} and nota == "" and not llamadas, "guion intacto, sin nota, sin llamada")
+    ok(llamadas and "mejor reel" in llamadas[-1][1] and "Pedido" not in llamadas[-1][1],
+       "se llama con la instrucción estándar, sin un «Pedido» vacío", llamadas[-1][1] if llamadas else None)
+    llamadas.clear()
 
-    print("\n■ Sin clave tampoco, y no es un error")
+    print("\n■ Sin clave no se llama a nadie, y no es un error")
     mmirar.disponible = lambda: False
     g, nota = reelero._mirar_si_hace_falta({"instruccion": "lo más fuerte"}, {}, CLIPS, NOMBRES, tmp)
     ok(g == {"instruccion": "lo más fuerte"} and nota == "" and not llamadas, "sigue como hasta hoy, callado")
     mmirar.disponible = lambda: True
 
-    print("\n■ Material que ya entra entero: nada que elegir")
+    print("\n■ Material que entra entero: se mira igual, para LIMPIAR")
     g, nota = reelero._mirar_si_hace_falta({"instruccion": "x", "duracion_objetivo": 30},
                                           {}, CLIPS[1:], NOMBRES, tmp)
-    ok(nota == "" and not llamadas, "20 s para un reel de 30: no se llama", (nota, llamadas))
+    ok(llamadas and llamadas[-1][0] == ["corto.mp4"], "20 s para un reel de 30: se llama igual", llamadas)
+    llamadas.clear()
+
+    print("\n■ Sin instrucción: se arma una con el mensaje del pedido")
+    g, nota = reelero._mirar_si_hace_falta({}, {"mensaje": "reel del webinar"}, CLIPS[1:], NOMBRES, tmp)
+    ok(llamadas and "reel del webinar" in llamadas[-1][1] and "mejor reel" in llamadas[-1][1],
+       "instrucción estándar + el mensaje", llamadas[-1][1] if llamadas else None)
+    llamadas.clear()
+
+    print("\n■ Unos segundos de material: no hay nada que cortar")
+    DURACIONES["corto.mp4"] = 5.0
+    g, nota = reelero._mirar_si_hace_falta({"instruccion": "x"}, {}, CLIPS[1:], NOMBRES, tmp)
+    ok(nota == "" and not llamadas, "5 s: no se llama", (nota, llamadas))
+    DURACIONES["corto.mp4"] = 20.0
 
     print("\n■ Material largo con instrucción: Gemini elige")
     g, nota = reelero._mirar_si_hace_falta({"instruccion": "lo más fuerte sobre IA", "hook": ""},
@@ -73,7 +88,7 @@ try:
     print("\n■ La instrucción sale del mensaje si el guion no la trae; el hook escrito manda")
     g, nota = reelero._mirar_si_hace_falta({"hook": "Mi frase", "duracion_objetivo": 45},
                                           {"mensaje": "un reel sobre IA"}, CLIPS, NOMBRES, tmp)
-    ok(llamadas[-1][1] == "un reel sobre IA" and llamadas[-1][2] == 45.0, "mensaje como instrucción, 45 s", llamadas[-1])
+    ok("«un reel sobre IA»" in llamadas[-1][1] and llamadas[-1][2] == 45.0, "el mensaje entra en la instrucción, 45 s", llamadas[-1])
     ok(g["hook"] == "Mi frase", "no pisa un hook escrito a mano")
 
     print("\n■ Gemini falla: el guion queda como estaba y la nota lo dice")

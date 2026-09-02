@@ -62,10 +62,11 @@ Una charla, una entrevista, una grabación de más de un minuto: ahí el reel no
 - **`instruccion`**: qué tiene que rescatar el reel, como se lo dirías a un editor. «La idea más fuerte sobre IA aplicada al real estate, que se entienda sin contexto.» «Los tres momentos donde explica cómo funciona Tony.» Cuanto más concreta, mejor elige.
 - **`duracion`**: cuánto tiene que durar, en segundos. «Un minuto» es 60; «cortito» es 30. Si no dijeron nada, 60.
 
-Con eso, el sistema **mira el video entero**, elige los tramos que responden a la instrucción, y arma el reel con ellos. Tarda unos minutos más que un clip corto. Si el material es corto y entra entero, no hace falta mandar nada de esto.
+Con eso, el sistema **mira el video entero**, elige los tramos que responden a la instrucción, y arma el reel con ellos. Tarda unos minutos más que un clip corto. Si el material es corto y entra entero, la instrucción es opcional: el sistema lo mira igual y sólo le saca lo que no aporta.
 
 ### Qué hace solo
 
+- **Mira el material** antes de cortar: si entra entero en el reel, lo limpia (arranques falsos, muletillas, silencios largos) sin tirar contenido; si no entra, elige los tramos que responden a la instrucción.
 - Pega los clips **en el orden en que se grabaron** y los pasa a 9:16 **siguiendo a las personas**: en un primer plano se centra en la cara; si hay dos personas, se abre para que entren las dos.
 - **Saca los tiempos muertos** midiendo dónde se apagó la voz.
 - **Escribe los subtítulos con lo que se dice**, en la tipografía de {{NOMBRE}}.

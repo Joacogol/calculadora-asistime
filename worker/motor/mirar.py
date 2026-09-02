@@ -195,6 +195,10 @@ def preparar(archivos: list[Path], carpeta: Path) -> list[dict]:
 
 # ═══ La pregunta y la respuesta ═════════════════════════════════════════════
 
+#: Material más corto que esto no se le pregunta a nadie: no hay qué cortar.
+MATERIAL_MINIMO = 8.0
+
+
 def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
     archivos: dict[int, tuple[str, float, int]] = {}
     for p in pedazos:
@@ -204,6 +208,7 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
         f"- archivo {i} («{n}», {d / 60:.1f} min" + (f", en {c} partes consecutivas" if c > 1 else "") + ")"
         for i, (n, d, c) in sorted(archivos.items()))
     en_partes = any(c > 1 for _, _, c in archivos.values())
+    total = sum(d for _, d, _ in archivos.values())
     return (
         "Sos el editor de un reel vertical para Instagram.\n\n"
         f"INSTRUCCIÓN DE QUIEN PIDE EL REEL: «{instruccion.strip()}»\n\n"
@@ -211,7 +216,17 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
         f"El material son estos videos, numerados:\n{lista}\n\n"
         + ("Cuando un archivo viene en partes, cada tramo tiene que decir `parte` y sus tiempos "
            "son DENTRO de esa parte.\n\n" if en_partes else "")
-        + "Elegí los tramos EXACTOS que entran, en el orden en que deberían aparecer. Cada tramo "
+        # Dos trabajos distintos según cuánto material hay, y se le dice cuál:
+        # si entra entero, LIMPIAR sin tirar contenido; si no entra, ELEGIR.
+        # Sin esta distinción, con un clip de 36 segundos para un reel de 60
+        # el modelo «elegía» igual y dejaba afuera cosas que la persona quería.
+        + ("El material ENTRA ENTERO en el reel. Tu trabajo no es elegir sino LIMPIAR: sacá "
+           "sólo lo que no aporta —arranques falsos, muletillas, errores, silencios largos, "
+           "el «bueno, a ver» del principio, la despedida cortada del final— y dejá todo el "
+           "contenido de fondo. Si está todo bien, devolvé un solo tramo con el video entero.\n\n"
+           if total <= objetivo * 1.1 else
+           "El material NO entra en el reel: hay que ELEGIR. ")
+        + "Devolvé los tramos EXACTOS que entran, en el orden en que deberían aparecer. Cada tramo "
           "empieza y termina donde el corte no deja una frase a la mitad. Preferí pocos tramos y "
           "buenos a muchos y cortos; ninguno de menos de 2 segundos.\n\n"
           "Contestá SOLAMENTE con este JSON, sin texto antes ni después:\n"
