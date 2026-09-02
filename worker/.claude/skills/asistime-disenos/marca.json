@@ -172,7 +172,7 @@
       "fuente_cromo": "'Sora',sans-serif",
       "fuente_texto": "'DM Sans',sans-serif"
     },
-    "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas. En los videos se habla de Claude, Claude Cowork y Anthropic; de ChatGPT y OpenAI; de Gemini y Google; de Copilot, Cursor y Perplexity. También de agentes de IA, prompts, tokens y de la singularidad.",
+    "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas. En los videos se habla de Claude, Claude Cowork y Anthropic; de ChatGPT y OpenAI; de Gemini y Google; de Sam Altman, Dario Amodei y Elon Musk; de Copilot, Cursor y Perplexity. También de agentes de IA, prompts, tokens y de la singularidad.",
     "_vocabulario": "Lo que Whisper lee ANTES de escuchar, en prosa y con signos. El 2/9/2026 transcribió «Cloud Cowork» donde decían «Claude Cowork»: los nombres de los productos de IA no estaban, y Asistime habla de eso todo el tiempo."
   },
   "_sedes": "Asistime no tiene locales, así que tiene una sola sede que es la marca entera. Igual va como diccionario `nombre → {contacto, acento}`: la forma la fija el motor. Escrita como lista —así estuvo el 2/9/2026— el diseño muere con «'list' object has no attribute 'get'», cuatro minutos después de pedirlo y sin decir de qué marca ni de qué campo habla.",
