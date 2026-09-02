@@ -315,6 +315,16 @@ def main() -> int:
             ent = entrada_video(modo, youtube=args.youtube, desde=desde, hasta=hasta)
             print(f"  processing = {json.dumps(ent['processing'])}", flush=True)
             r = _preguntar_entradas(k, [{"type": "text", "text": texto_pregunta}, ent], args.modelo)
+            # El 2/9/2026 la API rechazó el objeto con offsets («Invalid input
+            # at input[1].processing»): la doc era ambigua y la forma que
+            # armamos no es la suya. En vez de perder la corrida, se vuelve a
+            # pedir en la forma simple y el rango va en la instrucción, como
+            # en agéntico. La validación de después dice si lo respetó.
+            if r.get("codigo") == 400 and "processing" in (r.get("error") or "") \
+                    and isinstance(ent.get("processing"), dict):
+                print("  la API no aceptó el rango como campo; lo pido en la instrucción", flush=True)
+                ent["processing"] = modo
+                r = _preguntar_entradas(k, [{"type": "text", "text": texto_pregunta}, ent], args.modelo)
         elif len(partes) == 1:
             r = gem.con_paciencia(k, partes[0]["bytes"], "video/mp4", texto_pregunta, modo, args.modelo)
         else:
