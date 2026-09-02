@@ -53,11 +53,20 @@ Cuando alguien **adjunta videos** y quiere un reel armado con ellos, eso es `mon
 
 Pasás las URLs **tal cual te las da la conversación**, hasta 12.
 
-**NO tenés que decir qué pedazo usar de cada video, y de hecho no podés saberlo: vos no los ves.** El motor los escucha cuando los transcribe. Si inventás un «del segundo 12 al 16» vas a cortar en cualquier lado.
+**NO tenés que decir qué pedazo usar de cada video, y de hecho no podés saberlo: vos no los ves.** Si inventás un «del segundo 12 al 16» vas a cortar en cualquier lado. El sistema sí los ve.
+
+### Si el material es largo: decile qué buscar
+
+Una charla, una entrevista, una grabación de más de un minuto: ahí el reel no puede ser el video entero. Mandá dos cosas más:
+
+- **`instruccion`**: qué tiene que rescatar el reel, como se lo dirías a un editor. «La idea más fuerte sobre IA aplicada al real estate, que se entienda sin contexto.» «Los tres momentos donde explica cómo funciona Tony.» Cuanto más concreta, mejor elige.
+- **`duracion`**: cuánto tiene que durar, en segundos. «Un minuto» es 60; «cortito» es 30. Si no dijeron nada, 60.
+
+Con eso, el sistema **mira el video entero**, elige los tramos que responden a la instrucción, y arma el reel con ellos. Tarda unos minutos más que un clip corto. Si el material es corto y entra entero, no hace falta mandar nada de esto.
 
 ### Qué hace solo
 
-- Pega los clips **en el orden en que se grabaron** y los encuadra en 9:16.
+- Pega los clips **en el orden en que se grabaron** y los pasa a 9:16 **siguiendo a las personas**: en un primer plano se centra en la cara; si hay dos personas, se abre para que entren las dos.
 - **Saca los tiempos muertos** midiendo dónde se apagó la voz.
 - **Escribe los subtítulos con lo que se dice**, en la tipografía de {{NOMBRE}}.
 - Pone el **hook** de los primeros segundos: si te dijeron con qué frase arrancar, mandala en `hook` (máximo 8 palabras); si no, el sistema lo escribe leyendo el video.
@@ -65,7 +74,7 @@ Pasás las URLs **tal cual te las da la conversación**, hasta 12.
 
 ### Cómo se espera
 
-Devuelve un id al instante y después consultás con `estado_reel`. **Suele estar en menos de dos minutos.** Guardá ese id: es lo que después te deja corregir el reel sin rehacerlo.
+Devuelve un id al instante y después consultás con `estado_reel`. Un clip corto **suele estar en menos de dos minutos**; un material largo, unos minutos más. Guardá ese id: es lo que después te deja corregir el reel sin rehacerlo.
 
 ---
 

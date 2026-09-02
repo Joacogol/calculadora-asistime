@@ -62,6 +62,13 @@ están:
 | `retocar_reel` | 2144 | 2151 | 2155 |
 | `estado_reel` | ya existía | 2076 | 2152 |
 
+Asistime (tenant 1, agente 594) las tiene desde el 2/9/2026: `montar_reel`
+**2189** (la versión nueva, con `instruccion` y `duracion`: ver
+`montar_reel-asistime.js`), `ver_reel` 2187, `retocar_reel` 2188 y
+`estado_reel` 2177. Es el primer cliente con Gemini eligiendo los tramos y
+con el encuadre por caras; los demás se emparejan copiando la tool nueva con
+su URL y su clave.
+
 `estado_reel-stadium.js` sí está copiado porque **no es el mismo código**.
 Stadium es el único cliente con las dos formas de hacer un reel: `crear_reel`,
 que lo genera una IA a partir de una foto —cinco minutos, gasta créditos, puede
