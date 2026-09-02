@@ -61,7 +61,12 @@ TIMEOUT = 180
 
 #: Los tres que soportan el modo agéntico, del anuncio del 1/9/2026. El
 #: `3.8-flash` que aparece en los ejemplos de la doc NO está en esa lista.
-MODELO = "gemini-3.7-flash"
+#:
+#: Se pueden probar los tres porque no tienen por qué estar saturados a la
+#: vez: el 2/9/2026, un día después del anuncio, `3.7-flash` contestaba 503
+#: por demanda. El primero es el de mejor calidad y el último el más liviano.
+MODELOS = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite")
+MODELO = MODELOS[0]
 
 #: Inline aguanta 100 MB; un reel de 30 segundos pesa entre 3 y 15. Por encima
 #: de eso habría que subirlo por la Files API, y para una medición no vale la
@@ -146,9 +151,9 @@ def ultimo_reel(marca: str) -> str:
 
 
 def preguntar(clave: str, video: bytes, mime: str, pregunta: str,
-              modo: str) -> dict:
+              modo: str, modelo: str = MODELO) -> dict:
     cuerpo = {
-        "model": MODELO,
+        "model": modelo,
         "input": [
             {"type": "text", "text": pregunta},
             {"type": "video",
@@ -168,8 +173,34 @@ def preguntar(clave: str, video: bytes, mime: str, pregunta: str,
             datos = json.load(r)
     except urllib.error.HTTPError as e:
         return {"error": f"HTTP {e.code}: {e.read()[:400].decode(errors='replace')}",
+                "codigo": e.code,
+                "segundos": round(time.time() - arranque, 1)}
+    except TimeoutError:
+        return {"error": f"no contestó en {TIMEOUT} s", "codigo": 504,
                 "segundos": round(time.time() - arranque, 1)}
     return {"datos": datos, "segundos": round(time.time() - arranque, 1)}
+
+
+def con_paciencia(clave, video, mime, pregunta, modo, modelo, intentos=4):
+    """Lo mismo, pero aguantando que Google esté saturado.
+
+    Un 503 «high demand» no es un error de este lado y no tiene sentido
+    tratarlo como uno: el 2/9/2026, un día después del anuncio, era lo que
+    contestaba `3.7-flash` la mitad de las veces. Se espera y se vuelve, con
+    la espera doblándose: 15, 30, 60 segundos.
+    """
+    espera = 15
+    for intento in range(1, intentos + 1):
+        r = preguntar(clave, video, mime, pregunta, modo, modelo)
+        if r.get("codigo") not in (503, 504, 429):
+            return r
+        if intento == intentos:
+            return r
+        print(f"  Google saturado ({r.get('codigo')}). Espero {espera} s y "
+              f"vuelvo (intento {intento + 1} de {intentos})…", flush=True)
+        time.sleep(espera)
+        espera *= 2
+    return r
 
 
 def texto_de(datos: dict) -> str:
@@ -203,7 +234,7 @@ def tokens_de(datos: dict) -> str:
     return "sin datos de tokens"
 
 
-def sondear(clave: str) -> int:
+def sondear(clave: str, modelo: str = MODELO) -> int:
     """¿Anda la clave, el endpoint y la forma del cuerpo? Sin subir un video.
 
     Existe porque la primera corrida se colgó subiendo 9 MB sin que nadie
@@ -217,29 +248,47 @@ def sondear(clave: str) -> int:
     """
     intentos = [
         ("interactions", API,
-         {"model": MODELO,
+         {"model": modelo,
           "input": [{"type": "text", "text": "Contestá sólo: ok"}]}),
-        ("generateContent", f"{BASE}/models/{MODELO}:generateContent",
+        ("generateContent", f"{BASE}/models/{modelo}:generateContent",
          {"contents": [{"parts": [{"text": "Contestá sólo: ok"}]}]}),
     ]
-    andan = []
+    andan, codigos = [], []
     for nombre, url, cuerpo in intentos:
         pedido = urllib.request.Request(
             url, data=json.dumps(cuerpo).encode(),
             headers={"Content-Type": "application/json", "x-goog-api-key": clave})
         try:
-            with urllib.request.urlopen(pedido, timeout=60) as r:
+            with urllib.request.urlopen(pedido, timeout=45) as r:
                 datos = json.load(r)
             print(f"  ✓ {nombre}: {texto_de(datos)[:80]}")
             andan.append(nombre)
         except urllib.error.HTTPError as e:
             cuerpo_error = e.read()[:300].decode(errors="replace")
+            codigos.append(e.code)
             print(f"  ✗ {nombre}: HTTP {e.code} · {cuerpo_error}")
+        except TimeoutError:
+            codigos.append(504)
+            print(f"  ✗ {nombre}: no contestó a tiempo (suele ser saturación)")
         except Exception as e:                                   # noqa: BLE001
             print(f"  ✗ {nombre}: {type(e).__name__}: {e}")
     if not andan:
-        print("\nNinguna de las dos formas anduvo. El problema es la clave o el "
-              "modelo, no el video.")
+        # El código importa más que el hecho de fallar, y decirlo mal manda a
+        # buscar el problema donde no está. Este mensaje decía «el problema es
+        # la clave o el modelo» ante un 503, que significa exactamente lo
+        # contrario: la clave sirve, el modelo existe, y Google está saturado.
+        if any(c in (503, 429) for c in codigos):
+            print("\nLa clave ANDA y el modelo existe — un 503 sale después de "
+                  "autenticar. Google está saturado, que es lo que pasa con un "
+                  "modelo anunciado ayer.\nProbá de nuevo en un rato, o con otro: "
+                  "--modelo gemini-3.6-flash")
+        elif 400 in codigos or 403 in codigos:
+            print("\nEs la clave: revisala en aistudio.google.com.")
+        elif 404 in codigos:
+            print(f"\nEse modelo no existe para esta clave. Probá otro de: "
+                  f"{', '.join(MODELOS)}")
+        else:
+            print("\nNinguna de las dos formas anduvo. Mirá el mensaje de arriba.")
         return 1
     print(f"\nAnda: {', '.join(andan)}. Ahora sí tiene sentido probar con video.")
     return 0
@@ -252,6 +301,8 @@ def main() -> int:
     g.add_argument("--url", help="un mp4 por URL o una ruta local")
     g.add_argument("--probar", action="store_true",
                    help="sólo comprueba la clave y la forma de la API, sin video")
+    p.add_argument("--modelo", default=MODELO, choices=MODELOS,
+                   help="si uno está saturado, probá otro")
     p.add_argument("--modo", choices=("agentic", "static", "ambos"),
                    default="ambos")
     p.add_argument("--pregunta", choices=(*PREGUNTAS, "todas"), default="todas")
@@ -266,7 +317,7 @@ def main() -> int:
             '  read -rs -p "clave: " K; export GEMINI_CLAVE="$K"; unset K')
 
     if args.probar:
-        return sondear(clave)
+        return sondear(clave, args.modelo)
 
     url = args.url or ultimo_reel(args.marca)
     print(f"  bajando {url[:90]}…")
@@ -284,7 +335,8 @@ def main() -> int:
     for nombre in cuales:
         for modo in modos:
             print(f"\n{'═' * 70}\n  {nombre.upper()} · {modo}\n{'═' * 70}")
-            r = preguntar(clave, video, "video/mp4", PREGUNTAS[nombre], modo)
+            r = con_paciencia(clave, video, "video/mp4",
+                              PREGUNTAS[nombre], modo, args.modelo)
             if "error" in r:
                 print(f"  ✗ {r['error']}  ({r['segundos']} s)")
                 continue
