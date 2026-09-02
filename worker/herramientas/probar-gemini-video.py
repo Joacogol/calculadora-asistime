@@ -99,12 +99,26 @@ def ultimo_reel(marca: str) -> str:
     Se saca del registro y no de un argumento para que la medición corra sobre
     una pieza REAL, publicada, y no sobre un video elegido para que salga bien.
     """
-    from app import registro
-    lista = registro.leer()
+    # Por `gcloud`, no por la variable de entorno. `app.registro.leer()` lee
+    # `CLIENTES_REGISTRO`, que existe en Cloud Run porque Cloud Run monta el
+    # secreto ahí — pero este script corre en Cloud Shell, donde esa variable
+    # no está y la única forma de ver el registro es pedírselo a Secret
+    # Manager. Leyéndolo mal, el mensaje era «no hay registro de clientes»
+    # justo estando parado en la máquina donde sí está.
+    import importlib.util
+    ruta = RAIZ / "herramientas" / "registro.py"
+    spec = importlib.util.spec_from_file_location("registro_cli", ruta)
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    try:
+        lista = cli.bajar()
+    except FileNotFoundError:                                 # no hay gcloud
+        lista = []
     if not lista:
         raise SystemExit(
-            "no hay registro de clientes. Corré esto en Cloud Shell, o pasá "
-            "--url con el link de un reel.")
+            "no pude leer el registro de clientes con gcloud. Corré esto en "
+            "Cloud Shell con sesión iniciada, o pasá --url con el link de un "
+            "reel.")
     cliente = next((c for c in lista if c["marca"] == marca), None)
     if not cliente:
         raise SystemExit(
