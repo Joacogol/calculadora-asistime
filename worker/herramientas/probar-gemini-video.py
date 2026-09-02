@@ -169,7 +169,7 @@ def preguntar(clave: str, video: bytes, mime: str, pregunta: str,
     print(f"  subiendo {len(cuerpo['input'][1]['data']) / 1e6:.1f} MB y esperando "
           f"(hasta {TIMEOUT} s)…", flush=True)
     try:
-        with urllib.request.urlopen(pedido, TIMEOUT) as r:
+        with urllib.request.urlopen(pedido, timeout=TIMEOUT) as r:
             datos = json.load(r)
     except urllib.error.HTTPError as e:
         return {"error": f"HTTP {e.code}: {e.read()[:400].decode(errors='replace')}",
