@@ -205,12 +205,18 @@ def con_paciencia(clave, video, mime, pregunta, modo, modelo, intentos=4):
 
 
 def texto_de(datos: dict) -> str:
-    """El texto de la respuesta, sin depender de una sola forma.
+    """El texto de la respuesta, venga en la forma que venga.
 
-    La API está cambiando —los ejemplos de la doc y el anuncio no coinciden ni
-    en el nombre del modelo— así que se buscan las formas conocidas y, si
-    ninguna sirve, se devuelve el JSON crudo en vez de un texto vacío que
-    parecería «no contestó nada».
+    Se buscan primero los caminos conocidos y, si ninguno sirve, se recorre el
+    JSON entero juntando lo que haya bajo una clave de texto. No es elegancia:
+    es que las dos formas de esta API no coinciden ni en el nombre del modelo,
+    y una devolvió `{"id": "v1_Ch…"}` donde se esperaba una cadena. Frente a
+    eso, adivinar un camino fijo es apostar.
+
+    Y si tampoco así aparece, se devuelve el ESQUELETO del JSON —las claves,
+    sin los valores largos— en vez del JSON entero. Un volcado de miles de
+    caracteres en la terminal no se lee; una lista de claves dice enseguida
+    dónde mirar.
     """
     for camino in (("output_text",), ("text",),
                    ("output", 0, "content", 0, "text"),
@@ -223,7 +229,38 @@ def texto_de(datos: dict) -> str:
                 return v
         except (KeyError, IndexError, TypeError):
             continue
-    return json.dumps(datos, ensure_ascii=False)[:2000]
+
+    juntado: list[str] = []
+
+    def recorrer(nodo, clave=""):
+        if isinstance(nodo, str):
+            if clave in ("text", "output_text", "content") and nodo.strip():
+                juntado.append(nodo)
+        elif isinstance(nodo, dict):
+            for k, v in nodo.items():
+                recorrer(v, k)
+        elif isinstance(nodo, list):
+            for v in nodo:
+                recorrer(v, clave)
+
+    recorrer(datos)
+    if juntado:
+        return "\n".join(juntado)
+    return "(no encontré el texto) esqueleto: " + esqueleto(datos)
+
+
+def esqueleto(nodo, nivel=0) -> str:
+    """Las claves de un JSON, sin los valores largos. Para saber dónde mirar."""
+    if nivel > 3:
+        return "…"
+    if isinstance(nodo, dict):
+        return "{" + ", ".join(f"{k}: {esqueleto(v, nivel + 1)}"
+                               for k, v in list(nodo.items())[:12]) + "}"
+    if isinstance(nodo, list):
+        return f"[{len(nodo)}× {esqueleto(nodo[0], nivel + 1) if nodo else ''}]"
+    if isinstance(nodo, str):
+        return f'"{nodo[:40]}…"' if len(nodo) > 40 else f'"{nodo}"'
+    return type(nodo).__name__
 
 
 def tokens_de(datos: dict) -> str:
