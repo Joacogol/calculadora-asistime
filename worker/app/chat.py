@@ -247,9 +247,22 @@ async def ciclo():
     plantillas.limpiar()
     hechos = subidos = plantillas_nuevas = propuestas = reels = fotos = 0
     for datos in config.clientes():
-        cli = Cliente(**datos)
+        # Sólo lo que `Cliente` entiende. El registro trae además la clave de
+        # Asistime, que la lee `manual.py` por su cuenta.
+        cli = Cliente(marca=datos["marca"], url=datos["url"], key=datos["key"],
+                      bucket=datos.get("bucket", "disenos"),
+                      nombre=datos.get("nombre", ""))
         if not cli.configurado:
             log.warning("[%s] sin URL o sin clave: lo salteo", cli.marca)
+            continue
+        # Un cliente puede estar en el registro antes de que su marca esté en
+        # la imagen —el registro se actualiza en un minuto, la imagen en un
+        # despliegue—. Se saltea con aviso y no rompe la corrida de los demás:
+        # ese es todo el sentido de que el registro sea aparte.
+        if not (config.RAIZ / ".claude/skills" / cli.marca / "marca.py").exists():
+            log.warning("[%s] está en el registro pero su carpeta de marca no "
+                        "está en esta imagen: lo salteo hasta el próximo "
+                        "despliegue", cli.marca)
             continue
         try:
             hechos += await atender(cli)
@@ -329,8 +342,8 @@ async def main():
     lista = config.clientes()
     listos = [c for c in lista if c["url"] and c["key"]]
     if not listos:
-        log.error("ningún cliente configurado: revisá CLIENTES, o "
-                  "SUPABASE_URL y SUPABASE_KEY")
+        log.error("ningún cliente configurado: revisá CLIENTES_REGISTRO, "
+                  "CLIENTES, o SUPABASE_URL y SUPABASE_KEY")
         sys.exit(1)
 
     for c in lista:

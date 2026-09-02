@@ -48,7 +48,23 @@ MARCA_UNICA = os.environ.get("MARCA", "boss-padel-disenos")
 
 
 def clientes() -> list[dict]:
-    """La lista de clientes, con la clave de cada uno ya resuelta."""
+    """La lista de clientes, con la clave de cada uno ya resuelta.
+
+    Tres formas de decirle al worker a quién atender, y se prueban en este
+    orden:
+
+      1. `CLIENTES_REGISTRO` — un solo secreto con todos, leído en cada corrida.
+         Es el camino nuevo (2/9/2026) y el único que permite sumar un cliente
+         sin redesplegar. Ver `app/registro.py`.
+      2. `CLIENTES` + un secreto por cliente — el camino anterior. Sigue
+         andando tal cual para el despliegue que ya está.
+      3. `SUPABASE_URL` + `SUPABASE_KEY` — un solo cliente, el más viejo.
+    """
+    from . import registro
+    del_registro = registro.leer()          # levanta si está y está mal
+    if del_registro is not None:
+        return del_registro
+
     crudo = os.environ.get("CLIENTES", "").strip()
     if not crudo:
         return [{"marca": MARCA_UNICA, "url": SUPABASE_URL,

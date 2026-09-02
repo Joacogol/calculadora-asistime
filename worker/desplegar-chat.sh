@@ -22,10 +22,32 @@ if [ "$(gcloud config get-value project 2>/dev/null)" != "$PROYECTO" ]; then
   gcloud config set project "$PROYECTO" --quiet
 fi
 
-CLIENTES_JSON=$(python3 clientes.py json)
-SECRETOS_RUN=$(python3 clientes.py run-secrets)
-MARCAS=$(python3 clientes.py marcas)
-FALTANTES=$(python3 clientes.py faltantes)
+# ── De dónde sale la lista de clientes ───────────────────────────────────
+#
+# Dos caminos, y el script elige solo:
+#
+#   · Si existe el secreto `clientes-registro`, ÉSE manda. El worker lo lee en
+#     cada corrida, así que sumar un cliente es `python3 herramientas/registro.py
+#     agregar` y nada más: este script no hace falta para eso. Acá sólo se
+#     monta el secreto y se pregunta qué marcas hay, para decidir si pedir la
+#     clave de Magnific. Ver `app/registro.py`.
+#   · Si no existe, es el camino anterior: `clientes.json` más un secreto por
+#     cliente. Sigue andando igual. Para pasar al registro una sola vez:
+#     `python3 herramientas/registro.py crear`.
+if gcloud secrets describe clientes-registro --quiet >/dev/null 2>&1; then
+  REGISTRO=1
+  CLIENTES_JSON=""
+  SECRETOS_RUN="CLIENTES_REGISTRO=clientes-registro:latest,"
+  MARCAS=$(python3 herramientas/registro.py marcas)
+  FALTANTES=""
+  echo "▸ Clientes: del registro «clientes-registro» → ${MARCAS}"
+else
+  REGISTRO=""
+  CLIENTES_JSON=$(python3 clientes.py json)
+  SECRETOS_RUN=$(python3 clientes.py run-secrets)
+  MARCAS=$(python3 clientes.py marcas)
+  FALTANTES=$(python3 clientes.py faltantes)
+fi
 
 if [ -z "$MARCAS" ]; then
   echo "✗ Ningún cliente con URL cargada en clientes.json"
@@ -35,6 +57,7 @@ if [ -n "$FALTANTES" ]; then
   echo "⚠ Sin URL, no se van a atender: ${FALTANTES}"
 fi
 
+if [ -z "$REGISTRO" ]; then
 echo "▸ 1/4  Un secreto por cliente (la service_role key de cada Supabase)"
 # La clave no está ni en este script ni en clientes.json: se pide por teclado
 # la primera vez y queda en Secret Manager. `read -rs` no la muestra en
@@ -51,6 +74,7 @@ for S in $(python3 clientes.py secretos); do
     --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
   echo "  · $S listo"
 done
+fi
 
 # ── Las claves de la API de Asistime ──────────────────────────────────────
 # Con ellas el worker lee el manual de marca que edita cada cliente. Se piden
@@ -72,6 +96,7 @@ done
 # enterarse y el más difícil de atar a este archivo.
 ASISTIME_SECRETO=""
 
+if [ -z "$REGISTRO" ]; then
 echo "▸ 1b/4  Una clave de Asistime por cliente (para leer su manual de marca)"
 # La lista entra por el descriptor 3 y no por la entrada estándar: si entrara
 # por la estándar, el `read` que pide la clave se comería la línea del cliente
@@ -109,6 +134,9 @@ if [ -n "$SIN_CLAVE" ]; then
   echo "  ⚠ SIN manual de marca:$SIN_CLAVE — sus piezas ignoran lo que el"
   echo "    cliente escribió (precios, qué foto usar, el tono)."
 fi
+else
+  echo "▸ 1/4  Secretos por cliente: no hacen falta, están en el registro"
+fi
 
 # ── La clave de Magnific, para los reels ──────────────────────────────────
 # Es UNA sola para todo el worker, y no una por cliente: la cuenta de Magnific
@@ -125,7 +153,12 @@ fi
 # en la primera corrida después de cargarla.
 MAGNIFIC_SECRETO=""
 FAL_SECRETO=""
-SOLICITAN_REELS=$(python3 clientes.py reels 2>/dev/null || true)
+if [ -n "$REGISTRO" ]; then
+  SOLICITAN_REELS=$(for M in $MARCAS; do
+    python3 -c "import json,sys; d=json.load(open('.claude/skills/$M/marca.json')); print('$M') if d.get('reels') else None" 2>/dev/null; done | tr '\n' ' ')
+else
+  SOLICITAN_REELS=$(python3 clientes.py reels 2>/dev/null || true)
+fi
 if [ -n "$SOLICITAN_REELS" ]; then
   echo "▸ 1c/4  La clave de Magnific (reels de video) — la piden: ${SOLICITAN_REELS}"
   if ! gcloud secrets describe magnific-api-key --quiet >/dev/null 2>&1; then
@@ -265,7 +298,7 @@ gcloud run jobs deploy "$JOB" \
   --service-account "$SA" \
   --memory 8Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
-  --set-env-vars "^|^CLIENTES=${CLIENTES_JSON}|BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
+  --set-env-vars "^|^${CLIENTES_JSON:+CLIENTES=${CLIENTES_JSON}|}BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
   --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${FAL_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 

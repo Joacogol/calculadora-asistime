@@ -98,7 +98,12 @@ def _clave(marca: str) -> str:
     imposible distinguir «la pegaron mal» de «no la reconoce». Una hora se fue
     ahí. Limpiarla acá hace que ese error no pueda volver a pasar.
     """
-    return (os.environ.get(_nombre_clave(marca)) or "").strip()
+    # Primero el registro de clientes, que trae la clave de Asistime al lado
+    # de la de Supabase y no necesita que la marca nombre ninguna variable.
+    # Si la marca no está en el registro —o no hay registro— vale lo de antes.
+    from . import registro
+    return registro.asistime_clave(marca) or \
+        (os.environ.get(_nombre_clave(marca)) or "").strip()
 
 
 def limpiar() -> None:

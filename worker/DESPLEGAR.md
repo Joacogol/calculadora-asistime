@@ -3014,3 +3014,62 @@ tildada el agente no la ve. Lo mismo con la de Boss (**2163**).
 > desengancharía al agente las tools que no llegué a leer.
 
 
+
+---
+
+## Etapa 4 · A — El registro de clientes (2/9/2026)
+
+Sumar un cliente exigía **redesplegar el worker**: la lista viajaba como una
+variable fija del despliegue y cada clave era un secreto aparte que había que
+montar a mano. De los catorce pasos de un alta, esos dos sólo los podía hacer
+alguien con `gcloud` abierto.
+
+Ahora la lista entera vive en **un secreto**, `clientes-registro`, que Cloud
+Run monta desde `latest`. Un Job resuelve `latest` cada vez que arranca, y
+arranca cada minuto: subir una versión nueva del secreto es todo lo que hace
+falta para que un cliente exista. Sin tocar el despliegue.
+
+```
+{"clientes": [
+  {"marca": "boss-padel-disenos", "nombre": "Boss Padel",
+   "url": "https://….supabase.co", "service_role": "…",
+   "asistime_clave": "…"}
+]}
+```
+
+### Pasar al registro, una sola vez
+
+En Cloud Shell, en `~/worker`, después de copiar el código nuevo:
+
+```bash
+python3 herramientas/registro.py crear    # junta clientes.json + los secretos que ya hay
+python3 herramientas/registro.py ver      # las marcas, sin claves
+./desplegar-chat.sh                       # ve el secreto y lo monta solo
+```
+
+`crear` lee los secretos sueltos que ya existen y arma el registro con ellos:
+no hay que pegar ninguna clave de nuevo. `desplegar-chat.sh` detecta el secreto
+y **deja de pedir un secreto por cliente**; si el secreto no existe, hace lo de
+siempre.
+
+### Sumar un cliente después
+
+```bash
+python3 herramientas/registro.py agregar
+```
+
+Pregunta marca, nombre, URL y las dos claves (sin eco) y sube la versión. El
+worker lo ve en la próxima corrida. **Sin desplegar.** Cada versión queda
+guardada: `gcloud secrets versions list clientes-registro` muestra las
+anteriores para volver atrás.
+
+> Lo que el registro NO resuelve todavía: el **código** de la marca —su
+> `marca.py`, sus plantillas— tiene que estar en la imagen. Un cliente que
+> está en el registro y no en la imagen se saltea con un aviso en el log, sin
+> romper a los demás. Eso es lo que resuelve el paso B: que la marca sea
+> puramente datos.
+
+Probado con `herramientas/probar-registro.py` (sin red) y con un ensayo del
+script de despliegue contra un `gcloud` de mentira: con el registro presente
+monta un solo secreto, no manda `CLIENTES`, y sigue pidiendo la clave de
+Magnific sólo para las marcas que hacen reels.
