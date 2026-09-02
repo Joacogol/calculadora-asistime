@@ -153,6 +153,7 @@ fi
 # en la primera corrida después de cargarla.
 MAGNIFIC_SECRETO=""
 FAL_SECRETO=""
+GEMINI_SECRETO=""
 if [ -n "$REGISTRO" ]; then
   SOLICITAN_REELS=$(for M in $MARCAS; do
     python3 -c "import json,sys; d=json.load(open('.claude/skills/$M/marca.json')); print('$M') if d.get('reels') else None" 2>/dev/null; done | tr '\n' ' ')
@@ -206,6 +207,34 @@ if [ -n "$SOLICITAN_REELS" ]; then
       --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
     FAL_SECRETO="FAL_CLAVE=fal-api-key:latest,"
     echo "  · fal-api-key listo → FAL_CLAVE"
+  fi
+fi
+
+# ── La clave de Gemini: elegir los tramos de un video largo ──────────────
+#
+# Opcional como las otras. Sin ella, `montar_reel` sigue cortando por audio,
+# como hasta el 2/9/2026. Con ella, cuando el pedido trae una instrucción y
+# el material es más largo que el reel, Gemini agéntico mira el video y dice
+# qué tramos entran (ver motor/mirar.py). La clave es la de Google AI Studio;
+# va a Secret Manager, nunca al código ni a un chat.
+if [ -n "$SOLICITAN_REELS" ]; then
+  if ! gcloud secrets describe gemini-api-key --quiet >/dev/null 2>&1; then
+    echo "▸ 1e/4  La clave de Gemini (elegir tramos de un video largo). Opcional:"
+    echo "  dejá vacío y Enter si todavía no la vas a usar."
+    read -rs -p "  Pegá la API key de Gemini y Enter (no se ve): " K; echo
+    if [ -n "$K" ]; then
+      printf '%s' "$K" | gcloud secrets create gemini-api-key --data-file=- --quiet
+    else
+      echo "  · sin Gemini: montar_reel corta por audio, como hasta ahora"
+    fi
+    unset K
+  fi
+  if gcloud secrets describe gemini-api-key --quiet >/dev/null 2>&1; then
+    gcloud secrets add-iam-policy-binding gemini-api-key \
+      --member="serviceAccount:${SA}" \
+      --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
+    GEMINI_SECRETO="GEMINI_CLAVE=gemini-api-key:latest,"
+    echo "  · gemini-api-key listo → GEMINI_CLAVE"
   fi
 fi
 
@@ -299,7 +328,7 @@ gcloud run jobs deploy "$JOB" \
   --memory 8Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
   --set-env-vars "^|^${CLIENTES_JSON:+CLIENTES=${CLIENTES_JSON}|}BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
-  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${FAL_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
+  --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${FAL_SECRETO}${GEMINI_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 
 echo "▸ 3/4  Reloj: una corrida por minuto (el webhook está bloqueado por política de la org)"

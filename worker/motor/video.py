@@ -825,6 +825,10 @@ def _segmento_foto(t: dict, i: int, tmp: Path, codec=None) -> Path:
     fx, fy = _foco_del_banco(t["archivo"])
     fx = float(t.get("foco_x", fx))
     fy = float(t.get("foco_y", fy))
+    # Una foto no tiene modo marco: el título va encima, como siempre. Estos
+    # dos nombres se usaban más abajo sin definirse acá —copiados de
+    # `_segmento_video`— y una foto con texto moría con NameError.
+    marco_png, alto_ventana = None, 0
 
     # PRIMERO recortar a 9:16, DESPUÉS el acercamiento. Al revés —que es como
     # estaba— zoompan toma una región con la proporción de la foto original
@@ -1119,6 +1123,10 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     """
     from . import analisis as _analisis
     from . import guion as _guion
+    # Acá arriba y no adentro de cada rama: con correcciones aprendidas se
+    # usaba antes del primer `import` de más abajo, y como ese import lo hace
+    # local a la función, Python lo veía como «usado antes de asignar».
+    from . import habla as _habla
 
     base = Path(carpeta_material)
     avisos_previos: list[str] = []
