@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# El estado del alta de cada cliente lleva sus claves. Nunca al repo.
+worker/.claude/skills/*/alta.json
+# Enlaces que crea alta.py para el CLI de Supabase.
+worker/supabase/

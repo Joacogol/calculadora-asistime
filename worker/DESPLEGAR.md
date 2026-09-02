@@ -3101,3 +3101,49 @@ con nombre de plantilla y formato. Si el cambio es a propósito,
 La receta completa está en `motor/ALTA-DE-MARCA.md`. Lo que sigue siendo
 Python: los carruseles (`DIAPOS`) y el PDF (`PRESENTACION`), que Boss y
 Clínica tienen y Stadium no. Van después.
+
+## Etapa 4 · C — El alta en un comando (2/9/2026)
+
+```bash
+export SUPABASE_ACCESS_TOKEN=…     # supabase.com/dashboard/account/tokens
+export ASISTIME_ADMIN_CLAVE=…      # una clave que pueda crear tenants
+python3 herramientas/alta.py <marca> --simular
+python3 herramientas/alta.py <marca>
+```
+
+Hace los once pasos que en Stadium se hicieron a mano, en orden, y guarda cada
+resultado en `.claude/skills/<marca>/alta.json` —que no va al repo porque
+lleva la `service_role` y la clave de Asistime del cliente—. Si algo corta,
+se vuelve a correr y sigue desde el paso que faltaba; nada se crea dos veces.
+
+| paso | qué crea |
+|---|---|
+| `supabase_proyecto` | el proyecto en sa-east-1 y sus claves |
+| `supabase_tablas` | los siete SQL, en orden |
+| `supabase_funciones` | las cinco funciones, `--no-verify-jwt` |
+| `supabase_secretos` | `API_CLAVE`, nueva, de 64 hex |
+| `asistime_tenant` | tenant, aplicación y clave de API |
+| `asistime_agente` | «Diseñador <marca>» con el prompt de `alta/prompt-disenador.md`, publicado |
+| `asistime_documentos` | «Reglas de marca» y «Catálogo de plantillas», enganchados |
+| `asistime_herramientas` | las tools, copiadas de Stadium con dirección, clave y nombre sustituidos |
+| `registro` | el cliente en `clientes-registro` |
+| `plantillas` | `sembrar-plantillas.py` y `publicar-catalogo.py` |
+
+**Las tools se copian de Stadium por la API**, no de archivos del repo: la
+copia buena es la que está desplegada, y sólo difieren en la dirección del
+Supabase, la clave y el nombre. `probar-alta.py` verifica que la sustitución
+no deje rastro de la marca de origen.
+
+**El prompt del agente es uno para todas** —`alta/prompt-disenador.md`— con
+lo propio de cada marca en cinco huecos que salen de `marca.json`: `nombre`,
+`quien_es`, `cuidados`, `como_habla`, y la tabla de plantillas del catálogo.
+Es el prompt de Stadium generalizado, más `crear_video` y la elección del
+sistema, que Stadium todavía no tenía escritos.
+
+Lo que el comando deja para una persona: `./desplegar-chat.sh` (la carpeta de
+la marca tiene que estar en la imagen), Instagram, y mirar las fotos.
+
+> **No se corrió todavía contra Supabase ni Asistime de verdad.** Está
+> probado sin red —la sustitución, el prompt, la simulación— y los contratos
+> de las dos APIs están leídos de su documentación. La primera corrida real es
+> la del cuarto cliente, y ahí se ajusta lo que haga falta.

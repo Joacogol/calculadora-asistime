@@ -68,6 +68,23 @@ le falta: tipografias», «el rol acento tiene que nombrar un color de colores»
 
 ---
 
+## Y después, un comando
+
+Con la carpeta armada —identidad, estilo, fuentes, logos y al menos una
+plantilla— el resto del alta es un comando:
+
+```bash
+python3 herramientas/alta.py <marca> --simular    # muestra los doce pasos
+python3 herramientas/alta.py <marca>              # los hace
+```
+
+Crea el proyecto de Supabase con sus tablas, funciones y clave; el tenant, el
+agente con su prompt, los dos documentos y las quince herramientas en Asistime;
+suma el cliente al registro del worker; siembra las plantillas y publica el
+catálogo. Guarda lo que va haciendo en `alta.json` (que no va al repo: lleva
+claves) y si se corta, sigue desde donde quedó. Lo que deja para una persona lo
+dice al final: el despliegue del worker, Instagram, y mirar las fotos.
+
 ## El orden importa
 
 Los pasos están en este orden porque cada uno depende del anterior, y saltarse
