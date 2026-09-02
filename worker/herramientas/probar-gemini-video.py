@@ -50,7 +50,14 @@ import urllib.request
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 
-API = "https://generativelanguage.googleapis.com/v1beta/interactions"
+BASE = "https://generativelanguage.googleapis.com/v1beta"
+API = f"{BASE}/interactions"
+
+#: Tres minutos. El primer intento tenía diez, y con diez un pedido que se
+#: cuelga se ve igual que uno que está trabajando: la terminal queda muda y
+#: no hay forma de saber cuál de las dos cosas está pasando. Tres alcanzan
+#: de sobra para un reel de diez segundos.
+TIMEOUT = 180
 
 #: Los tres que soportan el modo agéntico, del anuncio del 1/9/2026. El
 #: `3.8-flash` que aparece en los ejemplos de la doc NO está en esa lista.
@@ -154,8 +161,10 @@ def preguntar(clave: str, video: bytes, mime: str, pregunta: str,
         API, data=json.dumps(cuerpo).encode(),
         headers={"Content-Type": "application/json", "x-goog-api-key": clave})
     arranque = time.time()
+    print(f"  subiendo {len(cuerpo['input'][1]['data']) / 1e6:.1f} MB y esperando "
+          f"(hasta {TIMEOUT} s)…", flush=True)
     try:
-        with urllib.request.urlopen(pedido, timeout=600) as r:
+        with urllib.request.urlopen(pedido, TIMEOUT) as r:
             datos = json.load(r)
     except urllib.error.HTTPError as e:
         return {"error": f"HTTP {e.code}: {e.read()[:400].decode(errors='replace')}",
@@ -194,11 +203,55 @@ def tokens_de(datos: dict) -> str:
     return "sin datos de tokens"
 
 
+def sondear(clave: str) -> int:
+    """¿Anda la clave, el endpoint y la forma del cuerpo? Sin subir un video.
+
+    Existe porque la primera corrida se colgó subiendo 9 MB sin que nadie
+    pudiera saber si estaba trabajando o si el pedido estaba mal armado. Una
+    llamada de texto pesa nada y contesta en dos segundos: si falla, falla
+    ahí, con el mensaje de Google a la vista.
+
+    Se prueban las dos formas de la API porque son dos de verdad y la
+    documentación no deja claro cuál es la de hoy: `interactions`, que es la
+    nueva y la que trae `processing`, y `generateContent`, que es la clásica.
+    """
+    intentos = [
+        ("interactions", API,
+         {"model": MODELO,
+          "input": [{"type": "text", "text": "Contestá sólo: ok"}]}),
+        ("generateContent", f"{BASE}/models/{MODELO}:generateContent",
+         {"contents": [{"parts": [{"text": "Contestá sólo: ok"}]}]}),
+    ]
+    andan = []
+    for nombre, url, cuerpo in intentos:
+        pedido = urllib.request.Request(
+            url, data=json.dumps(cuerpo).encode(),
+            headers={"Content-Type": "application/json", "x-goog-api-key": clave})
+        try:
+            with urllib.request.urlopen(pedido, timeout=60) as r:
+                datos = json.load(r)
+            print(f"  ✓ {nombre}: {texto_de(datos)[:80]}")
+            andan.append(nombre)
+        except urllib.error.HTTPError as e:
+            cuerpo_error = e.read()[:300].decode(errors="replace")
+            print(f"  ✗ {nombre}: HTTP {e.code} · {cuerpo_error}")
+        except Exception as e:                                   # noqa: BLE001
+            print(f"  ✗ {nombre}: {type(e).__name__}: {e}")
+    if not andan:
+        print("\nNinguna de las dos formas anduvo. El problema es la clave o el "
+              "modelo, no el video.")
+        return 1
+    print(f"\nAnda: {', '.join(andan)}. Ahora sí tiene sentido probar con video.")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--marca", help="toma el último reel terminado de esa marca")
     g.add_argument("--url", help="un mp4 por URL o una ruta local")
+    g.add_argument("--probar", action="store_true",
+                   help="sólo comprueba la clave y la forma de la API, sin video")
     p.add_argument("--modo", choices=("agentic", "static", "ambos"),
                    default="ambos")
     p.add_argument("--pregunta", choices=(*PREGUNTAS, "todas"), default="todas")
@@ -211,6 +264,9 @@ def main() -> int:
             "falta GEMINI_CLAVE. Se saca de aistudio.google.com → Get API key.\n"
             "No la pegues en un comando: usá\n"
             '  read -rs -p "clave: " K; export GEMINI_CLAVE="$K"; unset K')
+
+    if args.probar:
+        return sondear(clave)
 
     url = args.url or ultimo_reel(args.marca)
     print(f"  bajando {url[:90]}…")
