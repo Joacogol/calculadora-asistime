@@ -382,15 +382,53 @@ def _pedir_clip_fal(fila: dict, plan: dict, planos: list[dict]) -> str:
     return tarea
 
 
-def _estado_clip_fal(tarea: str) -> tuple[str, str | None]:
-    """(estado, url del video). Traduce el vocabulario de fal al nuestro."""
+#: Dónde suelen poner el motivo del fallo los dos proveedores. Es una lista y
+#: no un nombre porque ninguno de los dos lo documenta, y el que se equivoca de
+#: nombre no se entera: se queda con un `FAILED` pelado, que es exactamente el
+#: agujero que esto tapa.
+CAMPOS_MOTIVO = ("reason", "error", "message", "detail", "detalle",
+                 "failure_reason", "error_message", "status_reason",
+                 "moderation_reason")
+
+
+def motivo_de(d) -> str:
+    """Por qué falló, en las palabras del proveedor. Vacío si no dijo nada.
+
+    Un `FAILED` a secas obliga a adivinar entre una foto que no cumple los
+    límites, una duración que el modelo no hace, el moderador de contenido y
+    una caída del proveedor —cuatro cosas con cuatro arreglos distintos—. El
+    motivo suele estar en la misma respuesta y hasta hoy se tiraba.
+
+    Si ningún nombre conocido aparece, se guarda lo que la respuesta traiga
+    salvo lo que ya sabemos (`status` y el video). Un volcado corto y feo sirve
+    mil veces más que un silencio prolijo: al menos se puede leer.
+    """
+    if not isinstance(d, dict):
+        return str(d)[:300]
+    for k in CAMPOS_MOTIVO:
+        v = d.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()[:300]
+        if isinstance(v, dict):                  # p. ej. {"error": {"message": …}}
+            hondo = motivo_de(v)
+            if hondo:
+                return hondo
+    resto = {k: v for k, v in d.items()
+             if k not in ("status", "generated", "video", "videos")
+             and v not in (None, "", [], {})}
+    return json.dumps(resto, ensure_ascii=False)[:300] if resto else ""
+
+
+def _estado_clip_fal(tarea: str) -> tuple[str, str | None, str]:
+    """(estado, url del video, motivo). Traduce el vocabulario de fal al nuestro."""
     d = _pedir_fal(tarea)
     estado = str(d.get("status") or "").upper()
     if estado != "COMPLETED":
         # IN_QUEUE / IN_PROGRESS y cualquier cosa que aparezca mañana: sigue en
         # curso. Lo que NO se hace es inventar un `FAILED` por no reconocer una
         # palabra, porque eso daría por perdido un video que se está haciendo.
-        return ("FAILED" if estado in ("ERROR", "FAILED") else estado or "IN_QUEUE"), None
+        roto = estado in ("ERROR", "FAILED")
+        return ("FAILED" if roto else estado or "IN_QUEUE"), None, (motivo_de(d) if roto else "")
 
     # El resultado vive en otra URL. `response_url` viene desde el primer
     # POST, pero la fila sólo guardó la de estado: fal la repite acá.
@@ -399,7 +437,7 @@ def _estado_clip_fal(tarea: str) -> tuple[str, str | None]:
            or (salida.get("videos") or [{}])[0].get("url"))
     if not url:
         raise RuntimeError(f"fal dijo COMPLETED y no trajo video: {str(salida)[:200]}")
-    return "COMPLETED", url
+    return "COMPLETED", url, ""
 
 
 # ═══ 1. Pedir el video ═══════════════════════════════════════════════════════
@@ -621,8 +659,12 @@ def _planos(fila: dict, dur: int) -> list[dict]:
     ]
 
 
-def estado_clip(tarea: str, modelo: str, resolucion: str) -> tuple[str, str | None]:
-    """`(estado, url)` de una tarea. La URL vive 24 horas: hay que bajarla ya.
+def estado_clip(tarea: str, modelo: str, resolucion: str) -> tuple[str, str | None, str]:
+    """`(estado, url, motivo)` de una tarea. La URL vive 24 horas: hay que bajarla ya.
+
+    El `motivo` sale vacío salvo que el proveedor haya fallado y haya dicho por
+    qué. Va acá y no en quien llama porque es el único lugar que ve la
+    respuesta entera: más arriba ya no queda nada que leer.
 
     La ruta para preguntar NO es la misma que para pedir, y no es igual en todos
     los modelos: 2.5 la lleva con resolución y Mini 2.0 sin ella. Preguntar por
@@ -637,7 +679,9 @@ def estado_clip(tarea: str, modelo: str, resolucion: str) -> tuple[str, str | No
     ruta = ficha_modelo(modelo)["ruta_estado"].format(res=resolucion)
     d = _pedir(f"{ruta}/{tarea}", metodo="GET")["data"]
     urls = d.get("generated") or []
-    return d.get("status", "").upper(), (urls[0] if urls else None)
+    estado = d.get("status", "").upper()
+    return (estado, (urls[0] if urls else None),
+            motivo_de(d) if estado in ("FAILED", "ERROR") else "")
 
 
 # ═══ 2. Montar la pieza ══════════════════════════════════════════════════════
@@ -1212,7 +1256,7 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
             _marcar(cli, fila["id"], "error", notas="quedó en generando sin id de tarea")
             continue
         try:
-            estado, url = estado_clip(
+            estado, url, motivo = estado_clip(
                 fila["tarea"], fila.get("modelo") or "seedance-2-5-pro",
                 fila.get("resolucion") or "720p")
         except Exception as e:                               # noqa: BLE001
@@ -1230,7 +1274,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                 movidas += 1
             continue
         if estado in ("FAILED", "ERROR"):
-            _marcar(cli, fila["id"], "error", notas=f"Magnific devolvió {estado}")
+            quien = ficha_modelo(fila.get("modelo") or "").get("proveedor") or "el proveedor"
+            _marcar(cli, fila["id"], "error",
+                    notas=f"{quien} devolvió {estado}"
+                          + (f": {motivo}" if motivo else
+                             " y no dijo por qué (respuesta sin motivo)"))
             movidas += 1
         elif estado == "COMPLETED" and url:
             _marcar(cli, fila["id"], "montando", clip_url=url)

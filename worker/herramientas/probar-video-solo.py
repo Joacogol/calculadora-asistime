@@ -211,7 +211,7 @@ def pedir(fila, prov):
     # Sin esto la misma corrida sigue de largo y le pregunta a los proveedores
     # DE VERDAD por una tarea inventada. Una prueba que sale a la red no es una
     # prueba: falla cuando no hay internet y pasa cuando no debería.
-    reelero.estado_clip = lambda tarea, modelo, res: ("PROCESSING", None)
+    reelero.estado_clip = lambda tarea, modelo, res: ("PROCESSING", None, "")
     reelero.guionar = lambda f, d: {"calidad": "normal", "planos": []}
     reelero._planos = lambda f, d: [{"prompt": "un plano", "duration": d}]
     try:
