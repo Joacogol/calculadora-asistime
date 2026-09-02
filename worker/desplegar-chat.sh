@@ -201,18 +201,28 @@ fi
 
 # ── Las pruebas que cuidan la plata del cliente ───────────────────────────
 #
-# Son dos y las dos corren en segundos, sin red y sin gastar nada. Están acá
-# —antes del build— porque las dos vigilan cosas que sólo se descubren cuando
-# ya se cobró: un precio que se dice mal, y un pedido que devuelve otra cosa
-# de la que se pidió.
-for PRUEBA in probar-precios.py probar-video-solo.py; do
+# Son tres y las tres corren en segundos, sin red y sin gastar nada. Están acá
+# —antes del build— porque las tres vigilan cosas que sólo se descubren cuando
+# ya se cobró: un precio que se dice mal, un pedido que devuelve otra cosa de
+# la que se pidió, y una pieza que sale rota y se marca «listo».
+#
+# La del revisor necesita ffmpeg para fabricar sus casos. Si no está, se
+# saltea con un aviso en vez de frenar el despliegue: no tener ffmpeg acá no
+# dice nada sobre el código, y frenar por eso enseña a saltear las pruebas.
+PRUEBAS="probar-precios.py probar-video-solo.py"
+if command -v ffmpeg >/dev/null 2>&1; then
+  PRUEBAS="$PRUEBAS probar-revisor.py"
+else
+  echo "  · sin ffmpeg acá: no corro probar-revisor.py"
+fi
+for PRUEBA in $PRUEBAS; do
   if ! SALIDA="$(python3 "herramientas/$PRUEBA" 2>&1)"; then
     echo "✗ Falló herramientas/$PRUEBA — no despliego:"
     echo "$SALIDA" | sed 's/^/    /'
     exit 1
   fi
 done
-echo "  · precios y separación video/pieza: en orden"
+echo "  · precios, separación video/pieza y revisor: en orden"
 
 echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # ── Por qué 8 núcleos y no 2 ──────────────────────────────────────────────

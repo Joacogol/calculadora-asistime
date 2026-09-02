@@ -55,6 +55,8 @@ import urllib.request
 
 import requests
 
+from motor.revisar import en_una_linea, revisar_video
+
 log = logging.getLogger(__name__)
 
 API = "https://api.magnific.com/v1/ai/video"
@@ -1261,9 +1263,18 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                 # y esto no lo es. Lo que hay es `clip_url`, que la API
                 # devuelve como `video_crudo`.
                 if _solo_video(fila):
+                    # Se lo mira antes de entregarlo, pero se lo mira por lo
+                    # que ES: material crudo. La medida no se compara contra
+                    # nada —fal devuelve 768×1024 y está bien— y el audio
+                    # tampoco, porque depende del proveedor. Queda el negro:
+                    # un video generado que salió en negro es plata gastada, y
+                    # hasta hoy se entregaba sin que nadie lo dijera.
+                    visto = en_una_linea(revisar_video(
+                        clip, ancho=None, alto=None, con_audio=False))
                     _marcar(cli, fila["id"], "listo",
                             clip_url=subir(clip, f"reels/{fila['id']}-crudo.mp4"),
-                            creditos_gastados=fila.get("creditos_estimados"))
+                            creditos_gastados=fila.get("creditos_estimados"),
+                            **({"notas": visto} if visto else {}))
                     movidas += 1
                     continue
 
@@ -1323,7 +1334,20 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                     log.warning("[%s] no pude guardar el clip crudo de %s: %s",
                                 getattr(cli, "marca", "?"), fila["id"], e)
 
-                aviso = " · ".join(x for x in (falta_rotulo, falta_musica) if x)
+                # Mirar la pieza terminada antes de entregarla.
+                #
+                # Los dos avisos de arriba salen de lo que el motor SABE que
+                # le faltó: no dibujó el rótulo, no bajó la música. El reel
+                # mudo del 1/9/2026 no tenía ninguno de los dos y salió igual
+                # marcado «listo» —el motor creía que había hecho todo bien—,
+                # así que acá se mide el archivo en vez de creerle al motor.
+                #
+                # Y no frena nada: el video ya está generado y pagado. Sale
+                # con el aviso escrito, para que el chat lo diga antes de que
+                # alguien lo suba.
+                aviso = " · ".join(
+                    x for x in (falta_rotulo, falta_musica,
+                                en_una_linea(revisar_video(final))) if x)
                 _marcar(cli, fila["id"], "listo",
                         url=subir(final, f"reels/{fila['id']}.mp4"),
                         creditos_gastados=fila.get("creditos_estimados"),
@@ -1568,6 +1592,12 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                     correcciones=aprendido)
 
                 dichos = hecho + ([aviso_orden] if aviso_orden else []) + list(avisos)
+                # Igual que en el otro montaje: se mide el archivo, no se le
+                # cree al motor. Acá no hay nada pagado, pero una pieza rota
+                # que se publica cuesta lo mismo en los dos caminos.
+                visto = en_una_linea(revisar_video(final))
+                if visto:
+                    dichos = dichos + [visto]
                 # `armado` es el guion ya resuelto. Se guarda para poder
                 # retocar el reel después —corregir una frase, sacar un tramo—
                 # sin volver a escuchar el audio, que daría los mismos errores

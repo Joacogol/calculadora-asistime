@@ -25,6 +25,7 @@ from pathlib import Path
 
 from . import (banco, cobro, config, fotero, manual, motorista, plantillas,
                plantillero, publicador, reelero)
+from motor.revisar import en_una_linea, revisar_imagen
 from .supa import Cliente
 from .disenador import disenar
 
@@ -128,6 +129,7 @@ async def procesar(cli: Cliente, pedido: dict):
         # El resto (spec.json, HTML intermedio, PNG de rótulos) es material de
         # trabajo y no se sube.
         archivos, docs, videos, copy, notas = [], [], [], "", ""
+        revisadas: list[str] = []
         for a in sorted(salida.iterdir()):
             if not a.is_file():
                 continue
@@ -139,6 +141,14 @@ async def procesar(cli: Cliente, pedido: dict):
                 continue
             ext = a.suffix.lower()
             if ext in IMAGENES:
+                # Se la mira antes de subirla. La medida no se compara contra
+                # nada: un diseño sale en 1080×1350, 1080×1920 o 1080×1080
+                # según lo que se pidió, y acá no hay una medida esperada. Lo
+                # que sí se puede medir es que no sea un rectángulo vacío —una
+                # plantilla que no cargó, una foto que no llegó—, porque ese
+                # archivo existe, pesa poco y nadie lo mira hasta que está
+                # publicado.
+                revisadas.extend(f"{a.name}: {x}" for x in revisar_imagen(a))
                 archivos.append(cli.subir(a, f"{pid}/{a.name}"))
             elif ext in DOCUMENTOS:
                 docs.append({"nombre": a.name,
@@ -159,6 +169,13 @@ async def procesar(cli: Cliente, pedido: dict):
             notas = colados
         elif colados:
             notas = f"{notas.rstrip()}\n\n{colados}"
+
+        # Lo que se vio en las placas viaja con las notas, que es lo que el
+        # agente le lee a la persona. No frena la entrega: la pieza sale
+        # igual y el aviso va con ella.
+        if revisadas:
+            visto = en_una_linea(revisadas)
+            notas = f"{notas.rstrip()}\n\n{visto}" if notas else visto
 
         cli.marcar(pid, "listo", titulo=titulo, urls=archivos,
                    documentos=docs, videos=videos, copy=copy, notas=notas,

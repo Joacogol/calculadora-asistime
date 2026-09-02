@@ -96,6 +96,20 @@ function ok(condicion: unknown, que: string, detalle?: unknown) {
 const FOTO = "https://ejemplo.com/foto.jpg";
 const PEDIDO = "un video de la paleta creciendo como un árbol en el parque";
 
+/** El valor sellado con el que se encarga por ese sistema.
+ *
+ * Pedir las opciones es gratis y no anota nada — es a propósito: la pregunta
+ * tiene que poder hacerse con el pedido a medio armar. El `elegir` que vuelve
+ * trae una marca derivada de la clave de la función, así que sólo lo tiene
+ * quien pasó por acá. Escribir «fal» de memoria no encarga nada, y hay una
+ * prueba más abajo que lo verifica. */
+async function elegir(clave: string) {
+  const b = await (await pedir("GET", "/?opciones=1")).json();
+  const o = (b.proveedores ?? []).find(
+    (x: Record<string, unknown>) => x.clave === clave);
+  return String(o?.elegir ?? "");
+}
+
 console.log("\n■ Elegir con qué sistema antes de gastar");
 {
   const r = await pedir("POST", "/", { mensaje: PEDIDO, foto: FOTO });
@@ -111,12 +125,39 @@ console.log("\n■ Elegir con qué sistema antes de gastar");
 }
 
 console.log("\n■ Un proveedor que no existe no arranca nada");
+//
+// Antes del sello esto contestaba `proveedor_desconocido`. Ahora no llega
+// hasta ahí: «veo» no trae sello, y el sello se mira primero. La respuesta
+// cambió y el efecto que importa no: no se anota nada, no se gasta nada, y
+// vuelven las dos opciones de verdad. `proveedor_desconocido` quedó sin
+// camino posible —un valor sellado sale de nuestra propia lista— y se saca
+// del `index.ts` en el próximo despliegue.
 {
   const r = await pedir("POST", "/", { mensaje: PEDIDO, foto: FOTO, proveedor: "veo" });
   const b = await r.json();
-  ok(b.codigo === "proveedor_desconocido", "avisa que no lo conoce", b.codigo);
+  ok(b.codigo === "proveedor_sin_sello", "no lo toma", b.codigo);
   ok(Array.isArray(b.opciones), "y vuelve a ofrecer las dos");
   ok(filas.size === 0, "sin anotar nada");
+}
+
+console.log("\n■ Un «fal» escrito de memoria no encarga nada");
+//
+// El 1/9/2026 le pidieron un video y el agente eligió fal solo, sin
+// preguntarle nada a nadie. No desobedeció: el parámetro declaraba
+// `enum: ["magnific", "fal"]`, así que tenía los dos valores válidos sin
+// necesidad de consultar. Un dato que se puede adivinar se adivina, y ninguna
+// cantidad de mayúsculas en el prompt lo cambia. Por eso ahora la elección va
+// sellada: para tener un valor válido hay que haber pedido las opciones, que
+// es justo el paso donde está escrito que hay que mostrárselas a la persona.
+{
+  const r = await pedir("POST", "/", { mensaje: PEDIDO, foto: FOTO, proveedor: "fal" });
+  const b = await r.json();
+  ok(r.status === 200, "no es un error: es la pregunta otra vez", r.status);
+  ok(b.codigo === "proveedor_sin_sello", "y lo dice", b.codigo);
+  ok(filas.size === 0, "sin anotar ni gastar nada", [...filas.keys()]);
+  ok((b.opciones ?? []).every((o: Record<string, unknown>) =>
+    String(o.elegir).includes(":")), "devolviendo las opciones selladas",
+    (b.opciones ?? []).map((o: Record<string, unknown>) => o.elegir));
 }
 
 console.log("\n■ Las opciones se pueden consultar sin encargar nada");
@@ -133,7 +174,8 @@ console.log("\n■ Pedir la PIEZA (lo de siempre)");
 let idReel = "";
 {
   const r = await pedir("POST", "/", {
-    mensaje: PEDIDO, foto: FOTO, proveedor: "magnific", titulo: "Un título",
+    mensaje: PEDIDO, foto: FOTO, proveedor: await elegir("magnific"),
+    titulo: "Un título",
   });
   const b = await r.json();
   idReel = b.id;
@@ -152,7 +194,7 @@ console.log("\n■ Pedir el VIDEO solo");
 let idVideo = "";
 {
   const r = await pedir("POST", "/", {
-    mensaje: PEDIDO, foto: FOTO, proveedor: "fal", pieza: "video",
+    mensaje: PEDIDO, foto: FOTO, proveedor: await elegir("fal"), pieza: "video",
     titulo: "un título que sobra", musica: "street",
   });
   const b = await r.json();
