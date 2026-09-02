@@ -59,6 +59,23 @@ def _cargar_marca(carpeta: pathlib.Path):
     return importlib.import_module("marca")
 
 
+def _del_registro(marca: str) -> str:
+    """La clave de Asistime del registro, si `gcloud` puede leerlo.
+
+    Existe para que este script vea los MISMOS clientes que el worker. La nota
+    larga está en `registro.clave_de`.
+    """
+    import importlib.util
+    ruta = RAIZ / "herramientas" / "registro.py"
+    spec = importlib.util.spec_from_file_location("registro_cli", ruta)
+    cli = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(cli)
+        return cli.clave_de(marca)
+    except Exception:                                        # noqa: BLE001
+        return ""
+
+
 def main(argv):
     if len(argv) < 2:
         raise SystemExit(__doc__)

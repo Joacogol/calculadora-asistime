@@ -136,9 +136,40 @@ def no_toca_una_marca_sin_agente():
         assert not posts, f"escribió sobre {otra}"
 
 
+def sin_variable_de_entorno_va_al_registro():
+    """Sin la variable puesta, la clave se busca en el registro.
+
+    Este caso no estaba, y por eso pasó lo del 2/9/2026: el ayudante que lee
+    el registro quedó sin definir en este archivo —se insertó en otro por un
+    error mío— y la prueba no lo vio, porque siempre ponía la variable y con
+    `or` el segundo término ni se evalúa. El camino probado andaba y el otro
+    reventaba con un NameError en la terminal de Joaquín.
+
+    No hace falta que el registro conteste: alcanza con que la función EXISTA
+    y se la pueda llamar sin que el módulo explote.
+    """
+    guardada = os.environ.pop("ASISTIME_CLAVE_ASISTIME_DISENOS", None)
+    try:
+        assert callable(getattr(pp, "_del_registro", None)), \
+            "falta `_del_registro` en publicar-prompt.py"
+        assert isinstance(pp._del_registro(MARCA), str)
+        # Y sin clave por ningún lado, tiene que decirlo y no reventar.
+        try:
+            pp.main(["x", MARCA])
+        except SystemExit as e:
+            assert "clave de Asistime" in str(e), str(e)
+        else:
+            raise AssertionError("siguió sin clave")
+    finally:
+        if guardada is not None:
+            os.environ["ASISTIME_CLAVE_ASISTIME_DISENOS"] = guardada
+
+
 print("publicar-prompt.py")
 prueba("no escribe si el prompt no cambió", no_escribe_si_no_cambio)
 prueba("escribe la versión Y la publica cuando cambió", escribe_y_publica_si_cambio)
 prueba("--probar no escribe", probar_no_escribe)
 prueba("no toca a las marcas sin `agente`", no_toca_una_marca_sin_agente)
+prueba("sin la variable puesta, busca la clave en el registro",
+       sin_variable_de_entorno_va_al_registro)
 print("\n✓ todo bien")
