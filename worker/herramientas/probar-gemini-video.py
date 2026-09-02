@@ -268,6 +268,43 @@ def insistir(clave: str, modelo: str, minutos: int) -> int:
         time.sleep(120)
 
 
+def detallar(crudo: str) -> list[str]:
+    """Lo que importa de un error de Google, sin el resto.
+
+    El cuerpo de un 429 trae, además del mensaje, QUÉ cuota se agotó y de
+    cuánto era. Ese es el dato que decide qué hacer: un tope por minuto se
+    espera sesenta segundos, uno por día se espera hasta mañana, y uno que
+    dice `FreeTier` significa que la clave sigue en el plan gratuito por más
+    que la cuenta tenga plata — la facturación en AI Studio va por PROYECTO
+    de Google Cloud, y una clave de otro proyecto no se entera.
+
+    Recortado a 300 caracteres, como estaba, el mensaje se cortaba justo en
+    «Quota exceeded for metric: generati…» y había que adivinar.
+    """
+    try:
+        datos = json.loads(crudo)
+    except Exception:                                        # noqa: BLE001
+        return [crudo[:400]]
+    if isinstance(datos, list):
+        datos = datos[0] if datos else {}
+    err = datos.get("error") or {}
+    salida = [(err.get("message") or "").strip()[:300]]
+    for d in err.get("details") or []:
+        tipo = str(d.get("@type", "")).rsplit(".", 1)[-1]
+        if tipo == "QuotaFailure":
+            for v in d.get("violations") or []:
+                salida.append(
+                    f"cuota: {v.get('quotaId') or v.get('subject') or '?'}"
+                    + (f" · valor {v.get('quotaValue')}" if v.get("quotaValue") else "")
+                    + (f" · {v.get('quotaDimensions')}" if v.get("quotaDimensions") else ""))
+        elif tipo == "RetryInfo" and d.get("retryDelay"):
+            salida.append(f"reintentar en: {d['retryDelay']}")
+        elif tipo == "Help":
+            for enlace in d.get("links") or []:
+                salida.append(f"ver: {enlace.get('url')}")
+    return [x for x in salida if x]
+
+
 def sondear(clave: str, modelo: str = MODELO) -> int:
     """¿Anda la clave, el endpoint y la forma del cuerpo? Sin subir un video.
 
@@ -298,9 +335,11 @@ def sondear(clave: str, modelo: str = MODELO) -> int:
             print(f"  ✓ {nombre}: {texto_de(datos)[:80]}")
             andan.append(nombre)
         except urllib.error.HTTPError as e:
-            cuerpo_error = e.read()[:300].decode(errors="replace")
+            crudo = e.read().decode(errors="replace")
             codigos.append(e.code)
-            print(f"  ✗ {nombre}: HTTP {e.code} · {cuerpo_error}")
+            print(f"  ✗ {nombre}: HTTP {e.code}")
+            for linea in detallar(crudo):
+                print(f"      {linea}")
         except TimeoutError:
             codigos.append(504)
             print(f"  ✗ {nombre}: no contestó a tiempo (suele ser saturación)")
