@@ -12,3 +12,8 @@ requests>=2.32.0
 # hacia afuera. Suma unos 460 MB de modelo la primera vez que se usa,
 # que se descargan al arrancar y quedan en la caché del contenedor.
 faster-whisper>=1.0
+
+# Encuadre por caras al pasar un video apaisado a reel (motor/encuadre.py).
+# La versión headless no arrastra ninguna librería gráfica; el modelo de
+# caras (230 KB) va versionado en motor/assets/, así que no se baja nada.
+opencv-python-headless>=4.10

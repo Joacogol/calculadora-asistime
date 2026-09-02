@@ -188,6 +188,11 @@ def cargar(archivo_marca) -> types.SimpleNamespace:
     # El default es `campana` a propósito: las tres marcas que ya hacen reels
     # la tienen y no se enteran del cambio.
     m.PLANTILLA_ROTULO = r.get("plantilla", "campana")
+    # Cómo se encuadra un material apaisado al hacerlo reel: `"caras"` sigue
+    # a las personas (ver motor/encuadre.py); vacío es el recorte centrado de
+    # siempre. Es por marca porque no toda marca filma gente hablando: en un
+    # peloteo de pádel no hay caras que seguir y el centro es lo correcto.
+    m.ENCUADRE_REEL = (r.get("encuadre") or "").strip().lower()
     m.ACENTO_REEL = ident.C[r.get("acento", ident.roles["acento"])]
     cr = ident.carrusel
     m.COLOR_CROMO = ident.C[cr["color_cromo"]] if cr.get("color_cromo") else ident.C[ident.roles["claro"]]

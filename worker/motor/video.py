@@ -1236,6 +1236,23 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
                 f"para llegar a los {objetivo:.0f}s se dejaron afuera "
                 f"{len(conteo) - len(quedan)} tramos ({fuera:.0f}s)")
 
+    # `encuadre: "caras"` — el recorte vertical va a donde están las caras.
+    #
+    # Va DESPUÉS de los silencios y del largo objetivo, porque parte los
+    # tramos que quedaron; y ANTES de los subtítulos, porque partir un tramo
+    # en pedazos contiguos no cambia el reloj del reel y los subtítulos se
+    # calculan sobre los tramos finales. Ver `motor/encuadre.py` para qué
+    # decide y con qué datos. Si no puede, los tramos quedan como estaban.
+    if str(g.get("encuadre") or "").strip().lower() == "caras" and (g.get("tramos") or []):
+        from . import encuadre as _encuadre
+        g = dict(g)
+        try:
+            g["tramos"], avisos_enc = _encuadre.aplicar(g["tramos"], base)
+            avisos_previos += avisos_enc
+        except Exception as e:                               # noqa: BLE001
+            log.warning("no pude encuadrar por caras: %s; sale centrado", e)
+            avisos_previos.append(f"no pude encuadrar por caras ({e}); sale centrado")
+
     # `subtitulos: "auto"` significa «sacalos de lo que se dice en el video».
     # Se resuelve ACÁ y no en cada puerta porque por acá pasan las dos: la tool
     # del chat y el agente diseñador que corre `video.py guion.json`. Una sola
@@ -1354,7 +1371,7 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     # y a elegir dentro de una selección ya hecha. Se irían comiendo el reel de
     # a poco en cada retoque.
     armado = {k: v for k, v in g.items()
-              if k not in ("cortar_silencios", "duracion_objetivo")}
+              if k not in ("cortar_silencios", "duracion_objetivo", "encuadre")}
 
     spec = _guion.a_spec(g, nombre, base)
     return reel(spec, salida), avisos, armado

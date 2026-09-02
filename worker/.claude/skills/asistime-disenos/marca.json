@@ -165,7 +165,9 @@
       "animo_musica": "calmo",
       "acento": "azul",
       "plantilla": "titular",
-      "_plantilla": "Con cuál de las plantillas de esta marca se dibuja el rótulo del reel. En Boss y Stadium se llama `campana`; Asistime no tiene ninguna con ese nombre y usa `titular` en modo `sobre_video`. Hasta el 2/9/2026 el nombre estaba escrito adentro del motor, así que una marca sin `campana` moría al dibujar el rótulo — o sea después de pagar el video."
+      "_plantilla": "Con cuál de las plantillas de esta marca se dibuja el rótulo del reel. En Boss y Stadium se llama `campana`; Asistime no tiene ninguna con ese nombre y usa `titular` en modo `sobre_video`. Hasta el 2/9/2026 el nombre estaba escrito adentro del motor, así que una marca sin `campana` moría al dibujar el rótulo — o sea después de pagar el video.",
+      "encuadre": "caras",
+      "_encuadre": "Al montar un video apaisado, el recorte vertical sigue a las caras: se centra en la persona en primer plano y se abre para que entren todas en un plano de dos. Asistime publica gente hablando; sin esto el recorte centrado partía la cara del primer plano (medido el 2/9/2026)."
     },
     "carrusel": {
       "color_cromo": "navy",

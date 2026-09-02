@@ -1679,6 +1679,10 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 # escribe algo legible en vez de pegar URLs firmadas.
                 nombres = _bajar_clips(clips, material)
                 guion = _renombrar(guion, nombres)
+                # El encuadre lo declara la marca; el guion puede pisarlo.
+                enc = getattr(marca_mod, "ENCUADRE_REEL", "") if marca_mod else ""
+                if enc and "encuadre" not in guion:
+                    guion = {**guion, "encuadre": enc}
 
                 # Un guion SIN tramos no es un guion incompleto: es el caso
                 # normal. El agente del chat no puede ver los videos —recién se
