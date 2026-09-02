@@ -28,6 +28,11 @@ minutos** — sin que nadie toque código ni despliegue nada.
 **Son dos repos distintos.** El código nuevo vive en `calculadora-asistime`, no
 en el repo del worker. Hay que traerlo y copiarlo:
 
+> **Todo lo que sigue se corre parado en `~/worker`.** Es el error más fácil
+> de cometer y el más rápido de descartar: si `python3 herramientas/…` contesta
+> «No such file or directory», casi siempre es que la terminal está en `~`.
+> Cloud Shell abre ahí cada vez.
+
 ```bash
 # 1. traer el código nuevo, a donde sea
 rm -rf /tmp/nuevo
@@ -42,6 +47,8 @@ cp -r /tmp/nuevo/worker/motor    .
 cp -r /tmp/nuevo/worker/herramientas .
 cp -r /tmp/nuevo/worker/funciones    .
 cp -r /tmp/nuevo/worker/estudio      .
+cp -r /tmp/nuevo/worker/migraciones  .
+cp -r /tmp/nuevo/worker/alta         .
 cp    /tmp/nuevo/worker/*.sql /tmp/nuevo/worker/*.md .
 cp    /tmp/nuevo/worker/requirements.txt .
 cp    /tmp/nuevo/worker/clientes.py /tmp/nuevo/worker/desplegar-chat.sh .
