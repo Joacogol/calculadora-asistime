@@ -29,6 +29,18 @@ dos resultados uno al lado del otro, con sus tokens. El anuncio de Google dice
 que el agéntico es para video largo; acá se mide en TU video, con TU
 instrucción, y se decide con eso.
 
+## YouTube, y mirar sólo un rango
+
+    python3 herramientas/mirar-video.py \\
+        --youtube https://www.youtube.com/watch?v=… --desde 5:00 --hasta 10:00 \\
+        --instruccion "un clip de hasta un minuto con lo más interesante sobre IA"
+
+Un video PÚBLICO de YouTube se le pasa por URL, sin bajar nada: Google lo
+lee de su lado. Con `--desde/--hasta` se le pide que mire sólo ese rango
+—en estático es un campo de la API; en agéntico la API no lo tiene y se lo
+dice la instrucción—. Los tiempos que devuelve son del video entero, no del
+rango: se validan contra el rango para saber si lo respetó.
+
 ## Por qué la copia liviana
 
 Un video de 61 minutos en 4K pesa 11 GB. Inline entran 100 MB. Una copia a
@@ -176,6 +188,39 @@ def con_desplazamiento(tramos: list[dict], partes: list[dict]) -> list[dict]:
     return salida
 
 
+def entrada_video(modo: str, *, datos: bytes | None = None, youtube: str | None = None,
+                  desde: float | None = None, hasta: float | None = None) -> dict:
+    """El objeto `video` del pedido, en la forma que esta API espera.
+
+    Dos formas distintas para `processing`, y no es un capricho nuestro: en
+    agéntico es la cadena "agentic"; en estático, si hay rango o fps, es un
+    objeto `{"type": "static", "start_offset": …, "end_offset": …}`. Los
+    offsets van en SEGUNDOS según la doc del 2/9/2026 —se imprime lo que se
+    manda para poder comprobarlo contra lo que devuelve—.
+
+    En agéntico la API no tiene rango: se le pide en la instrucción y se
+    valida después. Si no lo respeta, se ve en los tiempos.
+    """
+    import base64
+    v: dict = {"type": "video"}
+    if youtube:
+        v["uri"] = youtube
+    else:
+        v["data"] = base64.b64encode(datos or b"").decode()
+        v["mime_type"] = "video/mp4"
+    con_rango = desde is not None or hasta is not None
+    if modo == "static" and con_rango:
+        proc: dict = {"type": "static"}
+        if desde is not None:
+            proc["start_offset"] = int(desde)
+        if hasta is not None:
+            proc["end_offset"] = int(hasta)
+        v["processing"] = proc
+    else:
+        v["processing"] = modo
+    return v
+
+
 def duracion_de(ruta_o_url: str) -> float:
     """Segundos, con ffprobe. Cero si no hay ffprobe: se valida menos, no se frena."""
     try:
@@ -188,8 +233,20 @@ def duracion_de(ruta_o_url: str) -> float:
         return 0.0
 
 
-def pregunta(instruccion: str, objetivo: float, partes: int, duracion: float) -> str:
+def mmss(seg: float) -> str:
+    m, s_ = divmod(int(round(seg)), 60)
+    return f"{m:02d}:{s_:02d}"
+
+
+def pregunta(instruccion: str, objetivo: float, partes: int, duracion: float,
+             desde: float | None = None, hasta: float | None = None) -> str:
     dur = f" El video dura {duracion / 60:.0f} minutos." if duracion else ""
+    if desde is not None or hasta is not None:
+        a = mmss(desde or 0)
+        b = mmss(hasta) if hasta is not None else "el final"
+        dur += (f" MIRÁ SOLAMENTE entre {a} y {b} del video: todo tramo que elijas "
+                f"tiene que estar dentro de ese rango, con los tiempos del video "
+                f"entero (no relativos al rango).")
     en_partes = (f" El video viene en {partes} partes consecutivas: en cada tramo "
                  f"indicá `parte` (1 a {partes}) y los tiempos DENTRO de esa parte."
                  if partes > 1 else "")
@@ -213,8 +270,11 @@ def pregunta(instruccion: str, objetivo: float, partes: int, duracion: float) ->
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--url", action="append", required=True,
+    p.add_argument("--url", action="append", default=[],
                    help="URL de la copia liviana. Repetible si viene en partes, en orden.")
+    p.add_argument("--youtube", help="URL de un video PÚBLICO de YouTube (Google lo lee de su lado)")
+    p.add_argument("--desde", help="mirar sólo desde este tiempo (MM:SS o segundos)")
+    p.add_argument("--hasta", help="mirar sólo hasta este tiempo (MM:SS o segundos)")
     p.add_argument("--instruccion", required=True)
     p.add_argument("--objetivo", type=float, default=30, help="segundos de reel (default 30)")
     p.add_argument("--modo", choices=("ambos", "agentic", "static"), default="ambos")
@@ -222,8 +282,17 @@ def main() -> int:
     p.add_argument("--guion", help="dónde escribir el guion listo para montar_reel")
     args = p.parse_args()
 
+    if bool(args.youtube) == bool(args.url):
+        raise SystemExit("pasá --youtube o --url (una de las dos, no las dos)")
+    desde = a_segundos(args.desde) if args.desde else None
+    hasta = a_segundos(args.hasta) if args.hasta else None
+    if desde is not None and hasta is not None and hasta <= desde:
+        raise SystemExit("--hasta tiene que ser mayor que --desde")
+
     k = clave()
     partes = []
+    if args.youtube:
+        print(f"· YouTube {args.youtube}" + (f" · rango {mmss(desde or 0)}–{mmss(hasta) if hasta else 'fin'}" if (desde or hasta) else ""), flush=True)
     for u in args.url:
         print(f"· bajando {u}", flush=True)
         datos = gem.bajar(u)
@@ -235,14 +304,18 @@ def main() -> int:
     print(f"  {len(partes)} parte(s), {sum(len(p_['bytes']) for p_ in partes) / 1e6:.0f} MB, "
           f"{total_dur / 60:.1f} min", flush=True)
 
-    texto_pregunta = pregunta(args.instruccion, args.objetivo, len(partes), total_dur)
+    texto_pregunta = pregunta(args.instruccion, args.objetivo, max(len(partes), 1), total_dur, desde, hasta)
     modos = ("agentic", "static") if args.modo == "ambos" else (args.modo,)
     resultados = {}
     for modo in modos:
         print(f"\n■ {modo.upper()} ({args.modelo})", flush=True)
         # Con varias partes se mandan todas en el mismo pedido: el modelo las
         # ve seguidas y numera la parte en cada tramo.
-        if len(partes) == 1:
+        if args.youtube:
+            ent = entrada_video(modo, youtube=args.youtube, desde=desde, hasta=hasta)
+            print(f"  processing = {json.dumps(ent['processing'])}", flush=True)
+            r = _preguntar_entradas(k, [{"type": "text", "text": texto_pregunta}, ent], args.modelo)
+        elif len(partes) == 1:
             r = gem.con_paciencia(k, partes[0]["bytes"], "video/mp4", texto_pregunta, modo, args.modelo)
         else:
             r = _preguntar_varias(k, partes, texto_pregunta, modo, args.modelo)
@@ -262,6 +335,14 @@ def main() -> int:
             resultados[modo] = {"error": "sin JSON", "texto": texto}
             continue
         tramos, avisos = validar_tramos(j.get("tramos"), total_dur if len(partes) == 1 else 0, args.objetivo)
+        if desde is not None or hasta is not None:
+            fuera = [t for t in tramos if (desde is not None and t["desde"] < desde - 1)
+                     or (hasta is not None and t["hasta"] > hasta + 1)]
+            if fuera:
+                avisos.append(f"{len(fuera)} tramo(s) fuera del rango pedido "
+                              f"{mmss(desde or 0)}–{mmss(hasta) if hasta else 'fin'}: "
+                              + ", ".join(f"{mmss(t['desde'])}–{mmss(t['hasta'])}" for t in fuera))
+                tramos = [t for t in tramos if t not in fuera]
         if len(partes) > 1:
             tramos = con_desplazamiento(tramos, partes)
             tramos, mas = validar_tramos(tramos, total_dur, args.objetivo)
@@ -286,7 +367,7 @@ def main() -> int:
             g = {
                 "_origen": f"gemini {elegido} {args.modelo}",
                 "_instruccion": args.instruccion,
-                "tramos": [{"archivo": "ORIGINAL.mp4", "desde": t["desde"], "hasta": t["hasta"]}
+                "tramos": [{"archivo": args.youtube or "ORIGINAL.mp4", "desde": t["desde"], "hasta": t["hasta"]}
                            for t in resultados[elegido]["tramos"]],
                 "subtitulos": "auto",
                 "hook": resultados[elegido]["gancho"] or "auto",
@@ -301,25 +382,35 @@ def main() -> int:
 
 def _preguntar_varias(k, partes, texto, modo, modelo):
     """Un pedido con todas las partes, numeradas, en orden."""
-    import base64
     entrada = [{"type": "text", "text": texto}]
     for i, p_ in enumerate(partes, 1):
         entrada.append({"type": "text", "text": f"PARTE {i}:"})
-        entrada.append({"type": "video", "data": base64.b64encode(p_["bytes"]).decode(),
-                        "mime_type": "video/mp4", "processing": modo})
-    cuerpo = {"model": modelo, "input": entrada}
-    pedido = urllib.request.Request(
-        gem.API, data=json.dumps(cuerpo).encode(),
-        headers={"Content-Type": "application/json", "x-goog-api-key": k})
+        entrada.append(entrada_video(modo, datos=p_["bytes"]))
+    return _preguntar_entradas(k, entrada, modelo)
+
+
+def _preguntar_entradas(k, entrada, modelo):
+    """Un pedido con la lista de entradas ya armada. Reintenta 503/504, no 429."""
     import time
-    t0 = time.time()
-    try:
-        with urllib.request.urlopen(pedido, timeout=gem.TIMEOUT) as r:
-            return {"datos": json.load(r), "segundos": round(time.time() - t0, 1)}
-    except urllib.error.HTTPError as e:
-        return {"error": f"HTTP {e.code}: {e.read()[:400].decode(errors='replace')}", "codigo": e.code}
-    except TimeoutError:
-        return {"error": f"no contestó en {gem.TIMEOUT} s", "codigo": 504}
+    cuerpo = {"model": modelo, "input": entrada}
+    espera = 15
+    for intento in range(1, 5):
+        pedido = urllib.request.Request(
+            gem.API, data=json.dumps(cuerpo).encode(),
+            headers={"Content-Type": "application/json", "x-goog-api-key": k})
+        t0 = time.time()
+        try:
+            with urllib.request.urlopen(pedido, timeout=gem.TIMEOUT) as r:
+                return {"datos": json.load(r), "segundos": round(time.time() - t0, 1)}
+        except urllib.error.HTTPError as e:
+            r_ = {"error": f"HTTP {e.code}: {e.read()[:400].decode(errors='replace')}", "codigo": e.code}
+        except TimeoutError:
+            r_ = {"error": f"no contestó en {gem.TIMEOUT} s", "codigo": 504}
+        if r_["codigo"] not in (503, 504) or intento == 4:
+            return r_
+        print(f"  Google saturado ({r_['codigo']}). Espero {espera} s y vuelvo…", flush=True)
+        time.sleep(espera); espera *= 2
+    return r_
 
 
 if __name__ == "__main__":
