@@ -503,7 +503,27 @@ class Alta:
         sobran = formatos_de(identidad.cargar(self.carpeta / "marca.py"))
         if sobran:
             self.decir(f"  (sin {', '.join(sorted(sobran))}: esta marca no los sabe hacer)")
-        origen = self._asistime("GET", f"/tenants/{REFERENCIA['tenant']}/agents/{REFERENCIA['agente']}/tools")
+        # Este GET lee el tenant de la marca de REFERENCIA, no el de la nueva.
+        # Una clave de Asistime está atada a UN tenant, así que la clave del
+        # cliente nuevo no sirve acá: contesta 403 «Cannot operate in this
+        # tenant», que no dice en ningún lado que el problema es de qué tenant
+        # es la clave. Pasó el 2/9/2026 con Asistime.
+        try:
+            origen = self._asistime(
+                "GET", f"/tenants/{REFERENCIA['tenant']}/agents/{REFERENCIA['agente']}/tools")
+        except SystemExit as e:
+            if "403" not in str(e):
+                raise
+            raise SystemExit(
+                f"ASISTIME_ADMIN_CLAVE no puede leer el tenant "
+                f"{REFERENCIA['tenant']} ({REFERENCIA['nombre']}), que es de "
+                f"donde se copian las herramientas.\n"
+                f"Una clave de Asistime vale para UN tenant. Para este paso "
+                f"hace falta una que vea los dos: el de {REFERENCIA['nombre']} "
+                f"y el de «{self.nombre}».\n"
+                f"Si no la tenés, las herramientas se escriben a mano en el "
+                f"panel del tenant nuevo — sale mejor, porque una copia "
+                f"arrastra frases de la otra marca que quedan falsas.") from e
         ids = []
         for tool in origen:
             nueva = sustituir_tool(tool, REFERENCIA, destino, sobran)
