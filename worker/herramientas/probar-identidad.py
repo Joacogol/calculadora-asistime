@@ -103,6 +103,21 @@ if modo == "--contra-python":
         for n in ("TIPO_REEL", "ANIMO_MUSICA", "ACENTO_REEL", "COLOR_CROMO", "FUENTE_CROMO", "FUENTE_TEXTO", "ACENTO_POR_DEFECTO", "NOMBRE", "VOCABULARIO"):
             ok(getattr(viejo, n) == getattr(nuevo, n), f"{n} igual", (getattr(viejo, n), getattr(nuevo, n)))
 
+print("\n■ asistime-disenos: la primera marca que entró entera como datos")
+#
+# Sin Python, sin SVG —sus logos son PNG en dos versiones— y con las fuentes en
+# woff2 más dos TTF fijas para los rótulos del reel. Si esto carga y dibuja,
+# el camino del alta está completo de punta a punta.
+asi = identidad.cargar(RAIZ / ".claude/skills/asistime-disenos/marca.py")
+ok(contrato.verificar(asi), "cumple el contrato")
+ok(sorted(asi.PLANTILLAS) == ["cierre", "dato", "titular"], "sus tres plantillas", sorted(asi.PLANTILLAS))
+asal = renders(asi)
+ok(len(asal) == 12, "12 salidas", len(asal))
+ok('<img src="assets/lockup-color.png"' in asal["cierre/post"], "el logo PNG va como imagen")
+ok('<img src="assets/isotipo-blanco.png"' in asal["dato/post"], "y sobre oscuro va la versión blanca")
+ok(asi.TIPO_REEL == ("sora-800.ttf", "sora-600.ttf") and all((RAIZ / ".claude/skills/asistime-disenos/fonts" / f).exists() for f in asi.TIPO_REEL),
+   "las TTF del reel existen")
+
 hashes = {k: hashlib.sha256(v.encode("utf-8")).hexdigest() for k, v in sal.items()}
 if modo == "--grabar":
     FIXTURE.parent.mkdir(exist_ok=True)

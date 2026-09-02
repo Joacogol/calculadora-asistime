@@ -32,27 +32,58 @@ def _color(ident, rol, dado=None):
     return ident.C[ident.roles[rol]]
 
 
+def _imagen_de_marca(ident, spec):
+    """Cómo dibujar un logo, sea vectorial o raster.
+
+    Un SVG se pinta del color que se pida: se reemplaza un marcador dentro del
+    archivo. Un PNG no se puede pintar, así que la identidad trae DOS archivos
+    —`archivo` para fondos claros y `claro` para fondos oscuros— y acá se
+    elige uno según el color pedido. Es lo que tiene la mayoría de los
+    clientes: un lockup en color y otro en blanco, y ningún vector.
+    """
+    archivo = spec["archivo"]
+    es_svg = archivo.lower().endswith(".svg")
+    claro = ident.C[ident.roles["claro"]].lower()
+    if es_svg:
+        svg = ident.archivo_texto(archivo)
+        marcador = spec.get("marcador", "CURRENT")
+        color_defecto = ident.C[spec.get("color", ident.roles["acento"])]
+
+        def dibujar(w, h, color):
+            return (f'<div style="width:{w}px;height:{h}px">'
+                    f'{svg.replace(marcador, color or color_defecto)}</div>')
+        return dibujar
+
+    if not (ident.carpeta / archivo).exists():
+        raise ValueError(f"«{ident.carpeta.name}» nombra {archivo} y no está")
+
+    def dibujar(w, h, color):
+        # Sobre oscuro va la versión clara, si la identidad la trae.
+        usar = spec.get("claro") if (color and color.lower() == claro and spec.get("claro")) else archivo
+        return (f'<img src="{usar}" style="width:{w}px;height:{h}px;'
+                f'object-fit:contain;object-position:left center;display:block">')
+    return dibujar
+
+
 def logo(ident):
     """El logotipo horizontal, como HTML.
 
-    `color` lo pinta plano: claro cuando va sobre acento o sobre foto oscura.
-    Sin argumento sale en el color que la identidad declara para el logo.
+    `color` lo pinta plano cuando es un SVG; cuando es un PNG, elige la
+    versión clara sobre fondos oscuros. Sin argumento sale como va sobre
+    claro.
 
     El ancho base sale de la identidad (Stadium: 300 px sobre 1080, un 28%).
     Es más chico de lo que pide el instinto, y a propósito: en una pieza de
     retail el que tiene que gritar es el precio, no la tienda.
     """
-    svg = ident.archivo_texto(ident.logo["archivo"])
-    marcador = ident.logo.get("marcador", "CURRENT")
+    dibujar = _imagen_de_marca(ident, ident.logo)
     ratio, base = ident.logo["ratio"], ident.logo.get("ancho", 300)
-    color_defecto = ident.C[ident.logo.get("color", ident.roles["acento"])]
 
     def _logo(size=1.0, color=None, align="left"):
         ancho = base * size
         caja = {"left": "flex-start", "center": "center", "right": "flex-end"}[align]
         return (f'<div style="display:flex;justify-content:{caja}">'
-                f'<div style="width:{ancho:.0f}px;height:{ancho / ratio:.1f}px">'
-                f'{svg.replace(marcador, color or color_defecto)}</div></div>')
+                f'{dibujar(f"{ancho:.0f}", f"{ancho / ratio:.1f}", color)}</div>')
     return _logo
 
 
@@ -63,15 +94,12 @@ def iso(ident):
     """
     if not ident.iso:
         return None
-    svg = ident.archivo_texto(ident.iso["archivo"])
-    marcador = ident.iso.get("marcador", "CURRENT")
+    dibujar = _imagen_de_marca(ident, ident.iso)
     ratio, base = ident.iso["ratio"], ident.iso.get("alto", 96)
-    color_defecto = ident.C[ident.iso.get("color", ident.roles["acento"])]
 
     def _iso(size=1.0, color=None):
         alto = base * size
-        return (f'<div style="width:{alto * ratio:.1f}px;height:{alto:.0f}px">'
-                f'{svg.replace(marcador, color or color_defecto)}</div>')
+        return dibujar(f"{alto * ratio:.1f}", f"{alto:.0f}", color)
     return _iso
 
 

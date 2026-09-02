@@ -1,0 +1,27 @@
+{#- El slide de impacto. Fondo oscuro con el degradé radial azul de la marca,
+    el número enorme en azul glow y la frase en blanco. Es el único momento
+    oscuro de Asistime y su fuerza viene de que sea uno solo. -#}
+{%- set pal = paleta('oscuro') -%}
+{%- set n = d.numero|length -%}
+{%- set cuerpo = m.numero if n <= 4 else (m.numero * 0.72 if n <= 7 else m.numero * 0.5) -%}
+<div class="scrim fondo-oscuro"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
+  <div class="row" style="width:100%">{{ iso(m.iso, c.blanco) }}</div>
+  <div class="grow"></div>
+
+  {% if d.kicker %}
+  <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;margin-bottom:{{ m.kicker * 1.2 }}px">{{ d.kicker }}</div>
+  {% endif %}
+  <div class="disp-num" style="color:{{ pal.acento }};font-size:{{ cuerpo }}px;
+    text-shadow:0 0 60px rgba(43,139,255,.45)">{{ d.numero }}</div>
+  <div class="sub" style="color:{{ pal.tinta }};font-size:{{ m.texto }}px;margin-top:{{ m.texto * 0.7 }}px;max-width:820px">{{ d.texto }}</div>
+
+  <div class="grow"></div>
+  <div class="row" style="width:100%;align-items:flex-end">
+    <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>
+    {% if d.fuente %}
+    <div class="legal" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:560px;text-align:right">{{ d.fuente }}</div>
+    {% endif %}
+  </div>
+</div>

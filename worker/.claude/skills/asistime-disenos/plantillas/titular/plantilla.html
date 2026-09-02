@@ -1,0 +1,66 @@
+{#- La pieza de todos los días de Asistime: un claim en Sora 800 sobre el
+    fondo claro de la marca, con UNA palabra en azul. Aireada a propósito —la
+    marca vende orden y calma— así que el texto ocupa poco y el blanco mucho.
+
+    Con foto, todo va en blanco y el velo se MIDE contra esa foto: un valor
+    fijo se rompe con la primera foto distinta. -#}
+{%- set pal = paleta(d.estilo) -%}
+{%- if d.foto -%}
+  {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco, secundario='#E3EBFF') -%}
+{%- endif -%}
+{%- set sombra = sombra_texto() if d.foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if d.foto else '' -%}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 24 else (m.titulo * 0.8 if t <= 44 else m.titulo * 0.62) -%}
+{%- set centrado = d.alineacion == 'centro' -%}
+{#- El destacado se pinta buscando la frase dentro del título. Si no está
+    escrita igual, no pasa nada: el título sale entero en tinta, que es mejor
+    que un azul en cualquier lado. -#}
+{%- set titulo = d.titulo -%}
+{%- if d.destacado and d.destacado in d.titulo -%}
+  {%- set titulo = d.titulo.replace(d.destacado, '<span style="color:' ~ pal.acento ~ '">' ~ d.destacado ~ '</span>') -%}
+{%- endif -%}
+
+{% if d.foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{%- set plan = plan_titular(d.foto, pal.tinta, c.oscuro, (0.25, 0.85), 4.5, 4.5) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.85) }}"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  align-items:{{ 'center' if centrado else 'flex-start' }};
+  text-align:{{ 'center' if centrado else 'left' }}">
+
+  <div class="row" style="width:100%">{{ iso(m.iso, pal.tinta) }}</div>
+  <div class="grow"></div>
+
+  <div style="max-width:{{ '100%' if centrado else '94%' }}">
+    {% if d.kicker %}
+    <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 1.1 }}px;{{ sombra_chica }}">{{ d.kicker }}</div>
+    {% endif %}
+    <div class="disp" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
+      white-space:pre-line;{{ sombra }}">{{ titulo }}</div>
+    {% if d.bajada %}
+    <div class="body" style="color:{{ pal.secundario }};font-size:{{ m.bajada }}px;{{ sombra_chica }}
+      margin-top:{{ m.bajada * 0.9 }}px;max-width:780px;
+      {{ 'margin-left:auto;margin-right:auto' if centrado else '' }}">{{ d.bajada }}</div>
+    {% endif %}
+    {% if d.boton %}
+    <div style="margin-top:{{ m.boton * 1.4 }}px">
+      <span class="boton {{ 'boton-claro' if d.estilo == 'azul' else '' }}"
+        style="font-size:{{ m.boton }}px;padding:{{ m.boton * 0.62 }}px {{ m.boton * 1.4 }}px">{{ d.boton }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+  <div class="row" style="width:100%;align-items:flex-end">
+    <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>
+    {% if d.pie %}
+    <div class="legal" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
+    {% endif %}
+  </div>
+</div>

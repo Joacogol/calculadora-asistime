@@ -1,0 +1,22 @@
+{
+  "id": "cierre",
+  "nombre": "Cierre",
+  "descripcion": "el llamado a la acción: «Hablá con Tony», el logo y la web",
+  "cuando_usarla": "Al final de un carrusel, o como placa suelta cuando la pieza ES el llamado a la acción. Siempre con el botón «Hablá con Tony». Tony aparece acá —es el alivio, va en los cierres y en las soluciones, nunca en los problemas— si le pasás una imagen suya en `tony`; sin imagen, el cierre sale igual de bien con el logo.",
+  "acento_por_defecto": "azul",
+  "medidas": {
+    "post":  {"alto": 1080, "pad": 80, "titulo": 88,  "bajada": 34, "boton": 32, "iso": 0.9,  "logo": 0.8,  "tony": 0.52, "legal": 20},
+    "vert":  {"alto": 1350, "pad": 84, "titulo": 100, "bajada": 36, "boton": 34, "iso": 1.0,  "logo": 0.85, "tony": 0.5,  "legal": 21},
+    "story": {"alto": 1920, "pad": 96, "titulo": 120, "bajada": 42, "boton": 38, "iso": 1.15, "logo": 1.0,  "tony": 0.42, "legal": 24},
+    "reel":  {"alto": 1920, "pad": 96, "titulo": 120, "bajada": 42, "boton": 38, "iso": 1.15, "logo": 1.0,  "tony": 0.42, "legal": 24}
+  },
+  "campos": [
+    {"id": "titulo", "tipo": "texto_largo", "etiqueta": "Título", "default": "¿Hablamos?", "ejemplo": "Tu negocio, atendido las 24 horas"},
+    {"id": "bajada", "tipo": "texto_largo", "etiqueta": "Bajada", "default": "Creá tu agente conversando. Sin código, sin técnicos.",
+     "ejemplo": "Creá tu agente conversando. Sin código, sin técnicos."},
+    {"id": "boton", "tipo": "texto", "etiqueta": "Botón", "default": "Hablá con Tony"},
+    {"id": "estilo", "tipo": "opcion", "etiqueta": "Fondo", "opciones": ["claro", "azul"], "default": "claro"},
+    {"id": "tony", "tipo": "imagen", "etiqueta": "Imagen de Tony", "default": "",
+     "nota": "Opcional. Un PNG de Tony con fondo transparente, GENERADO PARA ESTA PIEZA con los prompts del kit de marca: no hay un Tony fijo, y la referencia del kit lleva marca de agua y no sirve. Va recortado a la derecha, apoyado en el borde inferior."}
+  ]
+}

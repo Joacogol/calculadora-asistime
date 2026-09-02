@@ -1,0 +1,22 @@
+{
+  "id": "dato",
+  "nombre": "Dato",
+  "descripcion": "el slide oscuro de impacto: un número grande y una frase",
+  "cuando_usarla": "Cuando lo que manda es un número que duele o sorprende: «68% de los mensajes llegan fuera de horario». Es el ÚNICO momento oscuro de la marca y por eso funciona: una vez por carrusel, como máximo, y nunca dos seguidas. Siempre con la fuente del dato en `fuente`; un número sin fuente no se publica. Si no hay un número, es `titular`.",
+  "acento_por_defecto": "azul_glow",
+  "medidas": {
+    "post":  {"alto": 1080, "pad": 80, "numero": 250, "texto": 40, "kicker": 24, "iso": 0.9,  "legal": 20},
+    "vert":  {"alto": 1350, "pad": 84, "numero": 290, "texto": 44, "kicker": 26, "iso": 1.0,  "legal": 21},
+    "story": {"alto": 1920, "pad": 96, "numero": 340, "texto": 52, "kicker": 30, "iso": 1.15, "legal": 24},
+    "reel":  {"alto": 1920, "pad": 96, "numero": 340, "texto": 52, "kicker": 30, "iso": 1.15, "legal": 24}
+  },
+  "campos": [
+    {"id": "numero", "tipo": "texto", "etiqueta": "El número", "requerido": true, "ejemplo": "68%",
+     "nota": "Corto: «68%», «3 de 4», «24/7», «2 min». Es lo único que se lee desde el feed."},
+    {"id": "texto", "tipo": "texto_largo", "etiqueta": "Qué significa", "requerido": true,
+     "ejemplo": "de los mensajes que recibe un negocio llegan fuera del horario de atención"},
+    {"id": "kicker", "tipo": "texto", "etiqueta": "Antetítulo", "default": "EL DATO"},
+    {"id": "fuente", "tipo": "texto", "etiqueta": "Fuente", "default": "", "ejemplo": "Fuente: Meta Business, 2025",
+     "nota": "Obligatoria en la práctica: un dato sin fuente no se publica. Si la persona no la tiene, preguntala."}
+  ]
+}

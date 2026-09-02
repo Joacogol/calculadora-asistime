@@ -1,0 +1,161 @@
+{
+  "nombre": "Asistime",
+  "slug": "asistime",
+  "web": "asistime.ai",
+  "instagram": "@asistime.ai",
+  "formato_por_defecto": "vert",
+  "sedes": [
+    "Todas"
+  ],
+  "sede_por_defecto": "Todas",
+  "telefono_por_defecto": false,
+  "regla_telefono": "No lleva teléfono. El llamado a la acción de la marca es «Hablá con Tony» y la web asistime.ai.",
+  "quien_es": "Trabajás para Asistime.ai, la plataforma de agentes de IA de LAiB: un negocio crea agentes conversando, y esos agentes atienden por WhatsApp, Instagram, Facebook y TikTok. Le habla a dueños de pymes y emprendedores, no a técnicos. Lo que cada pieza tiene que dejar es alivio: «esto me devuelve tiempo». El tagline es «más tiempo para lo que amas».",
+  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Un solo azul, y el oscuro una vez.** La marca es clara por defecto. El slide oscuro es el del dato que duele —la plantilla `dato`— y va una vez por carrusel como máximo. No uses violeta: el manual viejo lo tenía y las piezas publicadas no.\n\n**4 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.",
+  "como_habla": "Voseo rioplatense, frases cortas, cálido y concreto. Le hablás a quien tiene un negocio y poco tiempo, así que sin jerga: no decís «orquestación» ni «LLM», decís «un agente que atiende». Sin viñetas para lo que entra en dos renglones.",
+  "fotos": {
+    "creditos_maximos": 100
+  },
+  "asistime": {},
+  "identidad": {
+    "colores": {
+      "azul": "#006AFF",
+      "azul_texto": "#005CFF",
+      "azul_profundo": "#0047CC",
+      "azul_glow": "#2B8BFF",
+      "navy": "#00082F",
+      "navy_70": "#3A4160",
+      "navy_45": "#7A8098",
+      "oscuro": "#01030D",
+      "fondo": "#FBFCFE",
+      "blanco": "#FFFFFF",
+      "whatsapp": "#25D366"
+    },
+    "roles": {
+      "acento": "azul",
+      "claro": "blanco",
+      "tinta": "navy"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "tipografias": [
+      {
+        "familia": "Sora",
+        "archivo": "fonts/sora-400.woff2",
+        "pesos": "400"
+      },
+      {
+        "familia": "Sora",
+        "archivo": "fonts/sora-500.woff2",
+        "pesos": "500"
+      },
+      {
+        "familia": "Sora",
+        "archivo": "fonts/sora-600.woff2",
+        "pesos": "600"
+      },
+      {
+        "familia": "Sora",
+        "archivo": "fonts/sora-700.woff2",
+        "pesos": "700"
+      },
+      {
+        "familia": "Sora",
+        "archivo": "fonts/sora-800.woff2",
+        "pesos": "800"
+      },
+      {
+        "familia": "DM Sans",
+        "archivo": "fonts/dm-sans-400.woff2",
+        "pesos": "400"
+      },
+      {
+        "familia": "DM Sans",
+        "archivo": "fonts/dm-sans-500.woff2",
+        "pesos": "500"
+      },
+      {
+        "familia": "DM Sans",
+        "archivo": "fonts/dm-sans-700.woff2",
+        "pesos": "700"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/lockup-color.png",
+      "claro": "assets/lockup-blanco.png",
+      "ratio": 5.0,
+      "ancho": 320,
+      "_nota": "El lockup mide 2000×400: ratio 5. En PNG, así que sobre oscuro va el archivo blanco en vez de pintarse."
+    },
+    "iso": {
+      "archivo": "assets/isotipo-azul.png",
+      "claro": "assets/isotipo-blanco.png",
+      "ratio": 1.0,
+      "alto": 52,
+      "_nota": "El isotipo va arriba a la izquierda, ~52 px sobre 1080, como en los carruseles publicados."
+    },
+    "componentes": {
+      "barra": {
+        "texto": "asistime.ai"
+      },
+      "paleta": {
+        "por_defecto": "claro"
+      },
+      "pastilla": {
+        "radio": 999,
+        "_nota": "Todo en Asistime es píldora: botones, chips, etiquetas."
+      }
+    },
+    "paletas": {
+      "claro": {
+        "fondo": "linear-gradient(155deg,#FDFDFF 0%,#F6F9FE 45%,#E9F0FE 100%)",
+        "tinta": "$navy",
+        "acento": "$azul",
+        "secundario": "$navy_70"
+      },
+      "oscuro": {
+        "fondo": "radial-gradient(120% 90% at 78% 62%,#062A6B 0%,#021340 38%,#01030D 78%)",
+        "tinta": "$blanco",
+        "acento": "$azul_glow",
+        "secundario": "#B9C4E0"
+      },
+      "azul": {
+        "fondo": "$azul",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "secundario": "#D6E5FF"
+      }
+    },
+    "acento_por_defecto": "azul",
+    "reel": {
+      "tipografias": [
+        "sora-800.ttf",
+        "sora-600.ttf"
+      ],
+      "animo_musica": "calmo",
+      "acento": "azul"
+    },
+    "carrusel": {
+      "color_cromo": "navy",
+      "fuente_cromo": "'Sora',sans-serif",
+      "fuente_texto": "'DM Sans',sans-serif"
+    },
+    "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas."
+  }
+}

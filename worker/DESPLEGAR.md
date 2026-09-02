@@ -3147,3 +3147,29 @@ la marca tiene que estar en la imagen), Instagram, y mirar las fotos.
 > probado sin red —la sustitución, el prompt, la simulación— y los contratos
 > de las dos APIs están leídos de su documentación. La primera corrida real es
 > la del cuarto cliente, y ahí se ajusta lo que haga falta.
+
+## Etapa 4 · D — Asistime, el cuarto cliente, entero como datos (2/9/2026)
+
+La prueba del camino nuevo: una marca que nunca tuvo Python. La carpeta
+`asistime-disenos` es `marca.json` (identidad + quién es + cuidados + cómo
+habla), `estilo.css`, las fuentes del kit en woff2 más dos TTF fijas para los
+rótulos del reel, los logos en PNG en dos versiones, y tres plantillas:
+
+| | |
+|---|---|
+| `titular` | el claim en Sora 800 sobre el fondo claro, con una palabra en azul; con foto, velo medido |
+| `dato` | el slide oscuro de impacto: número en azul glow y frase en blanco |
+| `cierre` | «Hablá con Tony», el lockup y la web; Tony opcional, si llega generado |
+
+Para eso el motor aprendió dos cosas que la mayoría de los clientes van a
+necesitar: **logos raster** —un PNG no se pinta, así que la identidad trae el
+de color y el blanco y se elige según el fondo— y **una tipografía por peso**
+cuando la marca no tiene variable.
+
+Las doce salidas (3 × 4 formatos) se renderizaron con Chromium y se miraron.
+Salen con la marca. Lo que no va: la imagen de Tony del kit es una referencia
+con marca de agua, no un recorte; el campo queda para una imagen generada.
+
+`alta.py asistime-disenos --simular` la carga y la verifica. Lo que falta
+para que sea un cliente de verdad es correr el alta sin `--simular`, desde
+Cloud Shell, con los dos tokens en el entorno.
