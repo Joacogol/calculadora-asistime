@@ -58,6 +58,23 @@ def _ficha(carpeta: pathlib.Path) -> dict:
     return datos.get("asistime") or {}
 
 
+def _del_registro(marca: str) -> str:
+    """La clave de Asistime del registro, si `gcloud` puede leerlo.
+
+    Existe para que estos scripts vean los MISMOS clientes que el worker. Ver
+    la nota larga en `registro.clave_de`.
+    """
+    import importlib.util
+    ruta = RAIZ / "herramientas" / "registro.py"
+    spec = importlib.util.spec_from_file_location("registro_cli", ruta)
+    cli = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(cli)
+        return cli.clave_de(marca)
+    except Exception:                                        # noqa: BLE001
+        return ""
+
+
 def main(argv):
     if len(argv) < 2:
         raise SystemExit(__doc__)
@@ -78,13 +95,13 @@ def main(argv):
     # que no la nombre sigue con `ASISTIME_CLAVE`. Mismo criterio que en
     # `app/manual.py`, donde está la explicación larga.
     variable = ficha.get("clave_env") or "ASISTIME_CLAVE"
-    clave = (os.environ.get(variable) or "").strip()
+    clave = (os.environ.get(variable) or "").strip() or _del_registro(nombre)
     if not clave:
         raise SystemExit(
-            f"falta {variable}, que es donde «{nombre}» busca su clave de "
-            f"Asistime.\n"
-            f"Si esa marca comparte la clave con otra, sacale `clave_env` de "
-            f"su marca.json.")
+            f"no encontré la clave de Asistime de «{nombre}»: no está en "
+            f"{variable} ni en el registro de clientes.\n"
+            f"Correlo con la variable puesta, o desde Cloud Shell con sesión "
+            f"de gcloud para que pueda leer el registro.")
 
     if not hasattr(marca, "CATALOGO"):
         raise SystemExit(f"«{nombre}» todavía no expone CATALOGO() en marca.py")

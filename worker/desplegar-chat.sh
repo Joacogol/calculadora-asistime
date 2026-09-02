@@ -331,6 +331,30 @@ gcloud scheduler jobs create http "${JOB}-red-seguridad" \
 # Si falla, el despliegue NO se cae: el catálogo anterior sigue sirviendo y lo
 # que se pierde es que esté al día. Se avisa y se sigue.
 echo "▸ 3b/4  Catálogo de plantillas al día en Asistime"
+# Con registro, la lista sale del REGISTRO y no de `clientes.json`.
+#
+# Miraban listas distintas: el worker atendía cuatro clientes y esto veía tres,
+# porque Asistime estaba en el registro y nunca se agregó al json. El catálogo
+# de Asistime se quedó viejo el 2/9/2026 sin que nada fallara — y un catálogo
+# viejo no avisa: el agente sigue leyendo campos que ya no existen.
+#
+# La clave la busca el propio `publicar-catalogo.py` en el registro cuando no
+# viene por variable de entorno, igual que hace el worker.
+if [ -n "$REGISTRO" ]; then
+  for MARCA in $MARCAS; do
+    if SALIDA="$(python3 herramientas/publicar-catalogo.py "$MARCA" 2>&1)"; then
+      echo "  · $MARCA: ${SALIDA##*· }"
+    else
+      echo "  ⚠ $MARCA: no pude republicar el catálogo (sigue el anterior):"
+      printf '%s\n' "$SALIDA" | tail -3 | sed 's/^/      /'
+    fi
+    # El prompt sólo para las marcas que lo generan del repo; el script se
+    # niega solo en las demás, así que su negativa no es un error acá.
+    if SALIDA="$(python3 herramientas/publicar-prompt.py "$MARCA" 2>&1)"; then
+      echo "  · $MARCA: ${SALIDA##*· }"
+    fi
+  done
+else
 while read -r MARCA VARIABLE SECRETO <&3; do
   if [ -z "${MARCA:-}" ]; then continue; fi
   if ! CLAVE="$(gcloud secrets versions access latest --secret="$SECRETO" 2>/dev/null)"; then
@@ -345,6 +369,7 @@ while read -r MARCA VARIABLE SECRETO <&3; do
   fi
   unset CLAVE
 done 3< <(python3 clientes.py asistime)
+fi
 
 echo "▸ 4/4  Listo — clientes: ${MARCAS}"
 echo

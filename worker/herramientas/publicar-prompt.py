@@ -81,10 +81,11 @@ def main(argv):
 
     marca = _cargar_marca(carpeta)
     variable = ficha.get("clave_env") or "ASISTIME_CLAVE"
-    clave = (os.environ.get(variable) or "").strip()
+    clave = (os.environ.get(variable) or "").strip() or _del_registro(nombre)
     if not clave:
         raise SystemExit(
-            f"falta {variable}, que es donde «{nombre}» busca su clave de Asistime.")
+            f"no encontré la clave de Asistime de «{nombre}»: no está en "
+            f"{variable} ni en el registro de clientes.")
 
     # Se importa acá y no arriba: `alta.py` trae `requests` y lee el entorno al
     # construirse, y este script tiene que poder fallar con un mensaje claro

@@ -58,6 +58,28 @@ def enmascarar(clave: str) -> str:
     return f"…{c[-4:]} ({len(c)} caracteres)"
 
 
+def clave_de(marca: str) -> str:
+    """La clave de Asistime de una marca, sacada del registro.
+
+    El worker ya la busca así —`app/manual.py`, primero el registro y después
+    la variable de entorno—, pero los scripts que se corren a mano no, y eso
+    partió la realidad en dos: el 2/9/2026 el worker atendía cuatro clientes y
+    el paso que republica catálogos veía tres, porque miraba `clientes.json` y
+    Asistime nunca se agregó ahí. El catálogo de Asistime se quedó viejo sin
+    que nada fallara.
+
+    Devuelve "" si no está, o si no hay `gcloud` con sesión: quien llama
+    decide si eso es un error.
+    """
+    try:
+        for c in bajar():
+            if c["marca"] == marca:
+                return (c.get("asistime_clave") or "").strip()
+    except Exception:                                        # noqa: BLE001
+        pass
+    return ""
+
+
 def tabla(clientes: list[dict]) -> str:
     filas = [f"{'marca':28} {'nombre':20} {'supabase':10} {'asistime':10}"]
     for c in clientes:
