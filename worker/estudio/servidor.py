@@ -29,7 +29,6 @@ worker las baja al skill en la corrida siguiente. Que el estudio escribiera
 directo en el disco del contenedor sería escribir en una copia que se pierde en
 el próximo despliegue.
 """
-import importlib
 import json
 import logging
 import os
@@ -55,8 +54,8 @@ def cargar_marca(nombre: str):
     carpeta = RAIZ / ".claude" / "skills" / nombre
     if not carpeta.is_dir():
         raise SystemExit(f"no existe la marca «{nombre}» en .claude/skills/")
-    sys.path.insert(0, str(carpeta))
-    return importlib.import_module("marca"), carpeta
+    from motor.cargador import cargar_marca
+    return cargar_marca(carpeta), carpeta
 
 
 # ── Datos de ejemplo ──────────────────────────────────────────────────────

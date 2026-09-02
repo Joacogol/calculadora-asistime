@@ -1652,15 +1652,11 @@ def _marca_mod(marca: str):
     marca a medio armar produce un reel con la tipografía de respaldo en vez de
     ningún reel.
     """
-    import importlib
-    import sys
+    from motor.cargador import cargar_marca
 
     from . import config
     try:
-        carpeta = config.RAIZ / ".claude" / "skills" / marca
-        sys.path.insert(0, str(carpeta))
-        sys.path.insert(0, str(config.RAIZ))
-        return importlib.import_module("marca")
+        return cargar_marca(config.RAIZ / ".claude" / "skills" / marca)
     except Exception:                                        # noqa: BLE001
         log.exception("no pude cargar el módulo de la marca %s", marca)
         return None
@@ -1932,9 +1928,6 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
     Y si no escribió ninguno, se devuelve None y el reel sale sin rótulo, que
     es infinitamente mejor que no salir.
     """
-    import importlib
-    import sys
-
     from . import config
 
     # El primero que tenga texto manda. El orden es el de importancia visual,
@@ -1945,10 +1938,9 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
         log.info("el reel %s no trae texto: va sin rótulo", fila.get("id"))
         return None
 
+    from motor.cargador import cargar_marca
     carpeta = config.RAIZ / ".claude" / "skills" / marca
-    sys.path.insert(0, str(carpeta))
-    sys.path.insert(0, str(config.RAIZ))
-    modulo = importlib.import_module("marca")
+    modulo = cargar_marca(carpeta)
 
     from motor import plantillas as mp
     from playwright.sync_api import sync_playwright

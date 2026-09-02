@@ -29,7 +29,6 @@ motor no carga —la regla del guión bajo—, y se borra al terminar. El disco 
 contenedor se pierde en el despliegue siguiente: lo que vale queda en la base.
 """
 import asyncio
-import importlib
 import json
 import os
 import logging
@@ -208,10 +207,8 @@ def _vocabulario(carpeta: Path) -> str:
     que reemplaza a cargarle el SKILL.md entero — de cuyas 1.049 líneas al que
     escribe una plantilla le sirven unas quince.
     """
-    import sys
-    sys.path.insert(0, str(carpeta))
-    sys.path.insert(0, str(config.RAIZ))
-    marca = importlib.import_module("marca")
+    from motor.cargador import cargar_marca
+    marca = cargar_marca(carpeta)
 
     colores = " · ".join(f"`c.{k}` {v}" for k, v in marca.C.items())
     formatos = " · ".join(f"`{k}` {w}×{h}" for k, (w, h) in marca.FORMATOS.items())
@@ -552,10 +549,8 @@ def _dibujar(marca_nombre: str, carpeta: Path, html: str, contrato: dict
     porque nadie más llama a Playwright en proceso: el diseñador de piezas le
     pide al agente que corra `render.py` por Bash, en otro proceso.
     """
-    import sys
-    sys.path.insert(0, str(carpeta))
-    sys.path.insert(0, str(config.RAIZ))
-    marca = importlib.import_module("marca")
+    from motor.cargador import cargar_marca
+    marca = cargar_marca(carpeta)
 
     from motor import plantillas as mp
     from motor.render import Render
