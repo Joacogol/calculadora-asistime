@@ -16,7 +16,10 @@
   "fotos": {
     "creditos_maximos": 100
   },
-  "asistime": {},
+  "asistime": {
+    "tenant": 1,
+    "_nota": "Asistime ya era el tenant 1 en su propia plataforma desde el 2/3/2026, con su perfil de negocio cargado. El alta lo reusa: crear un segundo «Asistime» partiría la cuenta en dos."
+  },
   "identidad": {
     "colores": {
       "azul": "#006AFF",

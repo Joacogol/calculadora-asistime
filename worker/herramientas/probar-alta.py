@@ -55,6 +55,33 @@ ok("crear_video" in p and "elegir" in p, "menciona crear_video y la elección de
 sin = alta.prompt_para({"nombre": "Otra"}, {})
 ok("Cuidados propios" not in sin and "Las que diga el catálogo." in sin, "sin cuidados ni plantillas, no inventa")
 
+print("\n■ El tenant se reusa cuando ya existe")
+#
+# Lo normal, no la excepción: Boss, Clínica y Stadium eran tenants de Asistime
+# antes de ser clientes de diseño, y Asistime es el tenant 1 desde marzo.
+class _Falso(alta.Alta):
+    def __init__(self, ficha, paginas):
+        self.ficha, self._paginas, self.dicho = ficha, paginas, []
+        self.nombre = ficha["nombre"]; self.slug = ficha.get("slug", "x"); self.simular = False
+    def _asistime(self, metodo, ruta, **kw):
+        return self._paginas.pop(0)
+    def decir(self, t): self.dicho.append(t)
+
+f = _Falso({"nombre": "Asistime", "slug": "asistime", "asistime": {"tenant": 1}}, [])
+ok(f._tenant_existente() == 1, "el marca.json manda y no se consulta nada")
+
+f = _Falso({"nombre": "Club Demo", "slug": "club-demo"}, [
+    {"data": [{"id": 5, "slug": "otro", "name": "Otro"}], "meta": {"totalPages": 2}},
+    {"data": [{"id": 42, "slug": "club-demo", "name": "Club Demo"}], "meta": {"totalPages": 2}}])
+ok(f._tenant_existente() == 42, "sin marca.json, lo busca por slug y pagina")
+
+f = _Falso({"nombre": "Club Demo", "slug": "club-demo"}, [
+    {"data": [{"id": 5, "slug": "otro", "name": "CLUB DEMO"}], "meta": {"totalPages": 1}}])
+ok(f._tenant_existente() == 5, "y lo encuentra por nombre aunque el slug no coincida")
+
+f = _Falso({"nombre": "Nadie", "slug": "nadie"}, [{"data": [], "meta": {"totalPages": 1}}])
+ok(f._tenant_existente() is None, "si no está, devuelve None y el alta lo crea")
+
 print("\n■ La simulación no toca nada")
 r = subprocess.run([sys.executable, "herramientas/alta.py", "stadium-disenos", "--simular"],
                    cwd=RAIZ, capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})

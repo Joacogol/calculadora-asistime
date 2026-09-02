@@ -26,7 +26,7 @@ vuelve a correr y sigue desde donde quedó. Nada se crea dos veces.
   supabase_tablas      las tablas, el bucket y las políticas
   supabase_funciones   las cinco funciones, con verify_jwt apagado
   supabase_secretos    la clave de API de las funciones
-  asistime_tenant      el tenant y su clave de API
+  asistime_tenant      el tenant —reusado si ya existe— y su clave de API
   asistime_agente      el agente diseñador con su prompt, publicado
   asistime_documentos  reglas de marca y catálogo, enganchados al agente
   asistime_herramientas  las tools, copiadas de la marca de referencia
@@ -270,18 +270,55 @@ class Alta:
                            json=[{"name": "API_CLAVE", "value": clave}])
         self.guardar("supabase_secretos", {"api_clave": clave})
 
+    def _tenant_existente(self) -> int | None:
+        """El tenant de esta marca, si ya está en Asistime.
+
+        Se busca —y no se crea de una— porque **lo normal es que ya exista**.
+        Boss, Clínica y Stadium eran clientes de Asistime antes de ser clientes
+        de diseño, y el tenant de Asistime mismo es el número 1. Crear uno
+        nuevo con el mismo nombre partiría al cliente en dos: sus
+        conversaciones de un lado y su diseñador del otro.
+
+        Primero se mira lo que diga el `marca.json`; si no dice nada, se busca
+        por slug en la lista, que viene paginada.
+        """
+        puesto = (self.ficha.get("asistime") or {}).get("tenant")
+        if puesto:
+            return int(puesto)
+        pagina = 1
+        while True:
+            r = self._asistime("GET", f"/admin/tenants?page={pagina}&pageSize=100")
+            for t in r.get("data", []):
+                if t.get("slug") == self.slug or (t.get("name") or "").strip().lower() == self.nombre.strip().lower():
+                    return t["id"]
+            meta = r.get("meta") or {}
+            if pagina >= (meta.get("totalPages") or 1):
+                return None
+            pagina += 1
+
     def asistime_tenant(self):
-        self.decir(f"tenant «{self.nombre}» ({self.slug}) en Asistime, con su aplicación y su clave")
         if self.simular:
+            self.decir(f"buscar el tenant de «{self.nombre}» ({self.slug}); si no está, crearlo")
+            self.decir("y en cualquier caso, su aplicación «Estudio de diseño» y una clave para el worker")
             return
-        t = self._asistime("POST", "/admin/tenants", json={"name": self.nombre, "slug": self.slug})
-        app = self._asistime("POST", f"/tenants/{t['id']}/applications",
+        t = self._tenant_existente()
+        if t:
+            self.decir(f"«{self.nombre}» ya es el tenant {t} en Asistime: lo reuso, no creo otro")
+        else:
+            t = self._asistime("POST", "/admin/tenants",
+                               json={"name": self.nombre, "slug": self.slug})["id"]
+            self.decir(f"tenant {t} creado")
+        # La aplicación y la clave son SIEMPRE nuevas, aunque el tenant sea
+        # viejo: es la credencial con la que el worker lee el manual de esta
+        # marca, y tiene que poder revocarse sin tocar nada más del cliente.
+        app = self._asistime("POST", f"/tenants/{t}/applications",
                              json={"name": "Estudio de diseño",
                                    "description": "El worker lee el manual de marca y publica el catálogo"})
-        k = self._asistime("POST", f"/tenants/{t['id']}/applications/{app['id']}/api-keys",
+        k = self._asistime("POST", f"/tenants/{t}/applications/{app['id']}/api-keys",
                            json={"name": "worker"})
-        self.guardar("asistime_tenant", {"tenant": t["id"], "aplicacion": app["id"],
-                                         "clave": k["plainKey"]})
+        self.decir(f"aplicación {app['id']} y clave …{k['plainKey'][-4:]}")
+        self.guardar("asistime_tenant", {"tenant": t, "aplicacion": app["id"],
+                                         "clave": k["plainKey"], "reusado": bool(self.ficha.get("asistime", {}).get("tenant"))})
 
     def asistime_agente(self):
         from motor import identidad
@@ -325,9 +362,14 @@ class Alta:
         doc = self._documento(t, "Reglas de marca", f"El criterio de {self.nombre}; lo edita la marca", reglas)
         cat = self._documento(t, "Catálogo de plantillas", "Lo genera el motor; no se edita a mano", m.CATALOGO())
         self._asistime("PUT", f"/tenants/{t}/agents/{a}/documents", json={"documentIds": [doc, cat]})
-        # Lo que el worker y publicar-catalogo.py leen de marca.json.
-        self.ficha["asistime"] = {"tenant": t, "documento": doc, "catalogo": cat,
-                                  "clave_env": f"ASISTIME_CLAVE_{re.sub(r'[^A-Z0-9]', '_', self.marca.upper())}"}
+        # Lo que el worker y publicar-catalogo.py leen de marca.json. Se FUSIONA
+        # con lo que ya hubiera: el bloque puede traer el `tenant` puesto a
+        # mano —es como se le dice al alta que reuse uno— y pisarlo entero
+        # borraría justamente ese dato.
+        self.ficha["asistime"] = {
+            **(self.ficha.get("asistime") or {}),
+            "tenant": t, "documento": doc, "catalogo": cat,
+            "clave_env": f"ASISTIME_CLAVE_{re.sub(r'[^A-Z0-9]', '_', self.marca.upper())}"}
         (self.carpeta / "marca.json").write_text(json.dumps(self.ficha, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         self.guardar("asistime_documentos", {"documento": doc, "catalogo": cat})
 
