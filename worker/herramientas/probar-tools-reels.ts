@@ -14,6 +14,11 @@
 //
 // Lo que NO prueba: el sandbox de Asistime (su `input`, sus límites de tiempo)
 // y la API de los proveedores de video. Eso se prueba pidiendo un video.
+//
+// Tarda casi un minuto, y no es un cuelgue: la prueba «mientras genera» consulta
+// un pedido que no terminó, y la API se queda esperando sus 55 segundos antes
+// de contestar «todavía no» — que es exactamente lo que tiene que hacer en
+// producción. Correr los dos juegos seguidos pasa los dos minutos.
 
 const PUERTO_FALSO = 8891;
 const PUERTO = 8890;
@@ -60,9 +65,18 @@ await import(new URL("../funciones/api-reels/index.ts", import.meta.url).href);
 // El código de la tool es el cuerpo de una función async con un `input` en el
 // alcance. Se apuntan la URL y la clave al servidor local: lo que se prueba es
 // la lógica, no a qué host le pega.
+// Qué juego de tools se está probando. Vacío = las de Boss; «-stadium» = las
+// de Stadium, que son las mismas con otra URL, otra clave y un par de frases
+// propias sobre no inventar un producto.
+//
+// Se corren las DOS: son archivos distintos desplegados en tenants distintos,
+// y «anda en Boss» no dice nada sobre el que se le copió a mano a otro cliente.
+const JUEGO = Deno.env.get("JUEGO") ?? "";
+
 async function correrTool(archivo: string, input: Record<string, unknown>) {
+  const conJuego = JUEGO ? archivo.replace(/\.js$/, `${JUEGO}.js`) : archivo;
   let js = await Deno.readTextFile(
-    new URL(`../tools-asistime/${archivo}`, import.meta.url));
+    new URL(`../tools-asistime/${conJuego}`, import.meta.url));
   js = js.replace(/const API = "[^"]*";/, `const API = "http://localhost:${PUERTO}";`)
          .replace(/const CLAVE = "[^"]*";/, `const CLAVE = "${CLAVE}";`);
   const fn = new Function("input", `return (async () => {\n${js}\n})();`);
@@ -210,6 +224,8 @@ console.log("\n■ un id que no existe");
   ok(d.success === false && d.code === "no_existe", "se dice claro", d);
 }
 
-console.log(fallos ? `\n✗ ${fallos} fallo(s)\n` : "\n✓ todo bien\n");
+console.log(fallos
+  ? `\n✗ ${fallos} fallo(s) en las tools de ${JUEGO ? "Stadium" : "Boss"}\n`
+  : `\n✓ todo bien en las tools de ${JUEGO ? "Stadium" : "Boss"}\n`);
 await falso.shutdown();
 Deno.exit(fallos ? 1 : 0);

@@ -549,11 +549,10 @@ Deno.serve(async (req) => {
     // ── Que no haya que corregir lo mismo dos veces ─────────────────────────
     //
     // Un reemplazo casi siempre es un nombre propio que la transcripción
-    // entiende mal, y lo entiende mal SIEMPRE igual: «Boss Padel» sale «vos
-    // panel» en este reel y en todos los que vengan (ese fue el caso real).
-    // Corregirlo una vez y que
-    // vuelva a salir mal es la clase de detalle que hace que una herramienta
-    // se sienta tonta.
+    // entiende mal, y lo entiende mal SIEMPRE igual: en el caso real, «Boss
+    // Padel» salía «vos panel» en ese reel y en todos los que vinieran.
+    // Corregirlo una vez y que vuelva a salir mal es la clase de detalle que
+    // hace que una herramienta se sienta tonta.
     //
     // Por eso el reemplazo queda anotado y a partir de ahí se aplica solo. El
     // worker lo usa de dos maneras: como vocabulario ANTES de escuchar —que

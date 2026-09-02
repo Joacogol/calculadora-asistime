@@ -2957,19 +2957,60 @@ reescribieron enteras y su código corre en el sandbox de Asistime, que no se
 puede ejecutar desde acá: lo único que confirma que el JavaScript quedó bien es
 que una pieza salga.
 
-### Lo que NO se replicó a Stadium, y por qué
+### Los reels de Stadium, replicados (2/9/2026)
 
-**Los reels.** Stadium sigue con `api-reels` v5 vieja: sin elección de sistema,
-sin la separación video/pieza y sin el sello. No es un olvido:
+Estaba puesto acá que esto quedaba sin hacer. Se hizo.
 
-- Sus reels están dormidos —6 piezas, la última el 26/8— así que el valor de
-  moverlos hoy es bajo.
-- `api-reels` y sus tres tools tienen que cambiar **juntas**, y sus tools son
-  distintas de las de Boss: su `estado_reel` distingue `crear_reel` de
-  `montar_reel`, que Boss no tiene.
-- Y no hay forma de probarlo sin gastarle créditos a Stadium.
+| | antes | ahora |
+|---|---|---|
+| `api-reels` | v5, sin elección ni sello | **v6**, igual que Boss |
+| `crear_reel` 2075 | encargaba sin preguntar | pregunta el sistema primero |
+| `estado_reel` 2076 | sólo reel y montaje | + el archivo de video |
+| `crear_video` | no existía | **2165, creada — falta tildarla** |
 
-Lo que sí le llega a Stadium sin tocar nada de esto es lo del worker, que es
-uno solo para todos: **el reel deja de salir mudo, el encuadre de fal deja de
-estirarse y el revisor de piezas empieza a mirar**. Eso entra con
-`./desplegar-chat.sh`.
+**`api-reels` y sus tools tenían que cambiar juntas**, y no hay orden seguro:
+con la API nueva y la tool vieja el pedido vuelve con `elegi_proveedor` y la
+tool lo lee como un éxito —«reel encargado» con un id vacío—; al revés,
+`?opciones=1` no existe y la elección se queda sin valores. Por eso se hizo
+todo seguido y con los reels dormidos: 6 piezas, ninguna desde el 26/8.
+
+#### Cómo se verificó sin gastar un crédito
+
+Contra la función ya desplegada, con la clave de Stadium:
+
+| lo que se mandó | lo que contestó |
+|---|---|
+| clave equivocada | `clave inválida` — nuestro código, no la puerta de Supabase |
+| `?opciones=1` | los dos sistemas con precio y con su sello |
+| pedido sin `proveedor` | `elegi_proveedor`, `id: null` |
+| `proveedor: "fal"` a mano | `proveedor_sin_sello`, `id: null` |
+
+Y la tabla `reels` de Stadium siguió en **7 filas, la última del 28/8**: ni una
+de esas llamadas anotó nada.
+
+El código de las tools se probó aparte, porque el sandbox de Asistime no se
+puede ejecutar desde acá. Las tres quedaron copiadas en `tools-asistime/` con
+el sufijo `-stadium`, y `probar-tools-reels.ts` ahora corre el juego entero dos
+veces:
+
+```bash
+deno run -A herramientas/probar-tools-reels.ts              # las de Boss
+JUEGO=-stadium deno run -A herramientas/probar-tools-reels.ts   # las de Stadium
+```
+
+Son 34 afirmaciones sobre el código de Stadium contra la misma `api-reels` que
+está desplegada, con un Supabase de mentira detrás. «Anda en Boss» no dice nada
+sobre el archivo que se le copió a mano a otro cliente: por eso se corren los
+dos.
+
+#### Falta tildar `crear_video`
+
+En Asistime → agente **Diseñador Stadium (544)** → Herramientas → tildar
+**`crear_video` (2165)**. La tool existe y funciona, pero hasta que no esté
+tildada el agente no la ve. Lo mismo con la de Boss (**2163**).
+
+> No se hizo por API a propósito: `PUT /agents/{a}/tools` **reemplaza la lista
+> entera**, y el GET que la trae viene truncado. Mandar una lista incompleta le
+> desengancharía al agente las tools que no llegué a leer.
+
+
