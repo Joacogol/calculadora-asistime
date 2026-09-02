@@ -459,8 +459,11 @@ Deno.serve(async (req) => {
       : null;
     if (!cambios || !Object.keys(cambios).length) {
       return json({
+        // El ejemplo no nombra ninguna marca. Este mismo archivo corre para
+        // todos los clientes, y explicarle algo a Stadium con el nombre de
+        // Boss no sólo queda raro: enseña que el sistema es de otro.
         error: "falta `cambios`: qué corregir. Por ejemplo " +
-          `{"reemplazar":[{"de":"vos panel","a":"Boss Padel"}]}, ` +
+          `{"reemplazar":[{"de":"como lo escuchó","a":"como se escribe"}]}, ` +
           `{"subtitulos":[{"n":4,"texto":"la frase corregida"}]}, ` +
           `{"hook":"otro hook"} o {"quitar":[3]}.`,
         codigo: "sin_cambios",
@@ -547,7 +550,8 @@ Deno.serve(async (req) => {
     //
     // Un reemplazo casi siempre es un nombre propio que la transcripción
     // entiende mal, y lo entiende mal SIEMPRE igual: «Boss Padel» sale «vos
-    // panel» en este reel y en todos los que vengan. Corregirlo una vez y que
+    // panel» en este reel y en todos los que vengan (ese fue el caso real).
+    // Corregirlo una vez y que
     // vuelva a salir mal es la clase de detalle que hace que una herramienta
     // se sienta tonta.
     //

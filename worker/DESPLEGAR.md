@@ -2816,3 +2816,116 @@ por ahí. El primero que se pida con fal es la prueba. Y `h3-max` está declarad
 con una sola duración (5 s) porque es la única que fal documenta: ampliarlo se
 hace midiendo, no suponiendo. Ya se quemó una vez este archivo suponiendo el
 rango de Seedance 2.5.
+
+---
+
+## Mirar la pieza antes de entregarla (2/9/2026)
+
+El 1/9 salieron cuatro piezas rotas y **las cuatro quedaron marcadas «listo»**:
+un reel sin una sola pista de audio, un video estirado 33% de más alto, un
+rótulo negro tapando el video en el medio, y un título que aparecía recién al
+segundo. Ninguna dio error. Las cuatro las encontró una persona mirando el
+archivo a mano.
+
+En treinta días Boss pidió 76 piezas y 8 dieron error: un 10% que se ve. Las
+que salen mal y se ven bien no las cuenta nadie, y son las peores, porque se
+publican.
+
+`motor/revisar.py` mide el archivo terminado en vez de creerle al motor:
+
+| lo que mide | cómo |
+|---|---|
+| que tenga la medida que la pieza dijo | `ffprobe` |
+| que tenga pista de audio y que suene | `volumedetect` |
+| que no haya negro en el medio | `signalstats`, sin mirar el fundido final |
+| que una placa no sea un rectángulo vacío | desvío de brillo con Pillow |
+
+**Tres reglas.** No frena nada —en ese punto el video ya se generó y se pagó,
+retenerlo cambia «una pieza con un problema» por «ninguna pieza y la plata
+gastada»—; sólo dice lo que puede medir; y si no puede medir, se calla.
+
+Lo que ve queda escrito en `notas`, que es lo que el agente le lee a la
+persona. Engancha en los cuatro lugares donde algo se marca «listo»: el video
+crudo, los dos montajes de reel y el diseño.
+
+Se prueba con `herramientas/probar-revisor.py`, que fabrica sus casos con
+ffmpeg. El caso que más importa es **el fundido de salida**: es negro a
+propósito, y un revisor que lo confunde con una falla avisa en todas las
+piezas — un aviso que aparece siempre se deja de leer entero.
+
+> El umbral de negro estaba mal y lo encontró la prueba: `YAVG` viene en la
+> escala de video, donde el negro vale **16 y no 0**. Con el umbral en 12 no
+> hubiera saltado nunca. Medido sobre los reels de verdad: el rótulo negro da
+> 16 clavado, el fundido pasa por 64, 40 y 16, y la imagen real de esos cuatro
+> videos nunca bajó de 82.
+
+Tarda 1,3 s sobre un reel real, contra los cuatro minutos de generarlo.
+
+---
+
+## Replicar lo de Boss en Stadium y Clínica (2/9/2026)
+
+### `api-disenos` — el arreglo de Google Drive
+
+Desplegado en los tres. Estaban desparejos: Boss en v12, Clínica en v9 y
+**Stadium en v2**, o sea sin nada de lo que se le fue agregando desde el
+25/8.
+
+| | antes | ahora |
+|---|---|---|
+| Boss | v12 | v12 |
+| Stadium | v2 | **v4** |
+| Clínica | v9 | **v10** |
+
+Verificado contra la función desplegada de Stadium, con su clave y sin crear
+ningún pedido —los tres casos fallan antes del insert:
+
+| lo que se manda | lo que contesta |
+|---|---|
+| un id pelado de Drive | «es un archivo de Google Drive que no está compartido…» |
+| un link `/file/d/<id>/view` | lo mismo |
+| una URL cualquiera que da 404 | «el servidor contestó 404», sin hablar de Drive |
+
+O sea que las tres formas de nombrar una foto de Drive están vivas del otro
+lado, y una URL normal sigue tratándose como antes.
+
+### ⚠ `verify_jwt` se prende solo, y deja al cliente afuera
+
+**Desplegar una edge function sin decir `verify_jwt: false` la deja en `true`,
+y eso rompe la tool.** Pasó acá: el primer despliegue a Stadium dejó su
+`api-disenos` contestando
+
+```
+{"code":"UNAUTHORIZED_NO_AUTH_HEADER","message":"Missing authorization header"}
+```
+
+antes de llegar a nuestro código. Stadium estuvo sin poder pedir diseños los
+tres minutos que tardó el segundo despliegue.
+
+Estas funciones **hacen su propia autenticación** con `x-api-clave` y una
+comparación de largo constante; por eso `verify_jwt` va apagado, y por eso
+apagarlo no afloja nada. La forma de darse cuenta en dos segundos:
+
+```bash
+curl -s -X POST "https://<proyecto>.supabase.co/functions/v1/api-disenos" \
+  -H "Content-Type: application/json" -H "x-api-clave: no" -d '{"mensaje":"x"}'
+```
+
+- `{"error":"clave inválida"}` → bien: contesta **nuestro** código.
+- `{"code":"UNAUTHORIZED_NO_AUTH_HEADER"…}` → mal: contesta la puerta de
+  Supabase y la tool del cliente está caída.
+
+Vale para las seis: `api-disenos`, `api-reels`, `api-fotos`, `api-plantillas`,
+`api-publicar`, `api-manual`.
+
+### El estado de los reels en Stadium
+
+Dormidos: **6 piezas, la última el 26/8**, y una rechazada el 28/8. Los seis se
+montaron con el código viejo, así que lo más probable es que estén **mudos**,
+igual que los de Boss — eso lo arregla el despliegue del worker, no `api-reels`.
+
+**`api-reels` y sus tools tienen que cambiar juntas.** Con la API nueva y la
+tool vieja, el pedido vuelve con `elegi_proveedor` y la tool lo lee como un
+éxito: le dice a la persona «reel encargado» con un id vacío. Con la tool nueva
+y la API vieja, `?opciones=1` no existe y la elección queda sin valores. No hay
+orden seguro: hay una ventana corta, y por eso se hace con los reels dormidos.
