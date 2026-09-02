@@ -495,14 +495,44 @@ async def _correr(prompt: str, modelo: str, salida: Path,
     return ultimo, met
 
 
+def _sede(marca: str, ficha: dict, sede: str) -> dict:
+    """Los datos de una sede: su contacto y su acento.
+
+    `sedes` va como diccionario `nombre → {contacto, acento, extra}`, y una
+    marca sin locales igual tiene una: la marca entera.
+
+    Lo que se valida acá es la FORMA, porque el `marca.json` lo escribe una
+    persona y el error no se ve hasta cuatro minutos después. El 2/9/2026
+    Asistime lo tenía como lista —`["Todas"]`, que se lee perfectamente
+    razonable— y el diseño murió con «'list' object has no attribute 'get'»:
+    un mensaje que no nombra ni la marca ni el campo, en un pedido que ya
+    había esperado su turno en la cola.
+
+    No frena la pieza. Lo único que se pierde es el contacto y el acento de
+    la sede, y una pieza sin teléfono es muchísimo mejor que ninguna pieza.
+    """
+    sedes = ficha.get("sedes") or {}
+    if not isinstance(sedes, dict):
+        log.warning(
+            "%s: `sedes` es %s y tiene que ser un diccionario "
+            "`nombre → {contacto, acento}`. Sigo sin datos de sede.",
+            marca, type(sedes).__name__)
+        return {}
+    datos = sedes.get(sede) or sedes.get(ficha.get("sede_por_defecto", "")) or {}
+    if not isinstance(datos, dict):
+        log.warning("%s: la sede «%s» no es un diccionario. Sigo sin sus datos.",
+                     marca, sede)
+        return {}
+    return datos
+
+
 async def disenar(pedido: dict, salida: Path) -> tuple[bool, str, dict]:
     """Genera las piezas. Devuelve (ok, titulo, metricas)."""
     salida.mkdir(parents=True, exist_ok=True)
     marca = _marca(pedido)
     ficha = _ficha(marca)
     sede = pedido.get("sede") or ficha.get("sede_por_defecto", "")
-    sedes = ficha.get("sedes", {})
-    datos = sedes.get(sede) or sedes.get(ficha.get("sede_por_defecto", ""), {})
+    datos = _sede(marca, ficha, sede)
 
     _subidas = _traer_adjuntos(pedido, marca)
     reglas, version_manual = _reglas_de_marca(marca)

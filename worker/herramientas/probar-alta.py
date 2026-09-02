@@ -82,6 +82,31 @@ ok(f._tenant_existente() == 5, "y lo encuentra por nombre aunque el slug no coin
 f = _Falso({"nombre": "Nadie", "slug": "nadie"}, [{"data": [], "meta": {"totalPages": 1}}])
 ok(f._tenant_existente() is None, "si no está, devuelve None y el alta lo crea")
 
+print("\n■ La forma del marca.json, antes de que exista el cliente")
+# El caso es real: el 2/9/2026 Asistime tenía `sedes` como lista `["Todas"]`.
+# Se lee perfectamente razonable, el alta pasó entera, y el primer diseño de
+# verdad murió cuatro minutos después con «'list' object has no attribute
+# 'get'» — un mensaje que no nombra ni la marca ni el campo.
+malos = alta.revisar_ficha({"sedes": ["Todas"], "sede_por_defecto": "Todas"})
+ok(bool(malos) and "sedes" in malos[0] and "list" in malos[0],
+   "caza `sedes` escrito como lista", str(malos))
+ok(bool(alta.revisar_ficha({"sedes": {"Centro": "099 123 456"}})),
+   "caza una sede que no es diccionario")
+ok(bool(alta.revisar_ficha({"sedes": {"Centro": {}}, "sede_por_defecto": "Norte"})),
+   "caza un sede_por_defecto que no está en sedes")
+ok(bool(alta.revisar_ficha({"fotos": []})), "caza `fotos` como lista")
+
+# La otra mitad, y la que importa igual: un chequeo que se queja de lo que está
+# bien se apaga a la semana.
+sucias = []
+for carpeta in sorted((RAIZ / ".claude/skills").iterdir()):
+    ficha = carpeta / "marca.json"
+    if ficha.exists():
+        problemas = alta.revisar_ficha(json.loads(ficha.read_text(encoding="utf-8")))
+        if problemas:
+            sucias.append(f"{carpeta.name}: {problemas}")
+ok(not sucias, "y las marcas de verdad pasan limpias", "; ".join(sucias))
+
 print("\n■ La simulación no toca nada")
 r = subprocess.run([sys.executable, "herramientas/alta.py", "stadium-disenos", "--simular"],
                    cwd=RAIZ, capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})

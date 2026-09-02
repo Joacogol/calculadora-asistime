@@ -117,6 +117,51 @@ def rastro(texto: str, origen: dict) -> list[str]:
     return [k for k in ("ref", "clave", "nombre") if origen[k] in texto]
 
 
+def revisar_ficha(ficha: dict) -> list[str]:
+    """Qué tiene mal el `marca.json` de una marca. Vacío si está bien.
+
+    El `marca.json` lo escribe una persona, y el motor lee sus campos mucho
+    después: un campo con la forma equivocada no se nota al dar de alta sino
+    en el primer pedido de verdad, cuatro minutos tarde y con un mensaje que
+    no nombra ni la marca ni el campo.
+
+    Pasó el 2/9/2026 con Asistime: `sedes` escrito como lista `["Todas"]` en
+    vez de diccionario. Perfectamente razonable de leer, y el diseño murió con
+    «'list' object has no attribute 'get'».
+
+    Se revisa sólo la FORMA de lo que el motor va a leer sin preguntar. Lo que
+    falte y sea opcional no se nombra: esto avisa de lo que rompe, no de lo
+    que podría estar más completo.
+    """
+    problemas = []
+
+    sedes = ficha.get("sedes")
+    if sedes is not None and not isinstance(sedes, dict):
+        problemas.append(
+            f"`sedes` es {type(sedes).__name__} y tiene que ser un diccionario "
+            f"`nombre → {{contacto, acento}}`. Una marca sin locales igual "
+            f'tiene una sede: {{"Todas": {{"contacto": "…", "acento": "…"}}}}')
+    elif isinstance(sedes, dict):
+        for nombre, datos in sedes.items():
+            if not isinstance(datos, dict):
+                problemas.append(
+                    f"la sede «{nombre}» es {type(datos).__name__} y tiene que "
+                    f"ser un diccionario con `contacto` y `acento`")
+        por_defecto = ficha.get("sede_por_defecto")
+        if por_defecto and por_defecto not in sedes:
+            problemas.append(
+                f"`sede_por_defecto` dice «{por_defecto}» y esa sede no está "
+                f"en `sedes`. Tiene: {', '.join(sedes) or 'ninguna'}")
+
+    for campo in ("fotos", "asistime", "reels", "identidad"):
+        v = ficha.get(campo)
+        if v is not None and not isinstance(v, dict):
+            problemas.append(f"`{campo}` es {type(v).__name__} y tiene que ser "
+                             f"un diccionario")
+
+    return problemas
+
+
 def prompt_para(ficha: dict, contratos: dict) -> str:
     """El prompt del agente diseñador, con lo propio de esta marca adentro."""
     base = (RAIZ / "alta" / "prompt-disenador.md").read_text(encoding="utf-8")
@@ -211,6 +256,11 @@ class Alta:
         n = len(m.PLANTILLAS)
         if not n:
             raise SystemExit("la marca no tiene ninguna plantilla en plantillas/")
+        malos = revisar_ficha(self.ficha)
+        if malos:
+            raise SystemExit(
+                f"el marca.json de «{self.marca}» tiene la forma equivocada:\n  · "
+                + "\n  · ".join(malos))
         self.decir(f"«{self.nombre}» carga: {n} plantilla(s), {len(m.C)} colores")
         self.guardar("verificar", {"plantillas": sorted(m.PLANTILLAS)})
 
