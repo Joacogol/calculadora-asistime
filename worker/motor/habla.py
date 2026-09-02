@@ -344,6 +344,16 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
 
         offset += dura
 
+    # ── Nada termina después del reel ──
+    #
+    # `frases()` estira una frase corta hacia adelante para que se pueda leer,
+    # y a la ÚLTIMA no la frena nadie: se pasa del final del tramo. Con un
+    # solo tramo casi nunca se nota; con el último tramo de un montaje, el
+    # subtítulo termina después de que el reel terminó, el validador lo
+    # rechaza y el reel entero muere. Pasó el 2/9/2026: «termina en 26.1s
+    # pero el reel dura 25.6s». Acá `offset` ya es lo que dura el reel.
+    subs = [{**s, "hasta": min(s["hasta"], round(offset, 3))}
+            for s in subs if s["desde"] < offset]
     subs = [s for s in subs if s["hasta"] > s["desde"]]
     subs.sort(key=lambda s: s["desde"])
 
