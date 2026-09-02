@@ -3,13 +3,20 @@
     marca vende orden y calma— así que el texto ocupa poco y el blanco mucho.
 
     Con foto, todo va en blanco y el velo se MIDE contra esa foto: un valor
-    fijo se rompe con la primera foto distinta. -#}
+    fijo se rompe con la primera foto distinta.
+
+    `sobre_video` es el RÓTULO de un reel: la pieza sale sin fondo, para
+    montarse encima del clip. Vale lo mismo que con foto —blanco y sombra—
+    pero el velo no puede ser entero: taparía el video. Va un degradado suave
+    arriba, que es donde queda el texto, y el resto limpio. Y el pie no va:
+    sobre un video de diez segundos, una línea legal abajo es ruido. -#}
 {%- set pal = paleta(d.estilo) -%}
-{%- if d.foto -%}
+{%- set encima = d.foto or d.sobre_video -%}
+{%- if encima -%}
   {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco, secundario='#E3EBFF') -%}
 {%- endif -%}
-{%- set sombra = sombra_texto() if d.foto else '' -%}
-{%- set sombra_chica = sombra_texto(1.6) if d.foto else '' -%}
+{%- set sombra = sombra_texto() if encima else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if encima else '' -%}
 {%- set t = d.titulo|length -%}
 {%- set cuerpo = m.titulo if t <= 24 else (m.titulo * 0.8 if t <= 44 else m.titulo * 0.62) -%}
 {%- set centrado = d.alineacion == 'centro' -%}
@@ -25,6 +32,8 @@
 <img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
 {%- set plan = plan_titular(d.foto, pal.tinta, c.oscuro, (0.25, 0.85), 4.5, 4.5) -%}
 <div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.85) }}"></div>
+{% elif d.sobre_video %}
+<div class="scrim" style="background:{{ degrade(0.42, 0.72) }}"></div>
 {% else %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% endif %}
@@ -34,7 +43,7 @@
   text-align:{{ 'center' if centrado else 'left' }}">
 
   <div class="row" style="width:100%">{{ iso(m.iso, pal.tinta) }}</div>
-  <div class="grow"></div>
+  {% if not d.sobre_video %}<div class="grow"></div>{% endif %}
 
   <div style="max-width:{{ '100%' if centrado else '94%' }}">
     {% if d.kicker %}
@@ -57,10 +66,12 @@
   </div>
 
   <div class="grow"></div>
+  {% if not d.sobre_video %}
   <div class="row" style="width:100%;align-items:flex-end">
     <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>
     {% if d.pie %}
     <div class="legal" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
     {% endif %}
   </div>
+  {% endif %}
 </div>

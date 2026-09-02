@@ -179,6 +179,15 @@ def cargar(archivo_marca) -> types.SimpleNamespace:
     if r.get("tipografias"):
         m.TIPO_REEL = tuple(r["tipografias"])
     m.ANIMO_MUSICA = r.get("animo_musica", "club")
+    # Con qué plantilla se dibuja el rótulo del reel. Era el nombre `campana`
+    # escrito a mano adentro del motor, y eso convertía en obligatorio para
+    # TODA marca tener una plantilla llamada así. Asistime tiene `titular`,
+    # `dato` y `cierre` —ninguna se llama campana— y su primer reel habría
+    # muerto al dibujar el rótulo, o sea DESPUÉS de pagar el video.
+    #
+    # El default es `campana` a propósito: las tres marcas que ya hacen reels
+    # la tienen y no se enteran del cambio.
+    m.PLANTILLA_ROTULO = r.get("plantilla", "campana")
     m.ACENTO_REEL = ident.C[r.get("acento", ident.roles["acento"])]
     cr = ident.carrusel
     m.COLOR_CROMO = ident.C[cr["color_cromo"]] if cr.get("color_cromo") else ident.C[ident.roles["claro"]]

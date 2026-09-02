@@ -5,29 +5,133 @@
   "cuando_usarla": "Para casi todo: un beneficio, una idea, la apertura de una serie, una placa suelta. Sobre fondo claro por defecto —que es como se ve la marca—, o sobre una foto con un velo medido. `destacado` pinta de azul UNA palabra o frase del título: usalo para la que importa, no para dos. Si lo que manda es un número, usá `dato`; si es el cierre con el llamado a la acción, `cierre`.",
   "acento_por_defecto": "azul",
   "medidas": {
-    "post":  {"alto": 1080, "pad": 80, "titulo": 92,  "kicker": 24, "bajada": 34, "boton": 30, "iso": 0.9,  "legal": 20},
-    "vert":  {"alto": 1350, "pad": 84, "titulo": 104, "kicker": 26, "bajada": 36, "boton": 32, "iso": 1.0,  "legal": 21},
-    "story": {"alto": 1920, "pad": 96, "titulo": 124, "kicker": 30, "bajada": 42, "boton": 36, "iso": 1.15, "legal": 24},
-    "reel":  {"alto": 1920, "pad": 96, "titulo": 124, "kicker": 30, "bajada": 42, "boton": 36, "iso": 1.15, "legal": 24}
+    "post": {
+      "alto": 1080,
+      "pad": 80,
+      "titulo": 92,
+      "kicker": 24,
+      "bajada": 34,
+      "boton": 30,
+      "iso": 0.9,
+      "legal": 20
+    },
+    "vert": {
+      "alto": 1350,
+      "pad": 84,
+      "titulo": 104,
+      "kicker": 26,
+      "bajada": 36,
+      "boton": 32,
+      "iso": 1.0,
+      "legal": 21
+    },
+    "story": {
+      "alto": 1920,
+      "pad": 96,
+      "titulo": 124,
+      "kicker": 30,
+      "bajada": 42,
+      "boton": 36,
+      "iso": 1.15,
+      "legal": 24
+    },
+    "reel": {
+      "alto": 1920,
+      "pad": 96,
+      "titulo": 124,
+      "kicker": 30,
+      "bajada": 42,
+      "boton": 36,
+      "iso": 1.15,
+      "legal": 24
+    }
   },
   "campos": [
-    {"id": "titulo", "tipo": "texto_largo", "etiqueta": "Título", "requerido": true,
-     "ejemplo": "Más tiempo para lo que amas",
-     "nota": "Corto y concreto. Podés cortar la línea con un salto de línea y el diseño lo respeta."},
-    {"id": "destacado", "tipo": "texto", "etiqueta": "Palabra en azul", "default": "",
-     "ejemplo": "lo que amas",
-     "nota": "Una palabra o frase DEL TÍTULO, tal cual está escrita ahí, que sale en azul. Una sola."},
-    {"id": "kicker", "tipo": "texto", "etiqueta": "Antetítulo", "default": "", "ejemplo": "AGENTES DE IA"},
-    {"id": "bajada", "tipo": "texto_largo", "etiqueta": "Bajada", "default": "",
-     "ejemplo": "Tony atiende tu WhatsApp las 24 horas. Vos, lo importante."},
-    {"id": "boton", "tipo": "texto", "etiqueta": "Botón", "default": "", "ejemplo": "Hablá con Tony",
-     "nota": "Opcional. Si va, es «Hablá con Tony»: es el llamado a la acción de la marca."},
-    {"id": "estilo", "tipo": "opcion", "etiqueta": "Fondo", "opciones": ["claro", "azul", "oscuro"], "default": "claro",
-     "nota": "`claro` es la marca. `azul` es pleno, para una placa suelta que tenga que gritar. `oscuro` se reserva para `dato`; acá sólo si es la única pieza."},
-    {"id": "foto", "tipo": "imagen", "etiqueta": "Foto", "default": "",
-     "nota": "Opcional. Con foto el título va en blanco con un velo medido contra esa foto."},
-    {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 40%"},
-    {"id": "alineacion", "tipo": "opcion", "etiqueta": "Alineación", "opciones": ["izquierda", "centro"], "default": "izquierda"},
-    {"id": "pie", "tipo": "texto", "etiqueta": "Letra chica", "default": ""}
+    {
+      "id": "titulo",
+      "tipo": "texto_largo",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "Más tiempo para lo que amas",
+      "nota": "Corto y concreto. Podés cortar la línea con un salto de línea y el diseño lo respeta."
+    },
+    {
+      "id": "destacado",
+      "tipo": "texto",
+      "etiqueta": "Palabra en azul",
+      "default": "",
+      "ejemplo": "lo que amas",
+      "nota": "Una palabra o frase DEL TÍTULO, tal cual está escrita ahí, que sale en azul. Una sola."
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Antetítulo",
+      "default": "",
+      "ejemplo": "AGENTES DE IA"
+    },
+    {
+      "id": "bajada",
+      "tipo": "texto_largo",
+      "etiqueta": "Bajada",
+      "default": "",
+      "ejemplo": "Tony atiende tu WhatsApp las 24 horas. Vos, lo importante."
+    },
+    {
+      "id": "boton",
+      "tipo": "texto",
+      "etiqueta": "Botón",
+      "default": "",
+      "ejemplo": "Hablá con Tony",
+      "nota": "Opcional. Si va, es «Hablá con Tony»: es el llamado a la acción de la marca."
+    },
+    {
+      "id": "estilo",
+      "tipo": "opcion",
+      "etiqueta": "Fondo",
+      "opciones": [
+        "claro",
+        "azul",
+        "oscuro"
+      ],
+      "default": "claro",
+      "nota": "`claro` es la marca. `azul` es pleno, para una placa suelta que tenga que gritar. `oscuro` se reserva para `dato`; acá sólo si es la única pieza."
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto",
+      "default": "",
+      "nota": "Opcional. Con foto el título va en blanco con un velo medido contra esa foto."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Foco de la foto",
+      "default": "50% 40%"
+    },
+    {
+      "id": "alineacion",
+      "tipo": "opcion",
+      "etiqueta": "Alineación",
+      "opciones": [
+        "izquierda",
+        "centro"
+      ],
+      "default": "izquierda"
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Letra chica",
+      "default": ""
+    },
+    {
+      "id": "sobre_video",
+      "tipo": "si_no",
+      "etiqueta": "¿Va encima de un video?",
+      "default": false,
+      "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba, donde queda el texto. El pie no se dibuja: sobre diez segundos de video, una línea legal abajo es ruido. Normalmente no lo prendés a mano: lo pone el motor cuando arma el rótulo de un reel."
+    }
   ]
 }

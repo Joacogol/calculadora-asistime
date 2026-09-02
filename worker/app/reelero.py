@@ -1099,6 +1099,19 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
         if not _tomar(cli, fila["id"], "pendiente", "estimando"):
             continue
         try:
+            # Antes de gastar un peso: ¿esta marca sabe ponerle el título?
+            #
+            # El rótulo se dibuja al FINAL, con el clip ya generado y cobrado.
+            # Una marca a la que le falta esa plantilla no se enteraba hasta
+            # ese momento, y ahí la plata ya no vuelve. Preguntarlo acá cuesta
+            # importar un módulo.
+            falta = puede_rotular(cli.marca)
+            if falta:
+                _marcar(cli, fila["id"], "rechazado", creditos_estimados=0,
+                        notas=falta)
+                movidas += 1
+                continue
+
             con_foto = {**fila, "foto_texto": fila.get("titulo") or "the product"}
             dur_pedida = duracion_pedida(fila.get("mensaje")) or dur
 
@@ -1842,6 +1855,44 @@ def musica_de(cli, ficha: dict, pedida: str | None) -> str | None:
     return f"{cli.url.rstrip('/')}/storage/v1/object/public/disenos/musica/{clave}.mp3"
 
 
+def plantilla_rotulo(modulo) -> str:
+    """Con qué plantilla se dibuja el rótulo del reel de esta marca.
+
+    Lo declara la marca en `identidad.reel.plantilla`. El default es `campana`
+    porque es como se llama en las tres marcas que ya hacían reels, y así
+    ninguna se entera de que esto dejó de estar escrito a mano acá adentro.
+    """
+    return getattr(modulo, "PLANTILLA_ROTULO", "campana")
+
+
+def puede_rotular(marca: str) -> str:
+    """Vacío si la marca puede dibujar el rótulo de un reel; el motivo si no.
+
+    Se pregunta ANTES de pedir el video, y ésa es toda la idea. El rótulo se
+    dibuja al final, cuando el clip ya está generado y cobrado: una marca a la
+    que le falta la plantilla no se enteraba hasta ese momento, y para entonces
+    la plata ya no vuelve.
+
+    Es una comprobación barata —importar el módulo y mirar un diccionario—
+    contra un error que cuesta un video entero.
+    """
+    try:
+        modulo = _marca_mod(marca)
+        if modulo is None:
+            return ""                       # ya se avisó al importar; no frena
+        from motor import plantillas as mp
+        from . import config
+        carpeta = config.RAIZ / ".claude/skills" / marca
+        cual = plantilla_rotulo(modulo)
+        if cual not in mp.cargar(carpeta, modulo):
+            return (f"esta marca no tiene la plantilla `{cual}`, que es con la "
+                    f"que dibuja el rótulo de sus reels. Sin eso el video se "
+                    f"generaría y se cobraría para morir al ponerle el título.")
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude comprobar el rótulo de %s (%s); sigo", marca, e)
+    return ""
+
+
 def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None:
     """El PNG transparente que se monta encima del clip. None si no hay qué decir.
 
@@ -1903,10 +1954,11 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
     from playwright.sync_api import sync_playwright
 
     plantillas = mp.cargar(carpeta, modulo)
-    if "campana" not in plantillas:
+    cual = plantilla_rotulo(modulo)
+    if cual not in plantillas:
         raise RuntimeError(
-            f"la marca «{marca}» no tiene la plantilla `campana`, que es con la "
-            f"que se dibuja el rótulo de los reels")
+            f"la marca «{marca}» no tiene la plantilla `{cual}`, que es con la "
+            f"que dibuja el rótulo de sus reels")
 
     datos = {"titulo": texto, "sobre_video": True, "posicion": "arriba"}
     # El kicker y la bajada sólo entran si no fueron ELLOS los que hicieron de
@@ -1915,7 +1967,7 @@ def rotulo(marca: str, fila: dict, destino: pathlib.Path) -> pathlib.Path | None
         valor = (fila.get(campo) or "").strip()
         if valor and valor != texto:
             datos[campo] = valor
-    html = plantillas["campana"](datos, "reel")
+    html = plantillas[cual](datos, "reel")
     # Los tres, no uno: ver la nota de arriba. `html` también, porque el fondo
     # del elemento raíz se propaga al lienzo del navegador aunque `body` sea
     # transparente.

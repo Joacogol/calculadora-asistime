@@ -94,12 +94,78 @@ PASOS = ("verificar", "supabase_proyecto", "supabase_tablas", "supabase_funcione
 
 # ═══ Puro: sin red. Es lo que prueba probar-alta.py ═══════════════════════
 
-def sustituir_tool(tool: dict, origen: dict, destino: dict) -> dict:
+#: Los formatos que necesitan código y no todas las marcas tienen. `carrusel`
+#: y `secuencia` se encadenan con `DIAPOS`; `pdf` se arma con `PRESENTACION`.
+#: Son las dos únicas cosas de una marca que todavía no se pueden escribir
+#: como datos.
+FORMATOS_CON_CODIGO = {"carrusel": "DIAPOS", "secuencia": "DIAPOS",
+                       "pdf": "PRESENTACION"}
+
+
+def formatos_de(modulo) -> set[str]:
+    """Los formatos que esta marca NO sabe hacer, de los que necesitan código."""
+    return {f for f, atributo in FORMATOS_CON_CODIGO.items()
+            if not hasattr(modulo, atributo)}
+
+
+def podar_formatos(cfg: dict, sobran: set[str]) -> dict:
+    """Saca de una tool los formatos que la marca nueva no sabe dibujar.
+
+    Las tools se copian de la marca de referencia, y la de referencia los tiene
+    todos. Copiadas tal cual, le ofrecen `carrusel` y `pdf` a una marca cuyo
+    motor los rechaza — el agente lee que se puede, lo ofrece, la persona dice
+    que sí, y la pieza falla minutos después con un error que él no puede
+    explicar.
+
+    Es el mismo error que el catálogo tenía el 2/9/2026, una capa más abajo:
+    ahí lo decía la lista de plantillas y acá lo dice el `enum` de la
+    herramienta, que es todavía más difícil de ver.
+
+    Se poda en los dos lugares donde el formato manda de verdad: el `enum` del
+    parámetro, que es lo que el agente ve, y las listas del código, que son lo
+    que la tool acepta. Lo que dice la descripción en prosa NO se toca:
+    reescribir una frase a ciegas deja algo peor que lo que había.
+    """
+    if not sobran:
+        return cfg
+    podado = json.loads(json.dumps(cfg, ensure_ascii=False))
+
+    props = ((podado.get("parameters") or {}).get("properties") or {})
+    items = (props.get("formatos") or {}).get("items") or {}
+    if items.get("enum"):
+        items["enum"] = [f for f in items["enum"] if f not in sobran]
+
+    # Y en el código, SÓLO adentro de los arreglos de texto: ahí es donde un
+    # formato decide si la tool lo acepta. Sacar la palabra suelta de todo el
+    # archivo destrozaría los comentarios, que hablan del carrusel en prosa y
+    # tienen razón en hacerlo.
+    #
+    # Se reescribe el arreglo entero y no se borra el elemento con su coma:
+    # borrar `"secuencia", ` de `["carrusel", "secuencia"]` deja `["carrusel"]`
+    # —el que quedaba sin coma al lado sobrevivía— y ése es justo el caso que
+    # esto tiene que resolver.
+    codigo = podado.get("code")
+    if isinstance(codigo, str):
+        def limpiar(m):
+            quedan = [x for x in re.findall(r'"([^"\\]*)"', m.group(0))
+                      if x not in sobran]
+            return "[" + ", ".join(f'"{x}"' for x in quedan) + "]"
+
+        podado["code"] = re.sub(
+            r'\[\s*"[^"\\]*"(?:\s*,\s*"[^"\\]*")*\s*\]', limpiar, codigo)
+    return podado
+
+
+def sustituir_tool(tool: dict, origen: dict, destino: dict,
+                   sobran: set[str] | None = None) -> dict:
     """Una tool de la marca de referencia, reescrita para la nueva.
 
     Cambia la dirección del Supabase, la clave y el nombre de la marca en el
     código, la descripción y los parámetros. Devuelve sólo lo que `POST
     /tools` acepta: sin ids ni fechas.
+
+    `sobran` son los formatos que la marca nueva no sabe hacer, y se podan:
+    ver `podar_formatos`.
     """
     def s(texto: str) -> str:
         t = texto.replace(origen["ref"], destino["ref"])
@@ -107,6 +173,7 @@ def sustituir_tool(tool: dict, origen: dict, destino: dict) -> dict:
         return t.replace(origen["nombre"], destino["nombre"])
 
     cfg = json.loads(s(json.dumps(tool["config"], ensure_ascii=False)))
+    cfg = podar_formatos(cfg, sobran or set())
     return {"name": tool["name"], "type": tool["type"],
             "description": s(tool.get("description") or ""),
             "isActive": True, "config": cfg, "behaviors": tool.get("behaviors") or {}}
@@ -432,10 +499,14 @@ class Alta:
         self.decir(f"copiar las tools del agente {REFERENCIA['agente']} de {REFERENCIA['nombre']} al tenant {t}, y engancharlas al agente {a}")
         if self.simular:
             return
+        from motor import identidad
+        sobran = formatos_de(identidad.cargar(self.carpeta / "marca.py"))
+        if sobran:
+            self.decir(f"  (sin {', '.join(sorted(sobran))}: esta marca no los sabe hacer)")
         origen = self._asistime("GET", f"/tenants/{REFERENCIA['tenant']}/agents/{REFERENCIA['agente']}/tools")
         ids = []
         for tool in origen:
-            nueva = sustituir_tool(tool, REFERENCIA, destino)
+            nueva = sustituir_tool(tool, REFERENCIA, destino, sobran)
             queda = rastro(json.dumps(nueva, ensure_ascii=False), REFERENCIA)
             if queda:
                 raise SystemExit(f"la tool {tool['name']} quedó con {queda} de {REFERENCIA['nombre']}")

@@ -82,6 +82,44 @@ ok(f._tenant_existente() == 5, "y lo encuentra por nombre aunque el slug no coin
 f = _Falso({"nombre": "Nadie", "slug": "nadie"}, [{"data": [], "meta": {"totalPages": 1}}])
 ok(f._tenant_existente() is None, "si no está, devuelve None y el alta lo crea")
 
+print("\n■ Las tools copiadas no ofrecen lo que la marca no sabe hacer")
+# `carrusel` y `secuencia` necesitan DIAPOS; `pdf` necesita PRESENTACION. La
+# marca de referencia los tiene todos, así que una tool copiada tal cual se los
+# promete a una marca cuyo motor los rechaza. Es el error del catálogo del
+# 2/9/2026 una capa más abajo, y ahí es más difícil de ver: lo dice el `enum`.
+_codigo = ('// El carrusel se encadena solo; no hace falta una plantilla de carrusel.\n'
+           'const VALIDOS = ["post", "vertical", "story", "reel", "carrusel", "secuencia", "pdf"];\n'
+           'const LARGOS = ["carrusel", "secuencia"];\n'
+           'const API = "https://REF.supabase.co/x";\n'
+           'const CLAVE = "CLAVEVIEJA";')
+_tool = {"name": "crear_diseno", "type": "custom_code", "description": "Para Boss Padel.",
+         "config": {"code": _codigo, "parameters": {"type": "object", "properties": {"formatos":
+             {"type": "array", "items": {"type": "string",
+              "enum": ["post", "vertical", "story", "reel", "carrusel", "secuencia", "pdf"]}}}}}}
+_origen = {"ref": "REF", "clave": "CLAVEVIEJA", "nombre": "Boss Padel"}
+_destino = {"ref": "NUEVA", "clave": "CLAVENUEVA", "nombre": "Asistime"}
+
+_n = alta.sustituir_tool(_tool, _origen, _destino, {"carrusel", "secuencia", "pdf"})
+_enum = _n["config"]["parameters"]["properties"]["formatos"]["items"]["enum"]
+_c = _n["config"]["code"]
+ok(_enum == ["post", "vertical", "story", "reel"], "poda el enum que ve el agente", str(_enum))
+ok('const VALIDOS = ["post", "vertical", "story", "reel"];' in _c,
+   "y la lista que la tool acepta", _c.splitlines()[1])
+# El borde que se escapó a la primera versión: sacando `"secuencia", ` de
+# `["carrusel", "secuencia"]`, el que quedaba sin coma al lado sobrevivía.
+ok("const LARGOS = [];" in _c, "incluso cuando el arreglo queda vacío",
+   [l for l in _c.splitlines() if "LARGOS" in l])
+ok("no hace falta una plantilla de carrusel" in _c,
+   "sin destrozar los comentarios, que hablan del carrusel en prosa")
+ok('"https://NUEVA.supabase.co/x"' in _c and '"CLAVENUEVA"' in _c,
+   "ni las cadenas sueltas que no son listas")
+ok(not alta.rastro(json.dumps(_n, ensure_ascii=False), _origen),
+   "y no queda rastro de la marca de origen")
+
+_igual = alta.sustituir_tool(_tool, _origen, _destino, set())
+ok(len(_igual["config"]["parameters"]["properties"]["formatos"]["items"]["enum"]) == 7,
+   "una marca que SÍ los hace queda con todos sus formatos")
+
 print("\n■ La forma del marca.json, antes de que exista el cliente")
 # El caso es real: el 2/9/2026 Asistime tenía `sedes` como lista `["Todas"]`.
 # Se lee perfectamente razonable, el alta pasó entera, y el primer diseño de

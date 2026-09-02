@@ -163,7 +163,9 @@
         "sora-600.ttf"
       ],
       "animo_musica": "calmo",
-      "acento": "azul"
+      "acento": "azul",
+      "plantilla": "titular",
+      "_plantilla": "Con cuál de las plantillas de esta marca se dibuja el rótulo del reel. En Boss y Stadium se llama `campana`; Asistime no tiene ninguna con ese nombre y usa `titular` en modo `sobre_video`. Hasta el 2/9/2026 el nombre estaba escrito adentro del motor, así que una marca sin `campana` moría al dibujar el rótulo — o sea después de pagar el video."
     },
     "carrusel": {
       "color_cromo": "navy",
@@ -172,5 +174,16 @@
     },
     "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas."
   },
-  "_sedes": "Asistime no tiene locales, así que tiene una sola sede que es la marca entera. Igual va como diccionario `nombre → {contacto, acento}`: la forma la fija el motor. Escrita como lista —así estuvo el 2/9/2026— el diseño muere con «'list' object has no attribute 'get'», cuatro minutos después de pedirlo y sin decir de qué marca ni de qué campo habla."
+  "_sedes": "Asistime no tiene locales, así que tiene una sola sede que es la marca entera. Igual va como diccionario `nombre → {contacto, acento}`: la forma la fija el motor. Escrita como lista —así estuvo el 2/9/2026— el diseño muere con «'list' object has no attribute 'get'», cuatro minutos después de pedirlo y sin decir de qué marca ni de qué campo habla.",
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "musica": [],
+    "_calidad": "Qué modelo de video se usa cuando la persona no pide otra cosa, que es casi siempre. `normal` es Seedance 2.0 Mini a 720p (140 créditos por segundo), `borrador` el mismo a 480p (70) y `maxima` Seedance 2.5 a 720p (440). Acá es donde está la plata.",
+    "_costo": "Un reel de 10 segundos: 700 en borrador, 1.400 en normal, 4.400 en máxima. Medido en Stadium el 26/8/2026. Mini sólo hace 5 o 10 exactos.",
+    "_topes": "`creditos_maximos` es por pieza: en 4.500 entra hasta un reel de 10 segundos en calidad máxima. Si algo no entra, el worker primero acorta, después baja calidad, y sólo rechaza si ni el más barato entra.",
+    "_musica": "VACÍO a propósito. Asistime no tiene todavía una pista de la casa, y un reel sin música NO falla por eso: sale con el sonido del clip. Cuando haya una, se agrega acá con su `clave` y el mp3 en `musica/` de esta carpeta, y desde ese momento un reel sin música pedida sale con la primera de la lista.",
+    "_regla": "Un reel de Asistime muestra el producto —una pantalla, un chat que se contesta solo, el alivio de alguien que deja el teléfono— y no personas reconocibles. Tony es un dibujo y va como dibujo: pedirle a un modelo de video que anime la jirafa da una jirafa que no es Tony."
+  }
 }
