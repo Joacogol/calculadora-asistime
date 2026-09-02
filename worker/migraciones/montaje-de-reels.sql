@@ -62,3 +62,38 @@ create index if not exists reels_estado_creado on reels (estado, creado_en);
 -- RLS prendida igual: sin políticas, la clave anónima no ve nada, que es lo
 -- que corresponde para una tabla que sólo tocan el worker y las funciones.
 alter table reels enable row level security;
+
+
+-- ── Que `actualizado_en` se actualice de verdad ────────────────────────────
+--
+-- La columna estaba desde el principio; el trigger que la escribe, no. Una
+-- columna llamada `actualizado_en` que nunca cambia no se lee como rota: se
+-- lee como que la fila no se tocó, que es peor, porque nadie va a mirarla.
+--
+-- De ahí cuelga la detección de pedidos colgados: `_colgada()` mide contra
+-- `actualizado_en` a propósito, y NO contra `creado_en`, porque un reel que
+-- estuvo dos horas esperando la clave de Magnific nacería vencido y se daría
+-- por perdido en la primera corrida después de pagarse el video. Sin trigger,
+-- `actualizado_en` ES `creado_en` y vuelve exactamente ese error.
+--
+-- El 2/9/2026 Asistime y Clínica tenían la tabla sin ninguno de los dos
+-- triggers, y Boss y Stadium con los dos: los suyos se habían hecho a mano
+-- antes de que existiera esta migración, así que el agujero sólo lo veía un
+-- cliente nuevo. Se arreglaron a mano y se agregan acá para que no vuelva.
+create or replace function tocar_actualizado() returns trigger
+  language plpgsql set search_path to 'public', 'pg_temp'
+  as $$ begin new.actualizado_en := now(); return new; end $$;
+
+create or replace function forzar_user_id() returns trigger
+  language plpgsql security definer set search_path to 'public', 'pg_temp'
+  as $$ begin new.user_id := auth.uid(); return new; end $$;
+
+-- `drop` + `create` porque Postgres no tiene `create trigger if not exists`, y
+-- correr esto dos veces tiene que ser inofensivo.
+drop trigger if exists reels_tocar on reels;
+create trigger reels_tocar before update on reels
+  for each row execute function tocar_actualizado();
+
+drop trigger if exists reels_forzar_user on reels;
+create trigger reels_forzar_user before insert on reels
+  for each row execute function forzar_user_id();
