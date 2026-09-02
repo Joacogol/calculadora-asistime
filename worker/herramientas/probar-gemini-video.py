@@ -192,7 +192,8 @@ def con_paciencia(clave, video, mime, pregunta, modo, modelo, intentos=4):
     espera = 15
     for intento in range(1, intentos + 1):
         r = preguntar(clave, video, mime, pregunta, modo, modelo)
-        if r.get("codigo") not in (503, 504, 429):
+        # El 429 no está: es cuota agotada, y reintentarlo la gasta más.
+        if r.get("codigo") not in (503, 504):
             return r
         if intento == intentos:
             return r
@@ -249,9 +250,17 @@ def insistir(clave: str, modelo: str, minutos: int) -> int:
     while True:
         vuelta += 1
         print(f"\n── intento {vuelta} · {time.strftime('%H:%M:%S')} ──")
-        if sondear(clave, modelo) == 0:
+        r = sondear(clave, modelo)
+        if r == 0:
             print("\n✓ Google contestó. Ya podés correr la medición con video.")
             return 0
+        if r == 2:
+            # 429 es cuota agotada, y volver a pedir la gasta más. Insistir
+            # contra una saturación es esperar; insistir contra una cuota es
+            # cavar. La primera versión de este bucle no los distinguía y se
+            # comió el cupo del día en ocho intentos.
+            print("\nNo insisto: cada intento gasta cupo. Ver arriba.")
+            return 1
         if time.time() >= limite:
             print(f"\n{minutos} minutos y sigue saturado. Probá más tarde.")
             return 1
@@ -302,7 +311,20 @@ def sondear(clave: str, modelo: str = MODELO) -> int:
         # buscar el problema donde no está. Este mensaje decía «el problema es
         # la clave o el modelo» ante un 503, que significa exactamente lo
         # contrario: la clave sirve, el modelo existe, y Google está saturado.
-        if any(c in (503, 429, 504) for c in codigos):
+        if 429 in codigos:
+            for linea in (
+                    "",
+                    "429 es TU CUOTA, no la saturación de Google. La clave anda;",
+                    "lo que se acabó es el cupo de pedidos de esta cuenta.",
+                    "",
+                    "Insistir acá empeora las cosas: cada intento gasta cupo.",
+                    "  · el plan gratuito se repone solo (tope por minuto y por día)",
+                    "  · o se habilita facturación en aistudio.google.com",
+                    "",
+                    "Mirá el consumo en https://ai.dev/rate-limit"):
+                print(linea)
+            return 2                       # 2 = cuota; `insistir` no reintenta
+        if any(c in (503, 504) for c in codigos):
             for linea in (
                     "",
                     "La clave ANDA y el modelo existe: un 503 sale DESPUÉS de",
