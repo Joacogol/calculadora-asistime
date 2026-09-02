@@ -234,6 +234,31 @@ def tokens_de(datos: dict) -> str:
     return "sin datos de tokens"
 
 
+def insistir(clave: str, modelo: str, minutos: int) -> int:
+    """Sondea cada dos minutos hasta que Google conteste, o hasta rendirse.
+
+    La saturación de un modelo recién anunciado no se mide en segundos: puede
+    durar horas. Reintentar cuatro veces con quince segundos de espera no
+    alcanza, y quedarse mirando la terminal tampoco es una forma de trabajar.
+
+    Se corre y se deja: `--probar --insistir 60` prueba durante una hora y
+    avisa apenas se destrabe.
+    """
+    limite = time.time() + minutos * 60
+    vuelta = 0
+    while True:
+        vuelta += 1
+        print(f"\n── intento {vuelta} · {time.strftime('%H:%M:%S')} ──")
+        if sondear(clave, modelo) == 0:
+            print("\n✓ Google contestó. Ya podés correr la medición con video.")
+            return 0
+        if time.time() >= limite:
+            print(f"\n{minutos} minutos y sigue saturado. Probá más tarde.")
+            return 1
+        print("  espero dos minutos…", flush=True)
+        time.sleep(120)
+
+
 def sondear(clave: str, modelo: str = MODELO) -> int:
     """¿Anda la clave, el endpoint y la forma del cuerpo? Sin subir un video.
 
@@ -277,11 +302,17 @@ def sondear(clave: str, modelo: str = MODELO) -> int:
         # buscar el problema donde no está. Este mensaje decía «el problema es
         # la clave o el modelo» ante un 503, que significa exactamente lo
         # contrario: la clave sirve, el modelo existe, y Google está saturado.
-        if any(c in (503, 429) for c in codigos):
-            print("\nLa clave ANDA y el modelo existe — un 503 sale después de "
-                  "autenticar. Google está saturado, que es lo que pasa con un "
-                  "modelo anunciado ayer.\nProbá de nuevo en un rato, o con otro: "
-                  "--modelo gemini-3.6-flash")
+        if any(c in (503, 429, 504) for c in codigos):
+            for linea in (
+                    "",
+                    "La clave ANDA y el modelo existe: un 503 sale DESPUÉS de",
+                    "autenticar. Lo que pasa es que Google está saturado.",
+                    "",
+                    "No hay nada que arreglar de este lado. Opciones:",
+                    "  · esperar y volver a probar",
+                    "  · dejarlo insistiendo solo:  --probar --insistir 60",
+                    f"  · probar otro modelo:  --modelo {MODELOS[2]}"):
+                print(linea)
         elif 400 in codigos or 403 in codigos:
             print("\nEs la clave: revisala en aistudio.google.com.")
         elif 404 in codigos:
@@ -301,6 +332,9 @@ def main() -> int:
     g.add_argument("--url", help="un mp4 por URL o una ruta local")
     g.add_argument("--probar", action="store_true",
                    help="sólo comprueba la clave y la forma de la API, sin video")
+    p.add_argument("--insistir", type=int, metavar="MINUTOS",
+                   help="con --probar: reintenta cada dos minutos hasta que "
+                        "Google conteste, o hasta agotar esos minutos")
     p.add_argument("--modelo", default=MODELO, choices=MODELOS,
                    help="si uno está saturado, probá otro")
     p.add_argument("--modo", choices=("agentic", "static", "ambos"),
@@ -317,6 +351,8 @@ def main() -> int:
             '  read -rs -p "clave: " K; export GEMINI_CLAVE="$K"; unset K')
 
     if args.probar:
+        if args.insistir:
+            return insistir(clave, args.modelo, args.insistir)
         return sondear(clave, args.modelo)
 
     url = args.url or ultimo_reel(args.marca)
