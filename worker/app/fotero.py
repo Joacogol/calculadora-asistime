@@ -599,8 +599,8 @@ def _ficha(marca: str) -> dict:
     Vacío quiere decir que esta marca no edita fotos, y con eso alcanza para no
     tocarle la cola. Boss y Clínica no lo tienen.
     """
-    from .disenador import _ficha as ficha_de_marca
-    return (ficha_de_marca(marca) or {}).get("fotos") or {}
+    from . import config
+    return (config.ficha_de_marca(marca) or {}).get("fotos") or {}
 
 
 def atender(cli) -> int:

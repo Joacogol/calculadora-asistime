@@ -40,6 +40,9 @@ SA_EMAIL = os.environ.get("SA_EMAIL", "")
 # Si `CLIENTES` no está, se usa el modo de un solo cliente con SUPABASE_URL y
 # SUPABASE_KEY. Eso mantiene andando el despliegue anterior sin tocar nada.
 import json as _json
+import logging as _logging
+
+_log = _logging.getLogger(__name__)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -132,6 +135,35 @@ MODELO_COMPLEJO = os.environ.get("MODELO_COMPLEJO", "claude-opus-4-5")
 # Es una posición de arranque, no una convicción: cuando haya cinco o seis
 # carruseles hechos, hay que mirar si Sonnet los resuelve igual y bajarlos.
 FORMATOS_COMPLEJOS = {"pdf", "video", "carrusel", "secuencia"}
+
+# ── El marca.json de cada marca ───────────────────────────────────────────
+#
+# Vive acá, que es el módulo liviano que ya importa todo el mundo, y no en
+# `disenador.py`, que es donde estaba. Leer un archivo JSON no tiene por qué
+# arrastrar el SDK del diseñador — y lo arrastraba: `manual`, `fotero` y
+# `reelero` lo importaban de ahí, así que preguntar «¿esta marca hace reels?»
+# cargaba `claude_agent_sdk`. En el worker está instalado y no se notaba; en
+# Cloud Shell, donde se corren las herramientas y las pruebas, revienta con un
+# `ModuleNotFoundError` que no tiene nada que ver con lo que se estaba
+# haciendo. Pasó el 2/9/2026 corriendo `probar-registro.py`.
+#
+# Se lee el JSON en vez de importar el módulo de la marca porque dos marcas
+# pueden tener archivos con el mismo nombre y no conviven importadas en un
+# mismo proceso de Python.
+def ficha_de_marca(marca: str) -> dict:
+    """El `marca.json` de una marca, entero. `{}` si no se puede leer.
+
+    Se lee cada vez, sin memoria. Es un archivo chico y lo que se gana con un
+    caché no compensa el día que alguien edite el `marca.json` en vivo —el
+    estudio lo hace— y el proceso siga contestando lo de antes.
+    """
+    ruta = RAIZ / ".claude/skills" / marca / "marca.json"
+    try:
+        return _json.loads(ruta.read_text(encoding="utf-8"))
+    except Exception as e:                                       # noqa: BLE001
+        _log.warning("no pude leer %s (%s); sigo con lo mínimo", ruta, e)
+        return {}
+
 
 # ── Datos de cada marca ───────────────────────────────────────────────────
 # Se mudaron a `.claude/skills/<marca>/marca.json`. Estaban acá cuando el

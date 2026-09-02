@@ -268,19 +268,10 @@ def _marca(pedido: dict) -> str:
     return m if m else MARCA_POR_DEFECTO
 
 
-def _ficha(marca: str) -> dict:
-    """Los datos de la marca que van al prompt.
-
-    Se leen de `marca.json` en vez de importar el módulo de la marca porque dos
-    marcas tienen archivos con el mismo nombre —`brand.py`, `templates.py`— y
-    no pueden convivir importadas en un mismo proceso de Python.
-    """
-    ruta = config.RAIZ / ".claude/skills" / marca / "marca.json"
-    try:
-        return json.loads(ruta.read_text(encoding="utf-8"))
-    except Exception as e:
-        log.warning("no pude leer %s (%s); sigo con lo mínimo", ruta, e)
-        return {}
+#: Los datos de la marca que van al prompt. Vive en `config` para que leerlos
+#: no arrastre este módulo, que carga el SDK. Se re-exporta con el nombre de
+#: siempre porque hay código que lo importa de acá.
+_ficha = config.ficha_de_marca
 
 
 def _analizar_clips(rutas: list[Path], base: Path) -> str:

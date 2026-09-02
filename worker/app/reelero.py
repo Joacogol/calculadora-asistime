@@ -1798,8 +1798,8 @@ def _ficha(marca: str) -> dict:
     404, preguntar cada minuto por algo que se sabe que no existe es ruido en
     el log de dos clientes para servir a un tercero.
     """
-    from .disenador import _ficha as ficha_de_marca
-    return (ficha_de_marca(marca) or {}).get("reels") or {}
+    from . import config
+    return (config.ficha_de_marca(marca) or {}).get("reels") or {}
 
 
 def musica_de(cli, ficha: dict, pedida: str | None) -> str | None:

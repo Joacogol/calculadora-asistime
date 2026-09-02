@@ -63,8 +63,7 @@ def _ficha(marca: str) -> dict:
     es un secreto: es un dato de la marca, y ahí es donde se busca todo lo demás
     de la marca. La clave de API sí es secreto y va aparte.
     """
-    from .disenador import _ficha as ficha_de_marca
-    return (ficha_de_marca(marca) or {}).get("asistime") or {}
+    return (config.ficha_de_marca(marca) or {}).get("asistime") or {}
 
 
 def _nombre_clave(marca: str) -> str:
