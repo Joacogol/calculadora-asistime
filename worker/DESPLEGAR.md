@@ -2929,3 +2929,47 @@ tool vieja, el pedido vuelve con `elegi_proveedor` y la tool lo lee como un
 éxito: le dice a la persona «reel encargado» con un id vacío. Con la tool nueva
 y la API vieja, `?opciones=1` no existe y la elección queda sin valores. No hay
 orden seguro: hay una ventana corta, y por eso se hace con los reels dormidos.
+
+### Las tools de diseño: seis fotos, y Drive escrito donde se lee
+
+El arreglo de Drive estaba en la API pero **la tool no se lo contaba a nadie**,
+y la tool es lo único que el agente lee. Peor en Stadium y Clínica: recortaban
+las fotos a cuatro **antes** de llamar a la API, así que un carrusel de cinco
+perdía la quinta en silencio y la API nunca se enteraba.
+
+| tenant | tool | recortaba | ahora | decía de Drive |
+|---|---|---|---|---|
+| Boss 119 | `crear_diseno` 1664 | no recortaba (pasaba todo) | — | nada → **lo dice** |
+| Stadium 176 | `crear_diseno` 2069 | **a 4** | 6 | nada → **lo dice** |
+| Clínica 73 | `crear_diseno` 2063 | **a 4** (y el banco a 4) | 6 y 6 | nada → **lo dice** |
+
+En las tres, la descripción de `fotos` ahora dice que los links de Drive sirven
+en sus tres formas y que **no hay que pedirle a nadie que descargue nada** —
+que fue exactamente lo que el agente terminó pidiendo el 1/9.
+
+> Se hizo con `PUT /tenants/{t}/tools/{id}` de la API de Asistime, que sí
+> permite leer y escribir UNA tool sin toparse con el truncado del listado.
+> El id de cada una sale de `GET /tenants/{t}/agents/{a}/tools`, que viene
+> cortado pero alcanza para los primeros por orden alfabético.
+
+**Conviene pedir un diseño de prueba en cada cliente.** Las tres tools se
+reescribieron enteras y su código corre en el sandbox de Asistime, que no se
+puede ejecutar desde acá: lo único que confirma que el JavaScript quedó bien es
+que una pieza salga.
+
+### Lo que NO se replicó a Stadium, y por qué
+
+**Los reels.** Stadium sigue con `api-reels` v5 vieja: sin elección de sistema,
+sin la separación video/pieza y sin el sello. No es un olvido:
+
+- Sus reels están dormidos —6 piezas, la última el 26/8— así que el valor de
+  moverlos hoy es bajo.
+- `api-reels` y sus tres tools tienen que cambiar **juntas**, y sus tools son
+  distintas de las de Boss: su `estado_reel` distingue `crear_reel` de
+  `montar_reel`, que Boss no tiene.
+- Y no hay forma de probarlo sin gastarle créditos a Stadium.
+
+Lo que sí le llega a Stadium sin tocar nada de esto es lo del worker, que es
+uno solo para todos: **el reel deja de salir mudo, el encuadre de fal deja de
+estirarse y el revisor de piezas empieza a mirar**. Eso entra con
+`./desplegar-chat.sh`.
