@@ -110,7 +110,9 @@ El repo del worker, entero. Lo que se toca para un pedido así suele ser:
 
 - `motor/` — el render, los efectos, la legibilidad. Es COMPARTIDO entre
   marcas: lo que cambies acá le pasa a todos los clientes.
-- `.claude/skills/{marca}/marca.py` y `templates.py` — lo propio de esta marca.
+- `.claude/skills/{marca}/marca.json` (bloque `identidad`), `estilo.css` y
+  `plantillas/` — lo propio de esta marca. Es DATOS, no código: una marca
+  nueva no lleva Python. Los ayudantes de dibujo están en `motor/componentes.py`.
 - `motor/plantillas.py` — el contrato de las plantillas-dato. Cambiarlo puede
   obligar a tocar las 12.
 

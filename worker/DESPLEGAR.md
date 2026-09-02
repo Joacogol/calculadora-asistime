@@ -3073,3 +3073,31 @@ Probado con `herramientas/probar-registro.py` (sin red) y con un ensayo del
 script de despliegue contra un `gcloud` de mentira: con el registro presente
 monta un solo secreto, no manda `CLIENTES`, y sigue pidiendo la clave de
 Magnific sólo para las marcas que hacen reels.
+
+## Etapa 4 · B — La marca es datos (2/9/2026)
+
+Cada marca traía 300 a 450 líneas de Python propio: colores, hoja de estilo,
+logo y once ayudantes de dibujo. Era el paso del alta que más tiempo llevaba
+y el único que no podía hacer una persona de diseño.
+
+Ahora una marca es `marca.json` (con un bloque `identidad`), `estilo.css`, sus
+fuentes, sus logos y sus plantillas. Los ayudantes viven una sola vez en
+`motor/componentes.py`, atados a los tokens de cada marca. `marca.py` son tres
+líneas iguales para todas.
+
+**Stadium es la primera.** De 466 líneas de Python a 6. Antes de borrar su
+`brand.py` se renderizaron las 5 plantillas × 4 formatos por los dos caminos y
+se compararon byte a byte:
+
+```
+20 / 20 idénticas
+```
+
+Los hashes de esas 20 salidas quedaron grabados y `probar-identidad.py` los
+compara en cada corrida: si un ayudante del motor cambia sin querer, lo dice
+con nombre de plantilla y formato. Si el cambio es a propósito,
+`--grabar`.
+
+La receta completa está en `motor/ALTA-DE-MARCA.md`. Lo que sigue siendo
+Python: los carruseles (`DIAPOS`) y el PDF (`PRESENTACION`), que Boss y
+Clínica tienen y Stadium no. Van después.

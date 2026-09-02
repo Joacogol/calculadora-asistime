@@ -12,45 +12,59 @@ marca el día que entra.
 
 ## La carpeta
 
+Desde el 2/9/2026 una marca **no lleva Python propio**. Es esto:
+
 ```
 .claude/skills/<marca>/
   SKILL.md            el manual: cuándo usar cada plantilla, qué no hacer
-  marca.py            el enchufe — junta todo y lo expone como espera el motor
-  brand.py            colores, formatos, logo vectorial, elementos gráficos
-  templates.py        las plantillas de placa de esta marca
-  diapositivas.py     cómo se ve cada diapositiva de un carrusel
-  presentacion.py     los tipos de slide del PDF        (opcional)
-  referencias/
-    marca.md          reglas de color, tipografía y tono
-    fotos.json        el banco catalogado
-  assets/  fonts/  logo/
-  render.py  video.py lanzadores de tres líneas, se copian tal cual
+  marca.json          los datos de la marca para el agente (sedes, reglas,
+                      reels, fotos) y el bloque «identidad» para el motor
+  estilo.css          las clases que usan sus plantillas
+  fonts/  assets/     las tipografías y los logos que la identidad nombra
+  plantillas/<id>/    plantilla.json + plantilla.html, una carpeta por molde
+  marca.py            tres líneas, iguales para todas: enchufan la identidad
 ```
 
-## El contrato
+Stadium fue la primera en quedar así: pasó de 466 líneas de Python a 6, y
+sus cinco plantillas dibujan **byte a byte lo mismo** por los dos caminos
+(`herramientas/probar-identidad.py`). Boss y Clínica todavía tienen parte en
+Python —Boss sus plantillas viejas, Clínica los carruseles y el PDF— y van
+migrando a medida que se tocan.
 
-`marca.py` tiene que exponer:
+### El bloque «identidad»
 
-| | |
-|---|---|
-| `C` | dict de colores |
-| `FORMATOS` | dict formato → (ancho, alto) |
-| `BASE_CSS` | la hoja de estilo base |
-| `PLANTILLAS` | dict nombre → función(data, formato) → HTML |
-| `logo(size, color, align)` | el logo como HTML |
-
-Y, si la marca quiere carruseles:
+Va adentro de `marca.json` y es todo lo que el motor necesita para dibujar
+con esta marca:
 
 | | |
 |---|---|
-| `DIAPOS` | dict tipo → función(data, ancho, alto, acento) → cuerpo HTML |
+| `colores` | nombre → HEX. Los nombres son los que usan las plantillas (`c.tinta`) |
+| `roles` | qué color es el `acento`, el `claro` y la `tinta`: es lo que usan los ayudantes por defecto |
+| `formatos` | formato → [ancho, alto] |
+| `tipografias` | familia, archivo en `fonts/`, y pesos. De acá sale el `@font-face` |
+| `logo` / `iso` | el SVG, su proporción medida del vector, el ancho base y el color por defecto |
+| `componentes` | lo que cambia por marca en los ayudantes: qué dice la barra de pie, si la pastilla tiene radio |
+| `paletas` / `voces` | las identidades de campaña, si la marca las tiene. `$naranja` es «el color que se llama naranja» |
+| `acento_por_defecto` | qué color manda cuando la plantilla no dice |
+| `reel` | las TTF de peso fijo para los rótulos, el ánimo de la música, el acento del reel |
+| `carrusel` | color y tipografía del índice y de la caja de respuesta |
+| `vocabulario` | lo que se le dice al modelo de transcripción antes de escuchar |
 
-`portada` y `cierre` son obligatorios —un carrusel siempre abre y cierra igual—
-y `cuadro` hace falta para secuencias de stories. Los del medio los define cada
-marca según lo que publique.
+Ver el de Stadium como ejemplo completo. Los ayudantes de dibujo que antes
+escribía cada marca —`logo`, `pastilla`, `barra`, `descuento`, `subrayado`,
+`etiqueta_persona`, `fila_logos`, `sombra_texto`, `pad_seguro`, `paleta`—
+viven ahora en `motor/componentes.py`, una vez, atados a estos tokens.
+
+### El contrato
+
+`marca.py` tiene que exponer lo de siempre —`C`, `FORMATOS`, `BASE_CSS`,
+`PLANTILLAS`, `logo`— y lo expone solo a partir de la identidad. Una marca
+que además quiera carruseles o PDF declara `DIAPOS` y `PRESENTACION` en su
+`marca.py` al lado del `cargar`: eso todavía es Python.
 
 `motor.contrato.verificar()` corre solo y falla con nombre y apellido si falta
-algo. Es la diferencia entre «la marca nueva no anda» y «falta `PLANTILLAS`».
+algo. `motor.identidad` hace lo mismo con la identidad: «a la identidad de X
+le falta: tipografias», «el rol acento tiene que nombrar un color de colores».
 
 ---
 
@@ -66,7 +80,7 @@ manual si lo hay. Colores en HEX exactos, no aproximados. Tipografías reales,
 en TTF de peso fijo — una fuente variable como Archivo la renderiza ffmpeg
 siempre en regular, así que para los rótulos de reel hace falta un peso fijo.
 
-Esto va a `referencias/marca.md` y a `brand.py`.
+Esto va al bloque `identidad` de `marca.json` y a `estilo.css`.
 
 ### 2 · Dos o tres plantillas, no nueve
 

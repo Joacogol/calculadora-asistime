@@ -67,5 +67,142 @@
     "_costo": "Los seis verbos están MEDIDOS, no estimados: se corrió uno de cada uno y se miró cuánto bajó el saldo de la cuenta. `fondo` 3, `formato` 40, `retoque` 100, `escena` 100, `crear` 100, y `tamano` 180 — este último es el único que depende del tamaño de la foto, y por eso el worker rechaza agrandar una que ya pase los 4 megapíxeles: no haría falta, y ahí el precio salta a 1080. Antes cuatro de los seis llevaban una cota de 300; tres salían bastante más baratos.",
     "_topes": "`creditos_maximos` es por pieza: frena un pedido absurdo o un bucle del chat, que son errores. NO hay techo de mes — se sacó a propósito el 28/8/2026: cuánto gasta el cliente en un mes es decisión suya, no del motor. Si alguna vez hiciera falta, alcanza con volver a escribir `creditos_maximos_mes` acá y el corte vuelve solo; sin la clave no hay corte.",
     "_regla_producto": "`retoque` y `escena` GENERAN imagen, así que pueden deformar el producto. Se midió con los reels: pidiéndole al modelo que manipule una zapatilla, la caña alta desapareció y la suela cambió de color. Por eso el worker le pega a cada prompt una regla de que el producto no se toca — misma forma, mismos colores, mismos logos. Aun así, una pieza que sale de `escena` conviene mirarla antes de publicarla."
+  },
+  "identidad": {
+    "colores": {
+      "naranja": "#FF6600",
+      "tinta": "#222222",
+      "blanco": "#FFFFFF",
+      "gris": "#999999",
+      "gris_claro": "#E1E3E4",
+      "negro": "#0E0E0E"
+    },
+    "roles": {
+      "acento": "naranja",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "tipografias": [
+      {
+        "familia": "Arch",
+        "archivo": "fonts/Archivo-var.ttf",
+        "pesos": "100 900"
+      },
+      {
+        "familia": "Play",
+        "archivo": "fonts/PlayfairDisplay-var.ttf",
+        "pesos": "400 900"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/stadium-logo.svg",
+      "ratio": 8.207317073170731,
+      "ancho": 300,
+      "color": "naranja",
+      "marcador": "CURRENT",
+      "_nota": "Ratio medido del vector oficial: 201.9/24.6. El ancho base son 300 px sobre 1080, a propósito chico: en retail grita el precio, no la tienda."
+    },
+    "iso": {
+      "archivo": "assets/stadium-iso.svg",
+      "ratio": 1.2356199403493822,
+      "alto": 96,
+      "color": "naranja",
+      "marcador": "CURRENT"
+    },
+    "componentes": {
+      "barra": {
+        "texto": "stadium.com.uy"
+      },
+      "paleta": {
+        "por_defecto": "stadium"
+      },
+      "pastilla": {
+        "radio": 0,
+        "_nota": "Sin radio: la marca no tiene una sola esquina redondeada."
+      }
+    },
+    "voces": {
+      "cond": "Condensada de póster (Archivo al ancho 64, peso 900, en mayúsculas). La de las campañas de volumen y precio: grita y ocupa poco ancho. Es la de «CON PAPÁ SIEMPRE HAY EQUIPO».",
+      "serif": "Serif de contraste alto (Playfair Display). Para lo aspiracional y lo femenino: Día de la Madre, botas, una cápsula. Es la de «PARA LA N°1 DE MI EQUIPO».",
+      "normal": "Archivo black de ancho normal. La voz neutra de la marca, la misma del logotipo. Cuando la campaña no tiene identidad propia."
+    },
+    "paletas": {
+      "stadium": {
+        "fondo": "$blanco",
+        "tinta": "$tinta",
+        "acento": "$naranja",
+        "voz": "normal",
+        "subrayado": false
+      },
+      "papa": {
+        "fondo": "#D8C4A4",
+        "tinta": "#2E93D4",
+        "acento": "$blanco",
+        "voz": "cond",
+        "subrayado": true
+      },
+      "papa_estudio": {
+        "fondo": "$blanco",
+        "tinta": "#2E93D4",
+        "acento": "$tinta",
+        "voz": "cond",
+        "subrayado": true
+      },
+      "madre": {
+        "fondo": "#F2EBE1",
+        "tinta": "#6E4B2E",
+        "acento": "#A8825C",
+        "voz": "serif",
+        "subrayado": false
+      },
+      "promo": {
+        "fondo": "$naranja",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "voz": "cond",
+        "subrayado": false
+      },
+      "oscura": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$naranja",
+        "voz": "normal",
+        "subrayado": false
+      }
+    },
+    "_paletas_nota": "Los colores de las campañas están SACADOS A OJO de capturas del feed. Los de `stadium` sí son exactos: salen del logo oficial.",
+    "acento_por_defecto": "naranja",
+    "reel": {
+      "tipografias": [
+        "Montserrat-Black.ttf",
+        "Montserrat-SemiBold.ttf"
+      ],
+      "animo_musica": "club",
+      "acento": "naranja"
+    },
+    "carrusel": {
+      "color_cromo": "tinta",
+      "fuente_cromo": "'Arch',Helvetica,sans-serif",
+      "fuente_texto": "'Arch',Helvetica,sans-serif"
+    },
+    "vocabulario": "Hablamos de Stadium, la tienda de deportes. ¿Buscás championes, camiseta, buzo o campera? Tenemos Nike, adidas, Puma y Vans."
   }
 }
