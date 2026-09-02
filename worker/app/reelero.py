@@ -1684,6 +1684,24 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 if enc and "encuadre" not in guion:
                     guion = {**guion, "encuadre": enc}
 
+                # ── Si hay una instrucción y el material es largo, alguien lo mira ──
+                #
+                # Hasta el 2/9/2026 el montaje cortaba a ciegas: silencios y
+                # transcripción, nunca la imagen ni el contenido. Con una
+                # instrucción («lo más fuerte sobre IA, un minuto») y material
+                # más largo que el reel, Gemini agéntico mira los videos y dice
+                # qué tramos entran —medido: 28.721 tokens y un tramo válido
+                # sobre 5 minutos de podcast—. Sólo entonces: si el material ya
+                # entra entero en el reel no hay nada que elegir, y sin
+                # instrucción no hay criterio que darle. Ver motor/mirar.py.
+                #
+                # Si no puede —sin clave, sin cuota, sin JSON— se sigue como
+                # hasta hoy y queda dicho en las notas. Nunca frena el reel.
+                if not (guion.get("tramos") or []):
+                    guion, dicho_mirar = _mirar_si_hace_falta(guion, fila, clips, nombres, material)
+                    if dicho_mirar:
+                        hecho.append(dicho_mirar)
+
                 # Un guion SIN tramos no es un guion incompleto: es el caso
                 # normal. El agente del chat no puede ver los videos —recién se
                 # escuchan cuando este worker los transcribe—, así que pedirle
@@ -1801,6 +1819,60 @@ def _fechado(nombre: str):
         return datetime(*(int(x) for x in m.groups()))
     except ValueError:
         return None            # «2026-13-45» no es una fecha, es una coincidencia
+
+
+#: Cuánto dura un reel si nadie dijo cuánto. Instagram acepta hasta 90;
+#: sesenta es lo que se pide en el chat cuando no se pide nada.
+OBJETIVO_POR_DEFECTO = 60.0
+
+
+def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
+                         material: pathlib.Path) -> tuple[dict, str]:
+    """El guion con los tramos que Gemini eligió, o el mismo guion y por qué no.
+
+    Devuelve `(guion, nota)`. La nota va a las notas de la fila en los dos
+    casos —qué eligió y cuánto costó, o por qué se siguió sin él—, porque un
+    reel que salió distinto de lo esperado tiene que poder explicarse sin
+    abrir el log.
+    """
+    from motor import mirar as mmirar
+    instruccion = str(guion.get("instruccion") or fila.get("mensaje") or "").strip()
+    objetivo = float(guion.get("duracion_objetivo") or OBJETIVO_POR_DEFECTO)
+    if not instruccion:
+        return guion, ""
+    if not mmirar.disponible():
+        return guion, ""                     # sin clave no es un error: es como hasta hoy
+    archivos = []
+    for c in clips:
+        url = c.get("url") if isinstance(c, dict) else str(c)
+        nombre = nombres.get(str(url))
+        if nombre and (material / nombre).exists() and (material / nombre) not in archivos:
+            archivos.append(material / nombre)
+    if not archivos:
+        return guion, ""
+    try:
+        from motor import analisis as man
+        total = sum(float(man.sondear(a).get("duracion") or 0) for a in archivos)
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude medir el material antes de mirarlo: %s", e)
+        total = 0.0
+    if total and total <= objetivo * 1.1:
+        return guion, ""                     # entra entero: no hay nada que elegir
+    try:
+        r = mmirar.elegir_tramos(archivos, instruccion, objetivo, carpeta=material / "_mirar")
+    except mmirar.NoPudeMirar as e:
+        log.warning("Gemini no pudo elegir los tramos (%s); sigo cortando por audio", e)
+        return guion, f"no pude hacer que Gemini mirara el material ({str(e)[:120]}); corté por audio como siempre"
+    g = {**guion, "tramos": r["tramos"], "duracion_objetivo": objetivo}
+    if r["gancho"] and not str(g.get("hook") or "").strip():
+        g["hook"] = r["gancho"]
+    suma = sum(t["hasta"] - t["desde"] for t in r["tramos"])
+    nota = (f"Gemini ({r['modelo']}) miró {len(archivos)} video(s), {total / 60:.0f} min, y eligió "
+            f"{len(r['tramos'])} tramo(s), {suma:.0f} s, en {r['segundos']:.0f} s"
+            + (f" y {r['uso'].get('total_tokens')} tokens" if r.get("uso", {}).get("total_tokens") else ""))
+    if r["avisos"]:
+        nota += " · " + "; ".join(r["avisos"])[:200]
+    return g, nota
 
 
 def _en_orden(clips: list) -> tuple[list, str]:
