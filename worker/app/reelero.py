@@ -419,6 +419,63 @@ def motivo_de(d) -> str:
     return json.dumps(resto, ensure_ascii=False)[:300] if resto else ""
 
 
+#: Las marcas de que lo bloqueado fue el AUDIO que el modelo iba a inventar, no
+#: el video. Seedance genera su propia música y su moderador la revisa por
+#: derechos de autor; cuando sospecha, tira el pedido ENTERO —video incluido—
+#: sin cobrar nada. El 2/9/2026 se llevó puesto el primer reel de Asistime con
+#: `OutputAudioSensitiveContentDetected.PolicyViolation`.
+#:
+#: Que se pueda distinguir importa porque el arreglo es distinto: una foto fuera
+#: de límites o una duración imposible no se arreglan reintentando, y ésta sí
+#: —esa música no la usamos, la ponemos nosotros en el montaje—.
+SENALES_AUDIO_BLOQUEADO = ("outputaudiosensitivecontentdetected",
+                           "output audio may be related to copyright")
+
+
+def bloquearon_el_audio(motivo: str) -> bool:
+    """¿El proveedor bloqueó la música que iba a generar, y no el video?"""
+    m = (motivo or "").lower()
+    return any(s in m for s in SENALES_AUDIO_BLOQUEADO)
+
+
+def que_hacer_con_fallo(fila: dict, estado: str, motivo: str) -> tuple[str, dict]:
+    """`(estado nuevo, campos)` para una fila que el proveedor dio por fallada.
+
+    Está afuera del ciclo que atiende los pedidos para que se pueda probar: la
+    decisión de reintentar es la parte con criterio, y adentro de una función
+    que además habla con Supabase y con dos proveedores no hay forma de mirarla
+    sin levantar medio worker.
+    """
+    quien = ficha_modelo(fila.get("modelo") or "").get("proveedor") or "el proveedor"
+    met = fila.get("metricas") or {}
+    if bloquearon_el_audio(motivo) and not met.get("sin_audio"):
+        # No falló el video: falló la música que el modelo iba a inventar, y esa
+        # música no la usamos —la pone el worker desde el banco de la marca—.
+        # Vuelve a `pendiente` pidiendo silencio.
+        #
+        # Una sola vez, y el candado es el mismo campo que activa el silencio:
+        # si el segundo intento vuelve a fallar por audio, ya no hay audio que
+        # sacar y el motivo era otro. Un reintento sin candado contra un
+        # moderador que dice que no sería un bucle que cobra cada vuelta.
+        #
+        # El guión ya está guardado en `metricas`, así que reintentar no vuelve
+        # a pagar la pasada del modelo de texto: sólo el video. Y el primer
+        # intento no cobró nada —Magnific rechaza antes de generar—, así que
+        # esto no es pagar dos veces.
+        return "pendiente", {
+            "tarea": None,
+            "metricas": {**met, "sin_audio": True},
+            "notas": (f"{quien} bloqueó la música que iba a generar el modelo "
+                      f"({motivo[:120]}). Lo vuelvo a pedir sin audio; la "
+                      f"música del reel la pone la marca."),
+        }
+    return "error", {
+        "notas": f"{quien} devolvió {estado}"
+                 + (f": {motivo}" if motivo else
+                    " y no dijo por qué (respuesta sin motivo)"),
+    }
+
+
 def _estado_clip_fal(tarea: str) -> tuple[str, str | None, str]:
     """(estado, url del video, motivo). Traduce el vocabulario de fal al nuestro."""
     d = _pedir_fal(tarea)
@@ -462,19 +519,27 @@ def pedir_clip(fila: dict, plan: dict, planos: list[dict]) -> str:
     if m.get("proveedor") == "fal":
         return _pedir_clip_fal(fila, plan, planos)
 
+    # Un reintento después de que el moderador bloqueara la música del propio
+    # modelo: se pide el video callado. Es la única forma de conseguirlo en un
+    # modelo que no acepta `no_music`, y no perdemos nada —la música del reel
+    # sale del banco de la marca—, salvo el ambiente, que es lo que se estaba
+    # perdiendo igual con el pedido rechazado entero.
+    callado = bool((fila.get("metricas") or {}).get("sin_audio"))
     cuerpo = {
         "duration": plan["duracion"],
         "aspect_ratio": POR_DEFECTO["relacion"],
-        "sound_effects": True,
+        "sound_effects": not callado,
     }
     if m["referencias"]:
         cuerpo["reference_images"] = [fila["foto"]]
-    if m["manda_el_audio"]:
+    if m["manda_el_audio"] or callado:
         # La música la pone el worker desde el banco de la marca: es más barata
         # (una pista se genera una vez y se reusa en todos los reels) y sobre
         # todo es SIEMPRE la misma, que es lo que hace que una cuenta suene a
         # una cuenta y no a veinte piezas sueltas. El modelo que no acepta este
-        # campo puede meter música propia, y de eso se entera el montaje.
+        # campo puede meter música propia, y de eso se entera el montaje —salvo
+        # en un reintento por audio bloqueado, donde se lo mandamos igual: si no
+        # lo entiende lo ignora, y si lo entiende es justo lo que necesitamos.
         cuerpo["no_music"] = True
 
     if m["multishot"]:
@@ -1274,11 +1339,11 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                 movidas += 1
             continue
         if estado in ("FAILED", "ERROR"):
-            quien = ficha_modelo(fila.get("modelo") or "").get("proveedor") or "el proveedor"
-            _marcar(cli, fila["id"], "error",
-                    notas=f"{quien} devolvió {estado}"
-                          + (f": {motivo}" if motivo else
-                             " y no dijo por qué (respuesta sin motivo)"))
+            nuevo, campos = que_hacer_con_fallo(fila, estado, motivo)
+            _marcar(cli, fila["id"], nuevo, **campos)
+            if nuevo == "pendiente":
+                log.info("[%s] reel %s: audio bloqueado, reintento en silencio",
+                         getattr(cli, "marca", "?"), fila["id"])
             movidas += 1
         elif estado == "COMPLETED" and url:
             _marcar(cli, fila["id"], "montando", clip_url=url)

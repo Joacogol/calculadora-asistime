@@ -81,5 +81,71 @@ try:
 finally:
     reelero._pedir = guardado
 
+print("\n■ Reconocer que lo bloqueado fue el audio y no el video")
+from app.reelero import bloquearon_el_audio
+REAL = ("422 - Task failed. Error: Invalid request to service seedance-2-0-mini. "
+        "Status: 422. Error: {\"moderation\": {\"block_reasons\": [{\"label\": "
+        "\"Copyright\", \"detail\": \"Potential copyright restriction.\"}]}, "
+        "\"error\": {\"message\": \"The request failed because the output audio "
+        "may be related to copyright restrictions.\"}, \"code\": "
+        "\"OutputAudioSensitiveContentDetected.PolicyViolation\"}")
+ok(bloquearon_el_audio(REAL), "el fallo real del 2/9/2026 se reconoce")
+ok(bloquearon_el_audio("code: outputaudiosensitivecontentdetected.policyviolation"),
+   "no le importan las mayúsculas")
+for otro in ("la foto es muy chica", "duration 3 not supported", "", None,
+             "NSFW content detected in the output video"):
+    ok(not bloquearon_el_audio(otro), f"no confunde {otro!r} con esto")
+
+print("\n■ El pedido callado")
+import app.reelero as reelero
+enviado = {}
+def _espia(ruta, cuerpo=None, metodo="POST"):
+    enviado.clear(); enviado.update({"ruta": ruta, **(cuerpo or {})})
+    return {"data": {"task_id": "t-nueva"}}
+FILA = {"foto": "https://f/1.jpg", "mensaje": "x", "titulo": "t"}
+PLAN = {"modelo": "seedance-2-mini", "duracion": 10, "resolucion": "720p"}
+guardado = reelero._pedir
+try:
+    reelero._pedir = _espia
+    reelero.pedir_clip(FILA, PLAN, [{"duration": 10, "prompt": "un plano"}])
+    ok(enviado.get("sound_effects") is True, "el pedido normal pide audio", enviado.get("sound_effects"))
+    ok("no_music" not in enviado, "y a Mini no le manda `no_music`")
+
+    reelero.pedir_clip({**FILA, "metricas": {"sin_audio": True}}, PLAN, [{"duration": 10, "prompt": "un plano"}])
+    ok(enviado.get("sound_effects") is False, "el reintento lo pide callado", enviado.get("sound_effects"))
+    ok(enviado.get("no_music") is True, "y le manda `no_music` por si lo entiende")
+finally:
+    reelero._pedir = guardado
+
+print("\n■ Un solo reintento, nunca un bucle")
+from app.reelero import que_hacer_con_fallo
+BASE = {"id": "r1", "tarea": "t-1", "modelo": "seedance-2-mini", "resolucion": "720p"}
+
+e, c = que_hacer_con_fallo(dict(BASE), "FAILED", REAL)
+ok(e == "pendiente", "el primer bloqueo de audio vuelve a la cola", e)
+ok(c["metricas"].get("sin_audio") is True, "marcado para pedirse callado", c["metricas"])
+ok(c["tarea"] is None, "y sin la tarea vieja colgada")
+ok("bloqueó la música" in c["notas"], "la nota explica qué pasó", c["notas"])
+
+e, c = que_hacer_con_fallo({**BASE, "metricas": {"sin_audio": True}}, "FAILED", REAL)
+ok(e == "error", "el segundo ya es error, no otro reintento", e)
+
+e, c = que_hacer_con_fallo({**BASE, "metricas": {"guion": {"calidad": "normal"}}},
+                           "FAILED", REAL)
+ok(c["metricas"].get("guion") == {"calidad": "normal"},
+   "el reintento conserva el guión: no se vuelve a pagar el texto", c["metricas"])
+
+e, c = que_hacer_con_fallo(dict(BASE), "FAILED", "la foto es muy chica")
+ok(e == "error", "otro motivo no reintenta", e)
+ok("muy chica" in c["notas"], "y el motivo llega a las notas", c["notas"])
+
+e, c = que_hacer_con_fallo(dict(BASE), "FAILED", "")
+ok(e == "error" and "no dijo por qué" in c["notas"],
+   "sin motivo, la nota lo dice en vez de mentir", c["notas"])
+
+e, c = que_hacer_con_fallo({**BASE, "modelo": "h3-max"}, "ERROR", "se cayó")
+ok("fal devolvió ERROR" in c["notas"],
+   "nombra al proveedor que falló, no siempre a Magnific", c["notas"])
+
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)
