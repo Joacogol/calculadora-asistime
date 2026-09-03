@@ -236,10 +236,12 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
           "  ],\n"
           '  "gancho": "la frase de 6 a 8 palabras con la que abriría el reel, sacada de lo que se dice",\n'
           # Vos ves el video; el que transcribe sólo oye. Ver el comentario de
-          # `elegir_tramos` sobre por qué esta línea vale un modelo entero.
-          '  "palabras": ["hasta 12 nombres propios o palabras del tema que SE OYEN o SE VEN '
-          'en el video (personas, lugares, marcas, deporte, jerga), escritas como se escriben. '
-          'Sólo las que estén de verdad; si no hay ninguna, lista vacía"]\n'
+          # `elegir_tramos` sobre por qué esta línea vale un modelo entero, y
+          # por qué los nombres de persona quedan afuera.
+          '  "palabras": ["hasta 12 palabras del TEMA del video: el deporte o la actividad, '
+          'los objetos que se ven, las marcas escritas en pantalla, el lugar, la jerga. '
+          'Escribilas como se escriben. NO pongas nombres de personas, salvo que estén '
+          'ESCRITOS en pantalla. Sólo lo que esté de verdad; si no hay nada, lista vacía"]\n'
           "}\n")
 
 
@@ -354,6 +356,17 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     agentes de IA y de WhatsApp, y este video —que igual es de Asistime— es de
     pádel en el living. Lo que cambia de un video al otro no lo puede saber
     la marca.
+
+    **Los nombres de persona quedan afuera a propósito**, y eso también se
+    midió. En la primera versión se le pedían «nombres propios» y devolvió
+    `Bauti, Shayo, Babolat, pádel, paleta, pelota`: «Babolat» es la marca
+    escrita en la paleta —eso lo VIO, y es justo lo que el otro no puede
+    saber— pero «Shayo» es «Yayo» mal oído. Y como una palabra en el
+    vocabulario es una palabra que el transcriptor va a estar más dispuesto a
+    escribir, el reel salió con «Shayo» tres veces, donde antes decía «Yayo».
+    Gemini oye tan mal como Whisper; lo que tiene de más es la imagen. Así que
+    se le pide lo que ve —el tema, los objetos, las marcas en pantalla— y un
+    nombre de persona sólo si está ESCRITO.
     """
     k = clave()
     if not k:
