@@ -128,15 +128,28 @@ def pintado(atras):
         return verde, blanco
 
 
+# Chromium y Pillow viven en la imagen del worker, no en Cloud Shell. Que no
+# estén no es un fallo de la pieza: es que esta máquina no puede mirar. Se
+# dice y se sigue, en vez de teñir de rojo una prueba que pasó entera. Lo que
+# NO se perdona es que estando los dos, el render falle.
 try:
-    verde, blanco = pintado(atras=True)
-    ok("la capa de atrás se ve", verde > 100000, f"{verde} px verdes")
-    ok("y el texto le queda encima", blanco > 20000, f"{blanco} px blancos")
-    verde_e, blanco_e = pintado(atras=False)
-    ok("la capa de encima tapa el texto", blanco_e < blanco / 4,
-       f"{blanco_e} px blancos contra {blanco} de la de atrás")
-except Exception as e:
-    ok("se pudo renderizar", False, e)
+    import playwright, PIL                                             # noqa: F401
+    puede_mirar = True
+except ImportError as e:
+    puede_mirar = False
+    print(f"  · acá no se puede mirar el PNG: falta {e.name or e}.")
+    print("    Las capas se verifican al renderizar, dentro del worker.")
+
+if puede_mirar:
+    try:
+        verde, blanco = pintado(atras=True)
+        ok("la capa de atrás se ve", verde > 100000, f"{verde} px verdes")
+        ok("y el texto le queda encima", blanco > 20000, f"{blanco} px blancos")
+        verde_e, blanco_e = pintado(atras=False)
+        ok("la capa de encima tapa el texto", blanco_e < blanco / 4,
+           f"{blanco_e} px blancos contra {blanco} de la de atrás")
+    except Exception as e:
+        ok("se pudo renderizar", False, e)
 
 print("\n  todo bien" if not fallos else f"\n  {len(fallos)} fallo(s): "
       + ", ".join(fallos))
