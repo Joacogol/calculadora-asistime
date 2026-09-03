@@ -187,6 +187,33 @@ alter table public.cuentas_ig enable row level security;
 -- `usuario` y `activa` — nunca `token`.
 
 
+-- La cara pública de `cuentas_ig`: todo menos el token. La consulta
+-- `api-publicar` antes de encolar nada —sin cuenta conectada, la fila
+-- quedaría esperando para siempre y el chat diría «ya sale»— y sirve para
+-- mostrar en la app qué cuenta está conectada.
+--
+-- **Faltaba acá.** Existía a mano en Boss y en Clínica, así que Asistime la
+-- descubrió el 3/9/2026 cuando publicar ya estaba armado: la función contesta
+-- «esta marca no tiene Instagram conectado» y el motivo real es que la vista
+-- no existe. Ahora el cliente que viene la recibe con la base.
+--
+-- `security_invoker` no es un detalle: sin él la vista corre con los permisos
+-- de su dueño y se saltea el RLS de `cuentas_ig` —que no tiene políticas
+-- justamente para que nadie la lea—, así que cualquiera con la clave `anon`
+-- vería el usuario de Instagram del cliente y el vencimiento de su token.
+create or replace view public.instagram_estado
+with (security_invoker = on) as
+  select usuario,
+         activa,
+         expira_en,
+         (expira_en is not null and expira_en < now() + interval '7 days') as por_vencer,
+         mensaje
+    from public.cuentas_ig;
+
+revoke all on public.instagram_estado from anon;
+grant select on public.instagram_estado to authenticated, service_role;
+
+
 -- ═══ publicaciones — la cola de posteo ═══════════════════════════════════
 
 create table if not exists public.publicaciones (

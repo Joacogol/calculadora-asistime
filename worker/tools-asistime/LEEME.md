@@ -39,6 +39,12 @@ una tool que ya esté corriendo en producción.
 | `ver_reel.js` | `ver_reel` | 119 (Boss Padel) | 2143 |
 | `retocar_reel.js` | `retocar_reel` | 119 (Boss Padel) | 2144 |
 | `estado_reel-stadium.js` | `estado_reel` | 176 (Stadium) | 2076 |
+| `crear_diseno-asistime.js` | `crear_diseno` | 1 (Asistime) | 2166 |
+| `montar_reel-asistime.js` | `montar_reel` | 1 (Asistime) | 2189 |
+| `publicar_diseno-asistime.js` | `publicar_diseno` | 1 (Asistime) | 2205 |
+| `publicar_reel-asistime.js` | `publicar_reel` | 1 (Asistime) | 2206 |
+| `publicar_archivo-asistime.js` | `publicar_archivo` | 1 (Asistime) | 2207 |
+| `estado_publicacion-asistime.js` | `estado_publicacion` | 1 (Asistime) | 2208 |
 
 Todas hablan con `funciones/api-reels`, con la clave `API_CLAVE` del proyecto
 de Supabase del cliente escrita en el código. Eso es a propósito y está

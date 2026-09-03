@@ -2487,6 +2487,61 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## Asistime publica en Instagram: lo que faltaba era una vista (3/9/2026)
+
+Asistime ya diseñaba, hacía reels y montaba videos, pero no podía publicar.
+De las cuatro piezas que hacen falta, dos estaban y dos no:
+
+| | |
+|---|---|
+| Tablas `cuentas_ig` y `publicaciones` | ✅ vinieron con la base |
+| El worker que atiende la cola | ✅ es genérico, no hay nada por marca |
+| `api-publicar` en su Supabase | ❌ había que desplegarla |
+| Las tools en el tenant 1 | ❌ había que crearlas |
+| Una cuenta de Instagram conectada | ❌ y eso es de quien tiene el token |
+
+Y una quinta que no estaba en ninguna lista: **la vista `instagram_estado`**.
+
+`api-publicar` la consulta antes de encolar nada —sin cuenta conectada, la
+fila quedaría esperando para siempre y el chat diría «ya sale»— pero la vista
+no estaba en `base-de-un-cliente.sql`: existía a mano en Boss y en Clínica,
+puesta cuando se armó cada uno. Así que un cliente nuevo hace todo bien y
+publicar le contesta «esta marca todavía no tiene Instagram conectado», que es
+verdad por un motivo distinto del real. Ahora está en la base.
+
+Se creó con una diferencia respecto de las otras dos, a propósito.
+`cuentas_ig` tiene RLS sin ninguna política justamente para que nadie la lea:
+ahí vive un token que publica en la cuenta del cliente. Pero una vista normal
+corre con los permisos de su DUEÑO, así que se saltea ese RLS — y con la clave
+`anon` se podía leer el usuario de Instagram y el vencimiento del token. El
+token no, pero igual es más de lo que se quiso dar. La de Asistime va con
+`security_invoker = on` y sin permiso para `anon`.
+
+> Boss y Clínica siguen con la vista vieja. No es urgente —lo que se ve es el
+> nombre de usuario, que es público— pero conviene emparejarlas.
+
+### Las cuatro tools (tenant 1, agente 594)
+
+| Tool | Id | Qué publica |
+|---|---|---|
+| `publicar_diseno` | 2205 | una pieza que dibujó el sistema, por su `diseno_id` |
+| `publicar_reel` | 2206 | un reel del motor, por su `reel_id` |
+| `publicar_archivo` | 2207 | una foto o un video que mandaron en el chat, tal cual |
+| `estado_publicacion` | 2208 | ¿salió de verdad? |
+
+Tres puertas y no una porque un reel no vive en `disenos` y una foto suelta no
+vive en ningún lado; y no cuatro porque dos puertas para el mismo trabajo es
+lo que hace que un agente elija mal.
+
+`publicar_archivo` es la única que pide `confirmado: true`, y es la misma
+decisión que se tomó en Boss: las otras dos publican algo que el sistema hizo
+y que la persona ya vio en el chat, ésta publica un archivo que llegó suelto.
+
+**El orden importa y es el de siempre:** primero la función, después el token,
+y al final enganchar las tools al agente. Al revés, el agente ofrece publicar,
+la persona dice que sí y el sistema contesta un error que él no puede
+explicar.
+
 ## El reel lo firma la marca, y el editor no lo sabía (3/9/2026)
 
 Tercera vuelta del mismo material, y la primera con un pedido corto —«reel de
