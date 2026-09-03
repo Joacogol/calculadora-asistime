@@ -1877,6 +1877,12 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     g = {**guion, "tramos": r["tramos"], "duracion_objetivo": objetivo}
     if r["gancho"] and not str(g.get("hook") or "").strip():
         g["hook"] = r["gancho"]
+    # Las palabras que Gemini oyó o vio van al guion, y de ahí al vocabulario
+    # que el transcriptor lee antes de escuchar. Se guardan en el guion —y no
+    # se usan y se tiran— para que un `retocar_reel` posterior transcriba con
+    # el mismo vocabulario sin volver a pagarle a Gemini una mirada.
+    if r.get("palabras"):
+        g["vocabulario"] = r["palabras"]
     suma = sum(t["hasta"] - t["desde"] for t in r["tramos"])
     nota = (f"Gemini ({r['modelo']}) miró {len(archivos)} video(s), {total / 60:.0f} min, y eligió "
             f"{len(r['tramos'])} tramo(s), {suma:.0f} s, en {r['segundos']:.0f} s"

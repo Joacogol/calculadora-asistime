@@ -234,7 +234,12 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
           '  "tramos": [\n'
           '    {"archivo": 1, "parte": 1, "desde": "MM:SS.mmm", "hasta": "MM:SS.mmm", "por_que": "una línea"}\n'
           "  ],\n"
-          '  "gancho": "la frase de 6 a 8 palabras con la que abriría el reel, sacada de lo que se dice"\n'
+          '  "gancho": "la frase de 6 a 8 palabras con la que abriría el reel, sacada de lo que se dice",\n'
+          # Vos ves el video; el que transcribe sólo oye. Ver el comentario de
+          # `elegir_tramos` sobre por qué esta línea vale un modelo entero.
+          '  "palabras": ["hasta 12 nombres propios o palabras del tema que SE OYEN o SE VEN '
+          'en el video (personas, lugares, marcas, deporte, jerga), escritas como se escriben. '
+          'Sólo las que estén de verdad; si no hay ninguna, lista vacía"]\n'
           "}\n")
 
 
@@ -295,14 +300,60 @@ def validar(crudos, pedazos: list[dict], objetivo: float) -> tuple[list[dict], l
     return buenos, avisos
 
 
+#: Cuántas palabras del video se le pasan al que transcribe. Doce alcanzan
+#: para los nombres de un video y son pocas como para torcerle la mano: cada
+#: palabra que se le nombra a Whisper es una palabra que va a estar más
+#: dispuesto a escribir, también donde no se dijo.
+MAX_PALABRAS = 12
+
+#: Largo máximo de cada una. Más que esto no es una palabra: es una frase que
+#: el modelo devolvió donde iba una lista.
+MAX_LARGO = 30
+
+
+def _palabras(crudas) -> list[str]:
+    """Las palabras propias que Gemini dice haber oído o visto, limpias.
+
+    Se filtran a mano y no se confía en el formato: es una lista que escribió
+    un modelo. Se sacan las vacías, las larguísimas, las repetidas —sin
+    importar mayúsculas— y se corta en `MAX_PALABRAS`.
+    """
+    if not isinstance(crudas, (list, tuple)):
+        return []
+    vistas, salida = set(), []
+    for x in crudas:
+        w = str(x).strip().strip(".,;:¡!¿?\"'")
+        if not w or len(w) > MAX_LARGO or w.lower() in vistas:
+            continue
+        vistas.add(w.lower())
+        salida.append(w)
+        if len(salida) >= MAX_PALABRAS:
+            break
+    return salida
+
+
 def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
                   carpeta=None, modelo: str | None = None) -> dict:
     """Los tramos que Gemini elige para este reel.
 
-    Devuelve `{"tramos": [...], "gancho": str, "avisos": [...], "uso": {...},
-    "segundos": float, "modelo": str}` con los tramos ya en el reloj del
-    archivo original y listos para el guion. Levanta `NoPudeMirar` si no
-    puede: quien llama sigue sin él.
+    Devuelve `{"tramos": [...], "gancho": str, "palabras": [...],
+    "avisos": [...], "uso": {...}, "segundos": float, "modelo": str}` con los
+    tramos ya en el reloj del archivo original y listos para el guion. Levanta
+    `NoPudeMirar` si no puede: quien llama sigue sin él.
+
+    `palabras` son los nombres propios y términos del tema que Gemini oyó o
+    vio, y van a parar al vocabulario que Whisper lee ANTES de escuchar. Es
+    casi gratis —el modelo ya miró el video— y arregla lo que ningún cambio de
+    modelo de transcripción arregla: el 3/9/2026, en un video de dos chicos
+    con una paleta, Whisper escribió «Yayo es medio patadura para el padre»
+    donde decían «para el pádel». No es un error de oído: «padre» y «pádel»
+    suenan casi igual, y sin saber de qué habla el video, «padre» es la
+    palabra más probable de las dos. Gemini VE la cancha y la paleta.
+
+    Por eso el vocabulario de la marca no alcanza: el de Asistime habla de
+    agentes de IA y de WhatsApp, y este video —que igual es de Asistime— es de
+    pádel en el living. Lo que cambia de un video al otro no lo puede saber
+    la marca.
     """
     k = clave()
     if not k:
@@ -347,5 +398,6 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     uso = d.get("usage") or d.get("usage_metadata") or {}
     log.info("Gemini eligió %d tramos (%.0f s) en %.0f s, %s tokens", len(tramos),
              sum(t["hasta"] - t["desde"] for t in tramos), r["segundos"], uso.get("total_tokens", "?"))
-    return {"tramos": tramos, "gancho": str(j.get("gancho") or "").strip(), "avisos": avisos,
+    return {"tramos": tramos, "gancho": str(j.get("gancho") or "").strip(),
+            "palabras": _palabras(j.get("palabras")), "avisos": avisos,
             "uso": uso, "segundos": r["segundos"], "modelo": m}

@@ -1142,6 +1142,15 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
     # y hace falta igual: el vocabulario ayuda pero no garantiza nada, y la
     # persona que corrigió «vos panel» una vez tiene derecho a no volver a
     # verlo nunca más.
+    # Las palabras que Gemini oyó o vio en ESTE material (ver `motor/mirar.py`).
+    # El vocabulario de la marca sabe de qué habla la marca; esto sabe de qué
+    # habla el video, que no es lo mismo: en un video de pádel de Asistime,
+    # «pádel» no está en ningún lado salvo en el video.
+    del_video = _habla.en_frase([str(w).strip() for w in (g.get("vocabulario") or [])
+                                 if str(w).strip()])
+    if del_video:
+        vocabulario = " ".join(x for x in (vocabulario, del_video) if x)
+
     correcciones = [c for c in (correcciones or [])
                     if str(c.get("de") or "").strip()]
     if correcciones:

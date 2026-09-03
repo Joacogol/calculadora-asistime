@@ -38,7 +38,8 @@ llamadas = []
 def _elegir_ok(archivos, instruccion, objetivo, carpeta=None, modelo=None):
     llamadas.append((sorted(a.name for a in archivos), instruccion, objetivo))
     return {"tramos": [{"archivo": "charla.mp4", "desde": 304.5, "hasta": 328.0, "por_que": "x"}],
-            "gancho": "Están viendo cosas que nosotros hoy no", "avisos": [], "uso": {"total_tokens": 28721},
+            "gancho": "Están viendo cosas que nosotros hoy no",
+            "palabras": ["pádel", "Yayo"], "avisos": [], "uso": {"total_tokens": 28721},
             "segundos": 48.0, "modelo": "gemini-3.7-flash"}
 g_elegir, g_disp = mmirar.elegir_tramos, mmirar.disponible
 try:
@@ -83,6 +84,10 @@ try:
     ok(g["tramos"] == [{"archivo": "charla.mp4", "desde": 304.5, "hasta": 328.0, "por_que": "x"}], "los tramos entran al guion")
     ok(g["hook"] == "Están viendo cosas que nosotros hoy no", "el gancho llena el hook vacío")
     ok(g["duracion_objetivo"] == 60.0, "y el objetivo queda escrito para que el motor acorte si hace falta")
+    # Las palabras que Gemini oyó viajan en el guion hasta el transcriptor, y
+    # quedan guardadas ahí para que un retoque posterior las tenga sin volver
+    # a pagar una mirada.
+    ok(g["vocabulario"] == ["pádel", "Yayo"], "las palabras del video quedan en el guion", g.get("vocabulario"))
     ok("28721" in nota and "1 tramo" in nota and "60 min" in nota, "la nota cuenta qué pasó", nota)
 
     print("\n■ La instrucción sale del mensaje si el guion no la trae; el hook escrito manda")

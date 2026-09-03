@@ -86,7 +86,9 @@ try:
     os.environ["GEMINI_CLAVE"] = "prueba"
     respuesta = {"output_text": json.dumps({"tramos": [
         {"archivo": 1, "parte": 1, "desde": "00:01.000", "hasta": "00:04.000", "por_que": "ok"}],
-        "gancho": "Un gancho de prueba"}), "usage": {"total_tokens": 123}}
+        "gancho": "Un gancho de prueba",
+        "palabras": ["pádel", "Paleta", "paleta", "", "Yayo", "x" * 40]}),
+        "usage": {"total_tokens": 123}}
     visto = {}
     def _pedir_falso(k, entrada, modelo):
         visto["modelo"] = modelo; visto["videos"] = sum(1 for e in entrada if e.get("type") == "video")
@@ -102,6 +104,10 @@ try:
     ok(r["gancho"] == "Un gancho de prueba" and r["uso"].get("total_tokens") == 123, "gancho y tokens")
     ok(visto["videos"] == 1 and visto["agentico"], "un video, en modo agéntico", visto)
     ok(visto["modelo"] == m.MODELOS[0], "empieza por el mejor modelo", visto)
+    # Las palabras del video: sin vacías, sin repetidas y sin la larguísima.
+    # Van al vocabulario que el transcriptor lee antes de escuchar — es lo que
+    # arregla «para el padre» donde se decía «para el pádel».
+    ok(r["palabras"] == ["pádel", "Paleta", "Yayo"], "las palabras del video, limpias", r["palabras"])
 
     print("\n■ Cuota agotada: no se insiste con otro modelo")
     llamadas = []

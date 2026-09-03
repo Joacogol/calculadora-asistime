@@ -2487,6 +2487,41 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## «Patadura para el padre»: el que transcribe no ve el video (3/9/2026)
+
+Con `large-v3` ya andando, quedaba un error que ningún cambio de modelo iba a
+arreglar. En el reel de dos chicos con una paleta, Whisper escribió «Yayo es
+medio patadura **para el padre**» donde decían «para el **pádel**».
+
+No es un error de oído: las dos suenan casi igual, y sin saber de qué habla el
+video, «padre» es la más probable de las dos. El vocabulario de la marca no
+ayuda porque el de Asistime habla de agentes de IA y de WhatsApp — y este
+video, que igual es de Asistime, es de pádel en el living. **Lo que cambia de
+un video al otro no lo puede saber la marca.**
+
+Pero hay alguien que sí lo sabe: Gemini ya miró el video, entero, con imagen.
+Así que ahora, en el mismo pedido con el que elige los tramos, devuelve
+también hasta doce palabras propias que se oyen o se ven —personas, lugares,
+marcas, jerga del tema— y ésas se suman al vocabulario que Whisper lee antes
+de escuchar. No cuesta una llamada más: son unas pocas decenas de tokens
+sobre un pedido que ya se hacía.
+
+Medido sobre el mismo audio, con el mismo modelo:
+
+| vocabulario | qué escribió |
+|---|---|
+| sólo el de la marca | «medio patadura para el **padre**» |
+| marca + lo que vio Gemini | «medio patadura para el **pádel**» |
+
+Las palabras quedan guardadas en el guion (`vocabulario`), no se usan y se
+tiran: un `retocar_reel` posterior transcribe con el mismo vocabulario sin
+volver a pagarle a Gemini una mirada.
+
+Doce es el tope a propósito, y la lista se limpia antes de usarla. Cada
+palabra que se le nombra a Whisper es una palabra que va a estar más dispuesto
+a escribir, también donde no se dijo: es una ayuda, no una orden, y con
+demasiadas deja de ser cualquiera de las dos.
+
 ## Asistime con su identidad oficial, y carruseles sin Python (3/9/2026)
 
 Llegó el kit de marca oficial de Asistime: azul `#4D90FF`, violeta
