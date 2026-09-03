@@ -1884,7 +1884,11 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     if r.get("palabras"):
         g["vocabulario"] = r["palabras"]
     suma = sum(t["hasta"] - t["desde"] for t in r["tramos"])
-    nota = (f"Gemini ({r['modelo']}) miró {len(archivos)} video(s), {total / 60:.0f} min, y eligió "
+    # «0 min» era lo que decía un montaje de seis clips de treinta segundos: la
+    # nota es lo único que se lee para saber si Gemini miró, y decía que no
+    # había mirado nada.
+    cuanto = f"{total:.0f} s" if total < 60 else f"{total / 60:.0f} min"
+    nota = (f"Gemini ({r['modelo']}) miró {len(archivos)} video(s), {cuanto}, y eligió "
             f"{len(r['tramos'])} tramo(s), {suma:.0f} s, en {r['segundos']:.0f} s"
             + (f" y {r['uso'].get('total_tokens')} tokens" if r.get("uso", {}).get("total_tokens") else ""))
     if r["avisos"]:
