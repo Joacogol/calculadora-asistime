@@ -1703,7 +1703,9 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 # Si no puede —sin clave, sin cuota, sin JSON— se sigue como
                 # hasta hoy y queda dicho en las notas. Nunca frena el reel.
                 if not (guion.get("tramos") or []):
-                    guion, dicho_mirar = _mirar_si_hace_falta(guion, fila, clips, nombres, material)
+                    guion, dicho_mirar = _mirar_si_hace_falta(
+                        guion, fila, clips, nombres, material,
+                        marca=getattr(marca_mod, "NOMBRE", "") or "")
                     if dicho_mirar:
                         hecho.append(dicho_mirar)
 
@@ -1832,7 +1834,7 @@ OBJETIVO_POR_DEFECTO = 60.0
 
 
 def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
-                         material: pathlib.Path) -> tuple[dict, str]:
+                         material: pathlib.Path, marca: str = "") -> tuple[dict, str]:
     """El guion con los tramos que Gemini eligió, o el mismo guion y por qué no.
 
     Devuelve `(guion, nota)`. La nota va a las notas de la fila en los dos
@@ -1870,7 +1872,9 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     if total and total < mmirar.MATERIAL_MINIMO:
         return guion, ""                     # unos segundos: no hay nada que cortar
     try:
-        r = mmirar.elegir_tramos(archivos, instruccion, objetivo, carpeta=material / "_mirar")
+        r = mmirar.elegir_tramos(archivos, instruccion, objetivo,
+                                 carpeta=material / "_mirar",
+                                 marca=marca)
     except mmirar.NoPudeMirar as e:
         log.warning("Gemini no pudo elegir los tramos (%s); sigo cortando por audio", e)
         return guion, f"no pude hacer que Gemini mirara el material ({str(e)[:120]}); corté por audio como siempre"

@@ -35,7 +35,7 @@ DURACIONES = {"charla.mp4": 3600.0, "corto.mp4": 20.0}
 g_sondear = man.sondear
 man.sondear = lambda ruta: {"duracion": DURACIONES[pathlib.Path(ruta).name], "ancho": 1920, "alto": 1080}
 llamadas = []
-def _elegir_ok(archivos, instruccion, objetivo, carpeta=None, modelo=None):
+def _elegir_ok(archivos, instruccion, objetivo, carpeta=None, modelo=None, marca=""):
     llamadas.append((sorted(a.name for a in archivos), instruccion, objetivo))
     return {"tramos": [{"archivo": "charla.mp4", "desde": 304.5, "hasta": 328.0, "por_que": "x"}],
             "gancho": "Están viendo cosas que nosotros hoy no",

@@ -2487,6 +2487,39 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## El reel lo firma la marca, y el editor no lo sabía (3/9/2026)
+
+Tercera vuelta del mismo material, y la primera con un pedido corto —«reel de
+expectativa con las reacciones del equipo al agente nuevo»—, que es como va a
+llegar el 90 % de las veces desde el chat.
+
+Salió peor que la anterior: dejó adentro al que dice «yo no escuché lo que
+estaba hablando», lo puso de CIERRE, y armó el rótulo con eso —**«Reaccionar
+en la reunión sin haber escuchado nada»**—. Entre compañeros es un chiste; en
+la cuenta de la empresa es otra cosa.
+
+No es que el modelo eligiera mal con la información que tenía: **nadie le
+había dicho para quién editaba.** Con la instrucción larga de la vuelta
+anterior sí sabía que cada uno definía el agente con una palabra, y ahí ese
+clip no calificaba. Con el pedido corto, «una reacción descontracturada en la
+oficina» es una lectura razonable de un material que no tiene dueño.
+
+Ahora la pregunta abre diciendo de quién es: «el reel se publica en la cuenta
+de X y lo va a ver su público; un tramo que la deje mal, que contradiga lo que
+se quiere mostrar o que le reste fuerza al pedido se descarta aunque sea
+gracioso: ante la duda, afuera». El nombre sale de la marca, así que vale para
+las cuatro sin escribir nada por cliente.
+
+Y al rótulo se le agregó la misma advertencia: lo lee gente que todavía no vio
+el video y lo firma la marca, así que no puede construirse sobre el tramo más
+flojo.
+
+**Lo que esto enseña sobre las pruebas.** Las dos vueltas anteriores se
+probaron con instrucciones escritas a mano, cada vez más precisas, y cada vez
+salía mejor. Eso escondía el problema: lo que mejoraba era la instrucción, no
+el sistema. La prueba que importa es la del pedido corto — la que se parece a
+lo que va a llegar de verdad.
+
 ## La consigna no va en el reel, va la respuesta (3/9/2026)
 
 Segunda vuelta del reel de las reacciones. Ya descartaba los videos que no

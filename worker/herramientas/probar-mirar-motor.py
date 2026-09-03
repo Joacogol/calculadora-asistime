@@ -65,6 +65,12 @@ q2 = m.pregunta("un reel", 60.0, varios)
 ok("ELEGIR" in q2 and "DESCARTAR" in q2 and "2 videos sueltos" in q2,
    "dos videos que entran: elegir y descartar igual")
 ok("descartados" in q2, "y se le pide que cuente qué dejó afuera")
+ok("consigna NO va" in q2, "y que la consigna de una entrevista no entra en el reel")
+# Para quién es el reel: sin esto el modelo edita como si el material fuera de
+# cualquiera, y el 3/9/2026 armó el rótulo con el clip más flojo.
+q3 = m.pregunta("un reel", 60.0, varios, marca="Asistime")
+ok("«Asistime»" in q3 and "ante la duda, afuera" in q3, "la marca va en la pregunta")
+ok("Asistime" not in q2, "y sin marca no se inventa una", q2[:120])
 
 print("\n■ La pregunta lista los archivos y las partes")
 q = m.pregunta("lo más fuerte sobre IA", 60, pedazos)

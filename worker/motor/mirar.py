@@ -199,7 +199,8 @@ def preparar(archivos: list[Path], carpeta: Path) -> list[dict]:
 MATERIAL_MINIMO = 8.0
 
 
-def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
+def pregunta(instruccion: str, objetivo: float, pedazos: list[dict],
+             marca: str = "") -> str:
     archivos: dict[int, tuple[str, float, int]] = {}
     for p in pedazos:
         n, d, c = archivos.get(p["indice"], (p["archivo"], p["duracion"], 0))
@@ -211,7 +212,14 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
     total = sum(d for _, d, _ in archivos.values())
     return (
         "Sos el editor de un reel vertical para Instagram.\n\n"
-        f"INSTRUCCIÓN DE QUIEN PIDE EL REEL: «{instruccion.strip()}»\n\n"
+        # Para quién es. Sin esto el modelo edita como si el material fuera
+        # de cualquiera: ver el comentario de `elegir_tramos` sobre el rótulo
+        # «Reaccionar en la reunión sin haber escuchado nada».
+        + (f"El reel se publica en la cuenta de «{marca}» y lo va a ver su público. "
+           "Un tramo que la deje mal, que contradiga lo que se quiere mostrar o que le "
+           "reste fuerza al pedido se descarta aunque sea gracioso: ante la duda, "
+           "afuera.\n\n" if marca else "")
+        + f"INSTRUCCIÓN DE QUIEN PIDE EL REEL: «{instruccion.strip()}»\n\n"
         f"El reel tiene que durar como máximo {objetivo:.0f} segundos.\n\n"
         f"El material son estos videos, numerados:\n{lista}\n\n"
         + ("Cuando un archivo viene en partes, cada tramo tiene que decir `parte` y sus tiempos "
@@ -263,7 +271,9 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
           "  ],\n"
           '  "gancho": "el rótulo de 6 a 8 palabras que va escrito arriba: QUÉ está pasando y '
           'por qué mirarlo —quién reacciona a qué, qué se está mostrando—. No repitas las '
-          'palabras que se dicen: ésas ya se leen en los subtítulos",\n'
+          'palabras que se dicen: ésas ya se leen en los subtítulos. Lo lee gente que todavía '
+          'no vio el video y lo firma la marca: no puede dejarla mal ni construirse sobre el '
+          'tramo más flojo",\n'
           # Vos ves el video; el que transcribe sólo oye. Ver el comentario de
           # `elegir_tramos` sobre por qué esta línea vale un modelo entero, y
           # por qué los nombres de persona quedan afuera.
@@ -397,13 +407,23 @@ def _descartados(crudos, pedazos: list[dict], tramos: list[dict]) -> list[dict]:
 
 
 def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
-                  carpeta=None, modelo: str | None = None) -> dict:
+                  carpeta=None, modelo: str | None = None, marca: str = "") -> dict:
     """Los tramos que Gemini elige para este reel.
 
     Devuelve `{"tramos": [...], "gancho": str, "palabras": [...],
     "avisos": [...], "uso": {...}, "segundos": float, "modelo": str}` con los
     tramos ya en el reloj del archivo original y listos para el guion. Levanta
     `NoPudeMirar` si no puede: quien llama sigue sin él.
+
+    **De quién es el reel forma parte del pedido.** El 3/9/2026, con el mismo
+    material de las reacciones del equipo y un pedido corto —«reel de
+    expectativa con las reacciones del equipo»—, dejó adentro al que dice «yo
+    no escuché lo que estaba hablando», lo puso de cierre, y encima armó el
+    rótulo con eso: «Reaccionar en la reunión sin haber escuchado nada». Como
+    chiste entre compañeros funciona; en la cuenta de la empresa, no. El
+    modelo no tenía cómo saberlo: nadie le había dicho para quién editaba.
+    Ahora `marca` va en la pregunta, y con ella la regla de que un tramo que
+    deje mal a la marca se descarta aunque sea gracioso.
 
     Descartar no es sólo entre clips: **dentro** de cada uno hay que cortar lo
     que prepara la respuesta. En el reel de las reacciones del equipo, a cada
@@ -453,7 +473,8 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
         pedazos = preparar(archivos, carpeta)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, RuntimeError, OSError) as e:
         raise NoPudeMirar(f"no pude preparar el material: {e}") from e
-    entrada: list[dict] = [{"type": "text", "text": pregunta(instruccion, objetivo, pedazos)}]
+    entrada: list[dict] = [{"type": "text",
+                            "text": pregunta(instruccion, objetivo, pedazos, marca)}]
     for p in pedazos:
         datos = p["ruta"].read_bytes()
         if len(datos) > MAX_INLINE * 1.4:
