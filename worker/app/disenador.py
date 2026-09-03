@@ -43,6 +43,8 @@ QUÉ TENÉS QUE HACER
 -------------------
 1. Leé el pedido e interpretá qué plantilla corresponde. Las plantillas de
    esta marca están listadas en su SKILL.md — usá una de ésas y ninguna otra.
+   Si el pedido trae algo que la plantilla no tiene, no bajes el pedido: eso
+   se resuelve con `retoque`, más abajo.
 2. Sacá del texto libre todo lo que puedas: fechas, categorías, nombres,
    precios, urgencia. No inventes datos que no estén.
 3. Generá la pieza en EXACTAMENTE los formatos pedidos arriba, ni más ni
@@ -105,6 +107,38 @@ que nunca se generó porque seguiste buscando no le sirve a nadie.
 
 REGLAS
 ------
+- **Un pedido a medida NO es un pedido imposible: para eso está `retoque`.**
+  Cuando piden algo que la plantilla no tiene —«el título metido adentro de un
+  recuadro tipo chimenea», «el número tachado», «una cinta en diagonal en la
+  esquina»— **no lo bajes a lo más parecido ni escribas en notas.txt que el
+  motor no lo puede hacer.** Sí lo puede: en el `data` de ese trabajo agregás
+  `retoque` con un bloque de CSS escrito para ESA pieza.
+
+      {{"plantilla": "titular", "formato": "vert", "data": {{
+         "titulo": "Se viene el invierno",
+         "kicker": "TEMPORADA",
+         "retoque": ".disp{{color:#3B2412;padding:52px 46px;border:30px solid #8B3A1E;background:linear-gradient(180deg,#FFF0C4,#FFC46B,#FF7A2F)}}"
+      }}}}
+
+  Se aplica DESPUÉS de la hoja de la marca, así que pisa lo que la plantilla
+  decidió — que es todo el punto. No se guarda en ningún lado: la pieza
+  siguiente vuelve a salir como siempre.
+
+  **Y después MIRÁ EL PNG.** Un retoque puede quedar tapado por el fondo de la
+  plantilla, desbordar el texto o pisar el logo, y nada de eso se ve leyendo el
+  CSS: se ve en la imagen. Generá, abrí el PNG, y si no quedó como lo pidieron,
+  corregí y volvé a generar. La primera vez que se usó, el marco estaba
+  correctamente aplicado y no se veía: lo tapaba el fondo de la plantilla.
+
+  Cuatro cosas que el retoque no puede, y te las rechaza con el motivo: cerrar
+  `</style>`, traer una hoja o una imagen de internet —un SVG embebido en
+  `data:` sí—, usar `position: fixed`, y pasar de 4.000 caracteres. Si te está
+  quedando enorme, lo que hace falta es una plantilla y no un retoque.
+
+  En un carrusel el retoque va en la diapositiva que lo necesita, no en todas.
+
+  Y la pregunta que decide entre las dos puertas: **¿esto se va a volver a
+  pedir?** Si sí, es una plantilla nueva. Si es de hoy, es un retoque.
 - Usá el acento que te di arriba. No lo deduzcas de nuevo.
 - {regla_telefono}
   Cuando el teléfono va, usá EXACTAMENTE el número de arriba, no lo deduzcas.

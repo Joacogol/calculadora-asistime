@@ -2536,6 +2536,23 @@ dibujaba el marco con pseudo-elementos detrás del bloque, y el fondo de la
 plantilla los tapaba. El mecanismo funcionó; el diseño estaba mal. Nadie se
 hubiera enterado sin mirar la imagen.
 
+### Lo documenté para el agente equivocado
+
+La primera prueba de verdad —«el título adentro de un recuadro tipo chimenea»,
+pedida por el chat— salió sin chimenea, y el agente lo escribió en sus notas:
+«este tipo de diseño custom con elementos gráficos específicos no es algo que
+el motor estándar de plantillas pueda generar». Era falso desde hacía una
+hora, pero él no tenía cómo saberlo.
+
+El retoque estaba explicado en `plantillas.catalogo()`, que es el documento
+que lee el agente **del chat** —el que toma el pedido—. El que arma la pieza
+es otro: el `disenador` del worker, y su conocimiento sale de su PROMPT y del
+SKILL.md de la marca. Dos agentes distintos con dos fuentes distintas, y la
+capacidad nueva estaba en la del que no la usa.
+
+Está en los dos lados ahora. Y de paso: cuando se agrega una capacidad, la
+pregunta no es «¿lo documenté?» sino **«¿lo lee el que tiene que ejecutarlo?»**
+
 ### Cuándo NO es un retoque
 
 Si lo mismo se va a pedir de nuevo, es una plantilla. Y si el retoque queda
