@@ -28,6 +28,7 @@ if (!UUID.test(reel_id)) {
 }
 
 const cuerpo = { reel_id: reel_id };
+if (input.tipo) cuerpo.tipo = String(input.tipo).trim().toLowerCase();
 if (input.caption) cuerpo.caption = String(input.caption);
 if (input.publicar_en) cuerpo.publicar_en = String(input.publicar_en);
 
@@ -48,6 +49,21 @@ try {
 
 let d = {};
 try { d = await r.json(); } catch (e) { d = {}; }
+
+// Un video se puede publicar como REEL —queda en la grilla— o como STORY,
+// que se va en 24 horas. Son dos publicaciones distintas y las dos son
+// razonables, así que la API pregunta en vez de elegir. Esta rama faltaba, y
+// sin ella el agente recibía la pregunta como error y no tenía con qué
+// contestarla.
+if (d.codigo === "elegir_tipo" || d.codigo === "tipo_no_disponible") {
+  return {
+    success: true, falta_elegir: "tipo", opciones: d.opciones || [],
+    message:
+      (d.error || "Hay que elegir dónde va.") +
+      " El reel queda en la grilla del perfil; la story se va en 24 horas. " +
+      "Preguntale cuál quiere y volvé a llamarme con `tipo`. NO elijas vos.",
+  };
+}
 
 if (d.codigo === "ya_publicado") {
   return {
