@@ -28,6 +28,9 @@ OPCIONAL = {
     "COLOR_CROMO": ("color del índice y las flechas del carrusel. Blanco por "
                     "defecto: si la marca tiene fondos claros hay que ponerlo "
                     "oscuro o el índice no se ve"),
+    "CROMO_DIAPO": ("función(tipo, data) → color del índice sobre ESA "
+                    "diapositiva, o None para usar COLOR_CROMO. Para marcas "
+                    "que alternan fondos claros y oscuros"),
 }
 
 # Toda marca necesita al menos estos dos tipos de diapositiva: el carrusel

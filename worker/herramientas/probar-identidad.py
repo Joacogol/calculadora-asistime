@@ -110,13 +110,42 @@ print("\n■ asistime-disenos: la primera marca que entró entera como datos")
 # el camino del alta está completo de punta a punta.
 asi = identidad.cargar(RAIZ / ".claude/skills/asistime-disenos/marca.py")
 ok(contrato.verificar(asi), "cumple el contrato")
-ok(sorted(asi.PLANTILLAS) == ["cierre", "dato", "titular"], "sus tres plantillas", sorted(asi.PLANTILLAS))
+ok(sorted(asi.PLANTILLAS) == ["cierre", "dato", "producto", "testimonio", "titular"], "sus cinco plantillas", sorted(asi.PLANTILLAS))
 asal = renders(asi)
-ok(len(asal) == 12, "12 salidas", len(asal))
+ok(len(asal) == 20, "20 salidas", len(asal))
 ok('<img src="assets/lockup-color.png"' in asal["cierre/post"], "el logo PNG va como imagen")
 ok('<img src="assets/isotipo-blanco.png"' in asal["dato/post"], "y sobre oscuro va la versión blanca")
-ok(asi.TIPO_REEL == ("sora-800.ttf", "sora-600.ttf") and all((RAIZ / ".claude/skills/asistime-disenos/fonts" / f).exists() for f in asi.TIPO_REEL),
+ok(asi.TIPO_REEL == ("RedHatDisplay-ExtraBold.ttf", "RedHatDisplay-SemiBold.ttf") and all((RAIZ / ".claude/skills/asistime-disenos/fonts" / f).exists() for f in asi.TIPO_REEL),
    "las TTF del reel existen")
+ok("Red Hat Display" in asi.BASE_CSS and "Sora" not in asi.BASE_CSS, "una sola tipografía: Red Hat Display")
+
+print("\n■ asistime-disenos: carruseles sin Python, con sus propias plantillas")
+#
+# `carrusel.diapos` en el marca.json dice con qué plantilla se dibuja cada tipo
+# de diapositiva y el motor arma DIAPOS con eso. Si esto pasa, una marca de
+# datos tiene carruseles y secuencias sin escribir una línea.
+from motor import carrusel as mcarrusel
+ok(hasattr(asi, "DIAPOS") and contrato.verificar(asi, con_carrusel=True), "cumple el contrato CON carrusel")
+ok(sorted(asi.DIAPOS) == ["cierre", "cuadro", "dato", "portada", "producto", "testimonio", "texto"], "sus siete tipos de diapositiva", sorted(asi.DIAPOS))
+carr = {"slides": [
+    {"tipo": "portada", "titulo": "¿Cuántas horas se te van?", "destacado": "horas"},
+    {"tipo": "dato", "numero": "11 h", "texto": "por semana", "fuente": "Asistime, 2026"},
+    {"tipo": "testimonio", "cita": "Ceno con mis hijos.", "nombre": "Ana"},
+    {"tipo": "producto", "titulo": "Así se ve", "chat": "Hola\nTony: ¡Hola!"},
+    {"tipo": "cierre", "estilo": "degrade"}]}
+pags = mcarrusel.paginas(asi, carr, "vert")
+ok(len(pags) == 5 and all("01 / 05" in pags[0] for _ in [0]), "un carrusel de cinco, numerado")
+ok("Ceno con mis hijos" in pags[2] and "¡Hola!" in pags[3], "cada diapositiva es su plantilla")
+ok('class="cr-idx" style="color:#0A0B14' in pags[0] and 'class="cr-idx" style="color:#FFFFFF' in pags[1] and 'class="cr-idx" style="color:#FFFFFF' in pags[4],
+   "el índice va en tinta sobre claro y en blanco sobre el dato y el cierre degradé")
+sec = mcarrusel.paginas(asi, {"slides": [{"tipo": "cuadro", "titulo": "¿Atendés a las 23?"}, {"tipo": "cierre", "responder": "Contame"}]}, "story", secuencia=True)
+ok(len(sec) == 2 and "Contame" in sec[1] and "height:1920px" in sec[0], "una secuencia de stories, con la caja de respuesta")
+try:
+    mcarrusel.paginas(asi, {"slides": [{"tipo": "podio"}]}, "vert")
+    ok(False, "un tipo que no existe se rechaza")
+except ValueError as e:
+    ok("podio" in str(e), "un tipo que no existe se rechaza con nombre", e)
+ok("### Las diapositivas de esta marca" in asi.CATALOGO() and "`portada` → plantilla `titular`" in asi.CATALOGO(), "el catálogo cuenta las diapositivas")
 
 hashes = {k: hashlib.sha256(v.encode("utf-8")).hexdigest() for k, v in sal.items()}
 if modo == "--grabar":

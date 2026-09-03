@@ -1,9 +1,13 @@
-{#- La pieza de todos los días de Asistime: un claim en Sora 800 sobre el
-    fondo claro de la marca, con UNA palabra en azul. Aireada a propósito —la
-    marca vende orden y calma— así que el texto ocupa poco y el blanco mucho.
+{#- La pieza de todos los días de Asistime: un claim en Red Hat Display 800
+    sobre el fondo claro de la marca, con UNA palabra en el degradé azul→
+    violeta. Aireada a propósito —la marca vende orden y calma— así que el
+    texto ocupa poco y el blanco mucho. Dos manchas de luz desenfocadas, una
+    azul y una violeta, son lo que hace que el fondo sea de Asistime y no un
+    blanco cualquiera.
 
     Con foto, todo va en blanco y el velo se MIDE contra esa foto: un valor
-    fijo se rompe con la primera foto distinta.
+    fijo se rompe con la primera foto distinta. El destacado también va
+    blanco: el degradé en texto no convive con la sombra (ver estilo.css).
 
     `sobre_video` es el RÓTULO de un reel: la pieza sale sin fondo, para
     montarse encima del clip. Vale lo mismo que con foto —blanco y sombra—
@@ -12,8 +16,9 @@
     sobre un video de diez segundos, una línea legal abajo es ruido. -#}
 {%- set pal = paleta(d.estilo) -%}
 {%- set encima = d.foto or d.sobre_video -%}
+{%- set pleno = d.estilo in ('degrade', 'azul') -%}
 {%- if encima -%}
-  {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco, secundario='#E3EBFF') -%}
+  {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco, secundario='#E6ECFF') -%}
 {%- endif -%}
 {%- set sombra = sombra_texto() if encima else '' -%}
 {%- set sombra_chica = sombra_texto(1.6) if encima else '' -%}
@@ -22,11 +27,13 @@
 {%- set centrado = d.alineacion == 'centro' -%}
 {#- El destacado se pinta buscando la frase dentro del título. Si no está
     escrita igual, no pasa nada: el título sale entero en tinta, que es mejor
-    que un azul en cualquier lado. -#}
+    que un degradé en cualquier lado. Sobre un fondo que YA es el degradé o el
+    azul pleno no hay con qué destacar, y el título sale entero en blanco. -#}
 {%- set titulo = d.titulo -%}
-{%- if d.destacado and d.destacado in d.titulo -%}
-  {%- set titulo = d.titulo.replace(d.destacado, '<span style="color:' ~ pal.acento ~ '">' ~ d.destacado ~ '</span>') -%}
+{%- if d.destacado and d.destacado in d.titulo and not encima and not pleno -%}
+  {%- set titulo = d.titulo.replace(d.destacado, '<span class="texto-degrade">' ~ d.destacado ~ '</span>') -%}
 {%- endif -%}
+{%- set chip = 'chip-oscuro' if (encima or pleno or d.estilo == 'oscuro') else 'chip-suave' -%}
 
 {% if d.foto %}
 <img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
@@ -36,6 +43,10 @@
 <div class="scrim" style="background:{{ degrade(0.42, 0.72) }}"></div>
 {% else %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if d.estilo in ('claro', 'oscuro') %}
+<div class="glow glow-azul" style="width:{{ m.alto * 0.55 }}px;height:{{ m.alto * 0.55 }}px;right:-{{ m.alto * 0.18 }}px;top:-{{ m.alto * 0.16 }}px;opacity:{{ '.9' if d.estilo == 'oscuro' else '.45' }}"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;left:-{{ m.alto * 0.2 }}px;bottom:-{{ m.alto * 0.22 }}px;opacity:{{ '.8' if d.estilo == 'oscuro' else '.38' }}"></div>
+{% endif %}
 {% endif %}
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
@@ -47,8 +58,9 @@
 
   <div style="max-width:{{ '100%' if centrado else '94%' }}">
     {% if d.kicker %}
-    <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;
-      margin-bottom:{{ m.kicker * 1.1 }}px;{{ sombra_chica }}">{{ d.kicker }}</div>
+    <div style="margin-bottom:{{ m.kicker * 1.3 }}px">
+      <span class="chip {{ chip }}" style="font-size:{{ m.kicker }}px;padding:{{ m.kicker * 0.5 }}px {{ m.kicker * 0.95 }}px;{{ sombra_chica }}">{{ d.kicker }}</span>
+    </div>
     {% endif %}
     <div class="disp" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
       white-space:pre-line;{{ sombra }}">{{ titulo }}</div>
@@ -59,7 +71,7 @@
     {% endif %}
     {% if d.boton %}
     <div style="margin-top:{{ m.boton * 1.4 }}px">
-      <span class="boton {{ 'boton-claro' if d.estilo == 'azul' else '' }}"
+      <span class="boton {{ 'boton-claro' if pleno else '' }}"
         style="font-size:{{ m.boton }}px;padding:{{ m.boton * 0.62 }}px {{ m.boton * 1.4 }}px">{{ d.boton }}</span>
     </div>
     {% endif %}
@@ -68,10 +80,13 @@
   <div class="grow"></div>
   {% if not d.sobre_video %}
   <div class="row" style="width:100%;align-items:flex-end">
-    <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>
+    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>{% endif %}
     {% if d.pie %}
-    <div class="legal" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
+    <div class="legal" style="margin-left:auto;color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
     {% endif %}
   </div>
   {% endif %}
+  {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
+      los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}
+  {% if d.get('responder') %}<div style="height:120px"></div>{% endif %}
 </div>

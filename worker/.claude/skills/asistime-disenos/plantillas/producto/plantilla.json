@@ -1,0 +1,37 @@
+{
+  "id": "producto",
+  "nombre": "Producto",
+  "descripcion": "el agente en acción: una conversación real de WhatsApp o Instagram, con el claim arriba",
+  "cuando_usarla": "Cuando hay que MOSTRAR lo que hace el producto en vez de decirlo: un cliente escribe a las once de la noche y Tony le contesta al instante. Es el slide de «solución» de una serie, o una placa suelta de lanzamiento. La conversación va en `chat`, una línea por mensaje: las que empiezan con «Tony:» son del agente y las demás de quien escribe. Tres a cinco mensajes; más no entran ni se leen. Escribí mensajes que podrían ser reales —una consulta concreta, una respuesta concreta— y nunca una promesa que el producto no hace. Si tenés una captura de pantalla real, pasala en `pantalla` y reemplaza el chat dibujado. Si no hay producto que mostrar, es `titular`.",
+  "acento_por_defecto": "azul",
+  "cromo": {"claro": "tinta", "*": "blanco"},
+  "_cromo": "El índice del carrusel: tinta sobre el fondo claro, blanco sobre el oscuro y el degradé.",
+  "medidas": {
+    "post":  {"alto": 1080, "pad": 80, "titulo": 68, "kicker": 22, "bajada": 28, "boton": 26, "chat": 23, "tarjeta": 540, "avatar": 50, "iso": 0.9,  "legal": 20},
+    "vert":  {"alto": 1350, "pad": 84, "titulo": 84, "kicker": 24, "bajada": 32, "boton": 30, "chat": 25, "tarjeta": 600, "avatar": 56, "iso": 1.0,  "legal": 21},
+    "story": {"alto": 1920, "pad": 96, "titulo": 104, "kicker": 28, "bajada": 38, "boton": 34, "chat": 30, "tarjeta": 720, "avatar": 66, "iso": 1.15, "legal": 24},
+    "reel":  {"alto": 1920, "pad": 96, "titulo": 104, "kicker": 28, "bajada": 38, "boton": 34, "chat": 30, "tarjeta": 720, "avatar": 66, "iso": 1.15, "legal": 24}
+  },
+  "campos": [
+    {"id": "titulo", "tipo": "texto_largo", "etiqueta": "Título", "requerido": true, "ejemplo": "Son las 23:41 y tu negocio\nsigue atendiendo",
+     "nota": "Corto: la conversación es la protagonista. Podés cortar la línea con un salto de línea."},
+    {"id": "destacado", "tipo": "texto", "etiqueta": "Palabra destacada", "default": "", "ejemplo": "sigue atendiendo",
+     "nota": "Una palabra o frase DEL TÍTULO que sale con el degradé. Una sola."},
+    {"id": "chat", "tipo": "texto_largo", "etiqueta": "La conversación", "requerido": true,
+     "ejemplo": "Hola! Tienen turno para mañana a la tarde?\nTony: ¡Hola! Sí, mañana hay a las 15:30 y a las 17:00. ¿Cuál te queda mejor?\nLas 17 perfecto\nTony: Listo, quedó reservado a las 17:00 a tu nombre. Te mando un recordatorio una hora antes 🙂",
+     "nota": "Una línea por mensaje. Las que empiezan con «Tony:» (o con el nombre de `agente`) son del agente; las otras, de quien escribe. Entre tres y cinco mensajes."},
+    {"id": "agente", "tipo": "texto", "etiqueta": "Nombre del agente", "default": "Tony",
+     "nota": "Cómo se llama el agente en la conversación. En las piezas de Asistime es Tony; en un caso de cliente puede ser el nombre que le puso ese negocio."},
+    {"id": "canal", "tipo": "opcion", "etiqueta": "Canal", "opciones": ["WhatsApp", "Instagram", "Web"], "default": "WhatsApp"},
+    {"id": "hora", "tipo": "texto", "etiqueta": "Hora de la conversación", "default": "23:41",
+     "nota": "La hora que se ve en la pantalla. Una hora fuera del horario comercial es el argumento entero de la marca."},
+    {"id": "kicker", "tipo": "texto", "etiqueta": "Antetítulo", "default": "", "ejemplo": "ATENCIÓN 24/7"},
+    {"id": "bajada", "tipo": "texto_largo", "etiqueta": "Bajada", "default": "", "ejemplo": "Tony responde, agenda y avisa. Vos te enterás a la mañana."},
+    {"id": "boton", "tipo": "texto", "etiqueta": "Botón", "default": "", "ejemplo": "Hablá con Tony",
+     "nota": "Opcional. Si va, es «Hablá con Tony»."},
+    {"id": "pantalla", "tipo": "imagen", "etiqueta": "Captura real", "default": "",
+     "nota": "Opcional. Una captura de pantalla real de la conversación; reemplaza al chat dibujado y va dentro de la misma tarjeta."},
+    {"id": "estilo", "tipo": "opcion", "etiqueta": "Fondo", "opciones": ["claro", "oscuro", "degrade"], "default": "claro",
+     "nota": "`claro` es la marca. `degrade` para una placa suelta de lanzamiento. `oscuro` sólo si la serie no tiene ya un `dato`."}
+  ]
+}

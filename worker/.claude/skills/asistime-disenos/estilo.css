@@ -1,29 +1,61 @@
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-.canvas{width:1080px;position:relative;overflow:hidden;background:#FBFCFE}
+body{font-family:'Red Hat Display',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.canvas{width:1080px;position:relative;overflow:hidden;background:#FBFCFF}
 .pad{position:absolute;inset:0;display:flex;flex-direction:column}
 .row{display:flex;align-items:center;justify-content:space-between}
 .grow{flex:1}
-/* Sora manda en todo lo que se lee primero: titulares, números, botones. El
-   tracking apretado es parte del carácter de la marca, no un ajuste. */
-.disp{font-family:'Sora',sans-serif;font-weight:800;letter-spacing:-.035em;line-height:1.02}
-.disp-num{font-family:'Sora',sans-serif;font-weight:800;letter-spacing:-.05em;line-height:.9;font-variant-numeric:tabular-nums}
-.sub{font-family:'Sora',sans-serif;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+/* Una sola tipografía, Red Hat Display, en todo lo que se lee. Lo que cambia
+   es el peso: 800 en lo que se lee primero, 500/400 en lo que se lee después.
+   El tracking apretado de los titulares es parte del carácter de la marca. */
+.disp{font-weight:800;letter-spacing:-.03em;line-height:1.02}
+.disp-num{font-weight:900;letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums}
+.sub{font-weight:600;letter-spacing:-.015em;line-height:1.16}
 .body{font-weight:400;letter-spacing:0;line-height:1.38}
 .body-b{font-weight:500;letter-spacing:0;line-height:1.38}
-.kicker{font-family:'Sora',sans-serif;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.kicker{font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .legal{font-weight:400;letter-spacing:.01em;line-height:1.3}
-/* Los dos fondos firma. El claro es casi blanco con un azul imperceptible; el
-   oscuro es el slide de impacto y se usa una vez por carrusel, como máximo. */
-.fondo-claro{background:linear-gradient(155deg,#FDFDFF 0%,#F6F9FE 45%,#E9F0FE 100%)}
-.fondo-oscuro{background:radial-gradient(120% 90% at 78% 62%,#062A6B 0%,#021340 38%,#01030D 78%)}
-.fondo-azul{background:#006AFF}
-/* El botón de la marca: píldora azul, texto blanco en Sora. Es un botón de
-   verdad en el producto, así que en la pieza se dibuja igual. */
-.boton{display:inline-flex;align-items:center;justify-content:center;background:#006AFF;color:#FFFFFF;
-  font-family:'Sora',sans-serif;font-weight:700;letter-spacing:-.01em;border-radius:999px}
-.boton-claro{background:#FFFFFF;color:#005CFF}
-.tarjeta{background:rgba(255,255,255,.85);border:1px solid rgba(0,10,60,.08);border-radius:28px;
-  box-shadow:0 18px 50px rgba(0,8,47,.08)}
+/* Los fondos firma. El claro es blanco con un dejo azul-violeta; el oscuro es
+   el slide de impacto y se usa una vez por serie; el degradé es el oficial de
+   la marca —azul #4D90FF a violeta #B362FF— y va entero sólo cuando la pieza
+   tiene que gritar. */
+.fondo-claro{background:linear-gradient(160deg,#FFFFFF 0%,#F7F9FF 50%,#F1EDFF 100%)}
+.fondo-oscuro{background:radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)}
+.fondo-degrade{background:linear-gradient(135deg,#4D90FF 0%,#B362FF 100%)}
+.fondo-azul{background:#4D90FF}
+/* El degradé aplicado a texto: la palabra destacada de un título, el número
+   del dato. NUNCA junto con text-shadow: la sombra se ve a través de las
+   letras transparentes. Sobre foto el destacado va blanco y con sombra. */
+.texto-degrade{background:linear-gradient(135deg,#4D90FF 0%,#B362FF 100%);-webkit-background-clip:text;
+  background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+/* Las manchas de luz que hacen que un fondo plano parezca de la marca. Dos
+   por pieza como máximo, una azul y una violeta, siempre desenfocadas. */
+.glow{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.glow-azul{background:rgba(77,144,255,.55)}
+.glow-violeta{background:rgba(179,98,255,.50)}
+/* El botón: píldora con el degradé, texto blanco. Es un botón de verdad en el
+   producto, así que en la pieza se dibuja igual. Sobre un fondo ya degradé va
+   blanco con el texto en azul. */
+.boton{display:inline-flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#4D90FF 0%,#B362FF 100%);color:#FFFFFF;
+  font-weight:700;letter-spacing:-.005em;border-radius:999px;box-shadow:0 14px 34px rgba(77,144,255,.32)}
+.boton-claro{background:#FFFFFF;color:#2F6FE0;box-shadow:0 14px 34px rgba(5,6,26,.16)}
+/* El antetítulo va en una píldora chica, no suelto: es la forma que tienen
+   los rótulos en el producto. */
+.chip{display:inline-flex;align-items:center;border-radius:999px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase}
+.chip-suave{background:rgba(77,144,255,.12);color:#2F6FE0}
+.chip-oscuro{background:rgba(255,255,255,.14);color:#FFFFFF}
+.tarjeta{background:rgba(255,255,255,.90);border:1px solid rgba(77,144,255,.16);border-radius:36px;
+  box-shadow:0 26px 70px rgba(27,63,168,.12)}
+.tarjeta-oscura{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:36px}
+/* La conversación de la plantilla `producto`: quien escribe a la izquierda,
+   el agente a la derecha con el degradé. */
+.burbuja{border-radius:26px;padding:.62em .85em;font-weight:500;line-height:1.28;max-width:80%}
+.burbuja-cliente{background:#F1F3FA;color:#0A0B14;border-bottom-left-radius:8px;align-self:flex-start}
+.burbuja-tony{background:linear-gradient(135deg,#4D90FF 0%,#B362FF 100%);color:#FFFFFF;
+  border-bottom-right-radius:8px;align-self:flex-end}
+.avatar{border-radius:50%;background:linear-gradient(135deg,#4D90FF 0%,#B362FF 100%);color:#FFFFFF;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scrim{position:absolute;inset:0}

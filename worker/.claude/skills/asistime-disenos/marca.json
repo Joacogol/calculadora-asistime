@@ -14,7 +14,7 @@
   "telefono_por_defecto": false,
   "regla_telefono": "No lleva teléfono. El llamado a la acción de la marca es «Hablá con Tony» y la web asistime.ai.",
   "quien_es": "Trabajás para Asistime.ai, la plataforma de agentes de IA de LAiB: un negocio crea agentes conversando, y esos agentes atienden por WhatsApp, Instagram, Facebook y TikTok. Le habla a dueños de pymes y emprendedores, no a técnicos. Lo que cada pieza tiene que dejar es alivio: «esto me devuelve tiempo». El tagline es «más tiempo para lo que amas».",
-  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Un solo azul, y el oscuro una vez.** La marca es clara por defecto. El slide oscuro es el del dato que duele —la plantilla `dato`— y va salteado: nunca dos veces seguidas en una misma serie. No uses violeta: el manual viejo lo tenía y las piezas publicadas no.\n\n**4 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.",
+  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Dos colores y un degradado, nada más.** La identidad oficial (kit del 3/9/2026) es el azul `#4D90FF`, el violeta `#B362FF` y el degradado del uno al otro. El azul es el acento de todos los días; el violeta aparece SOLO dentro del degradado —una palabra del título, el botón, un fondo entero— y nunca como color plano suelto. La marca es clara por defecto: el fondo oscuro es el del dato que duele —la plantilla `dato`— y va salteado, nunca dos veces seguidas en una misma serie. El fondo `degrade` entero es para UNA pieza que tenga que gritar, o el cierre.\n\n**4 · Una sola tipografía: Red Hat Display.** Titulares en ExtraBold, cuerpo en Regular o Medium. No se mezcla con otra.\n\n**5 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.\n\n**6 · Un dato lleva fuente y un testimonio lleva nombre.** Un número sin fuente o una cita sin quién la dijo no se publican: si faltan, preguntá.",
   "como_habla": "Voseo rioplatense, frases cortas, cálido y concreto. Le hablás a quien tiene un negocio y poco tiempo, así que sin jerga: no decís «orquestación» ni «LLM», decís «un agente que atiende». Sin viñetas para lo que entra en dos renglones.",
   "fotos": {
     "creditos_maximos": 100
@@ -33,22 +33,23 @@
   },
   "identidad": {
     "colores": {
-      "azul": "#006AFF",
-      "azul_texto": "#005CFF",
-      "azul_profundo": "#0047CC",
-      "azul_glow": "#2B8BFF",
-      "navy": "#00082F",
-      "navy_70": "#3A4160",
-      "navy_45": "#7A8098",
-      "oscuro": "#01030D",
-      "fondo": "#FBFCFE",
+      "azul": "#4D90FF",
+      "violeta": "#B362FF",
+      "azul_logo": "#006AFF",
+      "azul_texto": "#2F6FE0",
+      "azul_profundo": "#1B3FA8",
+      "tinta": "#0A0B14",
+      "tinta_70": "#4A4E63",
+      "tinta_45": "#8A8FA3",
+      "oscuro": "#05061A",
+      "fondo": "#FBFCFF",
       "blanco": "#FFFFFF",
       "whatsapp": "#25D366"
     },
     "roles": {
       "acento": "azul",
       "claro": "blanco",
-      "tinta": "navy"
+      "tinta": "tinta"
     },
     "formatos": {
       "post": [
@@ -70,44 +71,34 @@
     },
     "tipografias": [
       {
-        "familia": "Sora",
-        "archivo": "fonts/sora-400.woff2",
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Regular.ttf",
         "pesos": "400"
       },
       {
-        "familia": "Sora",
-        "archivo": "fonts/sora-500.woff2",
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Medium.ttf",
         "pesos": "500"
       },
       {
-        "familia": "Sora",
-        "archivo": "fonts/sora-600.woff2",
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-SemiBold.ttf",
         "pesos": "600"
       },
       {
-        "familia": "Sora",
-        "archivo": "fonts/sora-700.woff2",
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Bold.ttf",
         "pesos": "700"
       },
       {
-        "familia": "Sora",
-        "archivo": "fonts/sora-800.woff2",
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-ExtraBold.ttf",
         "pesos": "800"
       },
       {
-        "familia": "DM Sans",
-        "archivo": "fonts/dm-sans-400.woff2",
-        "pesos": "400"
-      },
-      {
-        "familia": "DM Sans",
-        "archivo": "fonts/dm-sans-500.woff2",
-        "pesos": "500"
-      },
-      {
-        "familia": "DM Sans",
-        "archivo": "fonts/dm-sans-700.woff2",
-        "pesos": "700"
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Black.ttf",
+        "pesos": "900"
       }
     ],
     "logo": {
@@ -115,7 +106,7 @@
       "claro": "assets/lockup-blanco.png",
       "ratio": 5.0,
       "ancho": 320,
-      "_nota": "El lockup mide 2000×400: ratio 5. En PNG, así que sobre oscuro va el archivo blanco en vez de pintarse."
+      "_nota": "El lockup oficial mide 2000×400: ratio 5. Es PNG y viene pintado (isotipo en azul_logo #006AFF, texto negro), así que sobre oscuro va el archivo blanco en vez de pintarse."
     },
     "iso": {
       "archivo": "assets/isotipo-azul.png",
@@ -138,29 +129,35 @@
     },
     "paletas": {
       "claro": {
-        "fondo": "linear-gradient(155deg,#FDFDFF 0%,#F6F9FE 45%,#E9F0FE 100%)",
-        "tinta": "$navy",
+        "fondo": "linear-gradient(160deg,#FFFFFF 0%,#F7F9FF 50%,#F1EDFF 100%)",
+        "tinta": "$tinta",
         "acento": "$azul",
-        "secundario": "$navy_70"
+        "secundario": "$tinta_70"
       },
       "oscuro": {
-        "fondo": "radial-gradient(120% 90% at 78% 62%,#062A6B 0%,#021340 38%,#01030D 78%)",
+        "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
         "tinta": "$blanco",
-        "acento": "$azul_glow",
-        "secundario": "#B9C4E0"
+        "acento": "$azul",
+        "secundario": "#B8BDD9"
+      },
+      "degrade": {
+        "fondo": "linear-gradient(135deg,#4D90FF 0%,#B362FF 100%)",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "secundario": "#EEF1FF"
       },
       "azul": {
         "fondo": "$azul",
         "tinta": "$blanco",
         "acento": "$blanco",
-        "secundario": "#D6E5FF"
+        "secundario": "#E3EEFF"
       }
     },
     "acento_por_defecto": "azul",
     "reel": {
       "tipografias": [
-        "sora-800.ttf",
-        "sora-600.ttf"
+        "RedHatDisplay-ExtraBold.ttf",
+        "RedHatDisplay-SemiBold.ttf"
       ],
       "animo_musica": "calmo",
       "acento": "azul",
@@ -170,12 +167,25 @@
       "_encuadre": "Al montar un video apaisado, el recorte vertical sigue a las caras: se centra en la persona en primer plano y se abre para que entren todas en un plano de dos. Asistime publica gente hablando; sin esto el recorte centrado partía la cara del primer plano (medido el 2/9/2026)."
     },
     "carrusel": {
-      "color_cromo": "navy",
-      "fuente_cromo": "'Sora',sans-serif",
-      "fuente_texto": "'DM Sans',sans-serif"
+      "color_cromo": "tinta",
+      "fuente_cromo": "'Red Hat Display',sans-serif",
+      "fuente_texto": "'Red Hat Display',sans-serif",
+      "diapos": {
+        "portada": "titular",
+        "texto": "titular",
+        "cuadro": "titular",
+        "dato": "dato",
+        "testimonio": "testimonio",
+        "producto": "producto",
+        "cierre": "cierre"
+      },
+      "_diapos": "Con qué plantilla se dibuja cada tipo de diapositiva de un carrusel o una secuencia. Es lo que le da carruseles a una marca de datos sin escribir Python: el motor arma `DIAPOS` con estas plantillas (ver motor/identidad.py). `portada` y `cierre` son obligatorios; `cuadro` es el defecto de una secuencia de stories. Cada diapositiva lleva los campos de su plantilla."
     },
     "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas. En los videos se habla de Claude, Claude Cowork y Anthropic; de ChatGPT y OpenAI; de Gemini y Google; de Sam Altman, Dario Amodei y Elon Musk; de Copilot, Cursor y Perplexity. También de agentes de IA, prompts, tokens y de la singularidad.",
-    "_vocabulario": "Lo que Whisper lee ANTES de escuchar, en prosa y con signos. El 2/9/2026 transcribió «Cloud Cowork» donde decían «Claude Cowork»: los nombres de los productos de IA no estaban, y Asistime habla de eso todo el tiempo."
+    "_vocabulario": "Lo que Whisper lee ANTES de escuchar, en prosa y con signos. El 2/9/2026 transcribió «Cloud Cowork» donde decían «Claude Cowork»: los nombres de los productos de IA no estaban, y Asistime habla de eso todo el tiempo.",
+    "_colores": "Los dos oficiales son `azul` y `violeta`, y el degradado va del uno al otro (ver `paletas.degrade` y `.fondo-degrade` / `.texto-degrade` en estilo.css). `azul_logo` es el azul del isotipo y el lockup PNG, que vienen pintados: no se usa para nada más. `azul_texto` es el azul oscurecido para texto chico sobre blanco: `azul` a 34 px no llega al contraste mínimo. La tinta es casi negra, como el texto del lockup oficial.",
+    "_tipografias": "La única tipografía de la marca, en los seis pesos estáticos del kit oficial (licencia OFL, en fonts/OFL.txt). TTF y no woff2 a propósito: los mismos archivos los usa ffmpeg para los rótulos del reel, y freetype no lee woff2 ni fuentes variables.",
+    "_paletas": "`claro` es la marca (blanco con un dejo azul-violeta). `oscuro` es el slide de impacto. `degrade` es el degradado oficial entero, para una pieza que tenga que gritar o el cierre. `azul` es el pleno, por si una placa suelta lo pide."
   },
   "_sedes": "Asistime no tiene locales, así que tiene una sola sede que es la marca entera. Igual va como diccionario `nombre → {contacto, acento}`: la forma la fija el motor. Escrita como lista —así estuvo el 2/9/2026— el diseño muere con «'list' object has no attribute 'get'», cuatro minutos después de pedirlo y sin decir de qué marca ni de qué campo habla.",
   "reels": {

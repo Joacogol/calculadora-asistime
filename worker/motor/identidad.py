@@ -46,9 +46,16 @@ Un color se nombra por su nombre («naranja») en todos lados; el motor lo
 resuelve. Un valor que empieza con `$` dentro de las paletas es también un
 nombre de color.
 
-Lo que una marca NO puede hacer como datos: `DIAPOS` —los cuerpos de un
-carrusel— y `PRESENTACION`. Todavía son Python. Una marca que los tenga los
-declara en su `marca.py` al lado del `cargar`, y pisan a los del motor.
+Los carruseles también son datos: `carrusel.diapos` dice con qué plantilla
+se dibuja cada tipo de diapositiva —`{"portada": "titular", "dato": "dato",
+"cierre": "cierre", …}`— y el motor arma `DIAPOS` con eso. Hasta el 3/9/2026
+era Python obligatorio y Asistime, la primera marca de datos, se había
+quedado sin carruseles por eso.
+
+Lo que una marca todavía NO puede hacer como datos: `PRESENTACION`, el PDF
+de varias páginas. Una marca que lo tenga —o que prefiera escribir sus
+`DIAPOS` a mano— lo declara en su `marca.py` al lado del `cargar`, y pisa a
+lo del motor.
 """
 from __future__ import annotations
 
@@ -204,9 +211,16 @@ def cargar(archivo_marca) -> types.SimpleNamespace:
     # Las plantillas, todas como datos: no queda ninguna escrita en Python.
     m.PLANTILLAS = _plantillas.cargar(carpeta, m)
     m.ESCRITAS_EN_PYTHON = ()
-    # El catálogo cuenta lo del carrusel sólo si la marca lo sabe hacer. Una
-    # marca de datos no tiene `DIAPOS` salvo que su `marca.py` lo agregue al
-    # lado del `cargar`, así que se mira sobre el módulo ya armado y no acá.
+    # Los carruseles, si la identidad dice con qué plantilla se dibuja cada
+    # tipo de diapositiva (`carrusel.diapos`). Es lo que le da carruseles a
+    # una marca sin una línea de Python: ver `plantillas.como_diapositivas`.
+    # Una marca que prefiera escribir sus `DIAPOS` a mano los declara en su
+    # `marca.py` al lado del `cargar`, y pisan a éstos.
+    mapa = cr.get("diapos") or {}
+    if mapa:
+        m.DIAPOS, m.CROMO_DIAPO = _plantillas.como_diapositivas(m, mapa)
+    # El catálogo cuenta lo del carrusel sólo si la marca lo sabe hacer. Se
+    # mira sobre el módulo ya armado y no acá, por lo del `marca.py`.
     m.CATALOGO = lambda: _plantillas.catalogo(
-        carpeta, (), con_carrusel=hasattr(m, "DIAPOS"))
+        carpeta, (), con_carrusel=hasattr(m, "DIAPOS"), diapos=mapa or None)
     return m

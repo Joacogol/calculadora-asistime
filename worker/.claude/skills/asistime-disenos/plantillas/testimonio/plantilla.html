@@ -1,0 +1,52 @@
+{#- La prueba social: una comilla enorme en el degradé, la cita en SemiBold,
+    y abajo quién lo dijo con su foto en círculo —o la inicial sobre el
+    degradé si no hay foto— y, si lo hay, el número que ganó en una píldora.
+
+    La cita se achica con el largo, pero no infinitamente: si hace falta bajar
+    de dos tercios, la cita es larga y el problema es de edición, no de
+    tipografía. -#}
+{%- set pal = paleta(d.estilo) -%}
+{%- set oscuro = d.estilo == 'oscuro' -%}
+{%- set t = d.cita|length -%}
+{%- set cuerpo = m.cita if t <= 90 else (m.cita * 0.84 if t <= 150 else m.cita * 0.68) -%}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.16 }}px;top:-{{ m.alto * 0.14 }}px;opacity:{{ '.8' if oscuro else '.42' }}"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.46 }}px;height:{{ m.alto * 0.46 }}px;left:-{{ m.alto * 0.18 }}px;bottom:-{{ m.alto * 0.2 }}px;opacity:{{ '.7' if oscuro else '.36' }}"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
+  <div class="row" style="width:100%">
+    {{ iso(m.iso, pal.tinta) }}
+    {% if d.kicker %}
+    <span class="chip {{ 'chip-oscuro' if oscuro else 'chip-suave' }}" style="font-size:{{ m.kicker }}px;padding:{{ m.kicker * 0.5 }}px {{ m.kicker * 0.95 }}px">{{ d.kicker }}</span>
+    {% endif %}
+  </div>
+  <div class="grow"></div>
+
+  <div class="disp-num texto-degrade" style="font-size:{{ m.comilla }}px;line-height:.6;height:{{ m.comilla * 0.5 }}px;margin-left:-.04em">“</div>
+  <div class="sub" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;max-width:900px;white-space:pre-line">{{ d.cita }}</div>
+
+  <div class="row" style="width:100%;margin-top:{{ m.nombre * 1.6 }}px;align-items:center;gap:24px">
+    <div style="display:flex;align-items:center;gap:{{ m.avatar * 0.24 }}px;min-width:0">
+      <div class="avatar" style="width:{{ m.avatar }}px;height:{{ m.avatar }}px;font-size:{{ m.avatar * 0.44 }}px">
+        {%- if d.foto %}<img src="{{ d.foto }}">{% else %}{{ d.nombre[:1]|upper }}{% endif -%}
+      </div>
+      <div style="min-width:0">
+        <div class="sub" style="color:{{ pal.tinta }};font-size:{{ m.nombre }}px">{{ d.nombre }}</div>
+        {% if d.rol %}
+        <div class="body" style="color:{{ pal.secundario }};font-size:{{ m.rol }}px;margin-top:{{ m.rol * 0.2 }}px">{{ d.rol }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if d.resultado %}
+    <span class="boton {{ 'boton-claro' if oscuro else '' }}" style="font-size:{{ m.resultado }}px;padding:{{ m.resultado * 0.5 }}px {{ m.resultado * 1.0 }}px;flex:none">{{ d.resultado }}</span>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+  <div class="row" style="width:100%;align-items:flex-end">
+    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
+  </div>
+  {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
+      los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}
+  {% if d.get('responder') %}<div style="height:120px"></div>{% endif %}
+</div>

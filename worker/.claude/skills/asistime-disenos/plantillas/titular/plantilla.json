@@ -2,7 +2,7 @@
   "id": "titular",
   "nombre": "Titular",
   "descripcion": "un claim grande, con o sin foto; la pieza de todos los días",
-  "cuando_usarla": "Para casi todo: un beneficio, una idea, la apertura de una serie, una placa suelta. Sobre fondo claro por defecto —que es como se ve la marca—, o sobre una foto con un velo medido. `destacado` pinta de azul UNA palabra o frase del título: usalo para la que importa, no para dos. Si lo que manda es un número, usá `dato`; si es el cierre con el llamado a la acción, `cierre`.",
+  "cuando_usarla": "Para casi todo: un beneficio, una idea, la apertura de una serie, una placa suelta. Sobre fondo claro por defecto —que es como se ve la marca—, o sobre una foto con un velo medido. `destacado` pinta con el degradé de la marca UNA palabra o frase del título: usalo para la que importa, no para dos. Si lo que manda es un número, usá `dato`; si es una cita de un cliente, `testimonio`; si hay que mostrar el producto, `producto`; si es el cierre con el llamado a la acción, `cierre`.",
   "acento_por_defecto": "azul",
   "medidas": {
     "post": {
@@ -58,10 +58,10 @@
     {
       "id": "destacado",
       "tipo": "texto",
-      "etiqueta": "Palabra en azul",
+      "etiqueta": "Palabra destacada",
       "default": "",
       "ejemplo": "lo que amas",
-      "nota": "Una palabra o frase DEL TÍTULO, tal cual está escrita ahí, que sale en azul. Una sola."
+      "nota": "Una palabra o frase DEL TÍTULO, tal cual está escrita ahí, que sale con el degradé azul→violeta. Una sola. Sobre foto sale en blanco."
     },
     {
       "id": "kicker",
@@ -91,11 +91,12 @@
       "etiqueta": "Fondo",
       "opciones": [
         "claro",
-        "azul",
-        "oscuro"
+        "oscuro",
+        "degrade",
+        "azul"
       ],
       "default": "claro",
-      "nota": "`claro` es la marca. `azul` es pleno, para una placa suelta que tenga que gritar. `oscuro` se reserva para `dato`; acá sólo si es la única pieza."
+      "nota": "`claro` es la marca. `oscuro` se reserva para `dato`; acá sólo si es la única pieza. `degrade` es el degradado oficial entero, para una placa suelta que tenga que gritar. `azul` es el pleno."
     },
     {
       "id": "foto",
@@ -133,5 +134,10 @@
       "default": false,
       "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba, donde queda el texto. El pie no se dibuja: sobre diez segundos de video, una línea legal abajo es ruido. Normalmente no lo prendés a mano: lo pone el motor cuando arma el rótulo de un reel."
     }
-  ]
+  ],
+  "cromo": {
+    "claro": "tinta",
+    "*": "blanco"
+  },
+  "_cromo": "El índice del carrusel: tinta sobre el fondo claro, blanco sobre los demás fondos y sobre foto."
 }

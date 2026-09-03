@@ -1,0 +1,30 @@
+{
+  "id": "testimonio",
+  "nombre": "Testimonio",
+  "descripcion": "la cita de un cliente, con su nombre y su negocio",
+  "cuando_usarla": "Cuando lo que convence es que lo diga otro: una frase textual de alguien que usa Asistime, con su nombre y su negocio. Es la prueba social de la marca y va en el lugar de la «solución» de una serie, o suelta. La cita va corta —dos renglones se leen, cinco no— y ENTRE LAS PALABRAS DE ESA PERSONA: no se inventa ni se «mejora». Sin nombre no se publica; si falta, preguntá. `resultado` es el número que esa persona ganó («−11 h por semana»), si lo hay: es lo que se lee desde el feed. Si en vez de una cita hay un número de la industria, es `dato`.",
+  "acento_por_defecto": "azul",
+  "cromo": {"claro": "tinta", "*": "blanco"},
+  "_cromo": "El índice del carrusel: tinta sobre el fondo claro, blanco sobre el oscuro.",
+  "medidas": {
+    "post":  {"alto": 1080, "pad": 80, "cita": 54, "comilla": 260, "nombre": 34, "rol": 26, "kicker": 24, "avatar": 96,  "resultado": 30, "iso": 0.9,  "legal": 20},
+    "vert":  {"alto": 1350, "pad": 84, "cita": 60, "comilla": 300, "nombre": 36, "rol": 28, "kicker": 26, "avatar": 108, "resultado": 32, "iso": 1.0,  "legal": 21},
+    "story": {"alto": 1920, "pad": 96, "cita": 70, "comilla": 340, "nombre": 42, "rol": 32, "kicker": 30, "avatar": 124, "resultado": 36, "iso": 1.15, "legal": 24},
+    "reel":  {"alto": 1920, "pad": 96, "cita": 70, "comilla": 340, "nombre": 42, "rol": 32, "kicker": 30, "avatar": 124, "resultado": 36, "iso": 1.15, "legal": 24}
+  },
+  "campos": [
+    {"id": "cita", "tipo": "texto_largo", "etiqueta": "La cita", "requerido": true,
+     "ejemplo": "Antes contestaba mensajes hasta las once de la noche. Ahora los contesta Tony y yo ceno con mis hijos.",
+     "nota": "Textual, sin comillas: las pone el diseño. Corta: si pasa de tres renglones, elegí la frase que más dice y dejá el resto para el caption."},
+    {"id": "nombre", "tipo": "texto", "etiqueta": "Quién lo dice", "requerido": true, "ejemplo": "Ana Pereira"},
+    {"id": "rol", "tipo": "texto", "etiqueta": "Su negocio o su puesto", "default": "", "ejemplo": "Dueña de La Panadería de Ana, Montevideo",
+     "nota": "Lo que hace que la cita sea creíble: el nombre del negocio, la ciudad, el puesto."},
+    {"id": "resultado", "tipo": "texto", "etiqueta": "El número que ganó", "default": "", "ejemplo": "−11 h por semana",
+     "nota": "Opcional y corto. Sale en una píldora al lado del nombre. Tiene que ser de esa persona, no de la industria."},
+    {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de la persona", "default": "",
+     "nota": "Opcional, recortada en círculo. Sin foto sale un círculo con el degradé y la inicial, que se ve igual de bien. Nunca una foto de banco de imágenes haciendo de cliente."},
+    {"id": "kicker", "tipo": "texto", "etiqueta": "Antetítulo", "default": "LO QUE DICEN"},
+    {"id": "estilo", "tipo": "opcion", "etiqueta": "Fondo", "opciones": ["claro", "oscuro"], "default": "claro",
+     "nota": "`claro` es la marca. `oscuro` sólo si la serie no tiene ya un `dato` oscuro."}
+  ]
+}

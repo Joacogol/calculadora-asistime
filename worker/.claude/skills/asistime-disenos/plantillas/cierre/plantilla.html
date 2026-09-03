@@ -1,11 +1,18 @@
 {#- El cierre: título, bajada, el botón «Hablá con Tony» y el lockup. Si hay
     una imagen de Tony, va a la derecha apoyada en el borde inferior, como en
-    los carruseles publicados — nunca centrada ni flotando en el texto. -#}
+    los carruseles publicados — nunca centrada ni flotando en el texto.
+
+    Sobre `degrade` todo va en blanco —el botón también, con el texto en
+    azul— y el lockup es el archivo blanco. -#}
 {%- set pal = paleta(d.estilo) -%}
-{%- set azul = d.estilo == 'azul' -%}
+{%- set pleno = d.estilo == 'degrade' -%}
 {%- set t = d.titulo|length -%}
 {%- set cuerpo = m.titulo if t <= 22 else (m.titulo * 0.8 if t <= 40 else m.titulo * 0.62) -%}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if not pleno %}
+<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.16 }}px;top:-{{ m.alto * 0.14 }}px;opacity:.45"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.46 }}px;height:{{ m.alto * 0.46 }}px;left:-{{ m.alto * 0.18 }}px;bottom:-{{ m.alto * 0.2 }}px;opacity:.38"></div>
+{% endif %}
 
 {% if d.tony %}
 <img src="{{ d.tony }}" style="position:absolute;right:0;bottom:0;height:{{ (m.alto * m.tony)|round }}px;
@@ -23,7 +30,7 @@
     {% endif %}
     {% if d.boton %}
     <div style="margin-top:{{ m.boton * 1.3 }}px">
-      <span class="boton {{ 'boton-claro' if azul else '' }}"
+      <span class="boton {{ 'boton-claro' if pleno else '' }}"
         style="font-size:{{ m.boton }}px;padding:{{ m.boton * 0.62 }}px {{ m.boton * 1.4 }}px">{{ d.boton }}</span>
     </div>
     {% endif %}
@@ -33,7 +40,13 @@
   {#- Con Tony a la derecha, el pie se queda en la columna del texto: si no,
       el lockup se mete debajo de la jirafa. -#}
   <div class="row" style="width:{{ '58%' if d.tony else '100%' }};align-items:flex-end">
-    {{ logo(m.logo, pal.tinta) }}
-    <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>
+    {#- En un carrusel el índice del motor vive abajo a la izquierda: el
+        lockup se corre a la derecha. -#}
+    {% if d.get('en_carrusel') %}<div class="grow"></div>{% endif %}
+    {{ logo(m.logo, pal.tinta, 'right' if d.get('en_carrusel') else 'left') }}
+    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
   </div>
+  {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
+      los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}
+  {% if d.get('responder') %}<div style="height:120px"></div>{% endif %}
 </div>

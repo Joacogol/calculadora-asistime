@@ -1,27 +1,37 @@
-{#- El slide de impacto. Fondo oscuro con el degradé radial azul de la marca,
-    el número enorme en azul glow y la frase en blanco. Es el único momento
-    oscuro de Asistime y su fuerza viene de que sea uno solo. -#}
+{#- El slide de impacto. Fondo oscuro con las dos manchas de luz de la marca,
+    el número enorme en el degradé azul→violeta y la frase en blanco. Es el
+    único momento oscuro de Asistime y su fuerza viene de que sea uno solo.
+
+    El número lleva el degradé como texto, y por eso no lleva sombra: las dos
+    cosas no conviven (ver estilo.css). El brillo alrededor lo da una mancha
+    violeta detrás, no el texto. -#}
 {%- set pal = paleta('oscuro') -%}
 {%- set n = d.numero|length -%}
 {%- set cuerpo = m.numero if n <= 4 else (m.numero * 0.72 if n <= 7 else m.numero * 0.5) -%}
 <div class="scrim fondo-oscuro"></div>
+<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.15 }}px;top:-{{ m.alto * 0.12 }}px;opacity:.7"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.42 }}px;height:{{ m.alto * 0.42 }}px;left:-{{ m.alto * 0.1 }}px;top:{{ m.alto * 0.36 }}px;opacity:.75"></div>
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
   <div class="row" style="width:100%">{{ iso(m.iso, c.blanco) }}</div>
   <div class="grow"></div>
 
   {% if d.kicker %}
-  <div class="kicker" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;margin-bottom:{{ m.kicker * 1.2 }}px">{{ d.kicker }}</div>
+  <div style="margin-bottom:{{ m.kicker * 1.4 }}px">
+    <span class="chip chip-oscuro" style="font-size:{{ m.kicker }}px;padding:{{ m.kicker * 0.5 }}px {{ m.kicker * 0.95 }}px">{{ d.kicker }}</span>
+  </div>
   {% endif %}
-  <div class="disp-num" style="color:{{ pal.acento }};font-size:{{ cuerpo }}px;
-    text-shadow:0 0 60px rgba(43,139,255,.45)">{{ d.numero }}</div>
+  <div class="disp-num texto-degrade" style="font-size:{{ cuerpo }}px;padding-right:.06em">{{ d.numero }}</div>
   <div class="sub" style="color:{{ pal.tinta }};font-size:{{ m.texto }}px;margin-top:{{ m.texto * 0.7 }}px;max-width:820px">{{ d.texto }}</div>
 
   <div class="grow"></div>
   <div class="row" style="width:100%;align-items:flex-end">
-    <div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>
+    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
     {% if d.fuente %}
-    <div class="legal" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:560px;text-align:right">{{ d.fuente }}</div>
+    <div class="legal" style="margin-left:auto;color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:560px;text-align:right">{{ d.fuente }}</div>
     {% endif %}
   </div>
+  {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
+      los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}
+  {% if d.get('responder') %}<div style="height:120px"></div>{% endif %}
 </div>

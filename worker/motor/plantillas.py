@@ -153,8 +153,13 @@ def _ayudas(marca, raiz):
     return ayudas
 
 
-def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
-    """El HTML completo de una pieza. El único lugar donde se arma una."""
+def _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt):
+    """El HTML de ADENTRO del lienzo, y las medidas con las que se dibujó.
+
+    Es lo que comparten una placa y una diapositiva de carrusel: la placa lo
+    envuelve en su propia página (`_pagina`); el carrusel lo pone dentro de la
+    suya, con el índice y las flechas encima (`motor.carrusel`).
+    """
     if fmt not in contrato["medidas"]:
         raise PlantillaIncompleta(
             f"la plantilla «{contrato.get('id', '?')}» no tiene formato "
@@ -172,6 +177,12 @@ def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
                    or marca.ACENTO_POR_DEFECTO],
         raiz=str(raiz),
         **ayudas)
+    return cuerpo, m
+
+
+def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
+    """El HTML completo de una pieza. El único lugar donde se arma una."""
+    cuerpo, m = _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt)
     return (f'<!doctype html><html><head><meta charset="utf-8">'
             f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
             f'</style></head><body>\n'
@@ -197,12 +208,96 @@ def cargar(raiz, marca):
         def dibujar(data, fmt="post"):
             return _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt)
 
+        def cuerpo(data, fmt="post"):
+            return _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt)[0]
+
         dibujar.__name__ = contrato["id"]
         dibujar.__doc__ = contrato.get("descripcion", "")
         dibujar.contrato = contrato
+        dibujar.cuerpo = cuerpo
         return dibujar
 
     return {cid: _hacer(c) for cid, c in contratos.items()}
+
+
+def como_diapositivas(marca, mapa: dict):
+    """`DIAPOS` para una marca de datos: cada tipo de diapositiva, dibujado
+    con una de sus plantillas.
+
+    `mapa` es `tipo → id de plantilla`, y sale de `identidad.carrusel.diapos`
+    en el marca.json. Hasta el 3/9/2026 un carrusel exigía escribir Python
+    —`DIAPOS` era «una de las dos únicas cosas de una marca que todavía son
+    código»— y una marca de datos se quedaba sin carruseles. Pero una
+    diapositiva es la misma placa de siempre, en el mismo lienzo, con el
+    índice encima: no había nada que programar, sólo que enchufar.
+
+    Cada función devuelta cumple la firma de `DIAPOS`: `(data, w, h, acento)
+    → html del cuerpo`. El formato se deduce del lienzo —(1080, 1350) es
+    `vert`— porque `motor.carrusel` fija UNA proporción para todo el
+    carrusel y la manda como medidas, no como nombre. El acento llega como
+    color ya resuelto y las plantillas lo esperan como nombre, así que no se
+    le pasa: cada plantilla usa el suyo por defecto.
+
+    Devuelve también, como atributo `cromo`, la función que dice de qué color
+    van el índice y las flechas sobre cada diapositiva. Lo declara el
+    contrato de la plantilla en `cromo`: un nombre de color, o un diccionario
+    `valor de estilo → color` con `*` como defecto. Sin eso el índice sale
+    del `COLOR_CROMO` de la marca, que sobre una diapositiva oscura no se ve.
+    """
+    faltan = sorted({pid for pid in mapa.values() if pid not in marca.PLANTILLAS})
+    if faltan:
+        raise PlantillaIncompleta(
+            "el carrusel de esta marca nombra plantillas que no tiene: "
+            + ", ".join(faltan))
+    for tipo in ("portada", "cierre"):
+        if tipo not in mapa:
+            raise PlantillaIncompleta(
+                f"el carrusel de esta marca necesita la diapositiva «{tipo}»: "
+                "un carrusel siempre abre y cierra igual")
+
+    def formato_de(contrato, w, h):
+        for nombre, medida in marca.FORMATOS.items():
+            if tuple(medida) == (w, h) and nombre in contrato["medidas"]:
+                return nombre
+        raise PlantillaIncompleta(
+            f"la plantilla «{contrato['id']}» no tiene un formato de {w}×{h}")
+
+    def datos_de(s):
+        # `tipo` y `cromo` son del carrusel, no de la plantilla; y un `acento`
+        # que no sea un nombre de color de la marca es el hex que resolvió el
+        # motor, que la plantilla no sabría leer. `responder` sí pasa: la
+        # última story de una secuencia lleva la caja de respuesta encima del
+        # margen inferior y la plantilla tiene que dejarle el lugar. Y
+        # `en_carrusel` le dice que el índice del motor va a ocupar la esquina
+        # inferior izquierda, donde una placa suelta firma con la web.
+        d = {k: v for k, v in s.items() if k not in ("tipo", "cromo")}
+        if "acento" in d and d["acento"] not in marca.C:
+            d.pop("acento")
+        d["en_carrusel"] = True
+        return d
+
+    def hacer(pid):
+        fn = marca.PLANTILLAS[pid]
+
+        def diapo(s, w, h, ac):
+            return fn.cuerpo(datos_de(s), formato_de(fn.contrato, w, h))
+        diapo.__name__ = f"diapo_{pid}"
+        return diapo
+
+    diapos = {tipo: hacer(pid) for tipo, pid in mapa.items()}
+
+    def cromo(tipo, s):
+        contrato = marca.PLANTILLAS[mapa[tipo]].contrato if tipo in mapa else None
+        regla = (contrato or {}).get("cromo")
+        if not regla:
+            return None
+        if isinstance(regla, dict):
+            estilo = _completar(contrato, datos_de(s)).get("estilo")
+            regla = regla.get(str(estilo)) or regla.get("*")
+        return marca.C.get(regla, regla) if regla else None
+
+    cromo.__name__ = "cromo_diapo"
+    return diapos, cromo
 
 
 def compilar(marca, raiz, contrato, html, data, fmt="post"):
@@ -383,7 +478,25 @@ es un pedido válido. **El video no va acá: ése ya se puede.** Es la excepció
 no la salida fácil."""
 
 
-def catalogo(raiz, escritas_en_python=(), con_carrusel=True):
+#: Lo que se agrega al párrafo del carrusel cuando la marca es de datos y sus
+#: diapositivas son sus propias plantillas: el agente tiene que saber qué
+#: tipos puede pedir y con qué campos.
+DIAPOS_DE_DATOS = """### Las diapositivas de esta marca
+
+Cada diapositiva de un carrusel o una secuencia se dibuja con una plantilla de
+la lista de arriba y lleva **los campos de esa plantilla**. El `tipo` de la
+diapositiva elige cuál:
+
+{lista}
+
+`portada` y `cierre` abren y cierran siempre. `cuadro` es el defecto de una
+secuencia de stories. Una diapositiva con foto lleva su `foto` como cualquier
+placa.
+
+"""
+
+
+def catalogo(raiz, escritas_en_python=(), con_carrusel=True, diapos=None):
     """El catálogo de plantillas de una marca, generado de los contratos.
 
     Es la mitad del punto de todo esto: el mismo archivo que dibuja el
@@ -414,7 +527,12 @@ def catalogo(raiz, escritas_en_python=(), con_carrusel=True):
         partes.append(
             f"### `{nombre}`\nEscrita en Python — no se edita desde el estudio. "
             f"Ver el SKILL.md.\n")
-    cierre = (CIERRE_ANTES + (CARRUSEL if con_carrusel else "") + CIERRE_DESPUES)
+    carrusel = CARRUSEL if con_carrusel else ""
+    if con_carrusel and diapos:
+        lista = "\n".join(f"- `{tipo}` → plantilla `{pid}`"
+                          for tipo, pid in diapos.items())
+        carrusel += DIAPOS_DE_DATOS.format(lista=lista)
+    cierre = (CIERRE_ANTES + carrusel + CIERRE_DESPUES)
     cierre = cierre.replace(
         "{codigo}", CODIGO_CON_CARRUSEL if con_carrusel else CODIGO_SIN_CARRUSEL)
     partes.append(cierre.strip())

@@ -45,7 +45,7 @@ CSS_MOTOR = """
 .sq-idx{position:absolute;left:76px;z-index:7;
   font-weight:500;font-size:25px;letter-spacing:.30em;opacity:.50}
 .sq-resp{position:absolute;left:76px;right:76px;bottom:250px;z-index:6}
-.sq-caja{border:2px solid rgba(250,250,250,.42);border-radius:999px;
+.sq-caja{border:2px solid;opacity:.78;border-radius:999px;
   padding:26px 40px;display:flex;align-items:center;justify-content:space-between}
 .sq-caja span{font-weight:400;font-size:32px;color:#FAFAFA;opacity:.72}
 .sq-pin{width:15px;height:15px;border-right:3px solid;border-top:3px solid;
@@ -85,8 +85,11 @@ def cromo_secuencia(i: int, total: int, d: dict, ac: str,
     out = (f'<div class="sq-idx" style="top:{SQ_TOP - 46}px;color:{tinta};'
            f'font-family:{fuente}">{i+1:02d} / {total:02d}</div>')
     if i == total - 1 and d.get("responder"):
-        out += (f'<div class="sq-resp"><div class="sq-caja">'
-                f'<span style="font-family:{fuente_texto}">{d["responder"]}</span>'
+        # La caja va del color del índice, no blanca fija: sobre una marca de
+        # fondos claros (Asistime) la caja blanca no se veía. El 3/9/2026 se
+        # renderizó una secuencia y la caja estaba, pero invisible.
+        out += (f'<div class="sq-resp"><div class="sq-caja" style="border-color:{tinta}">'
+                f'<span style="font-family:{fuente_texto};color:{tinta}">{d["responder"]}</span>'
                 f'<div class="sq-pin" style="color:{ac}"></div></div></div>')
     return out
 
@@ -153,6 +156,22 @@ def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
     fuente_texto = getattr(marca, "FUENTE_TEXTO", "sans-serif")
     total = len(slides)
 
+    # De qué color van el índice y las flechas sobre ESTA diapositiva. Manda
+    # el spec si lo dice (`cromo`); si no, la marca puede saberlo por el tipo
+    # —una marca de datos lo lee del contrato de la plantilla que dibuja esa
+    # diapositiva, ver `plantillas.como_diapositivas`—; y si no, el color de
+    # la marca para todas.
+    cromo_de = getattr(marca, "CROMO_DIAPO", None)
+
+    def tinta_de(s, tipo):
+        if s.get("cromo"):
+            return s["cromo"]
+        if cromo_de:
+            propio = cromo_de(tipo, s)
+            if propio:
+                return propio
+        return tinta_def
+
     if secuencia:
         w, h = marca.FORMATOS["story"]
         if "cuadro" not in marca.DIAPOS:
@@ -175,8 +194,8 @@ def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
         return [_pagina(marca, w, h,
                         cuerpo(s, w, h, ac)
                         + cromo_secuencia(i, total, s, ac,
-                                          s.get("cromo", tinta_def), fuente,
-                                          fuente_texto))
+                                          tinta_de(s, s.get("tipo", "cuadro")),
+                                          fuente, fuente_texto))
                 for i, s in enumerate(slides)]
 
     w, h = marca.FORMATOS[fmt]
@@ -190,6 +209,5 @@ def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
         salida.append(_pagina(marca, w, h,
                               marca.DIAPOS[tipo](s, w, h, ac)
                               + cromo_carrusel(i, total, ac,
-                                               s.get("cromo", tinta_def),
-                                               fuente)))
+                                               tinta_de(s, tipo), fuente)))
     return salida

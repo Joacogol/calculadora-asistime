@@ -1,0 +1,104 @@
+{#- El producto en acción: el claim arriba y, abajo, una tarjeta que es una
+    conversación —quien escribe a la izquierda, el agente a la derecha con el
+    degradé—, con la cabecera de la app: el avatar del agente, «en línea», la
+    hora. Mostrar es lo que a la marca le cuesta decir: la tarjeta es el
+    argumento y el título lo remata.
+
+    Con una captura real en `pantalla`, la tarjeta la muestra tal cual en vez
+    del chat dibujado: una captura de verdad siempre gana. -#}
+{%- set pal = paleta(d.estilo) -%}
+{%- set pleno = d.estilo == 'degrade' -%}
+{%- set oscuro = d.estilo == 'oscuro' -%}
+{%- set t = d.titulo|length -%}
+{%- set cuerpo = m.titulo if t <= 30 else (m.titulo * 0.82 if t <= 50 else m.titulo * 0.66) -%}
+{%- set titulo = d.titulo -%}
+{%- if d.destacado and d.destacado in d.titulo and not pleno -%}
+  {%- set titulo = d.titulo.replace(d.destacado, '<span class="texto-degrade">' ~ d.destacado ~ '</span>') -%}
+{%- endif -%}
+{%- set agente = d.agente or 'Tony' -%}
+{%- set lineas = [] -%}
+{%- for l in d.chat.split('\n') if l.strip() -%}
+  {%- set l = l.strip() -%}
+  {%- set es_agente = l.lower().startswith('tony:') or l.lower().startswith(agente.lower() ~ ':') -%}
+  {%- set es_cliente = l.lower().startswith('cliente:') -%}
+  {%- set texto = l.split(':', 1)[1].strip() if (es_agente or es_cliente) else l -%}
+  {%- if lineas|length < 4 %}{% set _ = lineas.append((es_agente, texto)) %}{% endif -%}
+{%- endfor -%}
+{%- set tarjeta_w = m.tarjeta -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if not pleno %}
+<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.16 }}px;top:-{{ m.alto * 0.14 }}px;opacity:{{ '.8' if oscuro else '.42' }}"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.46 }}px;height:{{ m.alto * 0.46 }}px;left:-{{ m.alto * 0.18 }}px;bottom:-{{ m.alto * 0.12 }}px;opacity:{{ '.7' if oscuro else '.36' }}"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
+  <div class="row" style="width:100%">{{ iso(m.iso, pal.tinta) }}</div>
+  <div style="height:{{ m.titulo * 0.35 }}px"></div>
+
+  <div style="max-width:94%">
+    {% if d.kicker %}
+    <div style="margin-bottom:{{ m.kicker * 1.2 }}px">
+      <span class="chip {{ 'chip-oscuro' if (oscuro or pleno) else 'chip-suave' }}" style="font-size:{{ m.kicker }}px;padding:{{ m.kicker * 0.5 }}px {{ m.kicker * 0.95 }}px">{{ d.kicker }}</span>
+    </div>
+    {% endif %}
+    <div class="disp" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;white-space:pre-line">{{ titulo }}</div>
+    {% if d.bajada %}
+    <div class="body" style="color:{{ pal.secundario }};font-size:{{ m.bajada }}px;margin-top:{{ m.bajada * 0.8 }}px;max-width:760px">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+
+  {#- La tarjeta. Centrada, con el ancho de la medida; la altura la da el
+      contenido, y por eso los mensajes se cortan en cinco. -#}
+  <div style="width:100%;display:flex;justify-content:center">
+    <div class="{{ 'tarjeta-oscura' if oscuro else 'tarjeta' }}" style="width:{{ tarjeta_w }}px;overflow:hidden;
+      {{ 'background:rgba(255,255,255,.94);' if pleno else '' }}">
+      {% if d.pantalla %}
+      <img src="{{ d.pantalla }}" style="display:block;width:100%;height:auto">
+      {% else %}
+      <div class="row" style="padding:{{ m.chat * 0.8 }}px {{ m.chat * 1.0 }}px;gap:{{ m.chat * 0.6 }}px;
+        border-bottom:1px solid {{ 'rgba(255,255,255,.12)' if oscuro else 'rgba(10,11,20,.08)' }}">
+        <div style="display:flex;align-items:center;gap:{{ m.chat * 0.55 }}px;min-width:0">
+          <div class="avatar" style="width:{{ m.avatar }}px;height:{{ m.avatar }}px;font-size:{{ m.avatar * 0.46 }}px">{{ agente[:1]|upper }}</div>
+          <div style="min-width:0">
+            <div class="sub" style="color:{{ c.blanco if oscuro else c.tinta }};font-size:{{ m.chat * 1.05 }}px">{{ agente }}</div>
+            <div class="body-b" style="color:{{ c.whatsapp }};font-size:{{ m.chat * 0.78 }}px;margin-top:2px">● en línea · responde al instante</div>
+          </div>
+        </div>
+        <div class="body-b" style="color:{{ '#B8BDD9' if oscuro else c.tinta_45 }};font-size:{{ m.chat * 0.85 }}px;flex:none;text-align:right">
+          {{ d.hora }}<br><span style="font-size:{{ m.chat * 0.68 }}px;letter-spacing:.08em;text-transform:uppercase">{{ d.canal }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:{{ m.chat * 0.5 }}px;padding:{{ m.chat * 0.9 }}px {{ m.chat * 1.0 }}px">
+        {% for es_agente, texto in lineas %}
+        <div class="burbuja {{ 'burbuja-tony' if es_agente else 'burbuja-cliente' }}" style="font-size:{{ m.chat }}px;
+          {{ 'background:rgba(255,255,255,.12);color:#FFFFFF;' if (oscuro and not es_agente) else '' }}">{{ texto }}</div>
+        {% endfor %}
+      </div>
+      <div style="padding:0 {{ m.chat * 1.0 }}px {{ m.chat * 0.9 }}px">
+        <div class="row" style="border:1.5px solid {{ 'rgba(255,255,255,.18)' if oscuro else 'rgba(10,11,20,.12)' }};border-radius:999px;
+          padding:{{ m.chat * 0.5 }}px {{ m.chat * 0.9 }}px">
+          <span class="body" style="color:{{ '#B8BDD9' if oscuro else c.tinta_45 }};font-size:{{ m.chat * 0.9 }}px">Escribí un mensaje…</span>
+          <span style="width:{{ m.chat * 1.1 }}px;height:{{ m.chat * 1.1 }}px;border-radius:50%;background:{{ c.azul }};display:inline-block"></span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if d.boton %}
+  <div style="width:100%;display:flex;justify-content:center;margin-top:{{ m.boton * 1.1 }}px">
+    <span class="boton {{ 'boton-claro' if pleno else '' }}" style="font-size:{{ m.boton }}px;padding:{{ m.boton * 0.62 }}px {{ m.boton * 1.4 }}px">{{ d.boton }}</span>
+  </div>
+  {% endif %}
+
+  <div class="grow"></div>
+  <div class="row" style="width:100%;align-items:flex-end">
+    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
+  </div>
+  {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
+      los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}
+  {% if d.get('responder') %}<div style="height:120px"></div>{% endif %}
+</div>

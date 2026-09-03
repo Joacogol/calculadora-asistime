@@ -2423,6 +2423,114 @@ son treinta segundos de trabajo que habrían evitado un despliegue roto.
 
 ---
 
+## Los subtítulos erraban el sentido, no la ortografía (3/9/2026)
+
+Asistime empezó a mandar videos de gente hablándose encima —dos en una
+cancha, tres en una oficina— y los subtítulos salían con errores que se leen:
+«¿Te la presto?» donde decían «¿Te la prestó?», «Vi lo que me gustaste» por
+«Vi lo que me mostraste», «No está, es que la pego» por «Ahí no está la
+pelota, la que la pegó». Ninguno es un error de letras: son otras frases.
+
+### Se midió antes de tocar
+
+Cuatro variantes sobre los mismos dos clips (27 s y 46 s), en
+`scratchpad/subs/bench.py`:
+
+| | bauti | jose | errores de sentido |
+|---|---|---|---|
+| `medium` (lo que corría) | 25 s | 47 s | 3 |
+| `medium` + filtro de voz, temperatura 0 | 25 s | 47 s | 1 («presto») |
+| `large-v3` | 44 s | 73 s | 0 |
+| **`large-v3` + filtro de voz + audio nivelado** | 40 s | 70 s | **0**, y la única que escribió «¡Pam!» al final |
+
+El filtro de voz solo, sin cambiar de modelo, ya sacaba dos de los tres. El
+modelo grande saca el que queda. Los dos juntos son la versión que se
+desplegó.
+
+### Lo que cambió
+
+Tres cosas en `motor/habla.py`, cada una con su interruptor de entorno para
+volver atrás sin tocar código:
+
+1. **`large-v3`** por defecto (`WHISPER_MODELO=medium` para volver). Pesa
+   3,1 GB contra 1,5 y transcribe un 60 % más lento — la transcripción es una
+   parte del montaje, no la más larga. El job tiene 8 GiB: entra con aire.
+2. **Filtro de voz** (`vad_filter=True`, `WHISPER_VAD=0` para apagar): Silero
+   le saca a Whisper los tramos sin voz antes de decodificar, y él devuelve
+   los tiempos en el reloj original.
+3. **Audio nivelado** (`WHISPER_NIVELAR=0` para apagar): un `loudnorm` de
+   ffmpeg sobre una copia mono a 16 kHz. En un video de teléfono uno habla
+   cerca y el otro contesta desde lejos; nivelados, el de lejos deja de
+   perder palabras. Si ffmpeg falla, se transcribe el original y se avisa.
+
+La temperatura se dejó con su escalera por defecto y no fija en 0 como en
+el bench: sólo sube cuando la decodificación a 0 falla, así que en audio
+normal es idéntica, y en audio difícil evita que el modelo se quede
+repitiendo una frase.
+
+Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
+tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
+`desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
+
+## Asistime con su identidad oficial, y carruseles sin Python (3/9/2026)
+
+Llegó el kit de marca oficial de Asistime: azul `#4D90FF`, violeta
+`#B362FF`, el degradado del uno al otro, y una sola tipografía, Red Hat
+Display. Lo que había en el kit del worker —Sora + DM Sans, `#006AFF`,
+navy— era una reconstrucción a ojo del feed. Se reemplazó todo:
+`marca.json`, `estilo.css`, las tres plantillas, las fuentes (seis pesos
+estáticos en TTF, que sirven a la vez para el HTML y para los rótulos del
+reel en ffmpeg).
+
+Y se sumaron dos plantillas —`testimonio` (la cita de un cliente) y
+`producto` (una conversación de WhatsApp dibujada dentro de una tarjeta)— y
+los **carruseles**, que hasta acá una marca de datos no podía tener.
+
+### El carrusel de una marca de datos
+
+`DIAPOS` era «una de las dos únicas cosas de una marca que todavía son
+código». Pero una diapositiva es la misma placa de siempre, en el mismo
+lienzo, con el índice del motor encima: no había nada que programar, sólo
+que enchufar. Ahora el `marca.json` dice con qué plantilla se dibuja cada
+tipo de diapositiva:
+
+```json
+"carrusel": {
+  "diapos": {"portada": "titular", "texto": "titular", "cuadro": "titular",
+             "dato": "dato", "testimonio": "testimonio",
+             "producto": "producto", "cierre": "cierre"}
+}
+```
+
+y `motor.identidad.cargar` arma `DIAPOS` con eso
+(`plantillas.como_diapositivas`). Tres detalles que costaron un render cada
+uno:
+
+- **El índice pisaba el pie.** El motor dibuja «01 / 06» abajo a la
+  izquierda, justo donde una placa suelta firma «asistime.ai». La plantilla
+  recibe `en_carrusel` y ahí no dibuja la firma chica —ya firmó con el
+  isotipo— y el lockup del cierre se corre a la derecha.
+- **El índice no se veía sobre el dato.** Cada contrato de plantilla puede
+  declarar `cromo`: un color, o `{"claro": "tinta", "*": "blanco"}` según el
+  estilo. `motor.carrusel` se lo pregunta a la marca (`CROMO_DIAPO`) antes de
+  caer en `COLOR_CROMO`.
+- **La caja «respondé» de la secuencia era invisible.** Estaba blanca fija en
+  el CSS del motor, pensada para marcas oscuras. Ahora va del color del
+  índice.
+
+Lo que sigue siendo código: `PRESENTACION`, el PDF. Asistime no lo tiene y
+su tool no lo ofrece.
+
+### Para que esto corra
+
+1. Redesplegar el worker (`./desplegar-chat.sh`): trae el kit, las plantillas
+   nuevas, el modelo grande de Whisper y el puente del carrusel. El paso 3b
+   republica el catálogo, que ahora cuenta las diapositivas.
+2. **Después** del despliegue, actualizar la tool `crear_diseno` de Asistime
+   (2166) con `tools-asistime/crear_diseno-asistime.js`: suma `carrusel` y
+   `secuencia` a `VALIDOS` y al `enum`. Después y no antes: ofrecido antes,
+   el pedido llega a un worker que todavía no lo sabe armar.
+
 ## «A mídia não está pronta para ser publicada» (1/9/2026)
 
 Se pidió publicar una placa de Clínica y volvió ese error, en portugués. La
