@@ -95,5 +95,34 @@ sal = [f["texto"] for f in habla.frases(
      {"texto": "serio?", "desde": 7.2, "hasta": 7.6}])]
 ok(sal == ["Sí.", "¿En serio?"], "una pausa después de un punto sigue cortando", sal)
 
+print("\n■ Una frase corta no se pega a la de OTRO tramo ni por encima de un silencio")
+#
+# Medido el 3/9/2026 en un reel de seis videos del equipo: «Seco.» —una
+# palabra entera, al final de un clip— se pegó a «¡Aura!» —otra persona, otro
+# clip, dos segundos después— y quedó un cartel de 3,9 s que aparecía antes de
+# que nadie dijera «Aura».
+POR_ARCHIVO = {
+    "probar-subtitulos.py": [{"texto": "Seco.", "desde": 4.0, "hasta": 4.5}],
+    "probar-nombres.py": [{"texto": "¡Aura!", "desde": 2.9, "hasta": 3.4},
+                          {"texto": "¡Aura!", "desde": 4.1, "hasta": 4.6}],
+}
+habla.palabras = lambda ruta, voc="": POR_ARCHIVO[pathlib.Path(ruta).name]
+dos = {"tramos": [{"archivo": "probar-subtitulos.py", "desde": 3.94, "hasta": 5.64},
+                  {"archivo": "probar-nombres.py", "desde": 2.0, "hasta": 6.82}]}
+fr = habla.para_guion(dos, base)
+textos = [f["texto"] for f in fr]
+ok("Seco." in textos, "«Seco.» queda solo, en su tramo", textos)
+ok(not any("Seco" in t and "Aura" in t for t in textos),
+   "no hay un cartel que mezcle los dos clips", textos)
+largo = max(f["hasta"] - f["desde"] for f in fr)
+ok(largo <= habla.MAX_SEGUNDOS + 0.01, f"ningún cartel dura más de {habla.MAX_SEGUNDOS}s", round(largo, 2))
+# Dentro del mismo tramo y pegadas, sí se juntan: es lo que hace legible
+# «Sí. ¿En serio?».
+habla.palabras = lambda ruta, voc="": [{"texto": "Sí.", "desde": 1.0, "hasta": 1.3},
+                                       {"texto": "¿En", "desde": 1.5, "hasta": 1.7},
+                                       {"texto": "serio?", "desde": 1.7, "hasta": 2.0}]
+fr = habla.para_guion({"tramos": [{"archivo": "probar-subtitulos.py", "desde": 0.0, "hasta": 3.0}]}, base)
+ok([f["texto"] for f in fr] == ["Sí. ¿En serio?"], "dos frases pegadas del mismo tramo sí se juntan", fr)
+
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)

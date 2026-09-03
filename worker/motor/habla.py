@@ -105,6 +105,11 @@ IDIOMA = os.environ.get("WHISPER_IDIOMA", "es")
 #: respiración normal de alguien hablando, no un final.
 PAUSA = 0.55
 
+#: Cuánto silencio puede haber entre dos frases para que todavía se puedan
+#: juntar en un solo cartel. Un poco más que `PAUSA`: si están más separadas
+#: que esto, juntarlas deja texto en pantalla sobre imagen muda.
+MAX_HUECO = 0.7
+
 #: Los mismos números que valida `guion.py`, para que un subtítulo automático
 #: no pueda salir peor que uno escrito a mano.
 MAX_CARACTERES = 42
@@ -391,7 +396,7 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     cache: dict[str, list[dict]] = {}
     subs, offset = [], 0.0
 
-    for t in (guion.get("tramos") or []):
+    for i, t in enumerate(guion.get("tramos") or []):
         arch = (t.get("archivo") or "").strip()
         desde = float(t.get("desde", 0))
         hasta = float(t.get("hasta", desde))
@@ -407,7 +412,10 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
                        "hasta": offset + (min(p["hasta"], hasta) - desde) / vel}
                       for p in cache[arch]
                       if p["desde"] >= desde - 0.02 and p["desde"] < hasta]
-            subs += frases(dentro)
+            # De qué tramo salió cada frase viaja con ella: el paso que junta
+            # las frases cortas, más abajo, no puede cruzar de un tramo al
+            # siguiente. Se saca antes de devolver.
+            subs += [{**f, "_tramo": i} for f in frases(dentro)]
 
         offset += dura
 
@@ -435,18 +443,34 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     # la frase anterior aunque ésta ya había terminado —y además era otra
     # persona hablando—. Si la anterior cerró la oración, la corta va con la
     # siguiente, que es a la que pertenece.
+    # Y nunca con una vecina de OTRO tramo, ni por encima de un silencio.
+    # Los dos son el mismo error visto de dos maneras, y salió medido el
+    # 3/9/2026 en un reel de seis videos: «Seco.» —una palabra entera, de un
+    # clip— se pegó a «¡Aura!» —otra persona, otro clip, dos segundos
+    # después— y quedó un cartel de 3,9 s que aparecía antes de que nadie
+    # dijera «Aura» y seguía en pantalla mientras lo decían tres veces.
+    #
+    # Juntar dos frases estira la primera hasta donde termina la segunda. Si
+    # entre las dos hay un silencio, lo que se estira es texto sobre imagen
+    # muda. Por eso se exige que sean contiguas: pegadas, se leen como lo que
+    # son —«Sí. ¿En serio?»—; separadas, se lee como un error.
     def _cerrada(f):
         return f["texto"].rstrip().endswith((".", "?", "!", "…"))
+
+    def _pegadas(a, b):
+        return a["_tramo"] == b["_tramo"] and b["desde"] - a["hasta"] <= MAX_HUECO
+
     juntadas: list[dict] = []
     i = 0
     while i < len(subs):
         f = subs[i]
         corta = len(f["texto"]) <= 8
         if corta and juntadas and not _cerrada(juntadas[-1]) and \
+                _pegadas(juntadas[-1], f) and \
                 len(juntadas[-1]["texto"]) + 1 + len(f["texto"]) <= MAX_CARACTERES:
             juntadas[-1]["texto"] += " " + f["texto"]
             juntadas[-1]["hasta"] = max(juntadas[-1]["hasta"], f["hasta"])
-        elif corta and i + 1 < len(subs) and \
+        elif corta and i + 1 < len(subs) and _pegadas(f, subs[i + 1]) and \
                 len(f["texto"]) + 1 + len(subs[i + 1]["texto"]) <= MAX_CARACTERES:
             sig = subs[i + 1]
             juntadas.append({"texto": f["texto"] + " " + sig["texto"],
@@ -470,7 +494,7 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     for a, b in zip(juntadas, juntadas[1:]):
         if a["hasta"] > b["desde"] - 0.04:
             a["hasta"] = round(max(a["desde"] + 0.25, b["desde"] - 0.04), 3)
-    return juntadas
+    return [{k: v for k, v in f.items() if k != "_tramo"} for f in juntadas]
 
 
 def en_frase(palabras) -> str:

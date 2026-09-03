@@ -2487,6 +2487,30 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## Un cartel con las palabras de dos clips distintos (3/9/2026)
+
+En el primer reel de verdad con SEIS videos —las reacciones del equipo al
+agente nuevo— salió un subtítulo que decía «Seco. ¡Aura!» durante 3,9
+segundos. Las dos palabras son de personas distintas, en clips distintos,
+separadas por dos segundos de aire: el cartel aparecía antes de que nadie
+dijera «Aura» y seguía en pantalla mientras la decían tres veces.
+
+`para_guion` arma los subtítulos **por tramo** y su docstring lo dice: «una
+frase no cruza de un tramo al siguiente, porque dos tramos no son
+necesariamente contiguos en el original». Pero después de armarlos hay un
+segundo paso —juntar las frases de una o dos palabras, que solas parpadean— y
+ese paso no sabía de tramos: miraba la lista ya ordenada por tiempo y pegaba
+vecinas. La regla estaba escrita en un lado y rota en el otro.
+
+Ahora cada frase viaja con el índice de su tramo y sólo se junta con una
+vecina **del mismo tramo y pegada en el tiempo** (`MAX_HUECO`, 0,7 s). Lo
+segundo importa aparte de lo primero: juntar estira la primera frase hasta
+donde termina la segunda, así que juntar por encima de un silencio deja texto
+en pantalla sobre imagen muda, aunque las dos salgan del mismo clip.
+
+Lo que sí se sigue juntando es lo que hay que juntar: «Sí.» + «¿En serio?»,
+del mismo tramo y sin aire en el medio, siguen saliendo en un solo cartel.
+
 ## «Patadura para el padre»: el que transcribe no ve el video (3/9/2026)
 
 Con `large-v3` ya andando, quedaba un error que ningún cambio de modelo iba a
