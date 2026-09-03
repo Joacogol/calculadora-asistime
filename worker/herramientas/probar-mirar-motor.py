@@ -51,6 +51,21 @@ ok(len(avisos) == 4, "cuatro avisos, uno por cada malo", avisos)
 _, av = m.validar([{"archivo": 1, "desde": 0, "hasta": 100}], pedazos, 30)
 ok(any("acortar" in a for a in av), "se pasa del objetivo → avisa", av)
 
+print("\n■ Con varios videos sueltos el trabajo es ELEGIR, aunque todo entre")
+#
+# El 3/9/2026 seis clips que sumaban menos de un minuto cayeron en «LIMPIAR:
+# dejá todo el contenido» y el reel salió con los seis, uno de ellos alguien
+# diciendo que no había escuchado nada. Mandar muchos videos sin filtrar y que
+# el sistema elija es el valor de esto, no un extra.
+uno = [{"indice": 1, "archivo": "a.mp4", "parte": 1, "duracion": 20.0, "desplazamiento": 0.0}]
+varios = uno + [{"indice": 2, "archivo": "b.mp4", "parte": 1, "duracion": 20.0, "desplazamiento": 0.0}]
+q1 = m.pregunta("un reel", 60.0, uno)
+ok("LIMPIAR" in q1 and "ELEGIR" not in q1, "un solo video que entra: limpiar")
+q2 = m.pregunta("un reel", 60.0, varios)
+ok("ELEGIR" in q2 and "DESCARTAR" in q2 and "2 videos sueltos" in q2,
+   "dos videos que entran: elegir y descartar igual")
+ok("descartados" in q2, "y se le pide que cuente qué dejó afuera")
+
 print("\n■ La pregunta lista los archivos y las partes")
 q = m.pregunta("lo más fuerte sobre IA", 60, pedazos)
 ok("lo más fuerte sobre IA" in q and "60 segundos" in q, "instrucción y objetivo")
@@ -87,7 +102,11 @@ try:
     respuesta = {"output_text": json.dumps({"tramos": [
         {"archivo": 1, "parte": 1, "desde": "00:01.000", "hasta": "00:04.000", "por_que": "ok"}],
         "gancho": "Un gancho de prueba",
-        "palabras": ["pádel", "Paleta", "paleta", "", "Yayo", "x" * 40]}),
+        "palabras": ["pádel", "Paleta", "paleta", "", "Yayo", "x" * 40],
+        # El 1 es el que sí se usó: no puede salir como descartado. El 7 no
+        # existe.
+        "descartados": [{"archivo": 1, "por_que": "repetido"},
+                        {"archivo": 7, "por_que": "no existe"}]}),
         "usage": {"total_tokens": 123}}
     visto = {}
     def _pedir_falso(k, entrada, modelo):
@@ -108,6 +127,7 @@ try:
     # Van al vocabulario que el transcriptor lee antes de escuchar — es lo que
     # arregla «para el padre» donde se decía «para el pádel».
     ok(r["palabras"] == ["pádel", "Paleta", "Yayo"], "las palabras del video, limpias", r["palabras"])
+    ok(r["descartados"] == [], "no hay descartados si el que nombró es el que usó", r["descartados"])
 
     print("\n■ Cuota agotada: no se insiste con otro modelo")
     llamadas = []

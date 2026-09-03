@@ -216,15 +216,34 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
         f"El material son estos videos, numerados:\n{lista}\n\n"
         + ("Cuando un archivo viene en partes, cada tramo tiene que decir `parte` y sus tiempos "
            "son DENTRO de esa parte.\n\n" if en_partes else "")
-        # Dos trabajos distintos según cuánto material hay, y se le dice cuál:
-        # si entra entero, LIMPIAR sin tirar contenido; si no entra, ELEGIR.
-        # Sin esta distinción, con un clip de 36 segundos para un reel de 60
-        # el modelo «elegía» igual y dejaba afuera cosas que la persona quería.
+        # Dos trabajos distintos, y se le dice cuál. La primera versión los
+        # separaba sólo por duración —si entra entero, LIMPIAR; si no,
+        # ELEGIR— y eso estaba mal para el caso que más importa.
+        #
+        # El 3/9/2026 alguien mandó SEIS clips sueltos de las reacciones del
+        # equipo y pidió un reel de expectativa. Sumaban menos de un minuto,
+        # así que cayeron en LIMPIAR: «no elijas, dejá todo el contenido». El
+        # reel salió con los seis, uno de ellos alguien diciendo «yo no
+        # escuché lo que estaba hablando» — lo contrario de lo que se pedía.
+        # No fue un error del modelo: hizo exactamente lo que se le pidió.
+        #
+        # Mandar muchos videos sin filtrar y que el sistema decida cuáles
+        # sirven ES el valor de todo esto. Así que lo que decide el trabajo no
+        # es sólo cuánto material hay, sino cuántas piezas: un video solo que
+        # entra se limpia; varios videos sueltos se eligen, entren o no.
         + ("El material ENTRA ENTERO en el reel. Tu trabajo no es elegir sino LIMPIAR: sacá "
            "sólo lo que no aporta —arranques falsos, muletillas, errores, silencios largos, "
            "el «bueno, a ver» del principio, la despedida cortada del final— y dejá todo el "
            "contenido de fondo. Si está todo bien, devolvé un solo tramo con el video entero.\n\n"
-           if total <= objetivo * 1.1 else
+           if len(archivos) == 1 and total <= objetivo * 1.1 else
+           f"Son {len(archivos)} videos sueltos, sin filtrar. Tu trabajo es ELEGIR: quedarte con "
+           "lo que sirve al pedido y DESCARTAR lo que no, **aunque todo entrara en el tiempo "
+           "disponible**. Un video se descarta entero cuando no aporta al pedido: una toma "
+           "repetida que ya está mejor en otro clip, alguien que dice que no vio o no escuché "
+           "nada, una respuesta que no viene al caso, algo que contradice lo que se quiere "
+           "contar. No estás obligado a usar todos: un reel más corto y coherente es mejor que "
+           "uno largo con relleno.\n\n"
+           if len(archivos) > 1 else
            "El material NO entra en el reel: hay que ELEGIR. ")
         + "Devolvé los tramos EXACTOS que entran, en el orden en que deberían aparecer. Cada tramo "
           "empieza y termina donde el corte no deja una frase a la mitad. Preferí pocos tramos y "
@@ -241,7 +260,11 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
           '  "palabras": ["hasta 12 palabras del TEMA del video: el deporte o la actividad, '
           'los objetos que se ven, las marcas escritas en pantalla, el lugar, la jerga. '
           'Escribilas como se escriben. NO pongas nombres de personas, salvo que estén '
-          'ESCRITOS en pantalla. Sólo lo que esté de verdad; si no hay nada, lista vacía"]\n'
+          'ESCRITOS en pantalla. Sólo lo que esté de verdad; si no hay nada, lista vacía"],\n'
+          # Lo que dejó afuera, y por qué. No es un adorno: es lo que le
+          # permite a quien pidió el reel discutir la decisión sin ver los
+          # seis videos de nuevo. Va a la nota del reel.
+          '  "descartados": [{"archivo": 3, "por_que": "una línea: por qué este video no entra"}]\n'
           "}\n")
 
 
@@ -334,6 +357,35 @@ def _palabras(crudas) -> list[str]:
     return salida
 
 
+def _descartados(crudos, pedazos: list[dict], tramos: list[dict]) -> list[dict]:
+    """Los archivos que Gemini dejó afuera, con el nombre y su razón.
+
+    Se traduce el número al nombre del archivo —el número es del pedido y no
+    significa nada afuera— y se descartan dos casos: el archivo que no existe
+    y el que en realidad SÍ se usó. Lo segundo pasa: el modelo lista como
+    descartado un video del que igual tomó un tramo, y una nota que dice que
+    algo quedó afuera cuando está adentro es peor que no decir nada.
+    """
+    if not isinstance(crudos, (list, tuple)):
+        return []
+    por_indice = {p["indice"]: p["archivo"] for p in pedazos}
+    usados = {t["archivo"] for t in tramos}
+    salida, vistos = [], set()
+    for x in crudos:
+        if not isinstance(x, dict):
+            continue
+        try:
+            arch = por_indice[int(x.get("archivo"))]
+        except (TypeError, ValueError, KeyError):
+            continue
+        if arch in usados or arch in vistos:
+            continue
+        vistos.add(arch)
+        salida.append({"archivo": arch,
+                       "por_que": str(x.get("por_que") or "").strip()[:200]})
+    return salida
+
+
 def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
                   carpeta=None, modelo: str | None = None) -> dict:
     """Los tramos que Gemini elige para este reel.
@@ -342,6 +394,10 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     "avisos": [...], "uso": {...}, "segundos": float, "modelo": str}` con los
     tramos ya en el reloj del archivo original y listos para el guion. Levanta
     `NoPudeMirar` si no puede: quien llama sigue sin él.
+
+    `descartados` son los videos que dejó afuera y por qué. Con varios clips
+    sueltos, descartar es la mitad del trabajo —ver `pregunta`— y quien pidió
+    el reel tiene que poder discutir la decisión sin volver a mirar todo.
 
     `palabras` son los nombres propios y términos del tema que Gemini oyó o
     vio, y van a parar al vocabulario que Whisper lee ANTES de escuchar. Es
@@ -412,5 +468,6 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     log.info("Gemini eligió %d tramos (%.0f s) en %.0f s, %s tokens", len(tramos),
              sum(t["hasta"] - t["desde"] for t in tramos), r["segundos"], uso.get("total_tokens", "?"))
     return {"tramos": tramos, "gancho": str(j.get("gancho") or "").strip(),
-            "palabras": _palabras(j.get("palabras")), "avisos": avisos,
-            "uso": uso, "segundos": r["segundos"], "modelo": m}
+            "palabras": _palabras(j.get("palabras")),
+            "descartados": _descartados(j.get("descartados"), pedazos, tramos),
+            "avisos": avisos, "uso": uso, "segundos": r["segundos"], "modelo": m}

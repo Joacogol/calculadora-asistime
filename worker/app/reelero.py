@@ -1891,6 +1891,15 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
     nota = (f"Gemini ({r['modelo']}) miró {len(archivos)} video(s), {cuanto}, y eligió "
             f"{len(r['tramos'])} tramo(s), {suma:.0f} s, en {r['segundos']:.0f} s"
             + (f" y {r['uso'].get('total_tokens')} tokens" if r.get("uso", {}).get("total_tokens") else ""))
+    # Lo que dejó afuera va en la nota, con nombre y razón. Con varios clips
+    # sueltos, descartar es la mitad del trabajo: si el reel no trae uno de
+    # los videos que mandaron, quien lo pidió tiene que leer por qué sin
+    # tener que preguntarlo.
+    if r.get("descartados"):
+        d = r["descartados"]
+        nota += " · descartó " + str(len(d)) + ": " + "; ".join(
+            f"{x['archivo']}" + (f" ({x['por_que']})" if x["por_que"] else "")
+            for x in d)[:300]
     if r["avisos"]:
         nota += " · " + "; ".join(r["avisos"])[:200]
     return g, nota

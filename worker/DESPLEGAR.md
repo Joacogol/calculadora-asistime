@@ -2487,6 +2487,44 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## Seis videos y usó los seis: descartar es la mitad del trabajo (3/9/2026)
+
+El primer reel de verdad con material sin filtrar —seis clips sueltos de las
+reacciones del equipo al agente nuevo, para una campaña de expectativa— salió
+con los seis adentro. Uno de ellos es alguien diciendo «yo no escuché lo que
+estaba hablando»: lo contrario de lo que la pieza quería contar.
+
+**No fue un error del modelo: hizo exactamente lo que se le pidió.** La
+pregunta elegía el trabajo mirando sólo la duración —si el material entra
+entero, LIMPIAR; si no entra, ELEGIR— y los seis clips sumaban menos de un
+minuto contra un objetivo de sesenta segundos. Así que Gemini leyó «tu trabajo
+no es elegir sino limpiar, dejá todo el contenido de fondo» y lo cumplió.
+
+La regla estaba pensada para una charla larga que entra entera, donde elegir
+de más deja afuera cosas que la persona quería. Pero **poder mandar un montón
+de video sin filtrar y que el sistema decida cuál sirve es el valor de todo
+esto**, no un extra. Con varios clips sueltos, descartar no es opcional
+aunque sobre tiempo.
+
+Ahora el trabajo lo deciden dos cosas, no una:
+
+| | entra entero | no entra |
+|---|---|---|
+| **un video** | limpiar | elegir |
+| **varios videos** | **elegir** | elegir |
+
+Y en el caso de varios se le dice con todas las letras qué se descarta: una
+toma repetida que ya está mejor en otro clip, alguien que dice que no vio o no
+escuchó nada, una respuesta que no viene al caso, algo que contradice lo que
+se quiere contar. Con la frase que importa: no estás obligado a usar todos, un
+reel más corto y coherente es mejor que uno largo con relleno.
+
+Además devuelve `descartados` —qué dejó afuera y por qué— y eso va a la nota
+del reel. Si el reel no trae uno de los videos que mandaron, quien lo pidió
+lee la razón sin tener que preguntarla. Se filtran dos casos antes de
+mostrarla: el archivo que no existe, y el que el modelo lista como descartado
+aunque igual haya tomado un tramo de él.
+
 ## Un cartel con las palabras de dos clips distintos (3/9/2026)
 
 En el primer reel de verdad con SEIS videos —las reacciones del equipo al
