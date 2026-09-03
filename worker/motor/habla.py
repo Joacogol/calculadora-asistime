@@ -363,12 +363,19 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     # leerse y parpadea. Se prueba con la anterior y, si no entra, con la
     # siguiente: juntar sólo hacia atrás dejaba huérfanas justo en los
     # empalmes entre clips, que es donde más aparecen.
+    # Pero nunca hacia atrás por encima de un punto. «Vi lo que me mostraste.
+    # Panchi,» salió así el 2/9/2026: «Panchi,» era corta, entraba, y se pegó a
+    # la frase anterior aunque ésta ya había terminado —y además era otra
+    # persona hablando—. Si la anterior cerró la oración, la corta va con la
+    # siguiente, que es a la que pertenece.
+    def _cerrada(f):
+        return f["texto"].rstrip().endswith((".", "?", "!", "…"))
     juntadas: list[dict] = []
     i = 0
     while i < len(subs):
         f = subs[i]
         corta = len(f["texto"]) <= 8
-        if corta and juntadas and \
+        if corta and juntadas and not _cerrada(juntadas[-1]) and \
                 len(juntadas[-1]["texto"]) + 1 + len(f["texto"]) <= MAX_CARACTERES:
             juntadas[-1]["texto"] += " " + f["texto"]
             juntadas[-1]["hasta"] = max(juntadas[-1]["hasta"], f["hasta"])

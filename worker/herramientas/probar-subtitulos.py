@@ -55,5 +55,21 @@ guion2 = {"tramos": [{"archivo": "probar-subtitulos.py", "desde": 10.0, "hasta":
 fr2 = habla.para_guion(guion2, base)
 ok(max(f["hasta"] for f in fr2) <= 3.0 + 1e-6, "termina dentro de los 3s del reel", max(f["hasta"] for f in fr2))
 
+print("\n■ Una frase corta no se pega hacia atrás por encima de un punto")
+PALABRAS2 = [
+    {"texto": "Vi", "desde": 0.0, "hasta": 0.2}, {"texto": "lo", "desde": 0.2, "hasta": 0.3},
+    {"texto": "que", "desde": 0.3, "hasta": 0.4}, {"texto": "me", "desde": 0.4, "hasta": 0.5},
+    {"texto": "mostraste.", "desde": 0.5, "hasta": 1.0},
+    {"texto": "Panchi,", "desde": 1.2, "hasta": 1.6},
+    {"texto": "¿viste", "desde": 1.7, "hasta": 2.0}, {"texto": "al", "desde": 2.0, "hasta": 2.1},
+    {"texto": "diseñador?", "desde": 2.1, "hasta": 2.8},
+]
+habla.palabras = lambda ruta, voc="": PALABRAS2
+fr3 = habla.para_guion({"tramos": [{"archivo": "probar-subtitulos.py", "desde": 0.0, "hasta": 3.0}]}, base)
+textos = [f["texto"] for f in fr3]
+ok(not any(t.startswith("Vi lo que me mostraste. Panchi") for t in textos),
+   "«Panchi,» no se pega a la frase cerrada", textos)
+ok(any(t.startswith("Panchi, ¿viste") for t in textos), "va con la frase siguiente, que es la suya", textos)
+
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)
