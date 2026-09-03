@@ -22,6 +22,29 @@ if [ "$(gcloud config get-value project 2>/dev/null)" != "$PROYECTO" ]; then
   gcloud config set project "$PROYECTO" --quiet
 fi
 
+# ── Qué kits de marca tiene ESTA copia ───────────────────────────────────
+#
+# Se imprime antes de compilar nada, y no es decoración: el 3/9/2026 un
+# despliegue salió «bien» de punta a punta con el motor nuevo y los kits
+# viejos. La causa fue un asterisco —`cp -r /tmp/nuevo/worker/*` no copia
+# `.claude`, porque el shell saltea los nombres que empiezan con punto— y no
+# dejó ningún rastro: nueve carpetas copiadas, código de salida cero.
+#
+# Lo que sí se puede ver de un vistazo es la fecha de cada kit. Si acabás de
+# traer código nuevo y acá aparece la fecha de la semana pasada, la copia no
+# incluyó las marcas: pará y copiá con `cp -r /tmp/nuevo/worker/. .` — el punto
+# en vez del asterisco. Ver DESPLEGAR.md, paso 1.
+echo "▸ 0/4  Kits de marca en esta copia"
+for KIT in .claude/skills/*/; do
+  [ -f "${KIT}marca.json" ] || continue
+  NOMBRE="$(basename "$KIT")"
+  # Las que empiezan con guión bajo son borradores y el motor no las ve.
+  CUANTAS="$(find "${KIT}plantillas" -mindepth 1 -maxdepth 1 -type d \
+             -not -name '_*' 2>/dev/null | wc -l)"
+  FECHA="$(date -r "${KIT}marca.json" '+%d/%m %H:%M' 2>/dev/null || echo '?')"
+  echo "  · ${NOMBRE}: ${CUANTAS} plantillas · marca.json del ${FECHA}"
+done
+
 # ── De dónde sale la lista de clientes ───────────────────────────────────
 #
 # Dos caminos, y el script elige solo:

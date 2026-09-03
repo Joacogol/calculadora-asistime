@@ -34,7 +34,7 @@ video, los efectos, los carruseles y las presentaciones quedan igual.
 ## Aplicar
 
 ```bash
-cp -r worker/* /ruta/al/repo/del/worker/
+cp -r worker/. /ruta/al/repo/del/worker/   # el punto: `*` se saltea .claude
 cd /ruta/al/repo/del/worker
 pip install jinja2
 ```

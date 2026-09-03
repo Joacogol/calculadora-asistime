@@ -39,24 +39,39 @@ rm -rf /tmp/nuevo
 git clone -b claude/asistime-auto-designs-agent-waais0 \
   https://github.com/Joacogol/calculadora-asistime /tmp/nuevo
 
-# 2. copiarlo sobre el repo del worker
+# 2. copiarlo sobre el repo del worker — OJO CON EL PUNTO
 cd /ruta/al/repo/del/worker
-cp -r /tmp/nuevo/worker/.claude  .
-cp -r /tmp/nuevo/worker/app      .
-cp -r /tmp/nuevo/worker/motor    .
-cp -r /tmp/nuevo/worker/herramientas .
-cp -r /tmp/nuevo/worker/funciones    .
-cp -r /tmp/nuevo/worker/estudio      .
-cp -r /tmp/nuevo/worker/migraciones  .
-cp -r /tmp/nuevo/worker/alta         .
-cp    /tmp/nuevo/worker/*.sql /tmp/nuevo/worker/*.md .
-cp    /tmp/nuevo/worker/requirements.txt .
-cp    /tmp/nuevo/worker/clientes.py /tmp/nuevo/worker/desplegar-chat.sh .
-cp    /tmp/nuevo/worker/Dockerfile .
+cp -r /tmp/nuevo/worker/. .
 chmod +x desplegar-chat.sh
+
+# 3. comprobar que llegaron los kits de marca
+ls .claude/skills/asistime-disenos/plantillas/
 
 pip install jinja2
 ```
+
+**`worker/.` y no `worker/*`.** Es un punto de diferencia y el 3/9/2026 costó
+un despliegue entero. `*` lo expande el shell, y el shell **no incluye los
+nombres que empiezan con punto**: con `cp -r /tmp/nuevo/worker/* .` se copia
+todo menos `.claude`, o sea todo menos los kits de marca. Y no falla: copia
+nueve carpetas, devuelve cero, y el despliegue termina en «4/4 Listo».
+
+Lo que se ve después es un sistema que se contradice: el motor es nuevo y las
+marcas son viejas. Ese día el kit de Asistime que corría en producción era del
+2/9 a las 20:55 —sin el vocabulario de IA que Whisper lee antes de escuchar,
+sin el encuadre que sigue a las caras— mientras el motor que lo leía ya traía
+las dos cosas. Se «arreglaron» dos veces cosas que nunca habían llegado.
+
+La única señal en el despliegue es una línea fácil de leer al revés: en el
+paso 3b, «el catálogo de X **no cambió** — no escribo nada». Cuando acabás de
+copiar un kit nuevo, esa línea no significa «todo en orden»: significa que el
+kit no llegó. Por eso el `ls` del paso 3 está en la lista — dos segundos que
+se ven antes de compilar una imagen de diez minutos.
+
+Copiar con `.` fusiona, no reemplaza: un archivo que se borró del repo sigue
+estando en la máquina. Es a propósito —ver la nota de `cp -r` más abajo— y por
+eso lo que manda es lo que el `marca.json` nombra, no lo que hay en la
+carpeta: las tipografías viejas de Asistime quedaron ahí y no se usan.
 
 **El `Dockerfile` también va, y faltaba.** Desde el 1/9/2026 está versionado
 acá, después de que una edición a mano le dejara `≈≈` en la primera línea y
