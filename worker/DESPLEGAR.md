@@ -3699,3 +3699,76 @@ cuánto pesa ese algo en el caso peor.
 Y el orden importó: sin el arreglo de `corto` de más arriba, este log no se
 buscaba. Un fallo invisible primero hay que hacerlo legible; recién ahí se
 puede arreglar.
+
+## Pintar no es dibujar: el `dibujo` de una pieza (3/9/2026)
+
+La story del viernes salió completa después del arreglo del buffer, y salió
+floja: los emojis de música en gris oscuro sobre un fondo azul y violeta, y
+una consola de DJ que eran cuatro perillas de emoji. El agente dejó escrito el
+motivo en sus notas:
+
+> Probé primero con CSS personalizado (retoque) pero el enfoque más simple y
+> directo funcionó mejor.
+
+No fue pereza. **Con CSS se cambia el aspecto de lo que ya está; no se agregan
+formas nuevas.** El retoque podía pintar el título de otro color, ponerle un
+borde o una sombra — pero una consola de DJ no es un estilo, es un trazo. Los
+tres pedidos que venimos usando como ejemplo son iguales: el recuadro de
+chimenea, un emoji por frase, la consola. Los tres piden formas.
+
+Y los emojis del sistema no son una salida: 🎵 en la fuente del contenedor es
+azul marino. Sobre el degradé de Asistime desaparece, y ninguna marca eligió
+nunca ese color.
+
+### Lo que se agregó
+
+`data["dibujo"]` acepta SVG: una capa o varias, que se pegan adentro del
+lienzo. Viaja en `data` igual que el retoque, así que otra vez no hubo que
+tocar el spec, ni `render.py`, ni la firma de ninguna función.
+
+```json
+"dibujo": [
+  {"clase": "consola", "svg": "<svg viewBox='0 0 1080 1920'>…</svg>"},
+  {"clase": "marco", "atras": true, "svg": "<svg viewBox='0 0 1080 1920'>…</svg>"}
+],
+"retoque": ".dibujo.consola{opacity:.42}"
+```
+
+El dibujo pone las formas y el retoque las acomoda: opacidad, color, posición.
+Cada capa cubre el lienzo entero y el SVG se estira a ese tamaño, así que con
+un `viewBox` propio la misma pieza sale igual en story que en post.
+
+**SVG y no HTML**, por dos razones que van juntas: es lo que se necesita
+—trazos— y es XML, así que se puede verificar de verdad. El dibujo se parsea
+antes de tocar la pieza; lo que no parsea no entra. Eso hace innecesaria media
+lista de prohibiciones: `</svg><script>` no es «una etiqueta prohibida», es un
+XML con dos raíces. Encima de eso hay lista blanca de etiquetas, nada de
+manejadores `on*`, y nada traído de internet (un `data:` sí).
+
+### Los tres pisos, que costaron dos renders
+
+El orden de capas parecía trivial y salió mal dos veces seguidas, las dos
+veces invisibles en el HTML:
+
+1. `atras` con `z-index:-1` — la capa **desapareció**. El fondo de estas
+   plantillas no es el fondo de `.canvas` sino un `.scrim` puesto adentro, y
+   un z-index negativo queda detrás de eso también.
+2. Al arreglarlo subiendo el contenido (`.canvas>.pad{z-index:1}`), la capa de
+   **encima** quedó debajo del texto, porque su z-index era automático.
+
+Quedó en tres pisos explícitos: **0** la capa de atrás, **1** el contenido de
+la plantilla, **2** la de encima. Se apoya en que el contenido va en `.pad`,
+que es la convención de todas las plantillas del motor.
+
+Los dos errores tenían el HTML correcto. Se vieron abriendo el PNG, que es la
+misma lección de la chimenea y por eso `probar-dibujo.py` **renderiza de
+verdad con Chromium** y cuenta píxeles: pinta una franja de un verde que no
+existe en la marca y verifica que aparezca, que el texto quede encima cuando
+va atrás, y que la tape cuando va encima.
+
+### Dónde quedó documentado
+
+En los dos lados, que es la lección del 3/9 a la mañana: en el PROMPT de
+`app/disenador.py` —el agente que arma la pieza— y en `plantillas.catalogo()`,
+que es lo que lee el agente del chat. La pregunta sigue siendo la misma:
+**¿lo lee el que tiene que ejecutarlo?**

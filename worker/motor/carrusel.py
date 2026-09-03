@@ -117,11 +117,12 @@ def _pagina(marca, w, h, inner, data=None):
     # carrusel a propósito: lo que se pide a medida casi siempre es de una
     # —«la del dato con un marco»— y un retoque que se aplicara a las seis
     # sería otra cosa, más parecida a una plantilla.
+    css_capas, capas = retoque.dibujos(data or {})
     extra = retoque.hoja(data or {})
     return f"""<!doctype html><html><head><meta charset="utf-8"><style>
 {marca.BASE_CSS}{CSS_MOTOR}
 body{{width:{w}px}} .canvas{{width:{w}px;height:{h}px}}
-{extra}</style></head><body><div class="canvas">{inner}</div></body></html>"""
+{css_capas}{extra}</style></head><body><div class="canvas">{inner}{capas}</div></body></html>"""
 
 
 def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:

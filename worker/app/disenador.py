@@ -139,6 +139,36 @@ REGLAS
 
   Y la pregunta que decide entre las dos puertas: **¿esto se va a volver a
   pedir?** Si sí, es una plantilla nueva. Si es de hoy, es un retoque.
+- **Si el pedido tiene una FORMA que no existe, dibujala: `dibujo`.** El
+  retoque pinta lo que ya está; no agrega una consola de DJ, una chimenea, una
+  guirnalda ni una flecha. Para eso, en el mismo `data`, va `dibujo` con SVG:
+
+      {{"plantilla": "titular", "formato": "story", "data": {{
+         "titulo": "Mañana es VIERNES",
+         "dibujo": [
+           {{"clase": "consola",
+            "svg": "<svg viewBox='0 0 1080 1920'><g transform='translate(180 1290)' fill='none' stroke='#FFF' stroke-width='7'><rect width='720' height='330' rx='26'/><circle cx='150' cy='120' r='78'/></g></svg>"}},
+           {{"clase": "marco", "atras": true, "svg": "<svg viewBox='0 0 1080 1920'>...</svg>"}}
+         ],
+         "retoque": ".dibujo.consola{{opacity:.42}}"
+      }}}}
+
+  Cada capa cubre el lienzo entero y el SVG se estira a ese tamaño: **dibujá
+  con un `viewBox` propio** y ubicá las cosas en esas coordenadas. Van encima
+  de la plantilla; `"atras": true` la manda detrás del texto y delante del
+  fondo, que es donde va un marco. La `clase` es para poder apuntarle desde el
+  retoque —opacidad, color, posición— y esa es la división de trabajo: el
+  `dibujo` pone las formas, el `retoque` las acomoda.
+
+  Hasta 4 capas y 12.000 caracteres cada una. Se parsea como XML antes de
+  entrar, así que **tiene que cerrar todas las etiquetas y tener una sola
+  raíz `<svg>`**; y no entran `script`, `style`, `foreignObject` ni nada que
+  venga de internet (un `data:` sí).
+
+  **Los emojis del sistema no son un dibujo.** Se ven distinto en cada lado y
+  en esta marca 🎵 sale azul marino: sobre un fondo azul desaparece. Si el
+  pedido dice «emojis de música», lo que hace falta son notas dibujadas con la
+  tinta de la marca, no el carácter.
 - Usá el acento que te di arriba. No lo deduzcas de nuevo.
 - {regla_telefono}
   Cuando el teléfono va, usá EXACTAMENTE el número de arriba, no lo deduzcas.

@@ -187,16 +187,20 @@ def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
 
     Por eso el retoque se inyecta acá y en ningún otro lado: una pieza a
     medida no es un camino aparte del normal, es el camino normal con un
-    bloque de estilo más. Ver `motor/retoque.py`.
+    bloque de estilo más y, si hace falta, una capa dibujada.
+    Ver `motor/retoque.py`.
     """
     cuerpo, m = _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt)
-    # DESPUÉS de la hoja de la marca: el retoque tiene que poder pisar lo que
-    # la plantilla decidió, que es todo el punto de que exista.
+    # El orden de las tres hojas es la regla entera: la marca pone la base,
+    # las capas dibujadas se acomodan encima, y el retoque va último porque
+    # tiene que poder pisar a las dos —mover una capa o recolorearla es
+    # justamente su trabajo.
+    css_capas, capas = _retoque.dibujos(data)
     extra = _retoque.hoja(data)
     return (f'<!doctype html><html><head><meta charset="utf-8">'
             f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
-            f'{extra}</style></head><body>\n'
-            f'<div class="canvas">{cuerpo}</div></body></html>')
+            f'{css_capas}{extra}</style></head><body>\n'
+            f'<div class="canvas">{cuerpo}{capas}</div></body></html>')
 
 
 def cargar(raiz, marca):
@@ -388,6 +392,39 @@ entregarla** — y si algo quedó pisado, se corrige y se vuelve a renderizar.
 
 En un carrusel el retoque va en la diapositiva que lo necesita, no en el
 carrusel entero.
+
+## Y si lo que falta es una FORMA: `dibujo`
+
+El retoque pinta lo que la plantilla ya dibujó. No agrega una consola de DJ,
+una chimenea ni una guirnalda de notas: con CSS se cambia el aspecto de algo
+que existe, no se inventan trazos. Para eso, en el mismo `data`, va `dibujo`
+con SVG:
+
+```json
+{"plantilla": "titular", "formato": "story", "data": {
+   "titulo": "Mañana es VIERNES",
+   "dibujo": [
+     {"clase": "consola", "svg": "<svg viewBox='0 0 1080 1920'>…</svg>"},
+     {"clase": "marco", "atras": true, "svg": "<svg viewBox='0 0 1080 1920'>…</svg>"}
+   ],
+   "retoque": ".dibujo.consola{opacity:.42}"
+}}
+```
+
+Cada capa cubre el lienzo entero y el SVG se estira a ese tamaño, así que
+conviene un `viewBox` propio: se dibuja en esas coordenadas y sale igual en
+cualquier formato. Va encima de la plantilla, salvo `"atras": true`, que la
+manda detrás del texto y delante del fondo — que es donde va un marco. La
+`clase` sirve para apuntarle desde el retoque, y ahí está la división: el
+dibujo pone las formas y el retoque las acomoda.
+
+Hasta 4 capas y 12.000 caracteres cada una. Se parsea como XML antes de
+entrar, así que tiene que cerrar todas sus etiquetas y tener una sola raíz
+`<svg>`; y no entran `script`, `style`, `foreignObject` ni nada traído de
+internet.
+
+**Los emojis del sistema no son un dibujo.** Se ven distinto en cada
+dispositivo y su color no es el de ninguna marca.
 
 ## Si falta una plantilla
 
