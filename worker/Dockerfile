@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     playwright install chromium
 
 # Precarga el modelo de transcripción. El contenedor es efímero: sin esto el
-# modelo se baja de HuggingFace en CADA corrida. Con `medium` son 1,5 GB, y en
+# modelo se baja de HuggingFace en CADA corrida. Con `large-v3` son 3,1 GB, y en
 # Cloud Run el disco del contenedor ES MEMORIA, así que sin esta línea el job
 # se queda sin memoria en vez de tardar un poco más.
 #
@@ -29,10 +29,10 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 #
 # Va ANTES de `COPY . .` a propósito: Docker invalida todas las capas que
 # siguen a una que cambió, así que puesto después del código cada cambio de
-# una línea de Python volvería a bajar 1,5 GB al construir la imagen.
+# una línea de Python volvería a bajar 3,1 GB al construir la imagen.
 ENV HF_HOME=/opt/modelos
 RUN python -c "from faster_whisper import WhisperModel; \
-      WhisperModel('medium', device='cpu', compute_type='int8')" \
+      WhisperModel('large-v3', device='cpu', compute_type='int8')" \
     && chmod -R a+rX /opt/modelos
 
 COPY . .

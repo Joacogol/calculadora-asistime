@@ -11,7 +11,7 @@ pegarla a mano. El 1/9/2026 se descubrió que nunca se había pegado: el modelo
 se venía bajando de HuggingFace en cada corrida desde siempre.
 
 Con `small` eso costaba 464 MB y unos segundos — molesto, invisible, nadie lo
-notó. Con `medium` son 1,5 GB, y en Cloud Run **el disco del contenedor es
+notó. Con `large-v3` son 3,1 GB, y en Cloud Run **el disco del contenedor es
 memoria**: esos 1,5 GB salen del límite del job antes de empezar a trabajar.
 Sumados a los 2,1 GiB del modelo cargado no entraban en los 4 GiB que había, y
 el reel se colgaba sin escribir un error en ningún lado.
@@ -30,7 +30,7 @@ import sys
 #: siguen a una que cambió; puesto después del código, cada cambio de una línea
 #: de Python volvería a bajar 1,5 GB al construir la imagen.
 BLOQUE = '''# Precarga el modelo de transcripción. El contenedor es efímero: sin esto el
-# modelo se baja de HuggingFace en CADA corrida. Con `medium` son 1,5 GB, y en
+# modelo se baja de HuggingFace en CADA corrida. Con `large-v3` son 3,1 GB, y en
 # Cloud Run el disco del contenedor ES MEMORIA, así que sin esta línea el job
 # se queda sin memoria en vez de tardar un poco más.
 #
@@ -39,7 +39,7 @@ BLOQUE = '''# Precarga el modelo de transcripción. El contenedor es efímero: s
 # leer — se baja igual y no se entera nadie.
 ENV HF_HOME=/opt/modelos
 RUN python -c "from faster_whisper import WhisperModel; \\
-      WhisperModel('medium', device='cpu', compute_type='int8')" \\
+      WhisperModel('large-v3', device='cpu', compute_type='int8')" \\
     && chmod -R a+rX /opt/modelos
 
 '''
@@ -74,7 +74,7 @@ def main() -> int:
     shutil.copy(ruta, str(ruta) + ".antes")
     lineas.insert(donde, BLOQUE)
     ruta.write_text("".join(lineas))
-    print(f"✓ Listo: la precarga de `medium` quedó antes de la línea {donde + 1}.")
+    print(f"✓ Listo: la precarga de `large-v3` quedó antes de la línea {donde + 1}.")
     print(f"  Copia de seguridad en {ruta}.antes")
     print()
     print("  Ahora desplegá:  cd ~/worker && ./desplegar-chat.sh")

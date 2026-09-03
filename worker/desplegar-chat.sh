@@ -314,7 +314,7 @@ echo "▸ 2/4  Desplegando el job (compila la imagen, tarda unos minutos)"
 # y después desaparece sin que nadie lo note. Con la variable acá, lo que
 # manda es este archivo y se ve de un vistazo.
 #
-# Para volver al modelo chico:  WHISPER_MODELO=small ./desplegar-chat.sh
+# Para volver al modelo anterior:  WHISPER_MODELO=medium ./desplegar-chat.sh
 #
 # La memoria pasó de 4 a 8 GiB junto con `medium`, y no es por las dudas:
 # medido, `medium` tiene un pico de 2,1 GiB contra los 781 MiB de `small`, y
@@ -327,7 +327,7 @@ gcloud run jobs deploy "$JOB" \
   --service-account "$SA" \
   --memory 8Gi --cpu 8 --task-timeout 30m --max-retries 1 \
   --command python --args="-m,app.chat" \
-  --set-env-vars "^|^${CLIENTES_JSON:+CLIENTES=${CLIENTES_JSON}|}BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-medium}" \
+  --set-env-vars "^|^${CLIENTES_JSON:+CLIENTES=${CLIENTES_JSON}|}BUCKET=disenos|SA_EMAIL=${SA}|MAX_POR_CICLO=5|MARGEN=${MARGEN:-2.0}|WHISPER_MODELO=${WHISPER_MODELO:-large-v3}" \
   --set-secrets "ANTHROPIC_API_KEY=anthropic-key:latest,${MAGNIFIC_SECRETO}${FAL_SECRETO}${GEMINI_SECRETO}${ASISTIME_SECRETO}${SECRETOS_RUN}" \
   --quiet
 

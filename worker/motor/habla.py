@@ -46,42 +46,57 @@ log = logging.getLogger(__name__)
 
 #: Cuál modelo. Se puede cambiar sin tocar código con `WHISPER_MODELO`.
 #:
-#: Esto decía `small`, y decía que `medium` no valía la pena. **Medido contra
-#: material real el 1/9/2026, era falso**, y el costo de la equivocación no fue
-#: ortográfico: en un reel de Boss, `small` escribió «futbol es un superpoder»,
-#: una frase que nadie dijo. No entendió mal — inventó. Y escribió «Te le
-#: transportarme», «El Campeón de Silo» y «Para reivir los campeones del siglo»
-#: donde se decía «teletransportarme», «el campeón del siglo» y «para revivir
-#: lo del campeón del siglo».
+#: Esto decía `small`, después `medium`, y cada vez el comentario juraba que el
+#: siguiente «no valía la pena». **Las dos veces fue falso al medirlo.**
 #:
-#: Con `medium`, sobre los mismos tres clips, no queda ni un error. Con
-#: `large-v3` sale exactamente el mismo texto —una sola interjección más— por
-#: casi el doble de tiempo y un modelo el doble de pesado: no se paga.
+#: · `small` → `medium` (1/9/2026, tres clips de Boss): `small` inventaba
+#:   («futbol es un superpoder», una frase que nadie dijo); `medium` no dejó
+#:   ni un error.
+#: · `medium` → `large-v3` (3/9/2026, dos clips de Asistime con gente
+#:   hablándose encima): `medium` escribió «¿Te la presto?» por «¿Te la
+#:   prestó?», «Vi lo que me gustaste» por «Vi lo que me mostraste» y «No
+#:   está, es que la pego» por «Ahí no está la pelota, la que la pegó». Son
+#:   errores de sentido, no de ortografía, y en un subtítulo se leen. Con
+#:   `large-v3` más el filtro de voz (abajo) no queda ninguno.
+#:
+#: Lo que cuesta, medido sobre los mismos dos clips (27 s y 46 s):
+#:
+#:   | | transcribir | pesa |
+#:   |---|---|---|
+#:   | `medium` int8   | 25 s + 47 s | 1,5 GB |
+#:   | `large-v3` int8 | 40 s + 70 s | 3,1 GB |
+#:
+#: Un 60 % más de tiempo en la transcripción, que es una parte del montaje y
+#: no la más larga. El job tiene 8 GiB y 8 núcleos, así que entra con aire.
 #:
 #: **Se intentó una vez y hubo que volver atrás el mismo día**, y conviene que
 #: quede escrito. Se puso `medium` sin tocar nada más y un reel que tardaba
 #: 1 m 23 s pasó de largo los ocho minutos. La medición de calidad era buena;
-#: lo que no se midió es si el modelo ENTRABA.
+#: lo que no se midió es si el modelo ENTRABA: en Cloud Run el disco del
+#: contenedor **es memoria**, así que un modelo que no está horneado en la
+#: imagen se baja en cada corrida y se lo cuenta al job. Por eso cambiar el
+#: modelo son TRES lugares y no uno: acá, el `Dockerfile` (que lo hornea) y
+#: `desplegar-chat.sh` (que fija `WHISPER_MODELO`). `_cargar()` avisa en el
+#: log si el modelo tuvo que bajarse.
 #:
-#: La cuenta, ahora sí medida sobre estos mismos tres clips:
-#:
-#:   | | pico de memoria | transcribir |
-#:   |---|---|---|
-#:   | `small`  |   781 MiB | 34 s |
-#:   | `medium` | 2.102 MiB | 78 s |
-#:
-#: A eso, si el modelo NO está horneado en la imagen, hay que sumarle 1,5 GiB
-#: más: en Cloud Run el disco del contenedor **es memoria**, así que bajarlo
-#: lo cuenta el job. 2,1 + 1,5 son 3,6 GiB de los 4 GiB que había, con un
-#: Chromium y un ffmpeg todavía por arrancar. No es que tardara: no entraba.
-#:
-#: Por eso `medium` vuelve JUNTO con las dos cosas sin las cuales no se
-#: sostiene: el modelo horneado en el `Dockerfile` —ver `DESPLEGAR.md`— y el
-#: job en 8 GiB. Ninguna de las dos se hace desde este archivo, y por eso
-#: `_cargar()` avisa en el log si el modelo tuvo que bajarse.
-#:
-#: Si algo sale mal se vuelve sin tocar código: `WHISPER_MODELO=small`.
-MODELO = os.environ.get("WHISPER_MODELO", "medium")
+#: Si algo sale mal se vuelve sin tocar código: `WHISPER_MODELO=medium`.
+MODELO = os.environ.get("WHISPER_MODELO", "large-v3")
+
+#: Filtro de voz antes de transcribir. Whisper decodifica en ventanas de 30 s
+#: y una ventana con silencio largo o música lo tienta a inventar; el VAD
+#: (Silero, viene con faster-whisper) le saca los tramos sin voz y él vuelve a
+#: poner los tiempos en el reloj original. Medido el 3/9/2026 sobre `medium`
+#: solo: con el filtro arregló «Vi lo que me gustaste» → «mostraste» sin
+#: cambiar de modelo. Se apaga con `WHISPER_VAD=0`.
+VAD = os.environ.get("WHISPER_VAD", "1") != "0"
+
+#: Nivelar el volumen antes de transcribir. Los videos de teléfono traen a
+#: uno que habla cerca y a otro que contesta desde lejos; nivelados, el de
+#: lejos deja de perder palabras. Es un `loudnorm` de ffmpeg sobre una copia
+#: mono a 16 kHz, que es exactamente lo que Whisper hace adentro con el
+#: archivo antes de escucharlo, así que no cuesta una pasada extra de verdad.
+#: Se apaga con `WHISPER_NIVELAR=0`.
+NIVELAR = os.environ.get("WHISPER_NIVELAR", "1") != "0"
 
 #: Nunca con sufijo `.en`. Ver la trampa 1.
 IDIOMA = os.environ.get("WHISPER_IDIOMA", "es")
@@ -153,10 +168,18 @@ def palabras(ruta, vocabulario: str = "") -> list[dict]:
     llave = (str(ruta), vocabulario)
     if llave in _dicho:
         return _dicho[llave]
+    limpio = None
     try:
+        limpio = _nivelado(ruta) if NIVELAR else None
+        # `beam_size` 5 es el que trae faster-whisper; va explícito porque es
+        # el que se midió. La temperatura se deja con su escalera por defecto
+        # (0 → 1.0): sólo sube cuando la decodificación a 0 falla, así que en
+        # audio normal es idéntica a fijarla en 0 —que fue lo medido— y en
+        # audio difícil evita que el modelo se quede repitiendo una frase.
         segmentos, _ = _cargar().transcribe(
-            str(ruta), language=IDIOMA, word_timestamps=True,
-            initial_prompt=vocabulario or None)
+            str(limpio or ruta), language=IDIOMA, word_timestamps=True,
+            initial_prompt=vocabulario or None,
+            vad_filter=VAD, beam_size=5)
         _dicho[llave] = [{"texto": w.word.strip(),
                           "desde": float(w.start), "hasta": float(w.end)}
                          for s in segmentos for w in (s.words or []) if w.word.strip()]
@@ -165,6 +188,33 @@ def palabras(ruta, vocabulario: str = "") -> list[dict]:
         log.warning("no pude transcribir %s: %s", ruta, e)
         _dicho[llave] = []
         return []
+    finally:
+        if limpio:
+            limpio.unlink(missing_ok=True)
+
+
+def _nivelado(ruta):
+    """Una copia del audio, mono a 16 kHz y con el volumen nivelado.
+
+    Devuelve la ruta del archivo temporal —quien la pide la borra— o `None`
+    si ffmpeg no pudo: en ese caso se transcribe el original, que es lo que
+    se hacía antes. Nivelar es una mejora, no una condición.
+    """
+    import subprocess
+    import tempfile
+    fd, tmp = tempfile.mkstemp(suffix=".wav", prefix="habla-")
+    os.close(fd)
+    salida = Path(tmp)
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-i", str(ruta), "-vn",
+         "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ac", "1", "-ar", "16000",
+         str(salida)], capture_output=True, text=True)
+    if r.returncode != 0 or not salida.exists() or salida.stat().st_size < 1000:
+        log.warning("no pude nivelar el audio de %s, va el original: %s",
+                    ruta, (r.stderr or "").strip()[-200:])
+        salida.unlink(missing_ok=True)
+        return None
+    return salida
 
 
 #: Palabras con las que una línea de subtítulo NO puede terminar.
