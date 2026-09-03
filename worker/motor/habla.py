@@ -269,10 +269,27 @@ def frases(pals: list[dict]) -> list[dict]:
         return []
 
     # ── 1. bloques: donde termina una idea ──
+    #
+    # Una pausa larga NO siempre es el final de una idea: también es alguien
+    # buscando la palabra. Si la última palabra dicha no dice nada sola —«la»,
+    # «de», «que»: la lista `DEBILES`— el corte se saltea y las dos partes van
+    # juntas. Medido el 3/9/2026 sobre el reel de Bauti: entre «¡Opa! La» y
+    # «pelota» hay un segundo y medio de duda, y el subtítulo salía partido
+    # ahí, con un renglón terminado en «La». Se lee dos veces.
+    #
+    # Con signo de final sí se corta, aunque la palabra esté en la lista: «Sí.»
+    # es una frase entera y «si» está en DEBILES por el condicional.
+    def _corta_aca(anterior, siguiente):
+        texto = anterior["texto"].rstrip()
+        if texto.endswith((".", "?", "!", "…")):
+            return True
+        if siguiente["desde"] - anterior["hasta"] < PAUSA:
+            return False
+        return _peso(texto) < 9
+
     bloques, actual = [], []
     for p in pals:
-        if actual and (p["desde"] - actual[-1]["hasta"] >= PAUSA
-                       or actual[-1]["texto"].endswith((".", "?", "!", "…"))):
+        if actual and _corta_aca(actual[-1], p):
             bloques.append(actual)
             actual = []
         actual.append(p)

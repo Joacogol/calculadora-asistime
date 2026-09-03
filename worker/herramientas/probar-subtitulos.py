@@ -70,6 +70,30 @@ textos = [f["texto"] for f in fr3]
 ok(not any(t.startswith("Vi lo que me mostraste. Panchi") for t in textos),
    "«Panchi,» no se pega a la frase cerrada", textos)
 ok(any(t.startswith("Panchi, ¿viste") for t in textos), "va con la frase siguiente, que es la suya", textos)
+print("\n■ Una pausa en medio de una frase no corta después de «la»")
+#
+# Medido sobre el reel de Bauti el 3/9/2026: el chico duda un segundo y medio
+# entre «¡Opa! La» y «pelota», y el subtítulo salía partido ahí — un renglón
+# entero terminado en «La», que no dice nada solo.
+pals = [{"texto": "¡Opa!", "desde": 14.84, "hasta": 15.6},
+        {"texto": "La", "desde": 15.9, "hasta": 16.46},
+        {"texto": "pelota,", "desde": 17.98, "hasta": 18.6},
+        {"texto": "la", "desde": 18.6, "hasta": 18.9},
+        {"texto": "que", "desde": 18.9, "hasta": 19.2},
+        {"texto": "la", "desde": 19.2, "hasta": 19.5},
+        {"texto": "pegó.", "desde": 19.5, "hasta": 19.76}]
+sal = [f["texto"] for f in habla.frases(pals)]
+ok(not any(t.rstrip().lower().endswith(" la") or t.strip().lower() == "la" for t in sal),
+   "ninguna línea termina en «la»", sal)
+ok("La pelota," in " ".join(sal), "«La» viaja con «pelota»", sal)
+
+# Y lo contrario tiene que seguir valiendo: «Sí.» es una frase entera aunque
+# «si» esté en la lista de palabras débiles, así que ahí sí se corta.
+sal = [f["texto"] for f in habla.frases(
+    [{"texto": "Sí.", "desde": 5.7, "hasta": 6.0},
+     {"texto": "¿En", "desde": 7.0, "hasta": 7.2},
+     {"texto": "serio?", "desde": 7.2, "hasta": 7.6}])]
+ok(sal == ["Sí.", "¿En serio?"], "una pausa después de un punto sigue cortando", sal)
 
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)
