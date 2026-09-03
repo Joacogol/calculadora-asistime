@@ -24,7 +24,7 @@ una foto sola. Socialinsider, 161.180 stories — la primera de una secuencia
 pierde el 23,8% de la gente y entre el 57% y el 67% de los que quedan avanza
 tocando.
 """
-from . import contrato
+from . import contrato, retoque
 
 # Zona segura de story: arriba va el nombre de la cuenta, abajo la caja de
 # respuesta de Instagram. Nada importante puede caer en esas bandas.
@@ -112,11 +112,16 @@ def fondo(d: dict, negro: str = "#0A0A0A", oscuro: float = .62) -> str:
             f'rgba(10,10,10,{oscuro:.2f}) 72%,rgba(10,10,10,.92) 100%)"></div>')
 
 
-def _pagina(marca, w, h, inner):
+def _pagina(marca, w, h, inner, data=None):
+    # El retoque de UNA diapositiva, si la trae. Va por diapositiva y no por
+    # carrusel a propósito: lo que se pide a medida casi siempre es de una
+    # —«la del dato con un marco»— y un retoque que se aplicara a las seis
+    # sería otra cosa, más parecida a una plantilla.
+    extra = retoque.hoja(data or {})
     return f"""<!doctype html><html><head><meta charset="utf-8"><style>
 {marca.BASE_CSS}{CSS_MOTOR}
 body{{width:{w}px}} .canvas{{width:{w}px;height:{h}px}}
-</style></head><body><div class="canvas">{inner}</div></body></html>"""
+{extra}</style></head><body><div class="canvas">{inner}</div></body></html>"""
 
 
 def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
@@ -195,7 +200,7 @@ def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
                         cuerpo(s, w, h, ac)
                         + cromo_secuencia(i, total, s, ac,
                                           tinta_de(s, s.get("tipo", "cuadro")),
-                                          fuente, fuente_texto))
+                                          fuente, fuente_texto), s)
                 for i, s in enumerate(slides)]
 
     w, h = marca.FORMATOS[fmt]
@@ -209,5 +214,5 @@ def paginas(marca, data: dict, fmt: str, secuencia: bool = False) -> list[str]:
         salida.append(_pagina(marca, w, h,
                               marca.DIAPOS[tipo](s, w, h, ac)
                               + cromo_carrusel(i, total, ac,
-                                               tinta_de(s, tipo), fuente)))
+                                               tinta_de(s, tipo), fuente), s))
     return salida

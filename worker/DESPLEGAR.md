@@ -2496,6 +2496,57 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## Un pedido a medida que no funda una plantilla: el retoque (3/9/2026)
+
+Hasta acá había dos velocidades y nada en el medio: la plantilla —rápida y
+segura, pero sólo hace lo que ya sabe— y `crear_plantilla`, que funda un molde
+nuevo, tarda cinco minutos, hay que publicarlo y queda para siempre en el
+catálogo. Con eso, «poneles un recuadro de chimenea al texto» obliga a fundar
+una plantilla «titular con chimenea» que nadie va a volver a pedir. **Lo único
+que existía era lo permanente**, y por eso el producto se sentía estructurado.
+
+El retoque es el medio: un bloque de CSS escrito para ESA pieza, que se aplica
+encima de la plantilla y no se guarda en ningún lado. La plantilla deja de ser
+una jaula y pasa a ser una base — dibuja el esqueleto, los márgenes seguros,
+la tipografía y el pie, y el retoque hace lo que ese pedido necesitaba.
+
+Costó poco porque el motor ya estaba bien parado: **hay un solo lugar donde se
+arma una pieza** (`plantillas._pagina`) y el `data` del spec viaja entero
+hasta ahí. Así que el retoque va dentro de `data` y no hubo que tocar ni el
+formato del spec, ni el agente que lo escribe, ni `render.py`. En un carrusel
+va por diapositiva, que es como se piden estas cosas.
+
+### Qué se valida, y qué no
+
+Lo que se valida es lo que **rompe el mecanismo**: `</style>` —la única que no
+es una molestia sino un agujero, porque a partir de ahí se escribe HTML—,
+`@import` y las `url()` que salen a internet —la pieza se dibuja sin red y
+tiene que salir igual dentro de un año; un SVG en `data:` sí—, `position:
+fixed` y el largo.
+
+**Lo que no se valida es que la pieza quede linda o que respete la marca**, y
+conviene decirlo en vez de simularlo. Un CSS libre puede tapar el logo, correr
+el pie o desbordar el texto, y ninguna expresión regular lo distingue de un
+pedido legítimo: «sacale el pie a esta pieza» es igual de válido. Lo que cuida
+eso es que la pieza a medida **se mira** antes de entregarse.
+
+Eso no es teoría: la primera prueba del recuadro de chimenea salió idéntica a
+la pieza sin retoque. El CSS se había aplicado —estaba en el HTML— pero
+dibujaba el marco con pseudo-elementos detrás del bloque, y el fondo de la
+plantilla los tapaba. El mecanismo funcionó; el diseño estaba mal. Nadie se
+hubiera enterado sin mirar la imagen.
+
+### Cuándo NO es un retoque
+
+Si lo mismo se va a pedir de nuevo, es una plantilla. Y si el retoque queda
+enorme, también: más de un par de reglas es una plantilla que no se quiso
+escribir. Por eso el tope de 4.000 caracteres no es una medida de seguridad
+sino una pregunta: si no entra, estás escribiendo otra cosa.
+
+Lo que sigue, cuando esto tenga uso real: que un retoque que se repite se
+gradúe a componente o a campo opcional de la plantilla. Así el sistema
+aprende en vez de acumular excepciones.
+
 ## Asistime publica en Instagram: lo que faltaba era una vista (3/9/2026)
 
 Asistime ya diseñaba, hacía reels y montaba videos, pero no podía publicar.

@@ -33,6 +33,8 @@ import pathlib
 
 import jinja2
 
+from . import retoque as _retoque
+
 from motor import legibilidad
 
 CARPETA = "plantillas"
@@ -181,11 +183,19 @@ def _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt):
 
 
 def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
-    """El HTML completo de una pieza. El único lugar donde se arma una."""
+    """El HTML completo de una pieza. El único lugar donde se arma una.
+
+    Por eso el retoque se inyecta acá y en ningún otro lado: una pieza a
+    medida no es un camino aparte del normal, es el camino normal con un
+    bloque de estilo más. Ver `motor/retoque.py`.
+    """
     cuerpo, m = _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt)
+    # DESPUÉS de la hoja de la marca: el retoque tiene que poder pisar lo que
+    # la plantilla decidió, que es todo el punto de que exista.
+    extra = _retoque.hoja(data)
     return (f'<!doctype html><html><head><meta charset="utf-8">'
             f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
-            f'</style></head><body>\n'
+            f'{extra}</style></head><body>\n'
             f'<div class="canvas">{cuerpo}</div></body></html>')
 
 
@@ -339,6 +349,45 @@ no tienen `?` son obligatorios y el motor rechaza la pieza sin ellos.
 #: línea en un título.
 CIERRE_ANTES = """
 ---
+
+## Un pedido a medida que vale para ESA pieza: `retoque`
+
+Antes de fundar una plantilla, mirá si lo que piden es de una sola vez. «Que
+el texto tenga un recuadro tipo chimenea», «que el número salga tachado»,
+«ponele una cinta en diagonal en la esquina»: eso no es una plantilla nueva,
+es la de siempre con algo encima.
+
+Para eso, en el `data` de ese trabajo agregás `retoque` con un bloque de CSS
+escrito para esa pieza:
+
+```json
+{"plantilla": "titular", "formato": "vert", "data": {
+   "titulo": "Se viene el invierno",
+   "retoque": ".disp{border:14px solid #B45309;border-radius:22px;padding:36px 40px;box-shadow:inset 0 0 0 6px #FDE68A}"
+}}
+```
+
+Se aplica DESPUÉS de la hoja de la marca, así que pisa lo que la plantilla
+decidió. No se guarda en ningún lado: la pieza siguiente vuelve a salir como
+siempre.
+
+**Cuándo NO es un retoque.** Si lo mismo se va a pedir de nuevo —es un tipo de
+pieza, no un capricho de hoy— entonces sí es `crear_plantilla`. La pregunta es
+«¿esto lo vuelvo a necesitar?». Y si el retoque te está quedando enorme,
+también: más de un par de reglas es una plantilla que no se quiso escribir.
+
+**Cuatro cosas que el retoque no puede hacer** y te las va a rechazar con el
+motivo: cerrar la etiqueta `</style>`, traer una hoja o una imagen de internet
+—un SVG embebido en `data:` sí—, usar `position: fixed`, y pasar de cuatro mil
+caracteres.
+
+**Y una que sí puede y por eso hay que mirarla:** un retoque puede tapar el
+logo, correr el pie o desbordar el texto. Ninguna validación lo distingue de
+un pedido legítimo. Así que una pieza con retoque **se mira antes de
+entregarla** — y si algo quedó pisado, se corrige y se vuelve a renderizar.
+
+En un carrusel el retoque va en la diapositiva que lo necesita, no en el
+carrusel entero.
 
 ## Si falta una plantilla
 
