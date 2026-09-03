@@ -498,7 +498,7 @@ async def _correr(prompt: str, modelo: str, salida: Path,
     )
 
     log.info("arranco con %s · marca %s", modelo, marca)
-    ultimo, resultado = "", None
+    ultimo, resultado, corto = "", None, ""
     herramientas: dict[str, int] = {}
     try:
         async for msg in query(prompt=prompt, options=opciones):
@@ -514,18 +514,29 @@ async def _correr(prompt: str, modelo: str, salida: Path,
     except Exception as e:
         # El agente puede cortar con error habiendo dejado las piezas hechas.
         # Preferimos entregar lo que haya antes que descartar todo el trabajo.
+        corto = f"{type(e).__name__}: {e}"
         log.warning("el agente corto con error (%s); reviso si dejo archivos", e)
 
+    # Si el agente se cortó no hay ResultMessage y `_metricas` devuelve {}, que
+    # es indistinguible de una pieza cargada a mano. Pasó con la story del
+    # viernes del 3/9/2026: la pieza salió sin copy ni notas y las métricas no
+    # decían nada, así que el fallo fue invisible. Ahora la corrida cortada deja
+    # su rastro aunque no haya métricas.
     met = _metricas(resultado, modelo)
+    if corto:
+        met["corto"] = corto[:300]
+        met.setdefault("version", config.VERSION)
+        met.setdefault("modelo", modelo)
     if met:
         met["herramientas"] = herramientas
+    if "costo_usd" in met:
         log.info("%s · US$%.4f · %d turnos · %d tokens de salida · %ds",
                  modelo, met["costo_usd"], met["turnos"],
                  met["tokens_salida"], met["segundos"])
-        if herramientas:
-            log.info("herramientas: %s", ", ".join(
-                f"{k}×{v}" for k, v in sorted(
-                    herramientas.items(), key=lambda x: -x[1])))
+    if herramientas:
+        log.info("herramientas: %s", ", ".join(
+            f"{k}×{v}" for k, v in sorted(
+                herramientas.items(), key=lambda x: -x[1])))
     return ultimo, met
 
 
@@ -600,7 +611,7 @@ async def disenar(pedido: dict, salida: Path) -> tuple[bool, str, dict]:
         if met2:
             # El costo del intento fallido igual se pagó: se suma, si no el
             # promedio del mes miente justo en los casos que salen caros.
-            met2["costo_usd"] = round(met2["costo_usd"]
+            met2["costo_usd"] = round((met2.get("costo_usd") or 0)
                                       + (met.get("costo_usd") or 0), 5)
             met2["reintento"] = True
             met2["modelo_previo"] = modelo

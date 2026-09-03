@@ -3618,3 +3618,39 @@ con marca de agua, no un recorte; el campo queda para una imagen generada.
 `alta.py asistime-disenos --simular` la carga y la verifica. Lo que falta
 para que sea un cliente de verdad es correr el alta sin `--simular`, desde
 Cloud Shell, con los dos tokens en el entorno.
+
+## Una corrida que se corta a la mitad no puede verse igual que una a mano (3/9/2026)
+
+Dos pedidos de la story del viernes entregaron una pieza incompleta —sin
+`copy` y sin `notas`, que son obligatorios— y las métricas guardadas eran
+`{"manual": 1}`. Ese es exactamente el contenido de una pieza cargada a mano:
+ni modelo, ni turnos, ni costo. Desde la plataforma no había forma de
+distinguir «el agente terminó y así quedó» de «el agente explotó a la mitad».
+
+El fingerprint estaba en `app/disenador.py::_correr`. El `except` de ahí es
+deliberado y sigue estando bien: si el agente se cae habiendo dejado los PNG
+hechos, es mejor entregar eso que perder la corrida entera. Pero se tragaba el
+error sin dejar rastro, porque sin `ResultMessage` `_metricas()` devuelve `{}`.
+
+Ahora la corrida cortada anota `corto` con el tipo y el mensaje del error
+(recortado a 300 caracteres), más la versión y el modelo, así la fila del
+diseño dice por qué salió como salió. De paso hubo que blindar dos lugares que
+asumían que si había métricas estaban completas: el `log.info` del costo y la
+suma del reintento, que hacían `met["costo_usd"]` y ahora usan `.get`.
+
+`herramientas/probar-corrida-cortada.py` fuerza los tres casos —corrida
+entera, corte sin métricas, y corte después de haber leído el `ResultMessage`—
+contra `_correr` con un `query` de mentira. La prueba también fija algo que se
+puede romper sin darse cuenta: `_correr` reconoce el resultado por
+`type(msg).__name__ == "ResultMessage"`, así que el stub tiene que llamarse
+así.
+
+**Esto no arregla la story del viernes**, la hace legible. El error concreto
+todavía hay que verlo, y hasta que este cambio esté desplegado sólo está en el
+log de Cloud Run:
+
+```bash
+gcloud logging read \
+  'resource.type=cloud_run_job AND textPayload:"el agente corto con error"' \
+  --project=boss-padel-disenos --limit=5 --format='value(textPayload)'
+```
