@@ -2487,6 +2487,40 @@ Y como cambiar el modelo son **tres lugares** —lo aprendido el 1/9—, los
 tres están: `habla.py`, el `Dockerfile` (hornea `large-v3`) y
 `desplegar-chat.sh` (`WHISPER_MODELO=large-v3`). La imagen crece 1,6 GB.
 
+## La consigna no va en el reel, va la respuesta (3/9/2026)
+
+Segunda vuelta del reel de las reacciones. Ya descartaba los videos que no
+servían, pero adentro de los que sí servían seguía entrando lo que sobra: a
+cada persona se le había pedido definir el agente **con una palabra**, y el
+reel abría con «una palabra que te tire para arriba», «es decir, seco» y
+recién después «Seco».
+
+La consigna se repite en cada clip —es una entrevista— y el rótulo de arriba
+ya la explica. Lo que va es la respuesta. Ahora la pregunta lo dice: de cada
+video, quedate con lo que aporta y cortá lo que lo prepara; si el material es
+gente respondiendo a una misma consigna, la consigna no va. Lo mismo con el
+«a ver», el «esperá» y la risa previa.
+
+Se probó primero escribiéndolo en la `instruccion` del pedido, para ver si la
+redacción funcionaba antes de dejarla fija: el reel pasó de 18 a 12 segundos y
+quedaron las cuatro palabras solas, una atrás de otra.
+
+**Y el gancho cambió de trabajo.** Pedía «la frase con la que abriría el reel,
+sacada de lo que se dice», y devolvía «Seco, impresionante, tremendo, aura:
+palabras que te levantan» — un resumen de los subtítulos, que se leen igual
+justo abajo. El rótulo tiene que contar QUÉ está pasando y por qué mirarlo:
+«Así reaccionan en Asistime a nuevas actualizaciones».
+
+### Un cartel que abre no empieza en minúscula
+
+De arrancar en la respuesta salió un efecto lateral: la palabra viene del
+medio de una frase hablada, así que el subtítulo decía «seco.» con minúscula,
+solo en pantalla, como un error de tipeo. Se capitaliza cuando de verdad es un
+comienzo —la primera frase de un tramo, o la que sigue a una que cerró con
+punto— y NO cuando es la continuación de una frase partida en dos carteles,
+que sí empieza en minúscula. Saltando el signo de apertura: «¿de quién es?»
+queda «¿De quién es?».
+
 ## Seis videos y usó los seis: descartar es la mitad del trabajo (3/9/2026)
 
 El primer reel de verdad con material sin filtrar —seis clips sueltos de las

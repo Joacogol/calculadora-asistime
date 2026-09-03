@@ -473,8 +473,12 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
         elif corta and i + 1 < len(subs) and _pegadas(f, subs[i + 1]) and \
                 len(f["texto"]) + 1 + len(subs[i + 1]["texto"]) <= MAX_CARACTERES:
             sig = subs[i + 1]
+            # `_tramo` viaja con la frase juntada: sin él, la siguiente
+            # comparación no tiene con qué comparar. Las dos son del mismo
+            # tramo — lo exige `_pegadas` — así que cualquiera de las dos sirve.
             juntadas.append({"texto": f["texto"] + " " + sig["texto"],
-                             "desde": f["desde"], "hasta": sig["hasta"]})
+                             "desde": f["desde"], "hasta": sig["hasta"],
+                             "_tramo": f["_tramo"]})
             i += 1
         else:
             juntadas.append(dict(f))
@@ -494,7 +498,32 @@ def para_guion(guion: dict, base, vocabulario: str = "") -> list[dict]:
     for a, b in zip(juntadas, juntadas[1:]):
         if a["hasta"] > b["desde"] - 0.04:
             a["hasta"] = round(max(a["desde"] + 0.25, b["desde"] - 0.04), 3)
+    # ── Un cartel que abre no empieza en minúscula ──
+    #
+    # El subtítulo sale del medio de una frase hablada, así que arranca como
+    # venía: «seco.» con minúscula, sola en pantalla, se lee como un error de
+    # tipeo. Se corrige sólo cuando de verdad es un comienzo —la primera frase
+    # de un tramo, o la que sigue a una que cerró con punto—: la continuación
+    # de una frase partida en dos carteles SÍ empieza en minúscula y tocarla
+    # sería el error contrario.
+    anterior = None
+    for f in juntadas:
+        if anterior is None or f["_tramo"] != anterior["_tramo"] or _cerrada(anterior):
+            f["texto"] = _capitalizar(f["texto"])
+        anterior = f
     return [{k: v for k, v in f.items() if k != "_tramo"} for f in juntadas]
+
+
+def _capitalizar(texto: str) -> str:
+    """La primera letra en mayúscula, saltando lo que abre.
+
+    «¿de quién es?» tiene que quedar «¿De quién es?», no «¿de quién es?» con
+    el signo en mayúscula —que no existe— ni intacto.
+    """
+    for i, c in enumerate(texto):
+        if c.isalpha():
+            return texto[:i] + c.upper() + texto[i + 1:] if c.islower() else texto
+    return texto
 
 
 def en_frase(palabras) -> str:

@@ -124,5 +124,28 @@ habla.palabras = lambda ruta, voc="": [{"texto": "Sí.", "desde": 1.0, "hasta": 
 fr = habla.para_guion({"tramos": [{"archivo": "probar-subtitulos.py", "desde": 0.0, "hasta": 3.0}]}, base)
 ok([f["texto"] for f in fr] == ["Sí. ¿En serio?"], "dos frases pegadas del mismo tramo sí se juntan", fr)
 
+print("\n■ Un cartel que abre no empieza en minúscula")
+#
+# «seco.» salió así el 3/9/2026 en el reel de las reacciones: la palabra sale
+# del medio de una frase hablada y quedaba sola en pantalla, con minúscula,
+# como un error de tipeo.
+habla.palabras = lambda ruta, voc="": [{"texto": "seco.", "desde": 2.0, "hasta": 2.6}]
+fr = habla.para_guion({"tramos": [{"archivo": "probar-subtitulos.py", "desde": 1.8, "hasta": 3.0}]}, base)
+ok([f["texto"] for f in fr] == ["Seco."], "la primera de un tramo se capitaliza", fr)
+
+# Pero la continuación de una frase partida en dos carteles NO se toca: ahí la
+# minúscula es correcta.
+habla.palabras = lambda ruta, voc="": [
+    {"texto": "Yayo", "desde": 0.1, "hasta": 0.4}, {"texto": "es", "desde": 0.4, "hasta": 0.6},
+    {"texto": "medio", "desde": 0.6, "hasta": 0.9}, {"texto": "patadura", "desde": 0.9, "hasta": 1.4},
+    {"texto": "para", "desde": 1.4, "hasta": 1.6}, {"texto": "el", "desde": 1.6, "hasta": 1.7},
+    {"texto": "pádel", "desde": 1.7, "hasta": 2.1}, {"texto": "y", "desde": 2.1, "hasta": 2.3},
+    {"texto": "para", "desde": 2.3, "hasta": 2.5}, {"texto": "todo", "desde": 2.5, "hasta": 2.8},
+    {"texto": "lo", "desde": 2.8, "hasta": 2.9}, {"texto": "demás.", "desde": 2.9, "hasta": 3.4}]
+fr = habla.para_guion({"tramos": [{"archivo": "probar-subtitulos.py", "desde": 0.0, "hasta": 4.0}]}, base)
+ok(len(fr) > 1 and fr[1]["texto"][0].islower(),
+   "la continuación de una frase partida sigue en minúscula", [f["texto"] for f in fr])
+ok(habla._capitalizar("¿de quién es?") == "¿De quién es?", "el signo de apertura no se come la mayúscula")
+
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)

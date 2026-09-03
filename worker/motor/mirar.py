@@ -248,12 +248,22 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict]) -> str:
         + "Devolvé los tramos EXACTOS que entran, en el orden en que deberían aparecer. Cada tramo "
           "empieza y termina donde el corte no deja una frase a la mitad. Preferí pocos tramos y "
           "buenos a muchos y cortos; ninguno de menos de 2 segundos.\n\n"
+          # Lo que hay que dejar afuera DENTRO de cada clip, no sólo entre
+          # clips. Ver el comentario de `elegir_tramos` sobre el reel de las
+          # reacciones: la consigna se escuchaba tres veces.
+          "De cada video quedate con lo que APORTA al pedido y cortá lo que lo prepara. Si el "
+          "material es gente respondiendo a una misma consigna o pregunta, la consigna NO va en "
+          "el reel —se repite en cada clip y el rótulo ya la explica—: va la respuesta. Lo mismo "
+          "con el «a ver», el «esperá», la risa previa y el ida y vuelta hasta que la persona "
+          "arranca.\n\n"
           "Contestá SOLAMENTE con este JSON, sin texto antes ni después:\n"
           "{\n"
           '  "tramos": [\n'
           '    {"archivo": 1, "parte": 1, "desde": "MM:SS.mmm", "hasta": "MM:SS.mmm", "por_que": "una línea"}\n'
           "  ],\n"
-          '  "gancho": "la frase de 6 a 8 palabras con la que abriría el reel, sacada de lo que se dice",\n'
+          '  "gancho": "el rótulo de 6 a 8 palabras que va escrito arriba: QUÉ está pasando y '
+          'por qué mirarlo —quién reacciona a qué, qué se está mostrando—. No repitas las '
+          'palabras que se dicen: ésas ya se leen en los subtítulos",\n'
           # Vos ves el video; el que transcribe sólo oye. Ver el comentario de
           # `elegir_tramos` sobre por qué esta línea vale un modelo entero, y
           # por qué los nombres de persona quedan afuera.
@@ -394,6 +404,13 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     "avisos": [...], "uso": {...}, "segundos": float, "modelo": str}` con los
     tramos ya en el reloj del archivo original y listos para el guion. Levanta
     `NoPudeMirar` si no puede: quien llama sigue sin él.
+
+    Descartar no es sólo entre clips: **dentro** de cada uno hay que cortar lo
+    que prepara la respuesta. En el reel de las reacciones del equipo, a cada
+    persona se le pedía definir el agente con una palabra, y el reel salía con
+    la consigna adelante —«una palabra que te tire para arriba», «es decir,
+    seco»— antes de la palabra. La consigna se repite en cada clip y el rótulo
+    ya la explica: lo que va es la respuesta.
 
     `descartados` son los videos que dejó afuera y por qué. Con varios clips
     sueltos, descartar es la mitad del trabajo —ver `pregunta`— y quien pidió
