@@ -1107,9 +1107,18 @@ for F in api-disenos api-plantillas api-publicar api-reels api-fotos; do
 done
 
 # Y el CLI necesita un token de tu cuenta, que NO es ninguna de las claves de
-# los clientes: se saca de supabase.com/dashboard/account/tokens.
+# los clientes: se saca de supabase.com/dashboard/account/tokens y empieza con
+# `sbp_`.
+#
+# ESTA LÍNEA SE CORRE SOLA. Pegada junto con las que siguen, `read` toma como
+# token la línea siguiente del texto pegado —el `export` de acá abajo— y el
+# CLI contesta `Unauthorized`, que parece un token vencido y no lo es. Pasó el
+# 3/9/2026.
 read -rs -p "Pegá el token de Supabase y Enter (no se ve): " T
 export SUPABASE_ACCESS_TOKEN="$T"; unset T; echo
+
+# Que quedó bien se comprueba sin mostrarlo:
+echo "${SUPABASE_ACCESS_TOKEN:0:4}… (${#SUPABASE_ACCESS_TOKEN} caracteres)"
 
 npx supabase link --project-ref heajbidxysjxxegqemka
 npx supabase functions deploy api-plantillas --no-verify-jwt
