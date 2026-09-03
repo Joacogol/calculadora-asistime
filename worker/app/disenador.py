@@ -495,6 +495,14 @@ async def _correr(prompt: str, modelo: str, salida: Path,
         allowed_tools=["Read", "Write", "Edit", "Bash", "Glob", "Grep", "Skill"],
         permission_mode="dontAsk",
         max_turns=80,
+        # El SDK lee la salida del CLI mensaje por mensaje y corta con
+        # «JSON message exceeded maximum buffer size» si uno solo pasa el
+        # tope, que por defecto es 1 MB. Un `Read` de una pieza terminada
+        # manda el PNG entero en base64: nuestras stories pesan entre 0,9 y
+        # 1,7 MB, o sea 1,2 a 2,3 MB en base64. Todas las corridas del
+        # 2 y 3/9/2026 que miraron el PNG murieron ahí. El tope alto no
+        # gasta memoria por sí solo: es hasta cuánto se permite acumular.
+        max_buffer_size=32 * 1024 * 1024,
     )
 
     log.info("arranco con %s · marca %s", modelo, marca)

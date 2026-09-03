@@ -3654,3 +3654,48 @@ gcloud logging read \
   'resource.type=cloud_run_job AND textPayload:"el agente corto con error"' \
   --project=boss-padel-disenos --limit=5 --format='value(textPayload)'
 ```
+
+## El error era el PNG: 1 MB de tope contra piezas de 1,7 MB (3/9/2026)
+
+El log dijo lo mismo cinco veces, en las cinco corridas del 2 y 3 de
+septiembre:
+
+    Failed to decode JSON: JSON message exceeded maximum buffer size
+    of 1048576 bytes
+
+El SDK del agente lee la salida del CLI mensaje por mensaje, y si **un solo
+mensaje** pasa 1 MB corta el stream y se pierde la corrida entera. Cuando el
+agente hace `Read` de una pieza terminada, el PNG viaja adentro de ese
+mensaje en base64, que pesa un tercio más que el archivo.
+
+Medí los renders del set completo de Boss: la story de `americano` pesa
+**1,7 MB**, o sea 2,3 MB en base64. Más de la mitad de las piezas pasan los
+780 KB a partir de los cuales el mensaje ya no entra.
+
+O sea que el error lo trajo la instrucción **«y después MIRÁ EL PNG»**, la que
+agregué el 2/9 para que el agente revise su propio trabajo. Es una buena
+instrucción y por eso duele el detalle: el agente hacía exactamente lo que le
+pedí, la pieza quedaba renderizada en disco, y el proceso moría al abrirla.
+Como el `except` entregaba lo que hubiera, salía una pieza a medio hacer y
+nadie se enteraba. La primera fecha del log —2/9 22:03— es el mismo día que la
+instrucción.
+
+El arreglo es una línea, `max_buffer_size=32 * 1024 * 1024`, en los tres
+agentes que pueden abrir un archivo: `disenador`, `motorista` y `plantillero`.
+El tope alto no reserva memoria: dice hasta cuánto se permite acumular.
+
+`herramientas/probar-buffer-agente.py` deja la cuenta escrita en código —
+pieza más pesada × base64 × 2 de margen— y falla si un agente no tiene tope o
+si aparece un `ClaudeAgentOptions` con `Read` y sin él. Verifiqué que la
+prueba falla de verdad sacando la línea.
+
+### Lo que aprendí acá
+
+Una capacidad nueva puede romper el transporte, no la lógica. «Mirá el PNG»
+se probó mirando que el agente mirara, no midiendo cuánto pesa mirar. Cuando
+lo que se agrega es que el agente **abra algo**, la pregunta que faltaba es
+cuánto pesa ese algo en el caso peor.
+
+Y el orden importó: sin el arreglo de `corto` de más arriba, este log no se
+buscaba. Un fallo invisible primero hay que hacerlo legible; recién ahí se
+puede arreglar.

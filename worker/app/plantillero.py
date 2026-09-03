@@ -651,6 +651,9 @@ async def _correr(prompt: str, marca: str,
         allowed_tools=["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
         permission_mode="dontAsk",
         max_turns=60,
+        # Igual que en `disenador._correr`: un `Read` de un PNG grande
+        # pasa el tope de 1 MB por mensaje del SDK y corta la corrida.
+        max_buffer_size=32 * 1024 * 1024,
     )
     ultimo, resultado = "", None
     try:
