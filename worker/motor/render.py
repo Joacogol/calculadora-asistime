@@ -189,10 +189,37 @@ QUE_ENTRE = """
 #: así. Lo que falla acá no lo causa el dibujo, así que las medidas del dibujo
 #: no lo veían; y no es «tapar» en el sentido de los píxeles, porque el texto
 #: se MOVIÓ. Es una superposición, y una superposición se mide con rectángulos.
+CAJAS_DE_MARCA = """
+() => {
+  // Dónde quedó cada firma, para poder mirar el PNG ahí. El navegador sabe la
+  // geometría; sólo el PNG sabe qué color le quedó atrás.
+  const como = {'marca-logo': 'el logo de la marca',
+                'marca-iso': 'el isotipo de la marca',
+                'legal': 'el pie de la marca',
+                'marca-pie': 'la firma escrita de la marca'};
+  const caja = [];
+  const raiz = document.querySelector('.canvas').getBoundingClientRect();
+  for (const [clase, que] of Object.entries(como)) {
+    for (const el of document.querySelectorAll('.' + clase)) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 6 || r.height < 6) continue;
+      caja.push({que, x: r.left - raiz.left, y: r.top - raiz.top,
+                 w: r.width, h: r.height});
+    }
+  }
+  return caja;
+}
+"""
+
 MARCAS_LIBRES = """
 () => {
   // El pie legal firma tanto como el logo: es la marca escrita.
-  const marcas = [...document.querySelectorAll('.marca-iso, .marca-logo, .legal')];
+  // `.marca-pie` es un marcador SIN ESTILOS: dice «esto es la firma escrita de
+  // la marca», que es distinto de cómo está tipografiada. El pie de Asistime
+  // llevaba `class="kicker"` —una clase de estilo— y por eso ningún guardián lo
+  // reconocía como firma: el 4/9/2026 «ASISTIME.AI» quedó encima de la oreja de
+  // Tony y nadie dijo nada.
+  const marcas = [...document.querySelectorAll('.marca-iso, .marca-logo, .legal, .marca-pie')];
   if (!marcas.length) return [];
   const AIRE = 18;   // píxeles que la firma necesita libres alrededor
   // Sólo lo que DIBUJA algo propio: un contenedor se superpone con todo lo
@@ -349,7 +376,17 @@ class Render:
         if ajustes:
             self.ajustes.extend({**a, "pieza": destino.stem} for a in ajustes)
 
+        cajas = pg.evaluate(CAJAS_DE_MARCA)
         pg.locator(".canvas").screenshot(path=str(destino))
+
+        # La firma se mide DESPUÉS de la captura y no antes: el navegador sabe
+        # dónde quedó, pero sólo el PNG sabe qué le quedó atrás — el fondo de
+        # la marca, una foto, un dibujo o media jirafa.
+        try:
+            for aviso in revisar.firma_legible(destino, cajas):
+                self.avisos.append(f"{destino.stem}: {aviso}")
+        except Exception:
+            log.debug("no pude medir la firma de %s", destino.stem, exc_info=True)
         return destino
 
     def placa(self, pg, tpl, data, fmt, nombre, salida):

@@ -182,6 +182,34 @@ def _cuerpo(marca, raiz, ayudas, contrato, compilada, data, fmt):
     return cuerpo, m
 
 
+def _css_recorte(raiz, data) -> str:
+    """Un objeto recortado no se recorta: se coloca.
+
+    `.bg` lleva `object-fit: cover` en la hoja de todas las marcas, y es lo
+    correcto para una foto: llena el lienzo y lo que sobra se va. Aplicado a un
+    PNG sin fondo es exactamente lo contrario de lo que haría cualquiera: lo
+    agranda hasta llenar y le corta lo que no entra.
+
+    El 4/9/2026 se pidió cuatro veces «la jirafa de Tony en la parte inferior
+    mirando hacia arriba» y salieron cuatro cabezas gigantes cortadas al medio.
+    Con `contain` la figura entra entera y el `foco` de la foto decide contra
+    qué borde se apoya — que es la posición inline de la plantilla y le gana a
+    esta regla, así que sigue mandando la foto.
+
+    Se decide midiendo el archivo, no por un campo que alguien tiene que
+    acordarse de poner.
+    """
+    foto = (data or {}).get("foto")
+    if not foto:
+        return ""
+    ruta = pathlib.Path(foto)
+    if not ruta.is_absolute():
+        ruta = pathlib.Path(raiz) / ruta
+    if legibilidad.transparencia(ruta) < legibilidad.RECORTE_MINIMO:
+        return ""
+    return ".bg{object-fit:contain}"
+
+
 def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
     """El HTML completo de una pieza. El único lugar donde se arma una.
 
@@ -197,9 +225,12 @@ def _pagina(marca, raiz, ayudas, contrato, compilada, data, fmt):
     # justamente su trabajo.
     css_capas, capas = _retoque.dibujos(data)
     extra = _retoque.hoja(data)
+    # El recorte va DESPUÉS de la hoja de la marca —para pisar su `cover`— y
+    # antes del retoque, que tiene que poder pisarlo a él.
+    recorte = _css_recorte(raiz, data)
     return (f'<!doctype html><html><head><meta charset="utf-8">'
             f'<style>{marca.BASE_CSS}\n.canvas{{height:{m["alto"]}px}} '
-            f'{css_capas}{extra}</style></head><body>\n'
+            f'{recorte}{css_capas}{extra}</style></head><body>\n'
             f'<div class="canvas">{cuerpo}{capas}</div></body></html>')
 
 

@@ -172,6 +172,52 @@ def luminancia_zona(foto, zona=(0.40, 0.88), percentil=50) -> float | None:
     return _lum_srgb(*np.percentile(banda.reshape(-1, 3), percentil, axis=0))
 
 
+#: Desde qué proporción de píxeles vacíos una imagen deja de ser una foto de
+#: fondo y pasa a ser un objeto recortado. Con un 20% ya no hay foto debajo del
+#: texto: hay fondo de marca.
+RECORTE_MINIMO = 0.20
+
+
+def transparencia(foto) -> float:
+    """Qué proporción de la imagen está vacía. 0.0 si no tiene canal alfa.
+
+    Existe para distinguir dos cosas que el motor trataba igual y no lo son:
+
+      · una FOTO —una cancha, una persona, un plato— que ocupa el rectángulo
+        entero y sobre la que el texto necesita un velo para leerse;
+      · un OBJETO RECORTADO —Tony, un producto sin fondo, un logo— que no ocupa
+        el rectángulo: lo que hay alrededor es el fondo de la marca.
+
+    Tratar al segundo como al primero produce exactamente los dos defectos que
+    aparecieron el 4/9/2026 en cuatro piezas seguidas de Asistime:
+
+      1. `object-fit: cover` lo estira a sangre y lo RECORTA. Se pidió «la
+         jirafa asomándose desde abajo» y salió una cabeza gigante cortada al
+         medio, cuatro veces.
+      2. El velo se calcula sobre píxeles vacíos y se pinta encima del fondo de
+         la marca. Medido en la pieza real: el fondo claro de Asistime
+         (#FBFCFF) salió RGB(220,220,224) — gris. El agente había pedido el
+         azul oficial y anotó en sus notas que lo había usado.
+    """
+    if not foto:
+        return 0.0
+    ruta = pathlib.Path(foto)
+    try:
+        from PIL import Image
+        with Image.open(ruta) as im:
+            if im.mode not in ("RGBA", "LA", "PA") and "transparency" not in im.info:
+                return 0.0
+            alfa = im.convert("RGBA").getchannel("A")
+            # El histograma es mucho más barato que recorrer los píxeles y
+            # alcanza: sólo hace falta cuántos están por debajo del umbral.
+            h = alfa.histogram()
+            vacios = sum(h[:17])
+            total = sum(h)
+            return vacios / total if total else 0.0
+    except Exception:
+        return 0.0
+
+
 def plan_titular(foto, acento: str, oscuro: str = "#111111",
                  zona=(0.40, 0.88), objetivo_blanco=4.0, objetivo_acento=3.0,
                  velo_max=0.86, percentil=75) -> dict:
@@ -194,14 +240,26 @@ def plan_titular(foto, acento: str, oscuro: str = "#111111",
     tinta = oscuro if l_acento > 0.40 else "#FFFFFF"
 
     if not foto:
-        return {"velo": 0.0, "modo": "texto", "contraste": None, "tinta": tinta}
+        return {"velo": 0.0, "modo": "texto", "contraste": None,
+                "tinta": tinta, "recortada": False, "vacio": 0.0}
+
+    # Un objeto recortado no lleva velo, y no es una preferencia: el velo
+    # existe para oscurecer LA FOTO que está debajo del texto blanco, y acá
+    # debajo del texto no hay foto sino el fondo de la marca, cuyo contraste ya
+    # lo garantiza la paleta. Velarlo no protege nada y sí convierte el blanco
+    # de la marca en gris.
+    vacio = transparencia(foto)
+    if vacio >= RECORTE_MINIMO:
+        return {"velo": 0.0, "modo": "texto", "contraste": None,
+                "tinta": tinta, "recortada": True, "vacio": round(vacio, 3)}
 
     velo = velo_necesario(foto, "#FFFFFF", objetivo=objetivo_blanco,
                           zona=zona, maximo=velo_max, percentil=percentil)
     l0 = luminancia_zona(foto, zona, percentil=percentil)
     if l0 is None:
         return {"velo": max(velo, 0.55), "modo": "bloque",
-                "contraste": None, "tinta": tinta}
+                "contraste": None, "tinta": tinta,
+                "recortada": False, "vacio": round(vacio, 3)}
 
     # El velo es negro encima: en luz lineal multiplica por (1 - a).
     l_fondo = l0 * (1 - velo)
@@ -209,4 +267,5 @@ def plan_titular(foto, acento: str, oscuro: str = "#111111",
     return {"velo": velo,
             "modo": "texto" if c >= objetivo_acento else "bloque",
             "contraste": round(c, 2),
-            "tinta": tinta}
+            "tinta": tinta,
+            "recortada": False, "vacio": round(vacio, 3)}

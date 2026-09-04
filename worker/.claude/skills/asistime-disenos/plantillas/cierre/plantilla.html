@@ -44,7 +44,7 @@
         lockup se corre a la derecha. -#}
     {% if d.get('en_carrusel') %}<div class="grow"></div>{% endif %}
     {{ logo(m.logo, pal.tinta, 'right' if d.get('en_carrusel') else 'left') }}
-    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
+    {% if not d.get('en_carrusel') %}<div class="kicker marca-pie" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
   </div>
   {#- En la última story de una secuencia, la caja «respondé» del motor ocupa
       los 120 px de arriba del margen inferior: el pie sube para no pisarla. -#}

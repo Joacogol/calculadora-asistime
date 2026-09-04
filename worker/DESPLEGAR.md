@@ -4403,3 +4403,85 @@ Los archivos quedaron en la raíz del bucket con sus nombres de origen (`Tony
 (4).png` y compañía). No importa: el agente nunca los ve. Lee la `clave`
 —`tony-lentes-de-sol`, `tony-escritorio`, `tony-asomandose`, `tony-pensando`— y
 el archivo local que arma `clave_segura()`.
+
+## Un objeto recortado no es una foto de fondo (4/9/2026)
+
+Cuatro pedidos idénticos en veinte minutos —«Algo grande se está por venir», con
+Tony asomándose desde abajo— y tres salieron mal. Medido el píxel de la esquina
+de cada una:
+
+| | pedido | fondo medido |
+|---|---|---|
+| 22:06 | «fondo claro, estética de Asistime» | `RGB(220,220,224)` gris |
+| 22:11 | «fondo claro» | gris |
+| 22:16 | «fondo azul oficial» | **`#4D90FF` — correcto** |
+| 22:26 | «fondo azul oficial, plantilla titular» | gris |
+
+El fondo claro de la marca es `#FBFCFF`. Ese gris no existe en el kit.
+
+Las notas del propio agente explican la única que salió bien: «Tony como
+**dibujo** sobre el fondo (no como foto de fondo) para mantener el azul pleno».
+Las tres malas lo pasaron como `foto`. Y la del 22:26 anotó «Usé el estilo azul
+como pediste» — el píxel dice gris. **El agente creyó que había puesto azul.**
+
+### Por qué, y los tres arreglos
+
+Una foto ocupa el rectángulo entero; un objeto recortado no. El motor los
+trataba igual, y de ahí salían los tres defectos:
+
+1. **`object-fit: cover` recorta un PNG sin fondo.** Por eso «la jirafa
+   asomándose desde abajo» salió cuatro veces como una cabeza gigante cortada
+   al medio. Ahora `motor/plantillas._css_recorte` mide la transparencia del
+   archivo y, si es un recorte, pone `object-fit: contain`: la figura entra
+   entera y el `foco` —que es inline y le gana— decide contra qué borde se
+   apoya. Se decide midiendo, no con un campo que alguien tiene que acordarse
+   de poner.
+2. **El velo se calculaba sobre píxeles vacíos.** El velo existe para oscurecer
+   LA FOTO que está debajo del texto blanco; debajo de un recorte no hay foto
+   sino el fondo de la marca, que ya contrasta. Velarlo no protege nada y
+   convierte el blanco en gris. `legibilidad.plan_titular` ahora devuelve
+   `recortada` y velo cero (`RECORTE_MINIMO = 20%` de píxeles vacíos;
+   `tony-asomandose` mide 79%).
+3. **`estilo` se descartaba en silencio si venía `foto`.** En `titular` eran dos
+   ramas excluyentes. Ahora el fondo de la marca se pinta SIEMPRE y la foto va
+   encima. Nadie pide un color y una foto esperando que el motor tire uno.
+
+Rehecho el mismo pedido con los tres arreglos: el fondo mide `RGB(77,144,255)`
+—el azul oficial exacto— y Tony entra entero, apoyado abajo.
+
+## La firma se mide contra lo que tiene detrás (4/9/2026)
+
+Con la pieza ya arreglada aparecieron dos defectos más, y los dos son de los que
+un diseñador no deja pasar:
+
+- sobre el fondo claro, **el lockup blanco quedó a 1,2:1** — invisible;
+- **«ASISTIME.AI» cayó encima de la oreja de Tony**.
+
+Ninguno de los dos lo veía nadie. El guardián de la firma existía desde esa
+misma mañana, pero compara la firma **contra elementos con texto**: una imagen
+puede taparla entera sin que diga nada. Y el contraste del logo contra su fondo
+no lo medía nadie: el color del logo lo elige la plantilla, el fondo lo elige
+otro campo, y nunca se comparaban.
+
+`revisar.firma_legible()` los caza a los dos con un solo número. Mira el **PNG
+ya dibujado**, que es lo único que sabe qué quedó atrás —el fondo de la marca,
+una foto, un dibujo o media jirafa—: toma el anillo de 10 px alrededor de cada
+firma como fondo, la población de luminancia que más se aparta como la firma, y
+mide el contraste. Menos de 3:1 es un ⚠.
+
+Y hacía falta una cosa más para que lo viera: **el pie de Asistime llevaba
+`class="kicker"`**, que es una clase de estilo, no una marca de «esto es la
+firma». Se le agregó `marca-pie`, un marcador sin estilos, en las cinco
+plantillas. Una clase que dice cómo se ve algo no sirve para saber qué es.
+
+### Lo que la medición encontró y NO se tocó
+
+El pie sobre el fondo azul pleno mide **2,6:1** (`#E3EEFF` sobre `#4D90FF`), en
+cualquier pieza y sin foto de por medio. Es un número de la paleta, no de una
+pieza, así que se informa y lo decide la marca — cambiar un color del kit no es
+un arreglo de motor.
+
+Y una lección sobre las pruebas: `probar-dibujo.py` exigía «ningún aviso» donde
+quería decir «ningún aviso sobre el dibujo», así que **una medición nueva y
+verdadera la rompía**. Una prueba que falla cuando el motor aprende a mirar algo
+más no está cuidando nada: está congelando lo que el motor sabe.

@@ -236,9 +236,17 @@ if puede_mirar:
         ok("avisa cuando el dibujo cruza el pie",
            any("tapa" in x and "plantilla había dibujado" in x for x in a), a)
         ok("y dice dónde", a and "abajo a la izquierda" in a[0], a)
-        ok("no avisa por un dibujo en el vacío", not avisos({"svg": EN_EL_VACIO}))
+        # «Ningún aviso SOBRE EL DIBUJO», no «ningún aviso». Escrito como
+        # `not avisos(...)`, cualquier medición nueva del motor rompía esta
+        # prueba aunque estuviera diciendo la verdad sobre otra cosa — pasó el
+        # 4/9/2026 con el guardián que mide el contraste de la firma. Una
+        # prueba que se rompe cuando el motor aprende a mirar algo más no está
+        # cuidando nada: está congelando lo que el motor sabe.
+        del_dibujo = lambda a: [x for x in a if "tapa" in x or "se sale" in x]
+        ok("no avisa por un dibujo en el vacío",
+           not del_dibujo(avisos({"svg": EN_EL_VACIO})))
         ok("ni por una capa que va detrás del titular",
-           not avisos({"svg": DETRAS, "atras": True}))
+           not del_dibujo(avisos({"svg": DETRAS, "atras": True})))
 
         a = avisos({"svg": SE_SALE})
         ok("avisa si el dibujo se sale por un solo lado",

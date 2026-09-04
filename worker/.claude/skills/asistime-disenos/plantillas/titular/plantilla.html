@@ -35,18 +35,33 @@
 {%- endif -%}
 {%- set chip = 'chip-oscuro' if (encima or pleno or d.estilo == 'oscuro') else 'chip-suave' -%}
 
-{% if d.foto %}
-<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
-{%- set plan = plan_titular(d.foto, pal.tinta, c.oscuro, (0.25, 0.85), 4.5, 4.5) -%}
-<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.85) }}"></div>
-{% elif d.sobre_video %}
-<div class="scrim" style="background:{{ degrade(0.42, 0.72) }}"></div>
-{% else %}
+{#- EL FONDO DE LA MARCA VA SIEMPRE, tenga foto o no.
+
+    Antes la foto y el estilo eran ramas excluyentes: si venía `foto`, el
+    `estilo` se descartaba en silencio. El 4/9/2026 se pidió cuatro veces
+    «fondo azul oficial de Asistime» con la foto de Tony, y las cuatro salieron
+    grises: el azul nunca llegó a dibujarse y el velo de la foto pintó el
+    blanco del lienzo. El agente anotó en sus notas que había usado el azul.
+    Nadie pide un color y un fondo esperando que el motor tire uno. -#}
+{% if not d.sobre_video %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% if d.estilo in ('claro', 'oscuro') %}
 <div class="glow glow-azul" style="width:{{ m.alto * 0.55 }}px;height:{{ m.alto * 0.55 }}px;right:-{{ m.alto * 0.18 }}px;top:-{{ m.alto * 0.16 }}px;opacity:{{ '.9' if d.estilo == 'oscuro' else '.45' }}"></div>
 <div class="glow glow-violeta" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;left:-{{ m.alto * 0.2 }}px;bottom:-{{ m.alto * 0.22 }}px;opacity:{{ '.8' if d.estilo == 'oscuro' else '.38' }}"></div>
 {% endif %}
+{% endif %}
+
+{% if d.foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{%- set plan = plan_titular(d.foto, pal.tinta, c.oscuro, (0.25, 0.85), 4.5, 4.5) -%}
+{#- El velo protege al texto blanco de LA FOTO que tiene debajo. Un objeto
+    recortado no tiene foto debajo del texto: tiene el fondo de la marca, que
+    ya contrasta. Velarlo no protege nada y lo vuelve gris. -#}
+{% if not plan.recortada %}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.85) }}"></div>
+{% endif %}
+{% elif d.sobre_video %}
+<div class="scrim" style="background:{{ degrade(0.42, 0.72) }}"></div>
 {% endif %}
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
@@ -80,7 +95,7 @@
   <div class="grow"></div>
   {% if not d.sobre_video %}
   <div class="row" style="width:100%;align-items:flex-end">
-    {% if not d.get('en_carrusel') %}<div class="kicker" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>{% endif %}
+    {% if not d.get('en_carrusel') %}<div class="kicker marca-pie" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>{% endif %}
     {% if d.pie %}
     <div class="legal" style="margin-left:auto;color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
     {% endif %}

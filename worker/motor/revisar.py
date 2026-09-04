@@ -306,6 +306,83 @@ BORDE_TOCADO = 30
 EN_LA_FRANJA = 3000
 
 
+#: Aire alrededor de la firma que se mira para saber sobre qué está apoyada.
+ANILLO = 10
+
+
+def firma_legible(pieza, cajas) -> list[str]:
+    """¿La firma de la marca se lee sobre lo que tiene detrás?
+
+    `cajas` son los rectángulos del logo, el isotipo y el pie, medidos en el
+    navegador. Acá se mira el PNG ya dibujado, que es la única forma de saber
+    qué quedó realmente atrás: puede ser el fondo de la marca, una foto, un
+    dibujo o media jirafa.
+
+    Por qué hacía falta, medido el 4/9/2026 en dos piezas seguidas:
+
+      · «ASISTIME.AI» cayó justo encima de la oreja de Tony. El guardián que
+        cuida la firma existía desde esa misma mañana, pero sólo compara
+        contra ELEMENTOS CON TEXTO: una imagen puede taparla entera y no dice
+        nada.
+      · Sobre el fondo claro de la marca, el lockup blanco quedó casi
+        invisible. Nadie medía eso: el color del logo lo elige la plantilla y
+        el fondo lo elige otro campo, y nunca se compararon.
+
+    Un solo número los caza a los dos, y es el que usaría cualquiera: cuánto
+    contrasta la firma con lo que tiene abajo.
+    """
+    from PIL import Image, ImageStat                                # noqa: F401
+    avisos = []
+    with Image.open(pieza) as img:
+        im = img.convert("RGB")
+        W, H = im.size
+        for caja in cajas or []:
+            x, y = int(caja["x"]), int(caja["y"])
+            w, h = int(caja["w"]), int(caja["h"])
+            if w < 6 or h < 6:
+                continue
+            dentro = im.crop((max(0, x), max(0, y),
+                              min(W, x + w), min(H, y + h)))
+            # El anillo de afuera es, sin ambigüedad, lo que hay detrás: la
+            # firma no llega hasta ahí.
+            gx, gy = max(0, x - ANILLO), max(0, y - ANILLO)
+            grande = im.crop((gx, gy, min(W, x + w + ANILLO),
+                              min(H, y + h + ANILLO)))
+            luces_fuera = _luces(grande) - _luces(dentro)
+            if not luces_fuera:
+                continue
+            l_fondo = _mediana(luces_fuera)
+            # Adentro de la caja conviven la firma y el fondo. La firma es la
+            # población que MÁS se aparta del fondo: si es clara sobre oscuro
+            # está arriba, y al revés abajo. Se toma el percentil de ese lado.
+            adentro = sorted(luz for luz, n in _luces(dentro).items()
+                             for _ in range(n))
+            if not adentro:
+                continue
+            bajo, alto = adentro[len(adentro) // 20], adentro[-len(adentro) // 20 - 1]
+            l_marca = alto if abs(alto - l_fondo) >= abs(l_fondo - bajo) else bajo
+            c = _contraste(l_marca, l_fondo)
+            if c < CONTRASTE_MINIMO:
+                avisos.append(
+                    f"{caja['que']} contrasta {c:.1f}:1 con lo que tiene "
+                    f"detrás, y hace falta {CONTRASTE_MINIMO:.0f}:1 para que "
+                    f"se lea. La firma de la marca no se pone donde no se ve: "
+                    f"movela, o cambiá el fondo o el color con que firma")
+    return avisos
+
+
+def _luces(im):
+    """Cuántos píxeles hay de cada luminancia, redondeada a 1/64."""
+    from collections import Counter
+    chico = im.resize((max(1, im.width // 2), max(1, im.height // 2)))
+    return Counter(round(_luz(p), 3) for p in chico.getdata())
+
+
+def _mediana(cuenta):
+    todos = sorted(luz for luz, n in cuenta.items() for _ in range(n))
+    return todos[len(todos) // 2]
+
+
 def _tinta(im):
     """Máscara de lo que está DIBUJADO en la pieza: textos, logos, formas.
 
