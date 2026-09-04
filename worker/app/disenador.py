@@ -194,6 +194,40 @@ REGLAS
   vas a creer que la cambiaste. Pasó el 4/9/2026: el agente anotó que había
   agrandado el logo 1,8 veces y salió idéntico.
 
+  **Una FOTO puede ir adentro del dibujo**, con
+  `<image href="assets/subidas/01-foto.jpg" x=".." y=".." width=".." height=".."
+  preserveAspectRatio="xMidYMid slice" clip-path="url(#…)"/>`. Ahí está la
+  diferencia entre «la foto de fondo», que es lo único que sabe hacer la
+  plantilla, y «la foto ACÁ, de este tamaño, con marco y sombra».
+
+  **Una captura de pantalla NO es una foto.** Una foto se recorta y se le pone
+  un velo encima y sigue siendo una foto; una captura es información, y
+  recortada y con velo no se lee nada. Nunca va de fondo completo: va como
+  objeto, entera, y bastante grande como para leerse. Si el pedido dice
+  «mockup», «que se vea en un celular» o «como si fuera una pantalla», el
+  molde es éste —cuerpo, pantalla recortada, isla y botones— y lo único que
+  cambia es dónde y de qué tamaño:
+
+      <svg viewBox='0 0 1080 1920'>
+        <defs>
+          <clipPath id='p'><rect x='280' y='700' width='520' height='1128' rx='44'/></clipPath>
+          <filter id='s' x='-30%' y='-20%' width='160%' height='140%'>
+            <feDropShadow dx='0' dy='26' stdDeviation='26' flood-color='#1B3FA8' flood-opacity='.30'/>
+          </filter>
+        </defs>
+        <g filter='url(#s)'><rect x='263' y='683' width='554' height='1162' rx='61' fill='#0A0B14'/></g>
+        <image href='assets/subidas/01-foto.jpg' x='280' y='700' width='520' height='1128'
+               preserveAspectRatio='xMidYMid slice' clip-path='url(#p)'/>
+        <rect x='486' y='714' width='108' height='32' rx='16' fill='#0A0B14'/>
+      </svg>
+
+  **La pantalla tiene que respetar la proporción de la captura.** Mirá cuánto
+  mide el archivo antes de elegir el alto: una captura de 738×1600 en una
+  pantalla cuadrada sale estirada o recortada por la mitad.
+
+  Y acordate de dejarle lugar: si el teléfono ocupa el centro, el titular va
+  arriba. El motor te va a avisar si lo tapaste, pero es un turno perdido.
+
   **Los emojis del sistema no son un dibujo.** Se ven distinto en cada lado y
   en esta marca 🎵 sale azul marino: sobre un fondo azul desaparece. Si el
   pedido dice «emojis de música», lo que hace falta son notas dibujadas con la

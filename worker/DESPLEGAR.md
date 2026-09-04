@@ -3899,3 +3899,52 @@ plantilla. Ahora los tres píxeles del filo no se miran.
 
 Sin ese arreglo, la mitad de los avisos habrían sido falsos, que es la forma
 más rápida de que alguien deje de leerlos.
+
+## Una captura de pantalla no es una foto (4/9/2026)
+
+Tres pedidos seguidos con la misma imagen adjunta —una captura de WhatsApp
+conversando con Tony— y el sistema tocó los tres escalones del problema.
+
+**Primero, «que la foto sea protagonista».** El agente hizo lo único que
+sabía: `foto` de la plantilla `titular`, que es fondo completo con velo. Salió
+la captura recortada, ilegible, con el titular encima de la conversación y el
+pie perdido sobre el texto del chat. Correcto según el motor, inservible como
+pieza.
+
+**Después, «puesta sobre el fondo, no de fondo completo».** Ahí el agente
+encontró la puerta de atrás: metió la imagen por `retoque`, como
+`background-image` de un bloque. Funcionó —flotando, con sombra y esquinas
+redondeadas— pero es una imagen puesta con CSS, sin recorte real ni marco.
+
+**Y al final, «hacé un mockup con esa foto».** No pudo. Y no era falta de
+criterio: **no había ninguna forma de poner una imagen en un lugar del
+lienzo.** La plantilla sabe una sola cosa —foto de fondo— y el `dibujo`
+aceptaba SVG pero le rechazaba cualquier `href` que no fuera `#` o `data:`.
+
+### Lo que cambió
+
+`<image href="assets/subidas/01-foto.jpg">` ahora entra en un dibujo. Las
+rutas son relativas a la carpeta de la marca —que es donde Chromium ya está
+parado para encontrar las fotos y las fuentes de las plantillas— y no se puede
+salir: nada absoluto, nada con `..`, nada con esquema, y sólo extensiones de
+imagen. Un SVG por `href` también se rechaza: traería su propio árbol sin
+revisar.
+
+Con eso, «la captura adentro de un teléfono» se dibuja: cuerpo, pantalla
+recortada con `clipPath`, isla dinámica, botones laterales y sombra con
+`feDropShadow`. Está probado con la captura de verdad y el molde quedó escrito
+en el PROMPT, con una advertencia que importa: **la pantalla tiene que
+respetar la proporción del archivo**. La captura mide 738×1600; en una
+pantalla cuadrada sale estirada.
+
+Y la regla que faltaba, ahora escrita para los dos agentes: **una foto se
+recorta y se le pone un velo y sigue siendo una foto; una captura es
+información, y recortada no se lee.** Nunca de fondo completo.
+
+### Lo que ya funcionó solo
+
+Las dos medidas nuevas agarraron el primer intento del mockup sin que nadie
+las llamara: el teléfono caía sobre el titular y el render avisó *«tapa el 91%
+de lo que la plantilla había dibujado en el medio»* y *«el contraste pasó de
+3.6:1 a 1.0:1»*. Con el teléfono corrido, silencio. Es la primera vez que las
+medidas encuentran algo que yo no estaba buscando.

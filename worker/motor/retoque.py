@@ -37,6 +37,14 @@ Cada capa cubre el lienzo entero y el SVG se estira a su tamaño, así que
 conviene un `viewBox` propio y dibujar en esas coordenadas: eso vale para
 cualquier formato, y la misma pieza sale igual en story que en post.
 
+Y un dibujo puede traer una FOTO adentro, con `<image href="assets/subidas/
+01-foto.jpg">`. Eso es lo que convierte «poné la captura adentro de un
+teléfono» en algo que se puede hacer: la plantilla sabe poner una foto de
+fondo y nada más, y una captura de pantalla de fondo es ilegible. Adentro de
+un SVG la imagen se ubica, se recorta con `clipPath`, se le pone sombra con
+un filtro y se le dibuja el marco alrededor. Las rutas son relativas a la
+carpeta de la marca y no se puede salir de ahí.
+
 Va encima de la plantilla salvo que la capa diga `"atras": true`, que la manda
 detrás del texto y delante del fondo — que es donde va un marco.
 
@@ -151,6 +159,34 @@ def _local(tag) -> str:
     return tag.rsplit("}", 1)[-1] if "}" in tag else tag
 
 
+#: Lo que puede ir adentro de un `<image>`: fotos que subió el cliente y
+#: material del kit. Nada de SVG —un SVG anidado traería su propio árbol sin
+#: revisar— y nada que no sea una imagen.
+EXTENSIONES = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif")
+
+
+def _archivo_de_la_marca(ruta: str) -> bool:
+    """¿Es una imagen de la carpeta de la marca, y sólo de ahí?
+
+    La pieza se dibuja con Chromium parado en la carpeta de la marca, así que
+    una ruta relativa es exactamente lo que ya usan las plantillas para sus
+    fotos. Lo que hay que impedir es salirse: nada de rutas absolutas, nada de
+    `..`, nada con esquema. Con eso, lo que se puede dibujar es lo mismo que
+    la marca ya tiene en disco, ni un archivo más.
+    """
+    v = (ruta or "").strip()
+    if not v:
+        return False
+    if v.startswith("#") or v.lower().startswith("data:"):
+        return True
+    if v.startswith("/") or v.startswith("\\") or ":" in v:
+        return False
+    partes = v.replace("\\", "/").split("/")
+    if any(p in ("", "..", ".") for p in partes):
+        return False
+    return v.lower().endswith(EXTENSIONES)
+
+
 def _revisar_atributos(elem, donde: str) -> None:
     for nombre, valor in elem.attrib.items():
         corto = _local(nombre)
@@ -159,11 +195,12 @@ def _revisar_atributos(elem, donde: str) -> None:
                 f"«{donde}» trae el atributo «{corto}», que es un manejador de "
                 f"eventos; un dibujo no ejecuta nada")
         if corto in ("href", "src"):
-            v = valor.strip().lower()
-            if not (v.startswith("#") or v.startswith("data:")):
+            if not _archivo_de_la_marca(valor):
                 raise DibujoInvalido(
-                    f"«{donde}» apunta a «{valor[:40]}»; la pieza se dibuja sin "
-                    f"internet, así que sólo valen «#algo» o «data:»")
+                    f"«{donde}» apunta a «{valor[:50]}»; valen «#algo», un "
+                    f"«data:», o un archivo de la carpeta de la marca como "
+                    f"«assets/subidas/01-foto.jpg» — nada de internet ni de "
+                    f"fuera de la carpeta")
         if corto == "style" and re.search(r"url\(\s*['\"]?\s*(?:https?:)?//",
                                           valor, re.I):
             raise DibujoInvalido(

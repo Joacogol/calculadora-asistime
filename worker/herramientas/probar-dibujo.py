@@ -71,13 +71,29 @@ rechaza("no empieza por svg", "<g><circle r='1'/></g>", "empieza con «g»")
 rechaza("un manejador de eventos no entra",
         "<svg onload='x()'><circle r='1'/></svg>", "onload")
 rechaza("una imagen de internet no entra",
-        "<svg><image href='https://x.com/y.png'/></svg>", "sin internet")
+        "<svg><image href='https://x.com/y.png'/></svg>", "nada de internet")
 rechaza("un url() de internet en el style tampoco",
         "<svg><rect style=\"fill:url(https://x/y)\"/></svg>", "internet")
 rechaza("un dibujo enorme no es un dibujo",
         "<svg>" + "<circle r='1'/>" * 2000 + "</svg>", "tope")
 ok("una imagen embebida en data: SÍ entra", bool(retoque.revisar_dibujo(
     "<svg><image href='data:image/png;base64,iVBOR'/></svg>")))
+
+print("\n■ Una foto adentro del dibujo")
+# Sin esto, «poné la captura adentro de un teléfono» era imposible: la
+# plantilla sólo sabe poner una foto de FONDO, y una captura de fondo es
+# ilegible. El 4/9/2026 se pidió y no se pudo.
+ok("una imagen de la carpeta de la marca entra", bool(retoque.revisar_dibujo(
+    "<svg viewBox='0 0 10 10'><image href='assets/subidas/01-foto.jpg' "
+    "width='10' height='10'/></svg>")))
+ok("y una del kit también", bool(retoque.revisar_dibujo(
+    "<svg><image href='assets/tony.png'/></svg>")))
+rechaza("una ruta absoluta no entra",
+        "<svg><image href='/etc/passwd'/></svg>", "carpeta de la marca")
+rechaza("salirse con .. tampoco",
+        "<svg><image href='../otra-marca/assets/logo.png'/></svg>", "carpeta")
+rechaza("un SVG anidado por href tampoco",
+        "<svg><image href='assets/mapa.svg'/></svg>", "carpeta")
 
 print("\n■ Las capas")
 uno = retoque.dibujos({"dibujo": CIRCULO})

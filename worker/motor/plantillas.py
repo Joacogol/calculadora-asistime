@@ -423,6 +423,14 @@ entrar, así que tiene que cerrar todas sus etiquetas y tener una sola raíz
 `<svg>`; y no entran `script`, `style`, `foreignObject` ni nada traído de
 internet.
 
+Un dibujo puede traer una **foto adentro**: `<image href="assets/subidas/
+01-foto.jpg" …/>`, con las rutas relativas a la carpeta de la marca. Eso es lo
+que permite «la captura adentro de un teléfono» o «la foto en un recuadro con
+sombra», que la plantilla no sabe hacer: ella pone la foto de fondo y nada más.
+
+**Una captura de pantalla no es una foto.** Recortada y con velo no se lee.
+Va como objeto, entera y grande, nunca de fondo completo.
+
 **Los emojis del sistema no son un dibujo.** Se ven distinto en cada
 dispositivo y su color no es el de ninguna marca.
 
