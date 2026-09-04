@@ -542,6 +542,117 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path,
     return problemas
 
 
+# ── Cómo quedó compuesta ───────────────────────────────────────────────────
+#
+# Esto NO son avisos y por eso no llevan ⚠. Una pieza con un tercio vacío puede
+# estar perfecta —Asistime es una marca aireada y el vacío es parte del kit— y
+# marcarlo como defecto sería opinar, que es lo que la regla 2 prohíbe.
+#
+# Lo que se dice acá son HECHOS sobre la composición, para que quien la armó
+# pueda juzgarla. La diferencia importa: un defecto se corrige, un hecho se
+# mira. El 4/9/2026 una pieza salió con el 41% de la tinta arriba, el 3% en el
+# medio y el 56% abajo —un agujero de 500 px entre el título y el teléfono— y
+# nadie lo vio, porque el agente no tenía forma de saberlo sin mirar de verdad.
+
+#: Por debajo de esta densidad, una fila de píxeles está vacía. Es relativa a
+#: la fila más cargada de la pieza: un titular gigante y una línea de pie no se
+#: pueden comparar contra el mismo número absoluto.
+FILA_VACIA = 0.02
+
+#: Un hueco más chico que esto es aire normal entre bloques, no un agujero.
+HUECO_MINIMO = 0.12
+
+
+def composicion(pieza: pathlib.Path,
+                sin_dibujo: pathlib.Path | None = None) -> list[str]:
+    """Los hechos de la composición: dónde está el peso y dónde el vacío.
+
+    Se mide sobre la tinta —lo que está dibujado— y no sobre el color, porque
+    un fondo degradado ocupa el lienzo entero sin componer nada.
+    """
+    lineas: list[str] = []
+    try:
+        from PIL import Image, ImageChops
+    except Exception:                                        # noqa: BLE001
+        return lineas                                        # regla 3
+    try:
+        with Image.open(pieza) as im:
+            im = im.convert("RGB")
+            ancho, alto = im.size
+            tinta = _tinta(im)
+            filas = [_cuantos(tinta.crop((0, y, ancho, y + 1)))
+                     for y in range(alto)]
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude medir la composición de %s: %s", pieza, e)
+        return lineas
+
+    total = sum(filas)
+    if not total:
+        return lineas
+
+    # 1 · Dónde está el peso, en tercios.
+    t = alto // 3
+    partes = [sum(filas[:t]), sum(filas[t:2 * t]), sum(filas[2 * t:])]
+    lineas.append("la tinta se reparte {}% arriba · {}% medio · {}% abajo"
+                  .format(*[round(p * 100 / total) for p in partes]))
+
+    # 2 · El hueco más grande. No es «cuánto vacío hay» sino «dónde está TODO
+    #     junto»: dos franjas de 10% repartidas no molestan; una de 28% en el
+    #     medio parte la pieza en dos.
+    piso = max(filas) * FILA_VACIA
+    mejor, largo, desde = 0, 0, 0
+    for y, v in enumerate(filas):
+        if v <= piso:
+            largo += 1
+            if largo > mejor:
+                mejor, desde = largo, y - largo + 1
+        else:
+            largo = 0
+    if mejor > alto * HUECO_MINIMO:
+        centro = (desde + mejor / 2) / alto
+        donde = ("arriba" if centro < 0.34 else
+                 "abajo" if centro > 0.66 else "en el medio")
+        lineas.append(f"hay una franja vacía de {round(mejor * 100 / alto)}% "
+                      f"del alto {donde}")
+
+    # 3 · El objeto dibujado: cuánto ocupa y si apoya en un borde. Sin el
+    #     segundo render no se sabe cuál es el objeto, así que es opcional.
+    #
+    #     Se mide por TRAZOS agregados y no por píxeles cambiados, por lo
+    #     mismo que la franja de Instagram: una mancha de luz de fondo cambia
+    #     el lienzo entero, y con píxeles cambiados «lo dibujado» daba
+    #     siempre 100% del ancho y tocando los cuatro bordes. Lo que ocupa
+    #     lugar en una composición es lo que tiene forma.
+    if sin_dibujo:
+        try:
+            with Image.open(pieza) as a, Image.open(sin_dibujo) as b:
+                a, b = a.convert("RGB"), b.convert("RGB")
+                if a.size == b.size:
+                    caja = ImageChops.subtract(_tinta(a), _tinta(b)).getbbox()
+                    if caja:
+                        x0, y0, x1, y1 = caja
+                        # El filo se descuenta: `_tinta` borra MARCO píxeles
+                        # de cada lado, así que un objeto pegado al borde
+                        # termina justo adentro de ese recorte. Sin esto, el
+                        # celular cortado del 4/9/2026 decía «no toca ningún
+                        # borde» mientras el aviso decía lo contrario.
+                        filo = MARCO + 2
+                        pegado = [n for n, cond in
+                                  (("arriba", y0 <= filo),
+                                   ("abajo", y1 >= alto - filo),
+                                   ("la izquierda", x0 <= filo),
+                                   ("la derecha", x1 >= ancho - filo)) if cond]
+                        cola = (" y llega al borde de " + " y ".join(pegado)
+                                if pegado else " y no toca ningún borde")
+                        lineas.append(
+                            f"lo dibujado ocupa {round((y1 - y0) * 100 / alto)}% "
+                            f"del alto y {round((x1 - x0) * 100 / ancho)}% "
+                            f"del ancho{cola}")
+        except Exception as e:                               # noqa: BLE001
+            log.warning("no pude medir el objeto de %s: %s", pieza, e)
+    return lineas
+
+
 def en_una_linea(problemas: list[str]) -> str:
     """Los avisos juntos, para escribirlos en `notas` de la fila.
 

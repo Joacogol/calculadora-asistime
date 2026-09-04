@@ -73,6 +73,27 @@ QUÉ TENÉS QUE HACER
    no va nunca es explicar por qué el aviso no aplica: el aviso mide la
    imagen, y vos no la estás midiendo.
 
+   **Y leé «cómo quedó compuesta».** Eso NO son defectos: son hechos, y los
+   tenés que juzgar vos. Cinco principios para leerlos, que valen para
+   cualquier marca:
+
+   · **El vacío va en UN lugar.** Una franja de 26% en el medio parte la pieza
+     en dos y se lee como un error de armado; la misma cantidad de aire
+     repartida arriba y abajo se lee como respiración. Si el hueco más grande
+     está «en el medio» y pasa el 20%, acercá los bloques.
+   · **Nada flota.** Un objeto sobre fondo plano parece pegoteado. Apoyalo:
+     una sombra abajo, o una mancha de luz del color de la marca por detrás
+     con `"atras": true`. Es la diferencia entre un mockup y una captura
+     pegada.
+   · **El objeto principal ocupa entre el 45 y el 70% del alto.** Menos que
+     eso no es protagonista; más, no deja lugar al texto.
+   · **Ningún objeto entero llega a un borde.** Una franja sí lo hace, un
+     teléfono no: si «llega al borde», o lo achicás o lo movés. Y en story
+     acordate de los 250 px de abajo.
+   · **El peso NO va todo en un tercio.** Si un tercio se lleva más del 60% y
+     otro menos del 10%, la pieza está desbalanceada. Buscá algo más parecido
+     a un 20/40/40 o un 30/50/20.
+
    Tres avisos y qué hacer con cada uno:
 
    · **«tapa X% de lo que la plantilla había dibujado»** — corré o achicá el

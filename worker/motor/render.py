@@ -248,6 +248,9 @@ class Render:
         #: pida: la salida del comando que ya corrió. Un aviso en un archivo
         #: aparte es un aviso que no se lee.
         self.avisos: list[str] = []
+        #: Cómo quedó compuesta cada pieza a medida. No son defectos: son
+        #: hechos para que quien la armó la juzgue. Ver `revisar.composicion`.
+        self.composicion: list[str] = []
 
     def _temporal(self, sufijo: str) -> pathlib.Path:
         p = self.raiz / f"_tmp-{os.getpid()}{sufijo}"
@@ -324,6 +327,8 @@ class Render:
             zonas = (getattr(self.marca, "ZONAS_SEGURAS", None) or {}).get(fmt)
             self.avisos += [f"{hecha.stem}: {p}"
                             for p in revisar.revisar_dibujo(hecha, limpio, zonas)]
+            self.composicion += [f"{hecha.stem}: {l}"
+                                 for l in revisar.composicion(hecha, limpio)]
         except Exception as e:                               # noqa: BLE001
             # Medir no puede romper una pieza que ya salió: si esto falla, la
             # pieza está hecha igual y lo único que se pierde es el aviso.
@@ -422,6 +427,13 @@ def desde_linea_de_comandos(marca, raiz, argv):
     for a in r.ajustes:
         print(f"   (se achicó «{a['texto'][:44]}» de {a['de']} a {a['a']} px "
               f"en {a['pieza']} para que entrara)")
+    # Primero los hechos de la composición, que no piden nada y se leen de
+    # corrido; después los avisos, que sí piden. Al revés, los avisos quedan
+    # sepultados entre números.
+    if r.composicion:
+        print("\n   cómo quedó compuesta:")
+        for c in r.composicion:
+            print(f"   · {c}")
     # Los avisos van al final y con una marca visible: son lo único de esta
     # salida que pide una acción. Ver `Render.avisos`.
     for a in r.avisos:

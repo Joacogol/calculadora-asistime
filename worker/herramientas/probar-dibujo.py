@@ -278,6 +278,45 @@ if puede_mirar:
         ok("se pudo medir el logo", False, e)
 
 
+print("\n■ Cómo quedó compuesta: hechos, no defectos")
+# La pieza del 4/9/2026 tenía el peso todo abajo y un agujero de 500 px entre
+# el título y el teléfono. Nadie lo vio porque nadie lo medía. Esto no avisa
+# —una pieza aireada puede estar perfecta— pero lo DICE, que es lo que le
+# faltaba al agente para poder juzgar su propia composición.
+if puede_mirar:
+    def leer(dibujo, retoque=""):
+        from motor import render
+        import tempfile
+        data = {"titulo": "Les damos una pista", "estilo": "claro",
+                "dibujo": dibujo}
+        if retoque:
+            data["retoque"] = retoque
+        with tempfile.TemporaryDirectory() as tmp:
+            r = render.Render(m, MARCA)
+            r.correr([{"nombre": "d", "plantilla": "titular",
+                       "formato": "story", "data": data}], tmp)
+            return " | ".join(r.composicion)
+
+    try:
+        # Un objeto apoyado en el borde de abajo, con el título arriba: el
+        # agujero del medio y el peso volcado tienen que salir en el texto.
+        texto = leer({"svg": APOYADO_ABAJO},
+                     ".row + .grow{flex:0} .disp{margin-top:-120px}")
+        ok("dice cómo se reparte la tinta", "% arriba" in texto, texto)
+        ok("dice que hay un agujero en el medio",
+           "franja vacía" in texto and "en el medio" in texto, texto)
+        ok("y que el objeto llega al borde de abajo",
+           "borde de abajo" in texto, texto)
+
+        # Un resplandor de fondo NO es un objeto: no puede decir que ocupa
+        # todo el lienzo ni que toca los cuatro bordes.
+        texto = leer({"svg": RESPLANDOR, "atras": True})
+        ok("un resplandor no cuenta como objeto",
+           "100% del ancho" not in texto, texto)
+    except Exception as e:
+        ok("se pudo leer la composición", False, e)
+
+
 print("\n■ Que la marca se pueda agrandar desde un retoque")
 # El 4/9/2026 se pidió el logo más grande, el agente escribió el retoque, y el
 # isotipo salió idéntico: 48×40 px con y sin retoque. El tamaño iba en el

@@ -4064,3 +4064,72 @@ cada uno, en tres líneas.
 
 La captura de comparación es interna y sus avisos se descartan: si no, cada
 aviso salía dos veces, y el segundo con un nombre de archivo temporal.
+
+## Que sepa componer, no que copie un ejemplo (4/9/2026)
+
+La propuesta fácil era guardar dos piezas buenas en el kit y que el agente las
+imitara. Joaquín lo descartó, y tenía razón: eso no es diseñar, es calcar.
+
+**Por qué falla hoy.** El agente tiene reglas de MARCA —colores, tipografía,
+qué no hacer— pero no tiene vocabulario de COMPOSICIÓN. Sabe qué plantilla usa
+un dato y cuál un testimonio, y eso es contenido. Cuando se sale de la
+plantilla y tiene que ubicar un objeto en el lienzo, inventa coordenadas sin
+ningún principio. Por eso el teléfono terminó contra el borde con un tercio de
+la pieza vacío en el medio: no eligió mal, no estaba eligiendo.
+
+Y ya se probó dos veces que **más prosa no cambia nada**: «mirá el PNG» estaba
+escrito y se ignoró; «no pidas texto ni logos» estaba escrito y se pidió
+igual. Lo único que cambió la conducta fue un número en la salida del comando
+que el agente ya corre.
+
+### Hechos, no defectos
+
+`render.py` imprime ahora, para cada pieza a medida:
+
+```
+   cómo quedó compuesta:
+   · la tinta se reparte 15% arriba · 24% medio · 62% abajo
+   · hay una franja vacía de 26% del alto en el medio
+   · lo dibujado ocupa 49% del alto y 51% del ancho y llega al borde de abajo
+```
+
+**Sin ⚠, y eso es deliberado.** Una pieza con un tercio vacío puede estar
+perfecta: Asistime es una marca aireada y el vacío es parte del kit. Marcarlo
+como defecto sería opinar, que es lo que la regla 2 de `revisar.py` prohíbe. Un
+defecto se corrige; un hecho se mira. Lo que faltaba no era un juez: era que el
+agente pudiera VER lo que hizo.
+
+Comparación de las dos piezas del día, la que salió mal y la buena:
+
+| | mal | bien |
+|---|---|---|
+| reparto | 15 / 24 / 62 | 13 / 41 / 46 |
+| hueco más grande | 26% **en el medio** | 14% arriba |
+| el objeto | 49% del alto, **llega al borde** | 75% del alto, no toca ninguno |
+
+### Los cinco principios
+
+Los números no significan nada sin con qué compararlos, así que van al PROMPT:
+el vacío va en UN lugar; nada flota —todo objeto apoya sobre una sombra o una
+mancha de luz—; el objeto principal ocupa entre 45 y 70% del alto; ningún
+objeto entero llega a un borde; el peso no va todo en un tercio.
+
+### Dos veces la misma trampa
+
+Tanto «lo dibujado» como la franja de Instagram se miden por **trazos
+agregados** y no por píxeles cambiados. Con píxeles, una mancha de luz de fondo
+—que es exactamente lo que el principio «nada flota» manda poner— decía «lo
+dibujado ocupa el 100% del ancho y toca los cuatro bordes». La medida acusaba
+justo lo que la regla pide hacer.
+
+Y el filo hay que descontarlo: `_tinta` borra 3 píxeles de cada lado, así que
+un objeto pegado al borde caía adentro del recorte y la lectura decía «no toca
+ningún borde» mientras el aviso decía lo contrario. Dos medidas del mismo
+sistema contradiciéndose es peor que una sola.
+
+### Lo que sigue
+
+La tercera palanca, sin hacer: **que arme dos composiciones, las mire y elija**.
+Hoy hace una y entrega. Ningún diseñador acierta a la primera. Es la más
+grande de las tres y la única que cuesta plata — duplica los turnos — y sin
+números y sin principios elegir entre dos versiones sería tirar una moneda.
