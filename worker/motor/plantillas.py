@@ -423,6 +423,13 @@ entrar, así que tiene que cerrar todas sus etiquetas y tener una sola raíz
 `<svg>`; y no entran `script`, `style`, `foreignObject` ni nada traído de
 internet.
 
+**Y no entra TEXTO: `text`, `tspan` y `textPath` se rechazan.** El texto de
+una pieza lo pone la plantilla, con la tipografía de la marca, y sobre él
+corren tres mediciones que un texto dibujado apaga sin avisar: el que lo
+achica si no entra en el lienzo, el que avisa si algo le queda encima al logo
+o al pie, y el que avisa si se mezclaron alineaciones. Para MOVER o AGRANDAR
+un titular está el `retoque`, no el dibujo.
+
 Un dibujo puede traer una **foto adentro**: `<image href="assets/subidas/
 01-foto.jpg" …/>`, con las rutas relativas a la carpeta de la marca. Eso es lo
 que permite «la captura adentro de un teléfono» o «la foto en un recuadro con
