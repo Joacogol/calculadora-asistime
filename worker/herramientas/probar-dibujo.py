@@ -48,6 +48,14 @@ def rechaza(caso, svg, esperado=""):
         ok(caso, (esperado in str(e)) if esperado else True, e)
 
 
+def _motivo_texto():
+    try:
+        retoque.revisar_dibujo("<svg><text>x</text></svg>")
+    except retoque.DibujoInvalido as e:
+        return str(e)
+    return ""
+
+
 CIRCULO = "<svg viewBox='0 0 10 10'><circle cx='5' cy='5' r='4'/></svg>"
 
 print("\n■ Lo que se puede dibujar")
@@ -94,6 +102,24 @@ rechaza("salirse con .. tampoco",
         "<svg><image href='../otra-marca/assets/logo.png'/></svg>", "carpeta")
 rechaza("un SVG anidado por href tampoco",
         "<svg><image href='assets/mapa.svg'/></svg>", "carpeta")
+
+print("\n■ El texto no se dibuja")
+# El 4/9/2026 el agente dibujó el TITULAR adentro del SVG «para tener control
+# total de la posición». La pieza salió linda y los tres guardianes quedaron
+# apagados sin que nadie se enterara, porque los tres leen nodos de texto del
+# HTML: QUE_ENTRE (achicar lo que no entra en el lienzo), MARCAS_LIBRES (que
+# nada tape el logo ni el legal) y COMO_ALINEA (una sola alineación). Un texto
+# dibujado no lo mide nadie.
+rechaza("un <text> adentro del dibujo no entra",
+        "<svg viewBox='0 0 10 10'><text x='1' y='5'>VIERNES</text></svg>",
+        "no se dibuja")
+rechaza("un <tspan> tampoco",
+        "<svg><text><tspan>hola</tspan></text></svg>", "no se dibuja")
+rechaza("ni un texto sobre un trazo",
+        "<svg><textPath href='#p'>hola</textPath></svg>", "no se dibuja")
+ok("y el motivo manda al retoque", "retoque" in _motivo_texto(),
+   _motivo_texto())
+ok("las formas siguen entrando", retoque.revisar_dibujo(CIRCULO) == CIRCULO)
 
 print("\n■ Las capas")
 uno = retoque.dibujos({"dibujo": CIRCULO})

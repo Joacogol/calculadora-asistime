@@ -139,7 +139,6 @@ MAXIMO_CAPAS = 4
 ETIQUETAS = frozenset("""
     svg g defs symbol use title desc
     path circle ellipse rect line polyline polygon
-    text tspan textPath
     linearGradient radialGradient stop pattern clipPath mask marker image
     filter feBlend feColorMatrix feComponentTransfer feComposite
     feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight
@@ -147,6 +146,22 @@ ETIQUETAS = frozenset("""
     feImage feMerge feMergeNode feMorphology feOffset fePointLight
     feSpecularLighting feSpotLight feTile feTurbulence
 """.split())
+
+
+#: Las etiquetas que escriben texto, y por qué no entran.
+#:
+#: El 4/9/2026 el agente dibujó el TITULAR adentro del SVG «para tener control
+#: total de la posición». Salió bien, y eso es lo peligroso: al hacerlo apagó
+#: tres guardianes de un saque, porque los tres miran el texto del HTML.
+#:
+#:   · el que achica el texto cuando no entra en el lienzo (`QUE_ENTRE`),
+#:   · el que avisa si algo le queda encima al logo (`MARCAS_LIBRES`),
+#:   · el que detecta alineaciones mezcladas (`COMO_ALINEA`).
+#:
+#: Un texto dibujado no lo mide nadie: el día que el titular sea más largo se
+#: sale de la pieza en silencio. El texto es de la marca —tipografía, tamaño,
+#: medición— y el dibujo es para formas.
+TEXTO = frozenset(("text", "tspan", "textPath"))
 
 
 class DibujoInvalido(Exception):
@@ -237,6 +252,13 @@ def revisar_dibujo(svg: str) -> str:
             f"con «svg»")
     for elem in raiz.iter():
         etiqueta = _local(elem.tag)
+        if etiqueta in TEXTO:
+            raise DibujoInvalido(
+                f"«{etiqueta}» escribe texto, y el texto de una pieza no se "
+                f"dibuja: lo pone la plantilla, con la tipografía de la marca "
+                f"y con el guardián que lo achica si no entra en el lienzo. "
+                f"Un texto dibujado adentro del SVG no lo mide nadie. Si "
+                f"necesitás moverlo o agrandarlo, eso es `retoque`.")
         if etiqueta not in ETIQUETAS:
             raise DibujoInvalido(
                 f"«{etiqueta}» no se puede dibujar. Lo que vale son formas, "

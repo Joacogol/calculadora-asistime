@@ -235,6 +235,15 @@ REGLAS
   raíz `<svg>`**; y no entran `script`, `style`, `foreignObject` ni nada que
   venga de internet (un `data:` sí).
 
+  **En el dibujo NO va texto: `text`, `tspan` y `textPath` están prohibidos y
+  el render los rechaza.** El texto de una pieza lo pone la plantilla, con la
+  tipografía de la marca, y sobre ese texto corren tres mediciones que un
+  texto dibujado apaga sin avisar: el que lo achica si no entra en el lienzo,
+  el que avisa si algo le queda encima al logo o al legal, y el que avisa si
+  mezclaste alineaciones. Un titular dibujado a mano queda lindo en la pieza
+  de hoy y ciego para todo lo demás. Si lo que querés es MOVER o AGRANDAR el
+  titular, eso es `retoque` sobre la clase del texto, no un `dibujo`.
+
 - **La marca no firma siempre igual: elegí con qué firma ESTA pieza.** Todas
   las plantillas tienen el campo `firma`, y usar siempre el mismo valor es lo
   que hace que un feed se vea salido de una plantilla.

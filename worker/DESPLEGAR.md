@@ -4216,3 +4216,37 @@ bloque de arriba, y a ojo pasa por buena.
 Así que el guardián del logo ahora cubre también el pie (`.legal`) y no mira
 sólo la superposición sino el aire: menos de 18 px de separación es el mismo
 problema con otro nombre.
+
+## Un texto dibujado apaga tres medidores (4/9/2026)
+
+La pieza salió bien y por eso costó verlo. Mirando el spec de la story que
+Joaquín aprobó, el agente había puesto el **titular adentro del `<svg>` del
+`dibujo`**, con `<text>` y coordenadas propias. Su razón, escrita en las
+notas, era razonable: «para tener control total de la posición».
+
+El problema no es cómo se ve. Es que los tres guardianes del motor leen
+**nodos de texto del HTML**, y un texto dibujado no es un nodo de texto:
+
+| guardián | qué mide | qué pasó |
+|---|---|---|
+| `QUE_ENTRE` | achica el titular si no entra en el lienzo | no lo achica nunca; se corta |
+| `MARCAS_LIBRES` | que nada tape el logo ni el pie | el titular puede pisarlos sin aviso |
+| `COMO_ALINEA` | que la pieza tenga una sola alineación | no lo ve; la mezcla pasa |
+
+O sea: la única manera de que el agente se saltee las tres mediciones a la
+vez era exactamente la que eligió, y ninguna de las tres iba a quejarse. Una
+pieza salía linda y el sistema quedaba ciego para todas las que vinieran.
+
+**`text`, `tspan` y `textPath` salieron de la lista blanca de `ETIQUETAS` en
+`motor/retoque.py`.** El rechazo no dice sólo «no se puede»: dice por qué el
+texto es de la plantilla —tipografía de la marca, medición— y adónde ir si lo
+que hacía falta era mover o agrandar el titular, que es `retoque`. El mismo
+párrafo entró en el PROMPT del worker, porque el que ejecuta es el worker.
+
+`probar-dibujo.py` cubre las tres etiquetas, el motivo que devuelve, y que
+las formas sigan entrando igual.
+
+Y la lección de fondo, otra vez: **el agente no busca romper el guardián,
+busca el camino más corto al resultado.** Si ese camino pasa por afuera de la
+medición, lo va a tomar todas las veces. Cerrar el camino es el arreglo;
+pedirle que no lo tome es una sugerencia.
