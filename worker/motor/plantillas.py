@@ -426,6 +426,13 @@ internet.
 **Los emojis del sistema no son un dibujo.** Se ven distinto en cada
 dispositivo y su color no es el de ninguna marca.
 
+**El logo y el pie se tocan por sus variables.** El tamaño de la firma sale
+del kit y viaja como respaldo de una variable CSS, así que para agrandarla el
+retoque es `.marca-iso{--iso-ancho:110px;--iso-alto:110px}` —y `.marca-logo`
+con `--logo-ancho`/`--logo-alto` para el lockup. Poner `width` directamente no
+hace nada: el ancho va en el atributo `style` del elemento y le gana a
+cualquier clase.
+
 ## Si falta una plantilla
 
 No improvises con la más parecida y no digas que no se puede: **armala**. Con

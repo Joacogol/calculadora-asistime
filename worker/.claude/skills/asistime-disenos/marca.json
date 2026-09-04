@@ -112,8 +112,8 @@
       "archivo": "assets/isotipo-azul.png",
       "claro": "assets/isotipo-blanco.png",
       "ratio": 1.0,
-      "alto": 52,
-      "_nota": "El isotipo va arriba a la izquierda, ~52 px sobre 1080, como en los carruseles publicados."
+      "alto": 78,
+      "_nota": "El isotipo va arriba a la izquierda. Estaba en 52 px sobre 1080 —un 4,8% del ancho— y el 4/9/2026 se pidió más grande: en story el isotipo terminaba midiendo 48×40 px de tinta visible y se perdía. A 78 px de base, con el 1,15 de story, la firma se lee sin competirle al titular."
     },
     "componentes": {
       "barra": {

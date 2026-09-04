@@ -180,6 +180,14 @@ def avisos(dibujo):
         return r.avisos
 
 
+# Un objeto que se sale por un lado (el megáfono del 4/9/2026, que quedó
+# cortado y se leía como una taza) contra una franja que cruza la pieza y toca
+# los dos costados a propósito.
+SE_SALE = ("<svg viewBox='0 0 1080 1920'><path fill='#FFFFFF' "
+           "d='M760 1100 L1000 1020 L1200 1060 L1200 1220 L1000 1260 L760 1180 Z'/></svg>")
+CRUZA_ENTERA = ("<svg viewBox='0 0 1080 1920'><rect x='-200' y='640' width='1500' "
+                "height='180' fill='#F5C518' transform='rotate(-8 540 730)'/></svg>")
+
 if puede_mirar:
     try:
         a = avisos({"svg": CRUZA_EL_PIE})
@@ -188,8 +196,52 @@ if puede_mirar:
         ok("no avisa por un dibujo en el vacío", not avisos({"svg": EN_EL_VACIO}))
         ok("ni por una capa que va detrás del titular",
            not avisos({"svg": DETRAS, "atras": True}))
+
+        a = avisos({"svg": SE_SALE})
+        ok("avisa si el dibujo se sale por un solo lado",
+           any("quedó cortado" in x for x in a), a)
+        ok("y no por una franja que cruza y toca los dos",
+           not any("quedó cortado" in x for x in avisos({"svg": CRUZA_ENTERA,
+                                                         "atras": True})),
+           avisos({"svg": CRUZA_ENTERA, "atras": True}))
     except Exception as e:
         ok("se pudo medir", False, e)
+
+
+print("\n■ Que la marca se pueda agrandar desde un retoque")
+# El 4/9/2026 se pidió el logo más grande, el agente escribió el retoque, y el
+# isotipo salió idéntico: 48×40 px con y sin retoque. El tamaño iba en el
+# atributo `style`, que le gana a cualquier clase. Ahora va como respaldo de
+# una variable, y esta prueba mide la tinta blanca del isotipo en el PNG.
+if puede_mirar:
+    def isotipo(retoque=""):
+        from motor import render
+        from PIL import Image
+        import tempfile
+        data = {"titulo": "Mañana es\nVIERNES", "estilo": "degrade"}
+        if retoque:
+            data["retoque"] = retoque
+        with tempfile.TemporaryDirectory() as tmp:
+            r = render.Render(m, MARCA)
+            hechas = r.correr([{"nombre": "d", "plantilla": "titular",
+                                "formato": "story", "data": data}], tmp)
+            im = Image.open(hechas[0]).convert("RGB").crop((0, 150, 700, 700))
+            px = im.load(); xs = []
+            for y in range(im.height):
+                for x in range(im.width):
+                    r_, g_, b_ = px[x, y]
+                    if r_ > 245 and g_ > 245 and b_ > 245:
+                        xs.append(x)
+            return (max(xs) - min(xs) + 1) if xs else 0
+
+    try:
+        normal = isotipo()
+        grande = isotipo(".marca-iso{--iso-ancho:150px;--iso-alto:150px}")
+        ok("el isotipo sale con el tamaño del kit", 60 < normal < 90, f"{normal} px")
+        ok("y un retoque lo agranda de verdad", grande > normal * 1.5,
+           f"{normal} px → {grande} px")
+    except Exception as e:
+        ok("se pudo medir el isotipo", False, e)
 
 print("\n  todo bien" if not fallos else f"\n  {len(fallos)} fallo(s): "
       + ", ".join(fallos))

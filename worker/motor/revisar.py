@@ -278,6 +278,23 @@ ZONAS = (6, 10)
 #: cambian de a poco entre píxel y píxel; una letra o un logo saltan de golpe.
 BORDE = 28
 
+#: Los píxeles del filo del archivo que no se miran, porque ahí el detector de
+#: bordes ve un salto que no dibujó nadie. Tres alcanzan.
+MARCO = 3
+
+#: Contraste mínimo entre una marca de la plantilla y lo que le quedó detrás.
+#: 3:1 es el piso de la WCAG para texto grande, y todo lo que protegemos acá
+#: —logo, titular, pie— es texto grande o un símbolo del tamaño de uno.
+#:
+#: Se mira como CAÍDA y no como valor absoluto: lo que se avisa es que el
+#: dibujo empeoró algo que estaba bien. Una plantilla con poco contraste
+#: propio es una decisión de la marca y no un defecto de esta pieza.
+CONTRASTE_MINIMO = 3.0
+
+#: Cuánto borde tiene que tocar una capa para que cuente como que llega ahí.
+#: Treinta píxeles es más que un vértice y menos que cualquier franja.
+BORDE_TOCADO = 30
+
 
 def _tinta(im):
     """Máscara de lo que está DIBUJADO en la pieza: textos, logos, formas.
@@ -287,9 +304,20 @@ def _tinta(im):
     fondo. Es la misma idea que usa cualquier detector de bordes y alcanza de
     sobra acá, donde no hay que reconocer nada: sólo saber dónde hay algo.
     """
-    from PIL import ImageFilter
-    return im.convert("L").filter(ImageFilter.FIND_EDGES).point(
+    from PIL import ImageDraw, ImageFilter
+    m = im.convert("L").filter(ImageFilter.FIND_EDGES).point(
         lambda v: 255 if v > BORDE else 0)
+    # El detector de bordes dibuja un marco alrededor de TODA imagen: el filo
+    # del archivo es el salto más grande que hay. Ese marco no es tinta de
+    # nadie y son ~190 píxeles por zona, o sea que una zona vacía del borde
+    # parecía tener contenido y cualquier dibujo que pasara por ahí «lo
+    # tapaba». Dio un falso positivo en la primera prueba real.
+    d = ImageDraw.Draw(m)
+    d.rectangle([0, 0, m.width - 1, MARCO - 1], fill=0)
+    d.rectangle([0, m.height - MARCO, m.width - 1, m.height - 1], fill=0)
+    d.rectangle([0, 0, MARCO - 1, m.height - 1], fill=0)
+    d.rectangle([m.width - MARCO, 0, m.width - 1, m.height - 1], fill=0)
+    return m
 
 
 def _cuantos(mascara) -> int:
@@ -306,6 +334,53 @@ def _donde(col: int, fila: int) -> str:
     return f"{vertical} {lado}"
 
 
+def _luz(rgb) -> float:
+    """Luminancia relativa de la WCAG. Es la que usa la fórmula de contraste."""
+    def canal(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = rgb
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b)
+
+
+def _contraste(a: float, b: float) -> float:
+    hi, lo = max(a, b), min(a, b)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _promedio(im, mascara) -> tuple | None:
+    """El color promedio de los píxeles que la máscara deja pasar."""
+    px, mp = im.load(), mascara.load()
+    r = g = b = n = 0
+    for y in range(im.height):
+        for x in range(im.width):
+            if mp[x, y]:
+                c = px[x, y]
+                r += c[0]; g += c[1]; b += c[2]; n += 1
+    return (r / n, g / n, b / n) if n else None
+
+
+def _contraste_de_zona(im, tinta, alrededor):
+    """(luz de la marca, luz de lo que la rodea) en esta imagen."""
+    a, b = _promedio(im, tinta), _promedio(im, alrededor)
+    return (None if a is None else _luz(a)), (None if b is None else _luz(b))
+
+
+def _bordes_tocados(huella, ancho, alto) -> list[str]:
+    """Qué bordes del lienzo toca el dibujo, con nombre."""
+    px = huella.load()
+    toca = []
+    if sum(1 for y in range(alto) if px[0, y]) >= BORDE_TOCADO:
+        toca.append("izquierdo")
+    if sum(1 for y in range(alto) if px[ancho - 1, y]) >= BORDE_TOCADO:
+        toca.append("derecho")
+    if sum(1 for x in range(ancho) if px[x, 0]) >= BORDE_TOCADO:
+        toca.append("de arriba")
+    if sum(1 for x in range(ancho) if px[x, alto - 1]) >= BORDE_TOCADO:
+        toca.append("de abajo")
+    return toca
+
+
 def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
     """Qué se comió el dibujo de una pieza a medida.
 
@@ -319,13 +394,24 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
     los píxeles del texto no cambian. Eso no es una casualidad afortunada, es
     la razón por la que la medida sirve: distingue «cubre» de «está detrás».
 
+    Se miden tres cosas, y las tres salieron de piezas reales del 3 y 4/9/2026:
+
+    · **Qué tapó.** La consola de DJ que cruzaba el pie.
+    · **Qué dejó ilegible.** Las cintas de obra que pasaban por detrás del
+      logo y del pie: no tapaban nada —iban `atras`, así que la marca seguía
+      ahí— pero blanco sobre rayas amarillas y negras no se lee. Tapar y
+      arruinar son dos fallas distintas y hacían falta dos medidas.
+    · **Si quedó cortado.** El megáfono que se salía por la derecha y se leía
+      como una taza.
+
     Esto es un hecho y no una opinión, que es la regla 2 del módulo. Si el
     dibujo quedó feo, desbalanceado o fuera de clima, eso lo tiene que ver
-    alguien mirando; acá sólo se dice qué quedó tapado.
+    alguien mirando; acá sólo se dice qué quedó tapado, qué quedó ilegible y
+    qué quedó cortado.
     """
     problemas: list[str] = []
     try:
-        from PIL import Image, ImageChops
+        from PIL import Image, ImageChops, ImageFilter
     except Exception:                                        # noqa: BLE001
         return problemas                                     # regla 3
     try:
@@ -344,19 +430,45 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
             tinta = antes
             tapado = ImageChops.subtract(antes, despues)
 
+            # Lo que rodea a cada marca, para medirle el contraste: un anillo
+            # de seis píxeles alrededor de la tinta y no el resto de la zona,
+            # porque lo que hace ilegible una letra es lo que tiene PEGADO.
+            gordo = antes.filter(ImageFilter.MaxFilter(13))
+            alrededor = ImageChops.subtract(gordo, antes)
+
             cols, filas = ZONAS
             cw, ch = ancho // cols, alto // filas
             peor = (0.0, "", 0)
+            ilegible = None
             for f in range(filas):
                 for c in range(cols):
                     caja = (c * cw, f * ch, (c + 1) * cw, (f + 1) * ch)
-                    hay = _cuantos(tinta.crop(caja))
+                    hay = _cuantos(antes.crop(caja))
                     if hay < TINTA_MINIMA:
                         continue
                     comido = _cuantos(tapado.crop(caja))
                     parte = comido / hay
                     if parte > peor[0]:
                         peor = (parte, _donde(c, f), comido)
+
+                    # Contraste antes y después, en la misma zona. Se avisa la
+                    # CAÍDA: si la plantilla ya venía floja ahí, es una
+                    # decisión de la marca y no la rompió este dibujo.
+                    mt, ma = antes.crop(caja), alrededor.crop(caja)
+                    if _cuantos(ma) < TINTA_MINIMA:
+                        continue
+                    t1, f1 = _contraste_de_zona(b.crop(caja), mt, ma)
+                    t2, f2 = _contraste_de_zona(a.crop(caja), mt, ma)
+                    if None in (t1, f1, t2, f2):
+                        continue
+                    c1, c2 = _contraste(t1, f1), _contraste(t2, f2)
+                    if c1 >= CONTRASTE_MINIMO > c2:
+                        if ilegible is None or c2 < ilegible[0]:
+                            ilegible = (c2, c1, _donde(c, f))
+
+            huella = ImageChops.difference(a, b).convert("L").point(
+                lambda v: 255 if v > 10 else 0)
+            toca = _bordes_tocados(huella, ancho, alto)
     except Exception as e:                                   # noqa: BLE001
         log.warning("no pude comparar %s con %s: %s", con, sin, e)
         return problemas
@@ -368,6 +480,27 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
             f"dibujado {donde} — puede ser el logo, el pie o el titular. "
             f"Corrélo, achicalo, o poné esa capa con \"atras\": true para que "
             f"pase por detrás")
+
+    if ilegible:
+        c2, c1, donde = ilegible
+        problemas.append(
+            f"el dibujo dejó ilegible lo que hay {donde}: el contraste pasó de "
+            f"{c1:.1f}:1 a {c2:.1f}:1. Estar por detrás no alcanza — el logo y "
+            f"el pie necesitan un fondo tranquilo. Corré el dibujo, bajale la "
+            f"opacidad, o dejale libre esa esquina")
+
+    # Un dibujo que toca UN borde y no el de enfrente suele ser un objeto que
+    # se salió del lienzo. El megáfono del 4/9/2026 tocaba sólo el derecho y
+    # quedaba cortado; las cintas cruzaban la pieza y tocaban los dos, que es
+    # lo que tiene que hacer una franja. La diferencia es medible y el aviso
+    # dice las dos lecturas, porque las dos existen.
+    for uno, otro in (("izquierdo", "derecho"), ("de arriba", "de abajo")):
+        for a_, b_ in ((uno, otro), (otro, uno)):
+            if a_ in toca and b_ not in toca:
+                problemas.append(
+                    f"el dibujo toca el borde {a_} y no el {b_}: si era un "
+                    f"objeto entero, quedó cortado ahí. Si era una franja que "
+                    f"cruza la pieza, está bien")
     return problemas
 
 

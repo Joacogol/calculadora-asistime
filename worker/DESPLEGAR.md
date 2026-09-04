@@ -3833,3 +3833,69 @@ Las otras dos preguntas —si quedó una zona vacía y si el clima es el que
 pidieron— son criterio y no se miden. Ésas van en el PROMPT como tres
 preguntas concretas a contestarse mirando el PNG, en vez de un «mirá» suelto.
 La diferencia entre pedir atención y pedir una respuesta.
+
+## El logo que no se podía agrandar, y dos medidas más (4/9/2026)
+
+Tres piezas seguidas de Asistime, tres hallazgos. El primero es el que duele.
+
+### «Lo agrandé 1,8 veces» — y salió idéntico
+
+Se pidió el logo más grande. El agente escribió el retoque y anotó en sus
+notas: *«Logo: Aumentado a 1.8x su tamaño original usando retoque CSS»*.
+Medido contra la pieza anterior: **48 × 40 px en las dos**, píxel por píxel.
+
+No era un número mal elegido. El motor dibujaba la firma así:
+
+```html
+<img src="assets/isotipo-blanco.png" style="width:60px;height:60px;…">
+```
+
+Sin clase y con el tamaño en el atributo `style`, que le gana a cualquier
+regla CSS. **El pedido no era difícil: era imposible, y nada avisaba.** Y lo
+peor no es el bug sino la nota: el agente reportó un cambio que no verificó.
+
+Ahora el tamaño va como **respaldo de una variable**:
+
+```html
+<img class="marca-iso" style="width:var(--iso-ancho,90px);height:var(--iso-alto,90px)">
+```
+
+El primer intento fue declarar la variable en línea y tampoco servía: una
+propiedad personalizada declarada en línea también le gana a la clase. Como
+respaldo, en cambio, la variable no existe mientras nadie la defina, así que
+`.marca-iso{--iso-ancho:150px;--iso-alto:150px}` gana sin `!important`.
+Medido: 74 px de tinta sin retoque, 124 con.
+
+Y aparte, el kit: el isotipo estaba en 52 px sobre 1080 —un 4,8%— y en story
+la firma se perdía. Pasó a 78, que con el 1,15 de story da una firma que se
+lee sin competirle al titular.
+
+### Tapar y arruinar son dos fallas distintas
+
+Las cintas de obra de la pieza de expectativa iban `atras`, así que **no
+tapaban nada**: el logo y el pie seguían ahí, blancos. Pero blanco sobre rayas
+amarillas y negras no se lee, y la medida de cobertura decía que todo estaba
+bien — correctamente, porque nada había desaparecido.
+
+Se agregó la segunda medida: el contraste de cada marca contra lo que le quedó
+pegado, antes y después del dibujo, con la fórmula de la WCAG. Se avisa la
+**caída** y no el valor: si la plantilla ya venía floja ahí es una decisión de
+la marca, no algo que rompió esta pieza.
+
+### Un objeto cortado y una franja que cruza
+
+El megáfono de esa misma pieza se salía por la derecha y se leía como una
+taza. La tercera medida mira qué bordes del lienzo toca el dibujo: tocar los
+dos costados es una franja y está bien; tocar **uno solo** suele ser un objeto
+que se salió. El aviso dice las dos lecturas, porque las dos existen.
+
+### El falso positivo que casi se publica
+
+Las tres medidas fallaron juntas en la primera prueba real: avisaban «el
+dibujo tapa el 22% abajo a la derecha» en zonas vacías. El detector de bordes
+dibuja un marco alrededor de TODA imagen —el filo del archivo es el salto más
+grande que hay— y esos ~190 píxeles por zona parecían contenido de la
+plantilla. Ahora los tres píxeles del filo no se miran.
+
+Sin ese arreglo, la mitad de los avisos habrían sido falsos, que es la forma
+más rápida de que alguien deje de leerlos.

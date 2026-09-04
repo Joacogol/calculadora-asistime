@@ -182,6 +182,18 @@ REGLAS
   raíz `<svg>`**; y no entran `script`, `style`, `foreignObject` ni nada que
   venga de internet (un `data:` sí).
 
+  **Para tocar el logo o el pie de la marca, usá sus variables.** El isotipo y
+  el lockup salen con el tamaño del kit, y ese tamaño es el respaldo de una
+  variable CSS. Si el pedido dice «el logo más grande», el retoque es:
+
+      ".marca-iso{{--iso-ancho:110px;--iso-alto:110px}}"
+
+  y para el lockup, `.marca-logo` con `--logo-ancho` y `--logo-alto`. Escribir
+  `.marca-iso{{width:110px}}` NO funciona —el ancho va en el atributo `style` y
+  le gana a cualquier clase— así que si usás eso vas a ver la pieza igual y
+  vas a creer que la cambiaste. Pasó el 4/9/2026: el agente anotó que había
+  agrandado el logo 1,8 veces y salió idéntico.
+
   **Los emojis del sistema no son un dibujo.** Se ven distinto en cada lado y
   en esta marca 🎵 sale azul marino: sobre un fondo azul desaparece. Si el
   pedido dice «emojis de música», lo que hace falta son notas dibujadas con la

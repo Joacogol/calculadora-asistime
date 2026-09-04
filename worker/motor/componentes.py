@@ -32,7 +32,7 @@ def _color(ident, rol, dado=None):
     return ident.C[ident.roles[rol]]
 
 
-def _imagen_de_marca(ident, spec):
+def _imagen_de_marca(ident, spec, clase=""):
     """Cómo dibujar un logo, sea vectorial o raster.
 
     Un SVG se pinta del color que se pida: se reemplaza un marcador dentro del
@@ -40,17 +40,46 @@ def _imagen_de_marca(ident, spec):
     —`archivo` para fondos claros y `claro` para fondos oscuros— y acá se
     elige uno según el color pedido. Es lo que tiene la mayoría de los
     clientes: un lockup en color y otro en blanco, y ningún vector.
+
+    ── Por qué el tamaño va en una variable ──────────────────────────────
+
+    El 4/9/2026 se pidió «el logo más grande». El agente escribió un retoque,
+    anotó en sus notas que lo había agrandado 1,8 veces, y el isotipo salió
+    exactamente igual: 48×40 px, medido contra la pieza anterior. La marca se
+    dibujaba con el tamaño en el atributo `style`, y un estilo en línea le gana
+    a cualquier regla CSS. O sea que el pedido no era difícil: era imposible, y
+    nada avisaba.
+
+    Ahora el tamaño va como el VALOR DE RESPALDO de una variable CSS:
+
+        width: var(--iso-ancho, 60px)
+
+    y ahí está el detalle que importa. El primer intento fue declarar la
+    variable en línea —`style="--iso-ancho:60px;width:var(--iso-ancho)"`— y no
+    sirvió: una propiedad personalizada declarada en línea también le gana a la
+    clase, así que el retoque volvía a no poder nada. Medido: el isotipo salía
+    igual con y sin retoque.
+
+    Como respaldo, en cambio, la variable NO está declarada en ningún lado
+    mientras nadie la toque, y el 60px se usa. Basta con que un retoque diga
+    `.marca-iso{--iso-ancho:110px;--iso-alto:110px}` para que gane, sin
+    `!important` y sin tocar el motor.
     """
     archivo = spec["archivo"]
     es_svg = archivo.lower().endswith(".svg")
     claro = ident.C[ident.roles["claro"]].lower()
+    # «marca-iso» → «--iso-ancho». Cada marca tiene las suyas: una pieza no
+    # lleva las dos, pero si algún día las lleva no se pisan.
+    v = clase.replace("marca-", "") or "marca"
     if es_svg:
         svg = ident.archivo_texto(archivo)
         marcador = spec.get("marcador", "CURRENT")
         color_defecto = ident.C[spec.get("color", ident.roles["acento"])]
 
         def dibujar(w, h, color):
-            return (f'<div style="width:{w}px;height:{h}px">'
+            return (f'<div class="{clase}" '
+                    f'style="width:var(--{v}-ancho,{w}px);'
+                    f'height:var(--{v}-alto,{h}px)">'
                     f'{svg.replace(marcador, color or color_defecto)}</div>')
         return dibujar
 
@@ -60,7 +89,9 @@ def _imagen_de_marca(ident, spec):
     def dibujar(w, h, color):
         # Sobre oscuro va la versión clara, si la identidad la trae.
         usar = spec.get("claro") if (color and color.lower() == claro and spec.get("claro")) else archivo
-        return (f'<img src="{usar}" style="width:{w}px;height:{h}px;'
+        return (f'<img class="{clase}" src="{usar}" '
+                f'style="width:var(--{v}-ancho,{w}px);'
+                f'height:var(--{v}-alto,{h}px);'
                 f'object-fit:contain;object-position:left center;display:block">')
     return dibujar
 
@@ -76,7 +107,7 @@ def logo(ident):
     Es más chico de lo que pide el instinto, y a propósito: en una pieza de
     retail el que tiene que gritar es el precio, no la tienda.
     """
-    dibujar = _imagen_de_marca(ident, ident.logo)
+    dibujar = _imagen_de_marca(ident, ident.logo, "marca-logo")
     ratio, base = ident.logo["ratio"], ident.logo.get("ancho", 300)
 
     def _logo(size=1.0, color=None, align="left"):
@@ -94,7 +125,7 @@ def iso(ident):
     """
     if not ident.iso:
         return None
-    dibujar = _imagen_de_marca(ident, ident.iso)
+    dibujar = _imagen_de_marca(ident, ident.iso, "marca-iso")
     ratio, base = ident.iso["ratio"], ident.iso.get("alto", 96)
 
     def _iso(size=1.0, color=None):

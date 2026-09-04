@@ -113,8 +113,18 @@ ok(contrato.verificar(asi), "cumple el contrato")
 ok(sorted(asi.PLANTILLAS) == ["cierre", "dato", "producto", "testimonio", "titular"], "sus cinco plantillas", sorted(asi.PLANTILLAS))
 asal = renders(asi)
 ok(len(asal) == 20, "20 salidas", len(asal))
-ok('<img src="assets/lockup-color.png"' in asal["cierre/post"], "el logo PNG va como imagen")
-ok('<img src="assets/isotipo-blanco.png"' in asal["dato/post"], "y sobre oscuro va la versión blanca")
+ok('src="assets/lockup-color.png"' in asal["cierre/post"], "el logo PNG va como imagen")
+ok('src="assets/isotipo-blanco.png"' in asal["dato/post"], "y sobre oscuro va la versión blanca")
+# La firma tiene que quedar alcanzable desde un retoque: clase para apuntarle
+# y el tamaño como RESPALDO de una variable, no declarado en línea. Si alguien
+# vuelve a poner `width:60px` a secas, «agrandá el logo» vuelve a ser
+# imposible y nadie se entera hasta que sale la pieza.
+ok('class="marca-logo"' in asal["cierre/post"]
+   and "width:var(--logo-ancho," in asal["cierre/post"],
+   "el lockup se puede agrandar desde un retoque")
+ok('class="marca-iso"' in asal["dato/post"]
+   and "width:var(--iso-ancho," in asal["dato/post"],
+   "y el isotipo también")
 ok(asi.TIPO_REEL == ("RedHatDisplay-ExtraBold.ttf", "RedHatDisplay-SemiBold.ttf") and all((RAIZ / ".claude/skills/asistime-disenos/fonts" / f).exists() for f in asi.TIPO_REEL),
    "las TTF del reel existen")
 ok("Red Hat Display" in asi.BASE_CSS and "Sora" not in asi.BASE_CSS, "una sola tipografía: Red Hat Display")
