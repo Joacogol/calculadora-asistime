@@ -3948,3 +3948,52 @@ las llamara: el teléfono caía sobre el titular y el render avisó *«tapa el 9
 de lo que la plantilla había dibujado en el medio»* y *«el contraste pasó de
 3.6:1 a 1.0:1»*. Con el teléfono corrido, silencio. Es la primera vez que las
 medidas encuentran algo que yo no estaba buscando.
+
+## El mockup que inventó una conversación (4/9/2026)
+
+Se pidió un mockup con una captura de WhatsApp real. Volvió un teléfono con
+una conversación que **nunca existió**: «Buenas tardes a todos», una foto de
+stock de un paisaje, una bandera argentina —el cliente es uruguayo—, el
+título escrito con una tipografía que no es la de la marca, en dos azules que
+no son los del kit, y un lockup inventado: «🤩 Asistime». Ni el isotipo, ni el
+pie, ni el degradé.
+
+Y la explicación estaba en una sola columna de la fila:
+
+    verbo: crear      foto: null      creditos_gastados: 100
+
+**`crear` es texto-a-imagen: no recibe ninguna foto.** La instrucción decía
+«en la pantalla del celular va la foto adjunta» y esa foto nunca se mandó a
+ningún lado. El modelo hizo lo único que podía: dibujar una conversación
+plausible. Pasó dos veces, 200 créditos.
+
+### Lo que hace importante a este caso
+
+La regla ya estaba escrita, en el prompt del agente del chat:
+
+> No pidas texto, carteles ni logos: el modelo los escribe mal.
+
+El agente igual pidió «el texto destacado "Les damos una pista" usando la
+tipografía y colores oficiales de Asistime». **Una regla escrita es una
+sugerencia.** Es exactamente lo mismo que pasó con «mirá el PNG», y la salida
+es la misma: convertirla en algo que el sistema verifica.
+
+`_revisar_crear` rechaza tres pedidos imposibles antes de gastar un crédito, y
+cada mensaje dice qué usar en su lugar:
+
+| lo que pide | por qué no | qué usar |
+|---|---|---|
+| la foto adjunta / subida / la captura | `crear` no recibe fotos | `crear_diseno` con `dibujo`, o `escena` |
+| que diga «…», la tipografía oficial | escribe mal y con otra tipografía | el texto lo pone la pieza |
+| el logo, el isotipo | inventa uno parecido | el logo lo pone la plantilla |
+
+`probar-crear-foto.py` cubre los tres, con la instrucción real del caso, **y
+cuatro pedidos legítimos** —un teléfono sin texto, una cancha vacía, un plato,
+una textura— porque un guardia que rechaza lo normal se apaga a la semana.
+
+### La regla de fondo
+
+**Nada que lleve la tipografía o el logo de la marca puede salir de un
+generador de imágenes.** Un generador dibuja su propia tipografía y su propio
+logo: por definición no son los de nadie. La marca la pone el motor, que usa
+los archivos de verdad. El generador es para fotos y escenas.

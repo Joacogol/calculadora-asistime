@@ -50,6 +50,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import tempfile
 import urllib.error
 import urllib.parse
@@ -266,6 +267,47 @@ def bordes(ancho: int, alto: int, formato: str) -> dict:
     return lados
 
 
+#: Lo que le pide a `crear` algo que `crear` no puede hacer, con el motivo y
+#: la salida. El mensaje lo lee un modelo que tiene que corregir el pedido, no
+#: una persona que puede preguntar: por eso cada uno dice qué usar en su lugar.
+IMPOSIBLES_DE_CREAR = (
+    (re.compile(r"\b(foto|imagen|captura|screenshot|pantallazo)\s+"
+                r"(adjunta|adjuntada|subida|que\s+(te\s+)?(mand|pas|sub))", re.I),
+     "«crear» inventa una imagen desde cero y NO recibe ninguna foto: lo que "
+     "mandaron no va a estar en el resultado. Si la foto de verdad tiene que "
+     "aparecer, esto es una pieza de diseño —`crear_diseno`, que la puede "
+     "poner adentro de un teléfono dibujado— o `escena`, que sí parte de una "
+     "foto existente"),
+    (re.compile(r"(que\s+diga|con\s+el\s+texto|el\s+texto\s+[«\"']|"
+                r"tipograf|fuente\s+oficial)", re.I),
+     "«crear» no escribe texto: el modelo lo dibuja mal y con la tipografía "
+     "que se le ocurre, no la de la marca. El texto lo pone la pieza: pedí la "
+     "imagen sin texto y armá el diseño con `crear_diseno`"),
+    (re.compile(r"\b(logo|isotipo|logotipo|marca\s+de\s+agua)\b", re.I),
+     "«crear» no dibuja logos: inventa uno parecido. El logo lo pone la "
+     "plantilla, que usa el archivo real de la marca"),
+)
+
+
+def _revisar_crear(instruccion: str) -> None:
+    """Que «crear» no acepte un pedido que no puede cumplir.
+
+    El 4/9/2026 se pidió dos veces un mockup «con la foto adjunta» y con el
+    texto y los colores oficiales de Asistime. Las dos veces salió por
+    `crear`, que no recibe ninguna foto: el modelo inventó una conversación de
+    WhatsApp que nunca existió, con un paisaje de stock y una bandera
+    argentina, escribió el título con otra tipografía y en otros azules, y se
+    inventó un lockup «🤩 Asistime». Doscientos créditos.
+
+    La regla ya estaba escrita en el prompt del agente —«no pidas texto,
+    carteles ni logos»— y no alcanzó. Escrita es una sugerencia; acá es un
+    error, y llega ANTES de gastar los créditos.
+    """
+    for patron, porque in IMPOSIBLES_DE_CREAR:
+        if patron.search(instruccion):
+            raise ValueError(porque)
+
+
 def _cuerpo(fila: dict) -> dict:
     """El pedido que le corresponde a este verbo. Cada uno es distinto."""
     verbo, foto = fila["verbo"], fila.get("foto")
@@ -275,6 +317,7 @@ def _cuerpo(fila: dict) -> dict:
             raise ValueError(
                 "«crear» necesita la descripción de la foto. Sin eso no hay "
                 "nada que generar.")
+        _revisar_crear(instruccion)
         cuerpo = {"prompt": _prompt("crear", instruccion), "resolution": "2k"}
         rel = RELACIONES.get(fila.get("formato") or "")
         if rel:

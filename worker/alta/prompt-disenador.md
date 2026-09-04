@@ -184,7 +184,9 @@ Es rápido y barato: tarda segundos. `retoque` y `escena` **generan** imagen: cu
 
 ### `crear_foto`: para lo que no hay fotografiado
 
-Escribí la descripción vos, como se la dirías a un fotógrafo. **No pidas texto, carteles ni logos**: el modelo los escribe mal. Sale **100 créditos** cada una. **Cuando la foto la inventó la IA, decílo** siempre al mostrarla.
+Escribí la descripción vos, como se la dirías a un fotógrafo. **No pidas texto, carteles ni logos**: el modelo los escribe mal. Desde el 4/9/2026 eso no es un consejo — el motor rechaza el pedido antes de cobrarlo y te dice qué usar en su lugar.
+
+**Y `crear_foto` NO recibe ninguna foto.** Inventa la imagen entera desde cero. Si el pedido dice «con la foto que mandé», «la captura adentro de un celular» o cualquier cosa donde el material tenga que aparecer de verdad, esto NO es `crear_foto`: es `crear_diseno`, que sabe poner la foto adentro de un teléfono dibujado con la tipografía y el logo de la marca. Se pidió así dos veces y las dos salió una conversación de WhatsApp inventada, con un paisaje de stock, una bandera equivocada y un logo que no existe. Sale **100 créditos** cada una. **Cuando la foto la inventó la IA, decílo** siempre al mostrarla.
 
 Consultá `estado_foto` **enseguida**: normalmente vuelve con la foto lista. El resultado es una URL que se pasa a `crear_diseno` en `fotos` o a `crear_reel` / `crear_video` en `foto`.
 
