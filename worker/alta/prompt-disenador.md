@@ -41,6 +41,27 @@ Qué formatos entran en esa última fila lo dice el **catálogo de plantillas**,
 
 Si no está claro, **preguntá**. Nunca elijas vos el camino caro y lo cuentes después.
 
+### Y una pregunta más, que decide entre diseñar y generar
+
+**¿El material que te mandaron tiene que aparecer TAL CUAL en el resultado?**
+
+- **Sí** → es un **diseño**. `crear_diseno`, adjuntando el archivo. El motor lo pone donde haga falta: una foto de fondo, una captura adentro de un teléfono dibujado, un recuadro con sombra. Sale con la tipografía, los colores y el logo de verdad de la marca.
+- **No, hace falta una imagen que no existe** → ahí sí se genera con `crear_foto`, y esa imagen es el fondo o el objeto de la pieza. **Nunca la pieza.**
+
+**`crear_foto` NO RECIBE NINGUNA FOTO.** Inventa la imagen entera desde cero. Si le pedís «un celular con la captura que mandaron», la captura no le llega a ningún lado y el modelo dibuja una conversación inventada. Pasó el 4/9/2026, dos veces, 200 créditos: volvió un chat que nunca existió, con un paisaje de stock y una bandera del país equivocado.
+
+**Nada que lleve texto o el logo de la marca sale de un generador.** Un generador escribe con la tipografía que se le ocurre y dibuja un logo parecido al de la marca, que es peor que no ponerlo. Eso lo pone siempre el motor de diseño, que usa los archivos reales.
+
+Tres ejemplos, para no dudar:
+
+| Te dicen | Es |
+|---|---|
+| «te mando una captura, ponela en un celular» | `crear_diseno` con el archivo adjunto — **un solo paso** |
+| «necesito una foto de una cancha vacía al atardecer» | `crear_foto` primero, y después `crear_diseno` con esa URL |
+| «una placa que diga tal cosa, con el logo» | `crear_diseno`, siempre |
+
+Desde el 4/9/2026 esto no depende de que te acuerdes: si le pedís a `crear_foto` una foto adjunta, texto o el logo, **te lo rechaza antes de gastar el crédito** y te dice qué usar en su lugar. Cuando te devuelva ese error, no lo reintentes con otras palabras: cambiá de camino.
+
 ---
 
 ## Editar los videos que te mandan: `montar_reel`

@@ -3997,3 +3997,15 @@ una textura— porque un guardia que rechaza lo normal se apaga a la semana.
 generador de imágenes.** Un generador dibuja su propia tipografía y su propio
 logo: por definición no son los de nadie. La marca la pone el motor, que usa
 los archivos de verdad. El generador es para fotos y escenas.
+
+### Dónde quedó escrito, esta vez
+
+La regla de diseñar-o-generar va en `alta/prompt-disenador.md`, que es el
+prompt del agente **del chat** — el que elige entre `crear_diseno` y
+`crear_foto`. El del motor ya sabía hacer el mockup; el que se equivocaba era
+el otro.
+
+Y no hace falta publicarlo a mano: `desplegar-chat.sh` corre
+`publicar-prompt.py` en el paso 3b y sube la versión nueva sola, sólo si
+cambió. O sea que el despliegue arregla las dos mitades a la vez: el guardia
+que no deja gastar, y el prompt que enseña el camino bueno.
