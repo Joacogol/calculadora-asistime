@@ -4331,3 +4331,75 @@ Python, fuera de este repo. No tienen firma dinámica, y el guardián del logo
 sólo las ve si su `logo()` propio emite `.marca-logo` — que desde acá no se
 puede comprobar. Emparejarlas de verdad es migrarlas a datos, como se hizo con
 Asistime y Stadium. Son 17 plantillas: es un trabajo con nombre propio.
+
+## Una story que estaba bien y se dio por perdida (4/9/2026)
+
+Joaquín pidió publicar una story de Clínica y el chat contestó que Instagram la
+había rechazado, con esto: **«Não foi possível obter a mídia deste URI»**, y le
+ofreció subirla a mano.
+
+Medida, la pieza estaba impecable: **JPEG real, 1080×1920 —9:16 exacto—, 241 KB,
+pública y sin autenticación**. El `contenedor` de la fila estaba en `null`, así
+que ni se llegó a crear: falló en el primer paso, cuando Instagram fue a buscar
+la URL. Y el JPEG se había subido al Storage **ocho segundos antes** del error,
+así que tampoco era una carrera del código.
+
+Reencolada a mano, salió **al primer intento, 26 segundos después**. La pieza
+siempre estuvo bien: Instagram no pudo bajarla en ese segundo.
+
+### Tres defectos encadenados
+
+1. **`reintentable` ignoraba el subcódigo.** `_traducir` clasifica con cuidado
+   por subcódigo —tiene una rama entera para «Instagram no pudo bajar el
+   archivo»— y después decidía si reintentar mirando **sólo el código
+   principal**. Un error bien diagnosticado y mal clasificado se comporta igual
+   que uno que no se entendió.
+2. **Faltaba el subcódigo que de verdad pasó.** La rama de «no pudo bajar»
+   cubría 2207003, 2207004 y 2207032; el de esta story fue **9004/2207052**.
+   Se nota en que el mensaje llegó en portugués y sin traducir: ninguna rama lo
+   reconoció.
+3. **El código de Meta no se guardaba en ningún lado.** Para saber cuál había
+   sido hubo que *deducirlo* de que el mensaje venía sin traducir. Ahora el
+   fallo se anota con `[meta 9004/2207052]` al final: la próxima vez es una
+   lectura, no una excavación.
+
+Arreglado: `SUBCODIGOS_TEMPORALES` en `app/instagram.py` —los cinco de «no pude
+bajar el archivo» más el de «todavía no está lista»—, `reintentable` mira código
+**o** subcódigo, y `_sello()` en `app/publicador.py` deja el código anotado.
+`probar-publicacion.py` cubre los tres subcódigos y sigue exigiendo que una
+proporción que Instagram no acepta se informe como error: sin eso, la prueba
+pasaría con un publicador que reintenta todo para siempre y no avisa nunca.
+
+Y la lección, que es la de todo el día con otra ropa: **el sistema sabía lo que
+había pasado y no lo usó.** Diagnosticar sin clasificar no sirve de nada.
+
+## El banco de fotos de Asistime: Tony (4/9/2026)
+
+El banco de una marca tiene dos mitades y sólo una necesita despliegue:
+
+- lo que viene en el kit (`referencias/fotos.json` + `assets/`), que se toca con
+  un despliegue;
+- **la tabla `fotos` del Supabase del cliente**, que `app/banco.py` sincroniza en
+  cada corrida con pedidos: baja lo que falta a `assets/banco/` y reescribe el
+  JSON que lee el agente. Suma, nunca resta.
+
+Las cuatro fotos de Tony entraron por la tabla, así que no hicieron falta ni un
+despliegue ni un commit. Tres cosas que se midieron en vez de suponerlas:
+
+- **Son transparentes de verdad** (RGBA con alfa, 1080×1350). Eso importa: van
+  sobre cualquier fondo de la marca, no sólo sobre el claro. Está dicho en la
+  descripción, que es lo que el agente lee para elegir.
+- **El `foco` de cada formato se calculó y después se miró.** Se sacó la caja del
+  sujeto y el centro de la cabeza de cada PNG, se despejó el `object-position`
+  que centra la cabeza en el recorte de cada formato, y se renderizaron los
+  recortes reales. Uno estaba mal: `tony-pensando` en `post` cortaba los
+  cuernitos, y se corrigió de `65%` a `25%`. **Un foco calculado y no mirado es
+  una suposición con decimales.**
+- **La URL se probó antes de escribir la fila.** `_bajar_faltantes` descarta una
+  foto que no puede bajar, así que una fila con una URL rota es una foto que el
+  agente elige y hace fallar el pedido.
+
+Los archivos quedaron en la raíz del bucket con sus nombres de origen (`Tony
+(4).png` y compañía). No importa: el agente nunca los ve. Lee la `clave`
+—`tony-lentes-de-sol`, `tony-escritorio`, `tony-asomandose`, `tony-pensando`— y
+el archivo local que arma `clave_segura()`.

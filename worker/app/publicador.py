@@ -186,6 +186,19 @@ def _armar(cli: Cliente, ig: Instagram, fila: dict, carpeta: Path) -> str:
 
 # ─────────────────────────────────────────────────────────────────── la cola
 
+def _sello(e: ErrorInstagram) -> str:
+    """El código de Meta, para que un fallo se pueda diagnosticar después.
+
+    No es decoración. El 4/9/2026 una story se dio por perdida y para saber por
+    qué hubo que DEDUCIR el subcódigo del hecho de que el mensaje había llegado
+    en portugués y sin traducir —o sea, que no coincidía con ninguna de las
+    ramas conocidas—. Guardar dos números al final del mensaje convierte esa
+    arqueología en una lectura.
+    """
+    partes = [str(n) for n in (e.codigo, e.subcodigo) if n is not None]
+    return f"  [meta {'/'.join(partes)}]" if partes else ""
+
+
 def _fallar(cli: Cliente, fila: dict, e: ErrorInstagram):
     """Decide si esto se reintenta o si hay que avisarle a la persona."""
     intentos = int(fila.get("intentos") or 0) + 1
@@ -195,12 +208,13 @@ def _fallar(cli: Cliente, fila: dict, e: ErrorInstagram):
             fila["id"], "programado",
             intentos=intentos, contenedor=None,
             publicar_en=cuando.isoformat(),
-            mensaje=f"Reintento {intentos} de {MAX_INTENTOS}: {e}")
-        log.warning("[%s] publicación %s se reintenta a las %s — %s",
-                    cli.marca, fila["id"], cuando.strftime("%H:%M"), e)
+            mensaje=f"Reintento {intentos} de {MAX_INTENTOS}: {e}{_sello(e)}")
+        log.warning("[%s] publicación %s se reintenta a las %s — %s%s",
+                    cli.marca, fila["id"], cuando.strftime("%H:%M"), e,
+                    _sello(e))
         return
     cli.marcar_publicacion(fila["id"], "error", intentos=intentos,
-                           mensaje=str(e)[:500])
+                           mensaje=(str(e) + _sello(e))[:500])
 
 
 def procesar(cli: Cliente, ig: Instagram, fila: dict):

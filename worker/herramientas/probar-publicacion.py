@@ -161,7 +161,39 @@ def main() -> int:
     else:
         print("✓ un «todavía no está lista» de Meta se reintenta, no se pierde")
 
-    # ── 3 · y lo que SÍ está mal se sigue dando por perdido ───────────────
+    # ── 3 · «no pude bajar el archivo» se reintenta, no se pierde ─────────
+    #
+    # El 4/9/2026 una story de Clínica se dio por perdida con «Não foi possível
+    # obter a mídia deste URI». La pieza estaba impecable —JPEG de 1080×1920,
+    # pública, 241 KB, medida después a mano— y el contenedor ni se llegó a
+    # crear. Reencolada, salió al primer intento 26 segundos más tarde.
+    #
+    # El defecto no era el diagnóstico sino la clasificación: `_traducir` sabía
+    # decir «Instagram no pudo bajar el archivo» y después decidía si
+    # reintentar mirando SÓLO el código principal, nunca el subcódigo. Un error
+    # bien entendido y mal clasificado se comporta igual que uno que no se
+    # entendió: manda a una persona a publicar a mano una pieza que está bien.
+    for codigo, sub, que in ((9004, 2207052, "el de la story de Clínica"),
+                             (None, 2207020, "no pudo obtener la media"),
+                             (None, 2207003, "se le agotó el tiempo")):
+        cli, ig = ClienteFalso(), InstagramFalso(["FINISHED"])
+        ig.al_publicar = _traducir(
+            {"code": codigo, "error_subcode": sub,
+             "message": "Não foi possível obter a mídia deste URI"})
+        publicador.procesar(cli, ig, _fila())
+        if cli.estado != "programado":
+            fallas.append(
+                f"✗ un «{que}» ({codigo}/{sub}) quedó en «{cli.estado}»: no "
+                f"pudo bajar el archivo, que es justo lo que arregla un "
+                f"reintento.")
+        elif "meta" not in (cli.campos.get("mensaje") or ""):
+            fallas.append(
+                f"✗ el fallo {codigo}/{sub} se reintenta pero no deja anotado "
+                f"el código de Meta: sin eso, el próximo hay que deducirlo.")
+        else:
+            print(f"✓ «{que}» se reintenta, y queda anotado de qué código fue")
+
+    # ── 4 · y lo que SÍ está mal se sigue dando por perdido ───────────────
     #
     # Sin esto, la prueba pasaría con un publicador que reintenta todo para
     # siempre y nunca le avisa a nadie que la pieza no se puede publicar.

@@ -78,10 +78,31 @@ class ErrorInstagram(RuntimeError):
 # La diferencia decide si el publicador reintenta o si le avisa a la persona.
 # 9007 es «la media todavía no está lista»: el propio mensaje de Meta dice que
 # esperes un momento, así que darlo por perdido es no leer lo que dice.
-CODIGOS_TEMPORALES = {1, 2, 4, 9007, 17, 32, 341, 613}
+CODIGOS_TEMPORALES = {1, 2, 4, 9004, 9007, 17, 32, 341, 613}
 # 190 es token vencido o revocado: no se arregla reintentando, hay que
 # reconectar la cuenta. Se trata aparte porque desactiva la cuenta entera.
 CODIGO_TOKEN = 190
+
+# Los SUBcódigos que también significan «volvé a intentar», aunque su código
+# principal no esté en la lista de arriba.
+#
+# Existen por lo que pasó el 4/9/2026: una story de Clínica se dio por perdida
+# con «Não foi possível obter a mídia deste URI». La pieza estaba impecable
+# —JPEG de 1080×1920, pública, 241 KB, medida después a mano— y el contenedor
+# ni se llegó a crear: Instagram simplemente no pudo bajar el archivo en ese
+# segundo. Reencolada a mano, salió al primer intento 26 segundos después.
+#
+# «No pude bajar el archivo» es, por definición, el error que un reintento
+# arregla. Darlo por perdido manda a una persona a publicar a mano una pieza
+# que está bien.
+SUBCODIGOS_TEMPORALES = {
+    2207003,   # tiempo agotado bajando la media
+    2207004,   # no se pudo bajar la media
+    2207020,   # no se pudo obtener la media de esta URI
+    2207032,   # falló la creación de la media
+    2207052,   # media fetch failure — el de la story de Clínica
+    2207027,   # la media todavía no está lista
+}
 
 
 def _traducir(error: dict) -> ErrorInstagram:
@@ -103,9 +124,10 @@ def _traducir(error: dict) -> ErrorInstagram:
     elif codigo == 9 or sub == 2207042:
         texto = ("Instagram no deja publicar más por hoy: son 100 posteos "
                  "cada 24 horas por cuenta.")
-    elif sub in (2207003, 2207004, 2207032):
-        texto = ("Instagram no pudo bajar el archivo. Revisá que la pieza "
-                 "siga publicada en el Storage.")
+    elif sub in (2207003, 2207004, 2207020, 2207032, 2207052):
+        texto = ("Instagram no pudo bajar el archivo del Storage. Casi siempre "
+                 "es pasajero y se reintenta solo; si vuelve a fallar cuatro "
+                 "veces, revisá que la pieza siga publicada.")
     elif sub in (2207005, 2207009, 2207023):
         texto = ("Formato o proporción que Instagram no acepta para este tipo "
                  "de posteo.")
@@ -116,9 +138,15 @@ def _traducir(error: dict) -> ErrorInstagram:
         texto = ("Instagram todavía estaba terminando de procesar la pieza. "
                  "Se reintenta solo en unos minutos.")
 
+    # El SUBcódigo también decide. Antes no: la función clasificaba con todo
+    # cuidado por subcódigo —incluido «no pudo bajar el archivo»— y después
+    # tiraba esa información a la basura para decidir si reintentar, que es la
+    # única decisión que importa. Un error bien diagnosticado y mal clasificado
+    # se comporta igual que uno que no se entendió.
     return ErrorInstagram(
         texto, codigo, sub,
-        reintentable=codigo in CODIGOS_TEMPORALES)
+        reintentable=(codigo in CODIGOS_TEMPORALES
+                      or sub in SUBCODIGOS_TEMPORALES))
 
 
 class Instagram:
