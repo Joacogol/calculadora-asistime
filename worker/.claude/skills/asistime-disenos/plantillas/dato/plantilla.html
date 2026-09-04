@@ -13,7 +13,7 @@
 <div class="glow glow-violeta" style="width:{{ m.alto * 0.42 }}px;height:{{ m.alto * 0.42 }}px;left:-{{ m.alto * 0.1 }}px;top:{{ m.alto * 0.36 }}px;opacity:.75"></div>
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
-  <div class="row" style="width:100%">{{ iso(m.iso, c.blanco) }}</div>
+  <div class="row" style="width:100%">{{ firma(d.firma, m.iso, c.blanco) }}</div>
   <div class="grow"></div>
 
   {% if d.kicker %}

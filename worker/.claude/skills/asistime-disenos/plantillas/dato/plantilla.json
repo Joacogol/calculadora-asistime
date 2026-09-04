@@ -71,6 +71,18 @@
       "default": "",
       "ejemplo": "Fuente: Meta Business, 2025",
       "nota": "Obligatoria en la práctica: un dato sin fuente no se publica. Si la persona no la tiene, preguntala."
+    },
+    {
+      "id": "firma",
+      "tipo": "opcion",
+      "etiqueta": "Firma",
+      "opciones": [
+        "iso",
+        "lockup",
+        "ninguna"
+      ],
+      "default": "iso",
+      "nota": "Con qué marca firma la pieza arriba. `iso` es la «A» sola, la de todos los días. `lockup` es el logo con el nombre: va cuando la pieza la ve gente que no conoce la cuenta —expectativa, anuncio, algo que se comparte fuera del feed—. `ninguna` cuando el protagonista es una foto o un mockup y el logo arriba compite: ahí firma sólo el pie."
     }
   ],
   "cromo": "blanco",

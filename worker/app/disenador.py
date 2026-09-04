@@ -235,6 +235,28 @@ REGLAS
   raíz `<svg>`**; y no entran `script`, `style`, `foreignObject` ni nada que
   venga de internet (un `data:` sí).
 
+- **La marca no firma siempre igual: elegí con qué firma ESTA pieza.** Todas
+  las plantillas tienen el campo `firma`, y usar siempre el mismo valor es lo
+  que hace que un feed se vea salido de una plantilla.
+
+  | `firma` | Cuándo |
+  |---|---|
+  | `iso` (por defecto) | la pieza de todos los días, para quien ya sigue la cuenta |
+  | `lockup` | expectativa, anuncio, algo que va a ver gente de afuera: ahí el nombre tiene que estar escrito |
+  | `ninguna` | cuando el protagonista es una foto, una captura o un mockup y el logo arriba le compite. Firma sólo el pie |
+
+  Y hay dos firmas más que no son un campo sino un `dibujo`, para cuando la
+  pieza tiene que respirar marca y no sólo llevarla:
+
+  · **El logo grande abajo**, en vez del pie escrito:
+    `<image href="assets/lockup-color.png" x="80" y="1680" width="360" .../>`
+    con `firma: "ninguna"` arriba. Cierra la pieza con el nombre dibujado.
+  · **El isotipo enorme de fondo**, recortado por un borde, con `"atras": true`
+    y opacidad baja. Es textura de marca, no firma: la firma va igual.
+
+  Elegí por lo que la pieza tiene que lograr, no por costumbre. Y si dudás
+  entre dos, la que deje el protagonista más limpio.
+
   **Para tocar el logo o el pie de la marca, usá sus variables.** El isotipo y
   el lockup salen con el tamaño del kit, y ese tamaño es el respaldo de una
   variable CSS. Si el pedido dice «el logo más grande», el retoque es:

@@ -125,6 +125,16 @@ ok('class="marca-logo"' in asal["cierre/post"]
 ok('class="marca-iso"' in asal["dato/post"]
    and "width:var(--iso-ancho," in asal["dato/post"],
    "y el isotipo también")
+# La firma no es siempre la misma: las cinco plantillas tienen que respetar el
+# campo `firma`. Si alguna vuelve a dibujar el isotipo a mano, «que sea
+# dinámico según la pieza» deja de valer para esa plantilla y nadie se entera.
+for _pid, _fn in sorted(asi.PLANTILLAS.items()):
+    _con = _fn({**datos_de_ejemplo(_fn.contrato), "firma": "lockup"}, "story")
+    _sin = _fn({**datos_de_ejemplo(_fn.contrato), "firma": "ninguna"}, "story")
+    ok("lockup" in _con, f"«{_pid}» firma con el lockup cuando se lo piden")
+    ok("isotipo" not in _sin.split("</style>")[-1],
+       f"«{_pid}» no firma arriba con «ninguna»")
+
 ok(asi.TIPO_REEL == ("RedHatDisplay-ExtraBold.ttf", "RedHatDisplay-SemiBold.ttf") and all((RAIZ / ".claude/skills/asistime-disenos/fonts" / f).exists() for f in asi.TIPO_REEL),
    "las TTF del reel existen")
 ok("Red Hat Display" in asi.BASE_CSS and "Sora" not in asi.BASE_CSS, "una sola tipografía: Red Hat Display")

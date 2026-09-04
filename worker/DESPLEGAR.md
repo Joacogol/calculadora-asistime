@@ -4172,3 +4172,47 @@ en x=249.
 **Sigue sin ser un ⚠.** Centrar o alinear a la izquierda no tiene una
 respuesta correcta; lo que no se puede es hacer las dos cosas en la misma
 pieza. Es un hecho con su referencia, y quien decide es el que diseña.
+
+## La firma no es siempre la misma (4/9/2026)
+
+«El logo sigue sin convencerme, que siempre use» — y cuando le ofrecí tres
+formas fijas, la respuesta fue mejor que las tres: **«que sea dinámico según
+el proyecto, no puede ser todo siempre igual»**.
+
+Tiene razón, y es un problema de diseño de sistema, no de gusto: una marca no
+se firma igual en todas las piezas. El isotipo solo alcanza cuando el público
+ya sabe de quién es la cuenta. Una pieza de expectativa, un anuncio, algo que
+se comparte fuera del feed necesita el nombre escrito. Y cuando el
+protagonista es una foto o un mockup, el logo arriba compite con lo que hay
+que mirar.
+
+### Cinco firmas, tres en el campo y dos dibujadas
+
+Las cinco plantillas tienen ahora el campo `firma`:
+
+| valor | cuándo |
+|---|---|
+| `iso` (por defecto) | la pieza de todos los días |
+| `lockup` | expectativa, anuncio, algo que ve gente de afuera |
+| `ninguna` | el protagonista es una foto o un mockup; firma sólo el pie |
+
+Y dos que no necesitaron ningún campo, porque el `dibujo` ya las permite: el
+**lockup grande abajo** reemplazando el pie escrito, y el **isotipo enorme de
+fondo** con `atras` y opacidad baja, que es textura de marca y no firma.
+
+El helper `firma()` vive en `motor/componentes.py` y entra por `TODOS`, así
+que lo hereda cualquier marca: no es de Asistime. Y `probar-identidad.py`
+recorre las cinco plantillas verificando que las tres opciones se respeten —
+si alguna vuelve a dibujar el isotipo a mano, «dinámico según la pieza» deja
+de valer para esa plantilla y nadie se enteraría.
+
+## Y el pie que quedaba pegado
+
+Midiendo la pieza que a Joaquín le gustaba —una que hice yo— apareció esto:
+**«ASISTIME.AI» se superponía siete píxeles con la bajada del titular.** A esa
+distancia deja de leerse como una firma y pasa a ser un renglón más del
+bloque de arriba, y a ojo pasa por buena.
+
+Así que el guardián del logo ahora cubre también el pie (`.legal`) y no mira
+sólo la superposición sino el aire: menos de 18 px de separación es el mismo
+problema con otro nombre.

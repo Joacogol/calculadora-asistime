@@ -53,7 +53,7 @@
   align-items:{{ 'center' if centrado else 'flex-start' }};
   text-align:{{ 'center' if centrado else 'left' }}">
 
-  <div class="row" style="width:100%">{{ iso(m.iso, pal.tinta) }}</div>
+  <div class="row" style="width:100%">{{ firma(d.firma, m.iso, pal.tinta) }}</div>
   {% if not d.sobre_video %}<div class="grow"></div>{% endif %}
 
   <div style="max-width:{{ '100%' if centrado else '94%' }}">

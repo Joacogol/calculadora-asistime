@@ -15,7 +15,7 @@
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
   <div class="row" style="width:100%">
-    {{ iso(m.iso, pal.tinta) }}
+    {{ firma(d.firma, m.iso, pal.tinta) }}
     {% if d.kicker %}
     <span class="chip {{ 'chip-oscuro' if oscuro else 'chip-suave' }}" style="font-size:{{ m.kicker }}px;padding:{{ m.kicker * 0.5 }}px {{ m.kicker * 0.95 }}px">{{ d.kicker }}</span>
     {% endif %}

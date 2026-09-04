@@ -174,9 +174,15 @@ QUE_ENTRE = """
 """
 
 
-#: La firma de la marca no la pisa nadie. Se mide con geometría y adentro del
-#: navegador, que sabe exactamente dónde quedó cada caja después de aplicar el
-#: retoque — cosa que ninguna comparación de píxeles puede saber.
+#: La firma de la marca no la pisa nadie NI LA TOCA NADIE. Se mide con
+#: geometría y adentro del navegador, que sabe exactamente dónde quedó cada
+#: caja después de aplicar el retoque — cosa que ninguna comparación de
+#: píxeles puede saber.
+#:
+#: «Ni la toca» se agregó el 4/9/2026 midiendo una pieza que gustaba: el pie
+#: «ASISTIME.AI» se superponía SIETE píxeles con la bajada del titular. A esa
+#: distancia no se lee como una firma sino como una línea más del texto, y a
+#: ojo pasa por buena. Por eso hay un aire mínimo y no sólo un «no se pisan».
 #:
 #: El 4/9/2026 el agente subió el titular con un retoque y le quedó encima del
 #: isotipo: 712 píxeles de tinta adentro de la caja del logo. La pieza salió
@@ -185,8 +191,10 @@ QUE_ENTRE = """
 #: se MOVIÓ. Es una superposición, y una superposición se mide con rectángulos.
 MARCAS_LIBRES = """
 () => {
-  const marcas = [...document.querySelectorAll('.marca-iso, .marca-logo')];
+  // El pie legal firma tanto como el logo: es la marca escrita.
+  const marcas = [...document.querySelectorAll('.marca-iso, .marca-logo, .legal')];
   if (!marcas.length) return [];
+  const AIRE = 18;   // píxeles que la firma necesita libres alrededor
   // Sólo lo que DIBUJA algo propio: un contenedor se superpone con todo lo
   // que tiene adentro y avisaría siempre.
   const MUDOS = ['STYLE','SCRIPT','TITLE','DEFS','METADATA'];
@@ -207,11 +215,23 @@ MARCAS_LIBRES = """
       const b = r.getBoundingClientRect();
       const ancho = Math.min(a.right, b.right) - Math.max(a.left, b.left);
       const alto  = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      const esPie = m.classList.contains('legal');
+      const cual   = esPie ? 'el pie de la marca'  : 'el logo de la marca';
+      const alCual = esPie ? 'al pie de la marca'  : 'al logo de la marca';
       if (ancho > 2 && alto > 2) {
         const texto = el.textContent.trim().slice(0, 40);
-        avisos.push(`«${texto}» le queda encima al logo de la marca `
+        avisos.push(`«${texto}» le queda encima ${alCual} `
           + `(se pisan ${Math.round(ancho)}x${Math.round(alto)} px). `
-          + `El logo firma la pieza: no se le pone nada arriba`);
+          + `La firma de la marca no lleva nada arriba`);
+        break;
+      }
+      // Casi tocarse es el mismo problema con otro nombre: la firma deja de
+      // leerse como firma y pasa a ser un renglón más del bloque de al lado.
+      if (ancho > 2 && alto > -AIRE) {
+        const texto = el.textContent.trim().slice(0, 40);
+        avisos.push(`${cual} queda pegado a «${texto}» `
+          + `(${Math.round(-alto)} px de aire). Necesita al menos ${AIRE}: `
+          + `así se lee como un renglón más y no como la firma`);
         break;
       }
     }

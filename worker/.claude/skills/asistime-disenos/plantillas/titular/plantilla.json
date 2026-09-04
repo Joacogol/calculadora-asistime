@@ -133,6 +133,18 @@
       "etiqueta": "¿Va encima de un video?",
       "default": false,
       "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba, donde queda el texto. El pie no se dibuja: sobre diez segundos de video, una línea legal abajo es ruido. Normalmente no lo prendés a mano: lo pone el motor cuando arma el rótulo de un reel."
+    },
+    {
+      "id": "firma",
+      "tipo": "opcion",
+      "etiqueta": "Firma",
+      "opciones": [
+        "iso",
+        "lockup",
+        "ninguna"
+      ],
+      "default": "iso",
+      "nota": "Con qué marca firma la pieza arriba. `iso` es la «A» sola, la de todos los días. `lockup` es el logo con el nombre: va cuando la pieza la ve gente que no conoce la cuenta —expectativa, anuncio, algo que se comparte fuera del feed—. `ninguna` cuando el protagonista es una foto o un mockup y el logo arriba compite: ahí firma sólo el pie."
     }
   ],
   "cromo": {

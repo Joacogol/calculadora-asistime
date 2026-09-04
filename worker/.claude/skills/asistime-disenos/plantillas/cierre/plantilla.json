@@ -88,6 +88,18 @@
       "etiqueta": "Imagen de Tony",
       "default": "",
       "nota": "Opcional. Un PNG de Tony con fondo transparente, GENERADO PARA ESTA PIEZA con los prompts del kit de marca: no hay un Tony fijo, y la referencia del kit lleva marca de agua y no sirve. Va recortado a la derecha, apoyado en el borde inferior."
+    },
+    {
+      "id": "firma",
+      "tipo": "opcion",
+      "etiqueta": "Firma",
+      "opciones": [
+        "iso",
+        "lockup",
+        "ninguna"
+      ],
+      "default": "iso",
+      "nota": "Con qué marca firma la pieza arriba. `iso` es la «A» sola, la de todos los días. `lockup` es el logo con el nombre: va cuando la pieza la ve gente que no conoce la cuenta —expectativa, anuncio, algo que se comparte fuera del feed—. `ninguna` cuando el protagonista es una foto o un mockup y el logo arriba compite: ahí firma sólo el pie."
     }
   ],
   "cromo": {

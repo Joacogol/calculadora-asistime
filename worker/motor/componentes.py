@@ -320,8 +320,34 @@ def pad_seguro(ident):
     return _pad
 
 
+def firma(ident):
+    """Con qué marca firma ESTA pieza. La firma no es siempre la misma.
+
+    Una marca no se firma igual en todas las piezas y tratarla así es lo que
+    hace que un feed se vea armado con una plantilla. El isotipo solo alcanza
+    cuando el público ya sabe de quién es la cuenta; una pieza de expectativa,
+    un anuncio o algo que va a ver gente de afuera necesita el nombre escrito.
+    Y cuando el protagonista es una foto o un mockup, el logo arriba compite
+    con lo que hay que mirar: ahí conviene firmar sólo abajo.
+
+    Tres valores, y el que no diga nada sigue teniendo lo de siempre.
+    """
+    _iso, _logo = iso(ident), logo(ident)
+
+    def _firma(cual="iso", size=1.0, color=None):
+        cual = (cual or "iso").strip().lower()
+        if cual in ("ninguna", "sin", "no"):
+            return ""
+        if cual in ("lockup", "logo") and _logo:
+            # El lockup es ancho: al mismo `size` que el isotipo se comería
+            # media pieza, así que se lee como «la firma ocupa esto de alto».
+            return _logo(size * 1.15, color)
+        return _iso(size, color) if _iso else ""
+    return _firma
+
+
 TODOS = {
-    "logo": logo, "iso": iso, "pastilla": pastilla, "descuento": descuento,
+    "logo": logo, "iso": iso, "firma": firma, "pastilla": pastilla, "descuento": descuento,
     "barra": barra, "paleta": paleta, "subrayado": subrayado,
     "etiqueta_persona": etiqueta_persona, "fila_logos": fila_logos,
     "sombra_texto": sombra_texto, "pad_seguro": pad_seguro,
