@@ -114,7 +114,7 @@
 
   <div class="row" style="width:100%;align-items:flex-end">
     <div style="text-align:left">
-      {{ logo(m.logo, pal.tinta) }}
+      {{ firma(d.firma, m.iso, pal.tinta, m.logo) }}
       {% if d.pie %}
       <div class="legal" style="color:{{ pal.tinta }};opacity:.72;font-size:{{ m.legal }}px;{{ sombra_chica }}
         margin-top:{{ m.legal * 0.7 }}px;max-width:600px">{{ d.pie }}</div>

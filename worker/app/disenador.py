@@ -244,15 +244,21 @@ REGLAS
   de hoy y ciego para todo lo demás. Si lo que querés es MOVER o AGRANDAR el
   titular, eso es `retoque` sobre la clase del texto, no un `dibujo`.
 
-- **La marca no firma siempre igual: elegí con qué firma ESTA pieza.** Todas
-  las plantillas tienen el campo `firma`, y usar siempre el mismo valor es lo
-  que hace que un feed se vea salido de una plantilla.
+- **La marca no firma siempre igual: elegí con qué firma ESTA pieza.** Cuando
+  la plantilla tiene el campo `firma` —el catálogo lo dice, plantilla por
+  plantilla—, usar siempre el mismo valor es lo que hace que un feed se vea
+  salido de una plantilla.
 
   | `firma` | Cuándo |
   |---|---|
-  | `iso` (por defecto) | la pieza de todos los días, para quien ya sigue la cuenta |
+  | `iso` | la pieza de todos los días, para quien ya sigue la cuenta |
   | `lockup` | expectativa, anuncio, algo que va a ver gente de afuera: ahí el nombre tiene que estar escrito |
   | `ninguna` | cuando el protagonista es una foto, una captura o un mockup y el logo arriba le compite. Firma sólo el pie |
+
+  **Cuál es el valor por defecto lo decide cada plantilla, no vos**, y no es el
+  mismo en todas las marcas: una que se firma con el isotipo y una de retail
+  que se firma con el logotipo entero arrancan distinto. Está en el catálogo.
+  Mandá `firma` sólo cuando quieras APARTARTE de ese valor.
 
   Y hay dos firmas más que no son un campo sino un `dibujo`, para cuando la
   pieza tiene que respirar marca y no sólo llevarla:

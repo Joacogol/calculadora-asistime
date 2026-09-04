@@ -53,6 +53,17 @@
   </div>
   {% endif %}
 
+  {#- El retrato no firmaba de ninguna manera: la pieza ES la persona y la
+      chapita con su nombre hace de marca. Sigue sin firmar si nadie dice
+      nada, y ahora puede hacerlo cuando la foto va a circular fuera de la
+      cuenta. Va del mismo lado que el título, no en una esquina propia:
+      dos alineaciones en una pieza es lo que la delata como armada por
+      partes, y el motor lo mide. -#}
+  {% if d.firma and d.firma != 'ninguna' %}
+  <div style="margin-top:{{ m.pad * 0.5 }}px">{{ firma(d.firma, m.iso, pal.tinta, m.logo,
+    align='center' if cen else ('right' if der else 'left')) }}</div>
+  {% endif %}
+
   <div class="grow"></div>
 
   {#- La chapita se pega al BORDE de la pieza, no al padding: así se lee como

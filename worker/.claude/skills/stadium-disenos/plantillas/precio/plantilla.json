@@ -1,132 +1,148 @@
 {
-  "id": "precio",
-  "nombre": "Precio",
-  "descripcion": "un producto con su precio",
-  "cuando_usarla": "La EXCEPCIÓN, no la pieza de todos los días. Se miraron 24 posts del feed de Stadium y no hay un solo precio encima de una foto: el precio va en el epígrafe. Usala cuando pidan expresamente una placa CON el precio a la vista —un aviso, una placa de Precios de Locos— y confirmá antes que la quieren así. Si el precio no tiene que verse en la imagen, usá `producto`. Si lo que manda es un porcentaje o una mecánica, usá `promo`.",
-  "acento_por_defecto": "naranja",
-  "medidas": {
-    "post": {
-      "alto": 1080,
-      "pad": 72,
-      "logo": 0.85,
-      "pastilla": 24,
-      "kicker": 24,
-      "nombre": 62,
-      "precio": 118,
-      "legal": 22,
-      "barra": 84,
-      "foto": 470
-    },
-    "vert": {
-      "alto": 1350,
-      "pad": 76,
-      "logo": 0.9,
-      "pastilla": 26,
-      "kicker": 25,
-      "nombre": 70,
-      "precio": 134,
-      "legal": 23,
-      "barra": 90,
-      "foto": 600
-    },
-    "story": {
-      "alto": 1920,
-      "pad": 88,
-      "logo": 1.0,
-      "pastilla": 30,
-      "kicker": 29,
-      "nombre": 88,
-      "precio": 172,
-      "legal": 27,
-      "barra": 118,
-      "foto": 830
-    },
-    "reel": {
-      "alto": 1920,
-      "pad": 88,
-      "logo": 1.0,
-      "pastilla": 30,
-      "kicker": 29,
-      "nombre": 88,
-      "precio": 172,
-      "legal": 27,
-      "barra": 118,
-      "foto": 830
-    }
+ "id": "precio",
+ "nombre": "Precio",
+ "descripcion": "un producto con su precio",
+ "cuando_usarla": "La EXCEPCIÓN, no la pieza de todos los días. Se miraron 24 posts del feed de Stadium y no hay un solo precio encima de una foto: el precio va en el epígrafe. Usala cuando pidan expresamente una placa CON el precio a la vista —un aviso, una placa de Precios de Locos— y confirmá antes que la quieren así. Si el precio no tiene que verse en la imagen, usá `producto`. Si lo que manda es un porcentaje o una mecánica, usá `promo`.",
+ "acento_por_defecto": "naranja",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 72,
+   "logo": 0.85,
+   "pastilla": 24,
+   "kicker": 24,
+   "nombre": 62,
+   "precio": 118,
+   "legal": 22,
+   "barra": 84,
+   "foto": 470,
+   "iso": 0.55
   },
-  "campos": [
-    {
-      "id": "foto",
-      "tipo": "imagen",
-      "etiqueta": "Foto del producto",
-      "requerido": true,
-      "nota": "Del catálogo, sobre fondo blanco. No se recorta: entra entera aunque le sobre aire."
-    },
-    {
-      "id": "nombre",
-      "tipo": "texto",
-      "etiqueta": "Producto",
-      "requerido": true,
-      "ejemplo": "Championes adidas Runfalcon 3.0",
-      "nota": "El nombre como lo busca la persona, no el del sistema. Dos líneas es el límite cómodo."
-    },
-    {
-      "id": "precio",
-      "tipo": "texto",
-      "etiqueta": "Precio",
-      "requerido": true,
-      "ejemplo": "$ 3.990",
-      "nota": "Con el signo y los puntos como se escriben en Uruguay."
-    },
-    {
-      "id": "marca",
-      "tipo": "texto",
-      "etiqueta": "Marca",
-      "default": "",
-      "ejemplo": "ADIDAS",
-      "nota": "La marca del producto, arriba del nombre. Es texto, no el logo: el logo de un tercero va en la plantilla `marca`."
-    },
-    {
-      "id": "precio_antes",
-      "tipo": "texto",
-      "etiqueta": "Precio anterior",
-      "default": "",
-      "ejemplo": "$ 5.990",
-      "nota": "Sale tachado y en gris. Si no hay oferta, dejalo vacío y desaparece."
-    },
-    {
-      "id": "descuento",
-      "tipo": "texto",
-      "etiqueta": "Descuento",
-      "default": "",
-      "ejemplo": "33",
-      "nota": "Sólo el número. El «%» y el «OFF» los dibuja la plantilla."
-    },
-    {
-      "id": "etiqueta",
-      "tipo": "texto",
-      "etiqueta": "Rótulo de campaña",
-      "default": "",
-      "ejemplo": "PRECIOS DE LOCOS",
-      "nota": "La pastilla naranja de arriba a la derecha. Va sólo si la pieza es parte de una campaña con nombre."
-    },
-    {
-      "id": "pie",
-      "tipo": "texto",
-      "etiqueta": "Letra chica",
-      "default": "",
-      "ejemplo": "Precio válido hasta el 31/8 o hasta agotar stock. No acumulable con otras promociones.",
-      "nota": "Vigencia, condiciones, lo que haya que aclarar. Si el precio tiene una condición, va acá y no se omite."
-    },
-    {
-      "id": "acento",
-      "tipo": "opcion",
-      "etiqueta": "Acento",
-      "opciones": [
-        "naranja",
-        "tinta"
-      ],
-      "default": "naranja"
-    }
-  ]
+  "vert": {
+   "alto": 1350,
+   "pad": 76,
+   "logo": 0.9,
+   "pastilla": 26,
+   "kicker": 25,
+   "nombre": 70,
+   "precio": 134,
+   "legal": 23,
+   "barra": 90,
+   "foto": 600,
+   "iso": 0.58
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 88,
+   "logo": 1.0,
+   "pastilla": 30,
+   "kicker": 29,
+   "nombre": 88,
+   "precio": 172,
+   "legal": 27,
+   "barra": 118,
+   "foto": 830,
+   "iso": 0.65
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 88,
+   "logo": 1.0,
+   "pastilla": 30,
+   "kicker": 29,
+   "nombre": 88,
+   "precio": 172,
+   "legal": 27,
+   "barra": 118,
+   "foto": 830,
+   "iso": 0.65
+  }
+ },
+ "campos": [
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "Foto del producto",
+   "requerido": true,
+   "nota": "Del catálogo, sobre fondo blanco. No se recorta: entra entera aunque le sobre aire."
+  },
+  {
+   "id": "nombre",
+   "tipo": "texto",
+   "etiqueta": "Producto",
+   "requerido": true,
+   "ejemplo": "Championes adidas Runfalcon 3.0",
+   "nota": "El nombre como lo busca la persona, no el del sistema. Dos líneas es el límite cómodo."
+  },
+  {
+   "id": "precio",
+   "tipo": "texto",
+   "etiqueta": "Precio",
+   "requerido": true,
+   "ejemplo": "$ 3.990",
+   "nota": "Con el signo y los puntos como se escriben en Uruguay."
+  },
+  {
+   "id": "marca",
+   "tipo": "texto",
+   "etiqueta": "Marca",
+   "default": "",
+   "ejemplo": "ADIDAS",
+   "nota": "La marca del producto, arriba del nombre. Es texto, no el logo: el logo de un tercero va en la plantilla `marca`."
+  },
+  {
+   "id": "precio_antes",
+   "tipo": "texto",
+   "etiqueta": "Precio anterior",
+   "default": "",
+   "ejemplo": "$ 5.990",
+   "nota": "Sale tachado y en gris. Si no hay oferta, dejalo vacío y desaparece."
+  },
+  {
+   "id": "descuento",
+   "tipo": "texto",
+   "etiqueta": "Descuento",
+   "default": "",
+   "ejemplo": "33",
+   "nota": "Sólo el número. El «%» y el «OFF» los dibuja la plantilla."
+  },
+  {
+   "id": "etiqueta",
+   "tipo": "texto",
+   "etiqueta": "Rótulo de campaña",
+   "default": "",
+   "ejemplo": "PRECIOS DE LOCOS",
+   "nota": "La pastilla naranja de arriba a la derecha. Va sólo si la pieza es parte de una campaña con nombre."
+  },
+  {
+   "id": "pie",
+   "tipo": "texto",
+   "etiqueta": "Letra chica",
+   "default": "",
+   "ejemplo": "Precio válido hasta el 31/8 o hasta agotar stock. No acumulable con otras promociones.",
+   "nota": "Vigencia, condiciones, lo que haya que aclarar. Si el precio tiene una condición, va acá y no se omite."
+  },
+  {
+   "id": "acento",
+   "tipo": "opcion",
+   "etiqueta": "Acento",
+   "opciones": [
+    "naranja",
+    "tinta"
+   ],
+   "default": "naranja"
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup",
+   "nota": "Con qué marca firma la pieza. `lockup` es el logotipo con el nombre, que es como firma Stadium en el feed. `iso` es la S sola: para una pieza donde el logotipo entero compite con el producto o con el precio. `ninguna` cuando la foto es la protagonista y la cuenta ya dice de quién es. Usar siempre la misma es lo que hace que un feed se vea salido de una plantilla."
+  }
+ ]
 }

@@ -334,15 +334,37 @@ def firma(ident):
     """
     _iso, _logo = iso(ident), logo(ident)
 
-    def _firma(cual="iso", size=1.0, color=None):
+    def _firma(cual="iso", size=1.0, color=None, lockup=None, align="left"):
+        # Un `si_no` viejo también es una firma: `producto` de Stadium tenía el
+        # campo como booleano antes de que la firma fuera de tres valores, y
+        # las piezas ya guardadas siguen mandando true/false. Sin esto, `False`
+        # es falsy y cae en el valor por defecto —o sea, la pieza que decía
+        # «sin logo» pasaría a firmar—, y `True` revienta en `.strip()`.
+        if isinstance(cual, bool):
+            cual = "lockup" if cual else "ninguna"
         cual = (cual or "iso").strip().lower()
         if cual in ("ninguna", "sin", "no"):
             return ""
         if cual in ("lockup", "logo") and _logo:
-            # El lockup es ancho: al mismo `size` que el isotipo se comería
-            # media pieza, así que se lee como «la firma ocupa esto de alto».
-            return _logo(size * 1.15, color)
-        return _iso(size, color) if _iso else ""
+            # `lockup` es el tamaño propio del logotipo, para las marcas que lo
+            # tienen calibrado —Stadium firma con él y su medida está medida
+            # sobre el ancho—. Sin él se deduce del isotipo: el lockup es
+            # ancho, así que al mismo `size` se comería media pieza, y el 1,15
+            # lo lee como «la firma ocupa esto de alto».
+            return _logo(lockup if lockup is not None else size * 1.15, color,
+                         align)
+        if not _iso:
+            return ""
+        # El isotipo es una imagen suelta y el lockup viene envuelto en una
+        # caja que lo alinea. Se envuelve igual SÓLO cuando hace falta: en una
+        # pieza alineada a la izquierda el envoltorio no cambiaría nada y sí
+        # cambiaría el HTML de las piezas que ya salieron.
+        marca = _iso(size, color)
+        if align == "left":
+            return marca
+        caja = {"center": "center", "right": "flex-end"}[align]
+        return f'<div style="display:flex;justify-content:{caja}">{marca}</div>'
+
     return _firma
 
 

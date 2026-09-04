@@ -4250,3 +4250,84 @@ Y la lección de fondo, otra vez: **el agente no busca romper el guardián,
 busca el camino más corto al resultado.** Si ese camino pasa por afuera de la
 medición, lo va a tomar todas las veces. Cerrar el camino es el arreglo;
 pedirle que no lo tome es una sugerencia.
+
+## Los cuatro clientes no se comportaban igual (4/9/2026)
+
+Joaquín preguntó si los cambios del día valían para los cuatro clientes por
+igual, «de momento no hay nada a medida para un cliente». Auditado, la
+respuesta era **no**, por dos motivos distintos.
+
+### Lo que sí viaja solo
+
+Todo lo que vive en `motor/` y `app/` es una sola imagen para los cuatro: el
+`corto` en las métricas, el buffer de 32 MB, el `dibujo` con sus capas e
+imágenes, el texto prohibido adentro del dibujo, el rechazo de las fotos
+imposibles, las medidas de tapado, contraste, franja de Instagram y recorte, la
+lectura de composición y el achicado del texto que no entra. Nada de eso hay
+que replicarlo marca por marca.
+
+### Y el agujero que apareció buscando eso
+
+**Boss y Clínica no guardan su identidad en este repo.** Su `marca.py` importa
+`brand`, `templates`, `diapositivas` y `presentacion`, que viven en el **repo
+del worker**. Por eso el paso 1 dice clonar a `/tmp/nuevo` y copiar
+`cp -r /tmp/nuevo/worker/. .` **adentro del repo del worker**.
+
+Desplegar parado en el clon de `calculadora-asistime` construye una imagen que
+**tiene sus carpetas pero no su código** — el `Dockerfile` hace `COPY . .` y se
+lleva lo que haya. Y no falla en ningún lado:
+
+1. el listado de kits del paso 0/4 se ve perfecto: las cuatro carpetas están;
+2. el worker encuentra `marca.py`, lo importa y revienta con
+   `ModuleNotFoundError: No module named 'brand'`;
+3. lo atrapa el `except` que existe para que un cliente caído no frene a los
+   demás;
+4. queda **una línea en el log** y el cliente deja de recibir sus piezas.
+
+Un despliegue «4/4 Listo» con dos clientes apagados. Es el mismo patrón que el
+del asterisco del 3/9: lo que se ve confirma, y lo que falla no habla.
+
+**Arreglo:** `herramientas/probar-marcas.py` carga las cuatro marcas por el
+mismo camino que el worker (`motor.cargador.cargar_marca`) y verifica el
+contrato de cada una. `desplegar-chat.sh` lo corre **antes de construir** y es
+una condición, no un aviso: una imagen donde una marca no carga no se
+despliega, y el mensaje dice qué módulo falta y por qué.
+
+Corrido dentro de `calculadora-asistime` la prueba falla, y está bien que
+falle: desde este repo no se despliega.
+
+### La otra mitad: la firma
+
+Auditadas las plantillas, sólo Asistime podía elegir con qué firma cada pieza.
+Stadium firmaba siempre con el logotipo, escrito a mano en cada plantilla.
+
+Las cinco de Stadium tienen ahora el mismo campo `firma` con los mismos tres
+valores, y **ninguna pieza cambió de aspecto**: los 20 hashes grabados salieron
+idénticos. Eso costó dos arreglos que valen para cualquier marca que venga:
+
+- **`firma()` acepta el tamaño del lockup aparte.** Deducía el lockup del
+  isotipo multiplicando por 1,15 —así lo usa Asistime, que pasa una medida de
+  isotipo—. Stadium pasa una medida de logotipo, calibrada sobre el ancho: sin
+  el parámetro nuevo, cada pieza habría salido con la marca un 15% más grande.
+- **Un `si_no` viejo sigue siendo una firma.** `producto` tenía el campo como
+  booleano y las piezas guardadas siguen mandando `true`/`false`. Sin
+  convertirlos, `False` es falsy y caía en el valor por defecto —una pieza que
+  decía «sin logo» habría pasado a firmar— y `True` reventaba en `.strip()`.
+
+El valor por defecto lo decide cada plantilla y no es el mismo en las dos
+marcas: Asistime arranca en `iso`, Stadium en `lockup` salvo `producto` y
+`equipo`, que no firman. El PROMPT dice ahora que **ese valor lo manda el
+catálogo**, no una tabla escrita en el prompt.
+
+`.legal` en dos plantillas de Stadium no está porque **no llevan pie**: el
+retrato de `equipo` y la foto de `producto` no tienen letra chica por diseño,
+y el guardián no puede cuidar lo que no existe. El logo sí lo cuida en las
+cinco, porque las cinco usan el `logo()` compartido, que emite `.marca-logo`.
+
+### Lo que queda desparejo
+
+Boss (13 plantillas) y Clínica (4) siguen en la generación vieja: identidad en
+Python, fuera de este repo. No tienen firma dinámica, y el guardián del logo
+sólo las ve si su `logo()` propio emite `.marca-logo` — que desde acá no se
+puede comprobar. Emparejarlas de verdad es migrarlas a datos, como se hizo con
+Asistime y Stadium. Son 17 plantillas: es un trabajo con nombre propio.

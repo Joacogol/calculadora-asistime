@@ -45,6 +45,28 @@ for KIT in .claude/skills/*/; do
   echo "  · ${NOMBRE}: ${CUANTAS} plantillas · marca.json del ${FECHA}"
 done
 
+# ── Y que esas marcas CARGUEN, no sólo que estén ─────────────────────────
+#
+# Listar las carpetas no alcanza. El 4/9/2026 se vio que Boss y Clínica no
+# guardan su identidad en `marca.json` sino en `brand.py`, `diapositivas.py` y
+# `presentacion.py`, que viven en el REPO DEL WORKER y no en
+# `calculadora-asistime`. Desplegar parado en el clon construye una imagen que
+# tiene sus carpetas —así que el listado de arriba se ve perfecto— pero no su
+# código.
+#
+# Y no falla en ningún lado: el worker encuentra `marca.py`, lo importa,
+# revienta con `ModuleNotFoundError`, y lo atrapa el `except` que existe para
+# que un cliente caído no frene a los demás. El cliente deja de recibir sus
+# piezas y lo único que queda es una línea en el log.
+#
+# Por eso esto es una CONDICIÓN para construir y no un aviso: una imagen donde
+# una marca no carga no se despliega.
+if ! SALIDA="$(python3 herramientas/probar-marcas.py 2>&1)"; then
+  printf '%s\n' "$SALIDA" | sed 's/^/  /'
+  exit 1
+fi
+printf '%s\n' "$SALIDA" | sed 's/^/  /' | grep -E '✓|✗'
+
 # ── De dónde sale la lista de clientes ───────────────────────────────────
 #
 # Dos caminos, y el script elige solo:

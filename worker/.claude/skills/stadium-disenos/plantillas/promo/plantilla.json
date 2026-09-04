@@ -1,145 +1,161 @@
 {
-  "id": "promo",
-  "nombre": "Promo o sorteo",
-  "descripcion": "sorteo, descuento o acción con socios: fondo pleno, título grande y la fila de logos",
-  "cuando_usarla": "Cuando la pieza es una mecánica y no un producto: un sorteo, un descuento de temporada, una acción con marcas socias. Es la ÚNICA plantilla donde el naranja de Stadium es el fondo, y la única que lleva la fila de logos de los que participan. Si sólo hay un porcentaje de descuento sin socios ni mecánica, también sirve: dejá los logos vacíos.",
-  "acento_por_defecto": "naranja",
-  "medidas": {
-    "post": {
-      "alto": 1080,
-      "pad": 76,
-      "titulo": 132,
-      "bajada": 30,
-      "socio": 46,
-      "logo": 0.7,
-      "legal": 20,
-      "descuento": 200
-    },
-    "vert": {
-      "alto": 1350,
-      "pad": 80,
-      "titulo": 152,
-      "bajada": 33,
-      "socio": 52,
-      "logo": 0.76,
-      "legal": 21,
-      "descuento": 232
-    },
-    "story": {
-      "alto": 1920,
-      "pad": 92,
-      "titulo": 190,
-      "bajada": 40,
-      "socio": 64,
-      "logo": 0.9,
-      "legal": 25,
-      "descuento": 290
-    },
-    "reel": {
-      "alto": 1920,
-      "pad": 92,
-      "titulo": 190,
-      "bajada": 40,
-      "socio": 64,
-      "logo": 0.9,
-      "legal": 25,
-      "descuento": 290
-    }
+ "id": "promo",
+ "nombre": "Promo o sorteo",
+ "descripcion": "sorteo, descuento o acción con socios: fondo pleno, título grande y la fila de logos",
+ "cuando_usarla": "Cuando la pieza es una mecánica y no un producto: un sorteo, un descuento de temporada, una acción con marcas socias. Es la ÚNICA plantilla donde el naranja de Stadium es el fondo, y la única que lleva la fila de logos de los que participan. Si sólo hay un porcentaje de descuento sin socios ni mecánica, también sirve: dejá los logos vacíos.",
+ "acento_por_defecto": "naranja",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 76,
+   "titulo": 132,
+   "bajada": 30,
+   "socio": 46,
+   "logo": 0.7,
+   "legal": 20,
+   "descuento": 200,
+   "iso": 0.45
   },
-  "campos": [
-    {
-      "id": "titulo",
-      "tipo": "texto",
-      "etiqueta": "Título",
-      "requerido": true,
-      "ejemplo": "SORTEO",
-      "nota": "Corto y fuerte: SORTEO, PRECIOS DE LOCOS, SALE. Es lo único que se lee desde el feed."
-    },
-    {
-      "id": "estilo",
-      "tipo": "opcion",
-      "etiqueta": "Paleta",
-      "opciones": [
-        "promo",
-        "stadium",
-        "oscura",
-        "papa",
-        "madre"
-      ],
-      "default": "promo",
-      "nota": "`promo` es el naranja pleno con texto blanco, que es como está el sorteo real."
-    },
-    {
-      "id": "fondo",
-      "tipo": "color",
-      "etiqueta": "Fondo (pisa la paleta)",
-      "default": ""
-    },
-    {
-      "id": "tinta",
-      "tipo": "color",
-      "etiqueta": "Color del texto (pisa la paleta)",
-      "default": ""
-    },
-    {
-      "id": "descuento",
-      "tipo": "texto",
-      "etiqueta": "Descuento",
-      "default": "",
-      "ejemplo": "30",
-      "nota": "Sólo el número, sin el % ni el OFF. Si la promo no es un descuento, dejalo vacío."
-    },
-    {
-      "id": "bajada",
-      "tipo": "texto_largo",
-      "etiqueta": "La mecánica",
-      "default": "",
-      "ejemplo": "Comprá Bibi, seguí a las cuentas y participá por entradas dobles.",
-      "nota": "Qué hay que hacer para participar, en una o dos frases. En un sorteo esto NO es opcional: sin la mecánica la pieza no sirve."
-    },
-    {
-      "id": "foto",
-      "tipo": "imagen",
-      "etiqueta": "Foto",
-      "default": "",
-      "nota": "Opcional, abajo. TIENE QUE SER UN RECORTE con fondo transparente (PNG o WebP con alfa). Una foto de catálogo con fondo blanco se ve como un rectángulo blanco pegado sobre el color de la promo, y arruina la pieza. Si sólo tenés la foto con fondo, dejá este campo vacío y pedila recortada."
-    },
-    {
-      "id": "logo_socio_1",
-      "tipo": "imagen",
-      "etiqueta": "Logo socio 1",
-      "default": ""
-    },
-    {
-      "id": "logo_socio_2",
-      "tipo": "imagen",
-      "etiqueta": "Logo socio 2",
-      "default": ""
-    },
-    {
-      "id": "logo_socio_3",
-      "tipo": "imagen",
-      "etiqueta": "Logo socio 3",
-      "default": "",
-      "nota": "Los logos van en fila, separados por una barrita, todos al mismo alto y sin deformarse. El de Stadium va primero y lo pone la plantilla: acá van sólo los socios."
-    },
-    {
-      "id": "pie",
-      "tipo": "texto",
-      "etiqueta": "Letra chica",
-      "requerido": true,
-      "ejemplo": "Válido del 1 al 15 de setiembre. Hasta agotar stock.",
-      "nota": "OBLIGATORIA en esta plantilla. Una promo sin condiciones escritas es un reclamo en el mostrador: hasta cuándo vale, si es acumulable, si hay stock limitado. Si el pedido no la trae, preguntala antes de dar la pieza por terminada."
-    },
-    {
-      "id": "acento",
-      "tipo": "opcion",
-      "etiqueta": "Acento",
-      "opciones": [
-        "naranja",
-        "blanco"
-      ],
-      "default": "blanco"
-    }
-  ]
+  "vert": {
+   "alto": 1350,
+   "pad": 80,
+   "titulo": 152,
+   "bajada": 33,
+   "socio": 52,
+   "logo": 0.76,
+   "legal": 21,
+   "descuento": 232,
+   "iso": 0.49
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 92,
+   "titulo": 190,
+   "bajada": 40,
+   "socio": 64,
+   "logo": 0.9,
+   "legal": 25,
+   "descuento": 290,
+   "iso": 0.58
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 92,
+   "titulo": 190,
+   "bajada": 40,
+   "socio": 64,
+   "logo": 0.9,
+   "legal": 25,
+   "descuento": 290,
+   "iso": 0.58
+  }
+ },
+ "campos": [
+  {
+   "id": "titulo",
+   "tipo": "texto",
+   "etiqueta": "Título",
+   "requerido": true,
+   "ejemplo": "SORTEO",
+   "nota": "Corto y fuerte: SORTEO, PRECIOS DE LOCOS, SALE. Es lo único que se lee desde el feed."
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta",
+   "opciones": [
+    "promo",
+    "stadium",
+    "oscura",
+    "papa",
+    "madre"
+   ],
+   "default": "promo",
+   "nota": "`promo` es el naranja pleno con texto blanco, que es como está el sorteo real."
+  },
+  {
+   "id": "fondo",
+   "tipo": "color",
+   "etiqueta": "Fondo (pisa la paleta)",
+   "default": ""
+  },
+  {
+   "id": "tinta",
+   "tipo": "color",
+   "etiqueta": "Color del texto (pisa la paleta)",
+   "default": ""
+  },
+  {
+   "id": "descuento",
+   "tipo": "texto",
+   "etiqueta": "Descuento",
+   "default": "",
+   "ejemplo": "30",
+   "nota": "Sólo el número, sin el % ni el OFF. Si la promo no es un descuento, dejalo vacío."
+  },
+  {
+   "id": "bajada",
+   "tipo": "texto_largo",
+   "etiqueta": "La mecánica",
+   "default": "",
+   "ejemplo": "Comprá Bibi, seguí a las cuentas y participá por entradas dobles.",
+   "nota": "Qué hay que hacer para participar, en una o dos frases. En un sorteo esto NO es opcional: sin la mecánica la pieza no sirve."
+  },
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "Foto",
+   "default": "",
+   "nota": "Opcional, abajo. TIENE QUE SER UN RECORTE con fondo transparente (PNG o WebP con alfa). Una foto de catálogo con fondo blanco se ve como un rectángulo blanco pegado sobre el color de la promo, y arruina la pieza. Si sólo tenés la foto con fondo, dejá este campo vacío y pedila recortada."
+  },
+  {
+   "id": "logo_socio_1",
+   "tipo": "imagen",
+   "etiqueta": "Logo socio 1",
+   "default": ""
+  },
+  {
+   "id": "logo_socio_2",
+   "tipo": "imagen",
+   "etiqueta": "Logo socio 2",
+   "default": ""
+  },
+  {
+   "id": "logo_socio_3",
+   "tipo": "imagen",
+   "etiqueta": "Logo socio 3",
+   "default": "",
+   "nota": "Los logos van en fila, separados por una barrita, todos al mismo alto y sin deformarse. El de Stadium va primero y lo pone la plantilla: acá van sólo los socios."
+  },
+  {
+   "id": "pie",
+   "tipo": "texto",
+   "etiqueta": "Letra chica",
+   "requerido": true,
+   "ejemplo": "Válido del 1 al 15 de setiembre. Hasta agotar stock.",
+   "nota": "OBLIGATORIA en esta plantilla. Una promo sin condiciones escritas es un reclamo en el mostrador: hasta cuándo vale, si es acumulable, si hay stock limitado. Si el pedido no la trae, preguntala antes de dar la pieza por terminada."
+  },
+  {
+   "id": "acento",
+   "tipo": "opcion",
+   "etiqueta": "Acento",
+   "opciones": [
+    "naranja",
+    "blanco"
+   ],
+   "default": "blanco"
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup",
+   "nota": "Con qué marca firma la pieza. `lockup` es el logotipo con el nombre, que es como firma Stadium en el feed. `iso` es la S sola: para una pieza donde el logotipo entero compite con el producto o con el precio. `ninguna` cuando la foto es la protagonista y la cuenta ya dice de quién es. Usar siempre la misma es lo que hace que un feed se vea salido de una plantilla."
+  }
+ ]
 }

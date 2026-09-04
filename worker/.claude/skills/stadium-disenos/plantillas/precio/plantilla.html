@@ -8,7 +8,7 @@
 <div class="pad">
   <div style="padding:{{ pad_seguro(fmt, m.pad) }} {{ m.pad }}px 0;display:flex;align-items:flex-start;
     justify-content:space-between;gap:28px">
-    {{ logo(m.logo) }}
+    {{ firma(d.firma, m.iso, lockup=m.logo) }}
     {% if d.etiqueta %}<div style="flex:none;max-width:52%;text-align:right">
       {{ pastilla(d.etiqueta, cuerpo=m.pastilla) }}</div>{% endif %}
   </div>

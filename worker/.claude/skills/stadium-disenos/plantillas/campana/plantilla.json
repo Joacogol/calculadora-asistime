@@ -1,181 +1,197 @@
 {
-  "id": "campana",
-  "nombre": "Campaña",
-  "descripcion": "el titular de una campaña, con la paleta y la tipografía de esa campaña",
-  "cuando_usarla": "Cuando la pieza pertenece a una campaña con nombre: «Con papá siempre hay equipo», «Para la N°1 de mi equipo», una temporada, un lanzamiento. Es la plantilla más importante de Stadium después de `producto`, porque acá la campaña manda sobre la marca: elegí su paleta y su voz tipográfica y la pieza sale con la identidad de la campaña, no con el naranja de Stadium. Si no hay campaña y sólo hay que mostrar el producto, usá `producto`.",
-  "acento_por_defecto": "naranja",
-  "medidas": {
-    "post": {
-      "alto": 1080,
-      "pad": 76,
-      "titulo": 104,
-      "kicker": 26,
-      "bajada": 32,
-      "socio": 46,
-      "logo": 0.72,
-      "legal": 20
-    },
-    "vert": {
-      "alto": 1350,
-      "pad": 80,
-      "titulo": 118,
-      "kicker": 28,
-      "bajada": 35,
-      "socio": 50,
-      "logo": 0.78,
-      "legal": 21
-    },
-    "story": {
-      "alto": 1920,
-      "pad": 92,
-      "titulo": 146,
-      "kicker": 32,
-      "bajada": 42,
-      "socio": 60,
-      "logo": 0.92,
-      "legal": 25
-    },
-    "reel": {
-      "alto": 1920,
-      "pad": 92,
-      "titulo": 146,
-      "kicker": 32,
-      "bajada": 42,
-      "socio": 60,
-      "logo": 0.92,
-      "legal": 25
-    }
+ "id": "campana",
+ "nombre": "Campaña",
+ "descripcion": "el titular de una campaña, con la paleta y la tipografía de esa campaña",
+ "cuando_usarla": "Cuando la pieza pertenece a una campaña con nombre: «Con papá siempre hay equipo», «Para la N°1 de mi equipo», una temporada, un lanzamiento. Es la plantilla más importante de Stadium después de `producto`, porque acá la campaña manda sobre la marca: elegí su paleta y su voz tipográfica y la pieza sale con la identidad de la campaña, no con el naranja de Stadium. Si no hay campaña y sólo hay que mostrar el producto, usá `producto`.",
+ "acento_por_defecto": "naranja",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 76,
+   "titulo": 104,
+   "kicker": 26,
+   "bajada": 32,
+   "socio": 46,
+   "logo": 0.72,
+   "legal": 20,
+   "iso": 0.47
   },
-  "campos": [
-    {
-      "id": "titulo",
-      "tipo": "texto_largo",
-      "etiqueta": "Título de la campaña",
-      "requerido": true,
-      "ejemplo": "Con papá siempre hay equipo",
-      "nota": "El nombre de la campaña, tal cual. Podés cortar la línea vos con un salto de línea: el diseño respeta dónde lo pongas, que es como están hechas las piezas reales («CON PAPÁ / SIEMPRE HAY / EQUIPO»)."
-    },
-    {
-      "id": "estilo",
-      "tipo": "opcion",
-      "etiqueta": "Paleta de la campaña",
-      "opciones": [
-        "stadium",
-        "papa",
-        "papa_estudio",
-        "madre",
-        "promo",
-        "oscura"
-      ],
-      "default": "stadium",
-      "nota": "El punto de partida. `stadium` es la marca neutra. `papa` es celeste sobre kraft y `papa_estudio` el mismo celeste sobre blanco; `madre` es marrón sobre crema con serif; `oscura` es blanco sobre negro. OJO: los colores de las campañas son APROXIMACIONES sacadas de capturas del feed, no una especificación. Cuando la campaña venga con sus colores, pasalos en `fondo` y `tinta` y pisan al preset."
-    },
-    {
-      "id": "fondo",
-      "tipo": "color",
-      "etiqueta": "Fondo (pisa la paleta)",
-      "default": "",
-      "nota": "Dejalo vacío para usar el de la paleta. Si hay foto, el fondo no se ve."
-    },
-    {
-      "id": "tinta",
-      "tipo": "color",
-      "etiqueta": "Color del título (pisa la paleta)",
-      "default": "",
-      "nota": "Vacío = el de la paleta. OJO: cuando hay FOTO el título sale blanco por defecto aunque la paleta diga otra cosa, porque es lo que hace la marca y es lo único que se lee. Si querés el color de la campaña encima de una foto, ponelo acá a mano — y mirá el resultado antes de publicar."
-    },
-    {
-      "id": "voz",
-      "tipo": "opcion",
-      "etiqueta": "Voz tipográfica",
-      "opciones": [
-        "",
-        "cond",
-        "serif",
-        "normal"
-      ],
-      "default": "",
-      "nota": "Vacío = la de la paleta. `cond` es la condensada de póster en mayúsculas (campañas de volumen); `serif` la elegante (aspiracional, Día de la Madre); `normal` la neutra de la marca."
-    },
-    {
-      "id": "foto",
-      "tipo": "imagen",
-      "etiqueta": "Foto",
-      "default": "",
-      "nota": "Opcional. Con foto, el título va encima en BLANCO y con un velo medido contra esa foto. Conviene una foto de ambiente o de uso: una de catálogo sobre fondo blanco obliga a un velo tan grande que la pieza sale gris. Sin foto, sale sobre el color de la campaña — que es como está la mitad de las piezas reales."
-    },
-    {
-      "id": "sobre_video",
-      "tipo": "si_no",
-      "etiqueta": "¿Va encima de un video?",
-      "default": false,
-      "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba. Y respeta `posicion`: sin foto la pieza se centra sola, pero acá el video ocupa el lugar de la foto y el título tiene que ir arriba."
-    },
-    {
-      "id": "foco",
-      "tipo": "texto",
-      "etiqueta": "Foco de la foto",
-      "default": "50% 45%"
-    },
-    {
-      "id": "posicion",
-      "tipo": "opcion",
-      "etiqueta": "Dónde va el título",
-      "opciones": [
-        "arriba",
-        "centro",
-        "abajo"
-      ],
-      "default": "arriba",
-      "nota": "En las piezas de Stadium el titular casi siempre va arriba, dejándole el lugar de abajo al producto o a la persona. SIN FOTO no hay nada a lo que dejarle lugar, así que la pieza se centra sola aunque digas «arriba»."
-    },
-    {
-      "id": "alineacion",
-      "tipo": "opcion",
-      "etiqueta": "Alineación",
-      "opciones": [
-        "izquierda",
-        "centro"
-      ],
-      "default": "centro"
-    },
-    {
-      "id": "kicker",
-      "tipo": "texto",
-      "etiqueta": "Antetítulo",
-      "default": "",
-      "ejemplo": "NUEVA TEMPORADA"
-    },
-    {
-      "id": "bajada",
-      "tipo": "texto_largo",
-      "etiqueta": "Bajada",
-      "default": "",
-      "ejemplo": "Encontralo en todas nuestras tiendas y en stadium.com.uy"
-    },
-    {
-      "id": "logo_socio",
-      "tipo": "imagen",
-      "etiqueta": "Logo de la marca",
-      "default": "",
-      "nota": "Opcional, chico y abajo a la derecha. Sólo con el archivo que mande la marca."
-    },
-    {
-      "id": "pie",
-      "tipo": "texto",
-      "etiqueta": "Letra chica",
-      "default": "",
-      "ejemplo": "Hasta agotar stock."
-    },
-    {
-      "id": "acento",
-      "tipo": "opcion",
-      "etiqueta": "Acento",
-      "opciones": [
-        "naranja",
-        "blanco"
-      ],
-      "default": "naranja"
-    }
-  ]
+  "vert": {
+   "alto": 1350,
+   "pad": 80,
+   "titulo": 118,
+   "kicker": 28,
+   "bajada": 35,
+   "socio": 50,
+   "logo": 0.78,
+   "legal": 21,
+   "iso": 0.5
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 92,
+   "titulo": 146,
+   "kicker": 32,
+   "bajada": 42,
+   "socio": 60,
+   "logo": 0.92,
+   "legal": 25,
+   "iso": 0.6
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 92,
+   "titulo": 146,
+   "kicker": 32,
+   "bajada": 42,
+   "socio": 60,
+   "logo": 0.92,
+   "legal": 25,
+   "iso": 0.6
+  }
+ },
+ "campos": [
+  {
+   "id": "titulo",
+   "tipo": "texto_largo",
+   "etiqueta": "Título de la campaña",
+   "requerido": true,
+   "ejemplo": "Con papá siempre hay equipo",
+   "nota": "El nombre de la campaña, tal cual. Podés cortar la línea vos con un salto de línea: el diseño respeta dónde lo pongas, que es como están hechas las piezas reales («CON PAPÁ / SIEMPRE HAY / EQUIPO»)."
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta de la campaña",
+   "opciones": [
+    "stadium",
+    "papa",
+    "papa_estudio",
+    "madre",
+    "promo",
+    "oscura"
+   ],
+   "default": "stadium",
+   "nota": "El punto de partida. `stadium` es la marca neutra. `papa` es celeste sobre kraft y `papa_estudio` el mismo celeste sobre blanco; `madre` es marrón sobre crema con serif; `oscura` es blanco sobre negro. OJO: los colores de las campañas son APROXIMACIONES sacadas de capturas del feed, no una especificación. Cuando la campaña venga con sus colores, pasalos en `fondo` y `tinta` y pisan al preset."
+  },
+  {
+   "id": "fondo",
+   "tipo": "color",
+   "etiqueta": "Fondo (pisa la paleta)",
+   "default": "",
+   "nota": "Dejalo vacío para usar el de la paleta. Si hay foto, el fondo no se ve."
+  },
+  {
+   "id": "tinta",
+   "tipo": "color",
+   "etiqueta": "Color del título (pisa la paleta)",
+   "default": "",
+   "nota": "Vacío = el de la paleta. OJO: cuando hay FOTO el título sale blanco por defecto aunque la paleta diga otra cosa, porque es lo que hace la marca y es lo único que se lee. Si querés el color de la campaña encima de una foto, ponelo acá a mano — y mirá el resultado antes de publicar."
+  },
+  {
+   "id": "voz",
+   "tipo": "opcion",
+   "etiqueta": "Voz tipográfica",
+   "opciones": [
+    "",
+    "cond",
+    "serif",
+    "normal"
+   ],
+   "default": "",
+   "nota": "Vacío = la de la paleta. `cond` es la condensada de póster en mayúsculas (campañas de volumen); `serif` la elegante (aspiracional, Día de la Madre); `normal` la neutra de la marca."
+  },
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "Foto",
+   "default": "",
+   "nota": "Opcional. Con foto, el título va encima en BLANCO y con un velo medido contra esa foto. Conviene una foto de ambiente o de uso: una de catálogo sobre fondo blanco obliga a un velo tan grande que la pieza sale gris. Sin foto, sale sobre el color de la campaña — que es como está la mitad de las piezas reales."
+  },
+  {
+   "id": "sobre_video",
+   "tipo": "si_no",
+   "etiqueta": "¿Va encima de un video?",
+   "default": false,
+   "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip, no una foto. La pieza sale sin fondo —transparente para montar encima— con el título en blanco, sombra y un degradado suave arriba. Y respeta `posicion`: sin foto la pieza se centra sola, pero acá el video ocupa el lugar de la foto y el título tiene que ir arriba."
+  },
+  {
+   "id": "foco",
+   "tipo": "texto",
+   "etiqueta": "Foco de la foto",
+   "default": "50% 45%"
+  },
+  {
+   "id": "posicion",
+   "tipo": "opcion",
+   "etiqueta": "Dónde va el título",
+   "opciones": [
+    "arriba",
+    "centro",
+    "abajo"
+   ],
+   "default": "arriba",
+   "nota": "En las piezas de Stadium el titular casi siempre va arriba, dejándole el lugar de abajo al producto o a la persona. SIN FOTO no hay nada a lo que dejarle lugar, así que la pieza se centra sola aunque digas «arriba»."
+  },
+  {
+   "id": "alineacion",
+   "tipo": "opcion",
+   "etiqueta": "Alineación",
+   "opciones": [
+    "izquierda",
+    "centro"
+   ],
+   "default": "centro"
+  },
+  {
+   "id": "kicker",
+   "tipo": "texto",
+   "etiqueta": "Antetítulo",
+   "default": "",
+   "ejemplo": "NUEVA TEMPORADA"
+  },
+  {
+   "id": "bajada",
+   "tipo": "texto_largo",
+   "etiqueta": "Bajada",
+   "default": "",
+   "ejemplo": "Encontralo en todas nuestras tiendas y en stadium.com.uy"
+  },
+  {
+   "id": "logo_socio",
+   "tipo": "imagen",
+   "etiqueta": "Logo de la marca",
+   "default": "",
+   "nota": "Opcional, chico y abajo a la derecha. Sólo con el archivo que mande la marca."
+  },
+  {
+   "id": "pie",
+   "tipo": "texto",
+   "etiqueta": "Letra chica",
+   "default": "",
+   "ejemplo": "Hasta agotar stock."
+  },
+  {
+   "id": "acento",
+   "tipo": "opcion",
+   "etiqueta": "Acento",
+   "opciones": [
+    "naranja",
+    "blanco"
+   ],
+   "default": "naranja"
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup",
+   "nota": "Con qué marca firma la pieza. `lockup` es el logotipo con el nombre, que es como firma Stadium en el feed. `iso` es la S sola: para una pieza donde el logotipo entero compite con el producto o con el precio. `ninguna` cuando la foto es la protagonista y la cuenta ya dice de quién es. Usar siempre la misma es lo que hace que un feed se vea salido de una plantilla."
+  }
+ ]
 }

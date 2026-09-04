@@ -26,8 +26,8 @@
       <div class="disp" style="color:{{ c.blanco }};font-size:{{ m.nombre }}px;
         max-width:640px;{{ sombra_texto() }}">{{ d.nombre }}</div>
       {% endif %}
-      {% if d.firma %}
-      <div style="margin-top:{{ m.nombre * 0.55 }}px">{{ logo(m.logo, c.blanco) }}</div>
+      {% if d.firma and d.firma != 'ninguna' %}
+      <div style="margin-top:{{ m.nombre * 0.55 }}px">{{ firma(d.firma, m.iso, c.blanco, m.logo) }}</div>
       {% endif %}
     </div>
 

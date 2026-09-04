@@ -78,6 +78,49 @@ ok("stadium.com.uy" in nuevo.barra(), "la barra dice lo que la identidad dice")
 ok(nuevo.paleta("papa")["voz"] == "cond" and nuevo.paleta("madre", fondo="#000")["fondo"] == "#000",
    "las paletas se leen y se pisan")
 
+# ── La firma, igual que en Asistime ──────────────────────────────────────
+#
+# El 4/9/2026 se revisó si los cuatro clientes se comportaban igual y no: sólo
+# Asistime podía elegir con qué firma cada pieza. Stadium firmaba siempre con
+# el logotipo, escrito a mano en cada plantilla.
+#
+# Lo que esta prueba cuida no es que la firma exista, sino que agregarla NO
+# haya cambiado ninguna pieza: Stadium firma con el LOGOTIPO y su medida está
+# calibrada sobre el ancho, así que si `firma()` le aplicara el 1,15 que usa
+# para deducir el lockup del isotipo, cada pieza saldría con la marca un 15%
+# más grande. Los hashes de más abajo lo cazarían; esto dice por qué.
+for _pid, _fn in sorted(nuevo.PLANTILLAS.items()):
+    _base = datos_de_ejemplo(_fn.contrato)
+    _lock = _fn({**_base, "firma": "lockup"}, "post")
+    _iso = _fn({**_base, "firma": "iso"}, "post")
+    _sin = _fn({**_base, "firma": "ninguna"}, "post")
+    # Contra el HTML entero y no contra «lo que va después del <style>»: el
+    # logotipo de Stadium es un SVG que trae su propio <style>, así que
+    # recortar por ahí se comía el cuerpo. La hoja declara «.marca-logo{...}»,
+    # nunca «class="marca-logo"».
+    _firmas = lambda h: (h.count('class="marca-logo"'), h.count('class="marca-iso"'))
+    # `promo` dibuja además la S gigante de fondo al 9%: es textura de marca,
+    # no una firma, y por eso se cuentan las marcas en vez de buscarlas.
+    _fondo = _firmas(_sin)
+    ok(_firmas(_lock)[0] == _fondo[0] + 1, f"«{_pid}» firma con el logotipo")
+    ok(_firmas(_iso)[1] == _fondo[1] + 1, f"«{_pid}» y con el isotipo si se lo piden")
+    ok(_firmas(_sin) == _fondo, f"«{_pid}» no firma de más con «ninguna»")
+    # El logotipo sale del ancho de la identidad por la medida de ESTA
+    # plantilla, sin ningún factor en el medio.
+    _esperado = f'width:var(--logo-ancho,{300 * _fn.contrato["medidas"]["post"]["logo"]:.0f}px)'
+    ok(_esperado in _lock, f"«{_pid}» firma con el tamaño de siempre", _esperado)
+
+# Un `si_no` viejo sigue siendo una firma. `producto` tenía el campo como
+# booleano y las piezas ya guardadas siguen mandando true/false: si `False`
+# cayera en el valor por defecto, una pieza que decía «sin logo» pasaría a
+# firmar, y `True` reventaría en `.strip()`.
+_prod = nuevo.PLANTILLAS["producto"]
+_bp = datos_de_ejemplo(_prod.contrato)
+ok('class="marca-' not in _prod({**_bp, "firma": False}, "post"),
+   "un «firma: false» viejo sigue sin firmar")
+ok('class="marca-logo"' in _prod({**_bp, "firma": True}, "post"),
+   "y un «firma: true» viejo firma con el logotipo")
+
 modo = sys.argv[1] if len(sys.argv) > 1 else ""
 if modo == "--contra-python":
     print("\n■ Contra el brand.py viejo, byte a byte")
