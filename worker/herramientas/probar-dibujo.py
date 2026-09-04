@@ -313,8 +313,47 @@ if puede_mirar:
         texto = leer({"svg": RESPLANDOR, "atras": True})
         ok("un resplandor no cuenta como objeto",
            "100% del ancho" not in texto, texto)
+
+        # Las varas. Un número sin con qué compararlo no le sirvió al agente:
+        # la lectura decía «41% del alto», el principio pedía 45-70, y nadie
+        # cruzó las dos cosas.
+        chico = ("<svg viewBox='0 0 1080 1920'><rect x='420' y='900' "
+                 "width='240' height='300' rx='24' fill='#0A0B14'/></svg>")
+        texto = leer({"svg": chico})
+        ok("dice cuándo el objeto es chico para ser protagonista",
+           "chico para ser el protagonista" in texto, texto)
+        ok("y con la vara al lado", "45–70%" in texto, texto)
+
+        # El titular empujado abajo: es lo que se ve como «mal estructurado»
+        # y desde adentro no se nota, porque el bloque en sí está bien armado.
+        texto = leer({"svg": chico}, ".disp{margin-top:520px}")
+        ok("dice si lo que pesa arranca demasiado abajo",
+           "lo esperable es entre" in texto, texto)
     except Exception as e:
         ok("se pudo leer la composición", False, e)
+
+
+print("\n■ Mezclar alineaciones es lo que delata una pieza armada por partes")
+if puede_mirar:
+    def alineacion(centrado):
+        from motor import render
+        import tempfile
+        d = {"titulo": "Les damos una pista", "estilo": "claro"}
+        if centrado:
+            d["alineacion"] = "centro"
+        with tempfile.TemporaryDirectory() as tmp:
+            r = render.Render(m, MARCA)
+            r.correr([{"nombre": "d", "plantilla": "titular",
+                       "formato": "story", "data": d}], tmp)
+            return " | ".join(r.composicion)
+
+    try:
+        ok("avisa cuando el titular va centrado y la firma al costado",
+           "mezcla" in alineacion(True), alineacion(True))
+        ok("y no dice nada cuando todo alinea igual",
+           "mezcla" not in alineacion(False), alineacion(False))
+    except Exception as e:
+        ok("se pudo medir la alineación", False, e)
 
 
 print("\n■ Que la marca se pueda agrandar desde un retoque")

@@ -562,6 +562,17 @@ FILA_VACIA = 0.02
 #: Un hueco más chico que esto es aire normal entre bloques, no un agujero.
 HUECO_MINIMO = 0.12
 
+#: Las varas. Un número sin con qué compararlo no sirve para nada, y eso costó
+#: una pieza: el 4/9/2026 la lectura decía «lo dibujado ocupa 41% del alto», el
+#: principio del PROMPT pedía entre 45 y 70, y el agente no tenía cómo cruzar
+#: las dos cosas. Ahora la vara viaja al lado del número.
+#:
+#: No son gustos: salen de mirar dónde caen las piezas que funcionaron. Una
+#: marca que quiera otras las va a poder declarar en su `marca.json`; hasta
+#: entonces éstas son las del motor.
+OBJETO_ALTO = (0.45, 0.70)      #: cuánto del alto ocupa el objeto principal
+ARRANCA_TINTA = (0.05, 0.22)    #: dónde empieza lo primero que pesa
+
 
 def composicion(pieza: pathlib.Path,
                 sin_dibujo: pathlib.Path | None = None) -> list[str]:
@@ -596,7 +607,18 @@ def composicion(pieza: pathlib.Path,
     lineas.append("la tinta se reparte {}% arriba · {}% medio · {}% abajo"
                   .format(*[round(p * 100 / total) for p in partes]))
 
-    # 2 · El hueco más grande. No es «cuánto vacío hay» sino «dónde está TODO
+    # 2 · Dónde arranca lo que pesa. Un titular que empieza al 31% del alto
+    #     deja la pieza cabeza abajo, y desde adentro no se nota: el agente ve
+    #     su bloque bien armado y no ve los 600 px de nada que tiene encima.
+    piso_peso = max(filas) * 0.10
+    arranca = next((y for y, v in enumerate(filas) if v > piso_peso), 0)
+    a, b = ARRANCA_TINTA
+    fuera = "" if a <= arranca / alto <= b else \
+        f" — lo esperable es entre {round(a * 100)}% y {round(b * 100)}%"
+    lineas.append(f"lo primero que pesa arranca al {round(arranca * 100 / alto)}% "
+                  f"del alto{fuera}")
+
+    # 3 · El hueco más grande. No es «cuánto vacío hay» sino «dónde está TODO
     #     junto»: dos franjas de 10% repartidas no molestan; una de 28% en el
     #     medio parte la pieza en dos.
     piso = max(filas) * FILA_VACIA
@@ -615,7 +637,7 @@ def composicion(pieza: pathlib.Path,
         lineas.append(f"hay una franja vacía de {round(mejor * 100 / alto)}% "
                       f"del alto {donde}")
 
-    # 3 · El objeto dibujado: cuánto ocupa y si apoya en un borde. Sin el
+    # 4 · El objeto dibujado: cuánto ocupa y si apoya en un borde. Sin el
     #     segundo render no se sabe cuál es el objeto, así que es opcional.
     #
     #     Se mide por TRAZOS agregados y no por píxeles cambiados, por lo
@@ -644,10 +666,18 @@ def composicion(pieza: pathlib.Path,
                                    ("la derecha", x1 >= ancho - filo)) if cond]
                         cola = (" y llega al borde de " + " y ".join(pegado)
                                 if pegado else " y no toca ningún borde")
+                        parte = (y1 - y0) / alto
+                        a, b = OBJETO_ALTO
+                        vara = "" if a <= parte <= b else \
+                            (f" — chico para ser el protagonista, "
+                             f"lo esperable es {round(a*100)}–{round(b*100)}%"
+                             if parte < a else
+                             f" — no le deja lugar al texto, "
+                             f"lo esperable es {round(a*100)}–{round(b*100)}%")
                         lineas.append(
-                            f"lo dibujado ocupa {round((y1 - y0) * 100 / alto)}% "
+                            f"lo dibujado ocupa {round(parte * 100)}% "
                             f"del alto y {round((x1 - x0) * 100 / ancho)}% "
-                            f"del ancho{cola}")
+                            f"del ancho{cola}{vara}")
         except Exception as e:                               # noqa: BLE001
             log.warning("no pude medir el objeto de %s: %s", pieza, e)
     return lineas

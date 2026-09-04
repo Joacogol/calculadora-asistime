@@ -93,6 +93,18 @@ QUÉ TENÉS QUE HACER
    · **El peso NO va todo en un tercio.** Si un tercio se lleva más del 60% y
      otro menos del 10%, la pieza está desbalanceada. Buscá algo más parecido
      a un 20/40/40 o un 30/50/20.
+   · **La pieza arranca arriba.** Lo primero que pesa —el antetítulo o el
+     titular— empieza en el primer quinto del alto. Si arranca al 30%, la
+     pieza queda cabeza abajo aunque cada bloque esté bien armado por
+     separado, y desde adentro no se nota: vos ves tu bloque, no los 600 px de
+     nada que tiene encima.
+   · **Una sola alineación.** Todo centrado o todo a la izquierda. Mezclar
+     —el titular centrado y la firma al costado— es lo primero que delata una
+     pieza armada por partes.
+
+   Cuando la lectura trae una vara al lado —«lo esperable es entre 5% y 22%»,
+   «45–70%»— no es un comentario: es la distancia que te falta. Ajustá y volvé
+   a renderizar.
 
    Tres avisos y qué hacer con cada uno:
 

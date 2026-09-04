@@ -4133,3 +4133,42 @@ La tercera palanca, sin hacer: **que arme dos composiciones, las mire y elija**.
 Hoy hace una y entrega. Ningún diseñador acierta a la primera. Es la más
 grande de las tres y la única que cuesta plata — duplica los turnos — y sin
 números y sin principios elegir entre dos versiones sería tirar una moneda.
+
+### Un número sin vara no sirve (4/9/2026, más tarde)
+
+La primera corrida con la lectura de composición funcionó: el agente escribió
+*«hice varios ajustes para cumplir con las advertencias del motor… la versión
+final no tiene advertencias»*, y era cierto. Ninguna ⚠.
+
+Y la pieza seguía mal estructurada: el titular arrancaba al **32% del alto**,
+con 600 px de nada encima, y el teléfono ocupaba el **41%**.
+
+El PROMPT decía «el objeto principal ocupa entre el 45 y el 70% del alto». La
+lectura decía «lo dibujado ocupa 41% del alto». **Las dos cosas estaban
+escritas y nadie las cruzó.** Un número sin con qué compararlo es un dato
+inerte; la regla en prosa, tres pantallas más arriba, es una intención.
+
+Ahora la vara viaja pegada al número:
+
+```
+· lo primero que pesa arranca al 32% del alto — lo esperable es entre 5% y 22%
+· lo dibujado ocupa 41% del alto y 35% del ancho y no toca ningún borde
+  — chico para ser el protagonista, lo esperable es 45–70%
+· la pieza mezcla 2 bloque(s) centrado(s) con 2 pegado(s) a un costado
+  — elegí una sola alineación
+```
+
+Las varas no son gustos: salen de mirar dónde caen las piezas que funcionaron,
+están declaradas como constantes con su porqué, y una marca va a poder
+declarar las suyas en su `marca.json`.
+
+**La alineación se mide en el navegador**, como la superposición del logo, y
+por lo mismo: después del retoque el único que sabe dónde quedó cada caja es
+Chromium. Un bloque está centrado si le sobra lo mismo de los dos lados;
+mezclar centrados con laterales es lo primero que delata una pieza armada por
+partes. En la pieza del caso: isotipo en x=106, pie en x=97, titular centrado
+en x=249.
+
+**Sigue sin ser un ⚠.** Centrar o alinear a la izquierda no tiene una
+respuesta correcta; lo que no se puede es hacer las dos cosas en la misma
+pieza. Es un hecho con su referencia, y quien decide es el que diseña.

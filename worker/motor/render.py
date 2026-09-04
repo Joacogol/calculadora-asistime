@@ -221,6 +221,52 @@ MARCAS_LIBRES = """
 """
 
 
+#: Cómo alinea la pieza. Es un hecho y no un defecto —una pieza centrada está
+#: bien, una alineada a la izquierda también— pero MEZCLAR las dos es lo
+#: primero que delata una pieza armada por partes. El 4/9/2026: isotipo en
+#: x=106, pie en x=97, titular centrado en x=249. Tres bloques, dos criterios.
+#:
+#: Se mide adentro del navegador por lo mismo que la superposición del logo:
+#: después del retoque, el único que sabe dónde quedó cada caja es Chromium.
+COMO_ALINEA = """
+() => {
+  const canvas = document.querySelector('.canvas');
+  if (!canvas) return null;
+  const c = canvas.getBoundingClientRect();
+  const MUDOS = ['STYLE','SCRIPT','TITLE','DEFS','METADATA'];
+  const bloques = [...canvas.querySelectorAll('*')].filter(
+    el => !MUDOS.includes(el.tagName.toUpperCase()) &&
+      getComputedStyle(el).visibility !== 'hidden' &&
+      [...el.childNodes].some(
+        n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()));
+  [...canvas.querySelectorAll('.marca-iso, .marca-logo')].forEach(
+    m => bloques.push(m));
+
+  let centrados = 0, laterales = 0;
+  for (const el of bloques) {
+    let r;
+    if (el.classList.contains('marca-iso') || el.classList.contains('marca-logo')) {
+      r = el.getBoundingClientRect();
+    } else {
+      const rango = document.createRange();
+      rango.selectNodeContents(el);
+      r = rango.getBoundingClientRect();
+    }
+    if (!r.width || r.width > c.width * 0.96) continue;
+    const izq = r.left - c.left, der = c.right - r.right;
+    // Centrado = le sobra lo mismo de los dos lados.
+    if (Math.abs(izq - der) < c.width * 0.03) centrados++;
+    else laterales++;
+  }
+  if (centrados && laterales) {
+    return `la pieza mezcla ${centrados} bloque(s) centrado(s) con `
+      + `${laterales} pegado(s) a un costado — elegí una sola alineación`;
+  }
+  return null;
+}
+"""
+
+
 class Render:
     """Un Chromium abierto, renderizando piezas de UNA marca.
 
@@ -267,6 +313,9 @@ class Render:
         # El texto se MIDE ya dibujado, justo antes de la foto. Ver `QUE_ENTRE`.
         for aviso in pg.evaluate(MARCAS_LIBRES):
             self.avisos.append(f"{destino.stem}: {aviso}")
+        mezcla = pg.evaluate(COMO_ALINEA)
+        if mezcla:
+            self.composicion.append(f"{destino.stem}: {mezcla}")
 
         ajustes = pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
         rotos = [a for a in ajustes if a["sigue_afuera"] > 1]
