@@ -4009,3 +4009,58 @@ Y no hace falta publicarlo a mano: `desplegar-chat.sh` corre
 `publicar-prompt.py` en el paso 3b y sube la versión nueva sola, sólo si
 cambió. O sea que el despliegue arregla las dos mitades a la vez: el guardia
 que no deja gastar, y el prompt que enseña el camino bueno.
+
+## El agente discutió con el medidor, y el medidor tenía razón (4/9/2026)
+
+El mockup salió por el camino bueno —`crear_diseno`, con la captura de verdad
+adentro de un teléfono dibujado— y la pieza igual estaba mal. Medido sobre el
+PNG entregado:
+
+| | |
+|---|---|
+| 712 px del titular adentro de la caja del isotipo | la «L» pisa el logo |
+| 399 px del teléfono en la última fila | está cortado por el borde |
+| 87.312 px del teléfono en los 250 de abajo | ahí va la caja de responder de Instagram |
+| el pie llega a x=279, el teléfono arranca en 265 | la «I» de ASISTIME.AI queda detrás |
+
+Y en `notas.txt`, esto:
+
+> «El dibujo toca el borde de abajo: esto está bien, es intencional. El celular
+> es un objeto completo que llega hasta el borde inferior del story, no está
+> cortado.»
+
+**El aviso era correcto y el agente escribió una justificación falsa para
+seguir de largo.** Es un modo de falla nuevo: hasta ahora los avisos no
+existían o no se leían; éste se leyó y se descartó.
+
+### Tres arreglos
+
+**1 · El logo, por geometría y en el navegador.** El titular encima del
+isotipo no lo causó el dibujo, así que ninguna medida del dibujo lo veía. Y no
+es «tapar» en el sentido de los píxeles: el texto se **movió**. Una
+superposición se mide con rectángulos, y quien sabe dónde quedó cada caja
+después del retoque es Chromium. `MARCAS_LIBRES` corre en la página y compara
+la caja de `.marca-iso` / `.marca-logo` contra la de todo lo que dibuja texto.
+Corre en TODA pieza, no sólo en las de a medida.
+
+Antes probé lo obvio —comparar contra la plantilla sin retoque **y** sin
+dibujo— y hubo que descartarlo: mover el titular con un retoque, que es
+legítimo, se leía como «el dibujo tapó el 100% del título». **Mover no es
+tapar.**
+
+**2 · La franja que tapa Instagram.** Las zonas seguras estaban declaradas
+desde siempre y las respetaba el margen del texto; un dibujo se las salteaba.
+Ahora se mide cuánto **trazo nuevo** mete el dibujo ahí. Trazo y no píxel
+cambiado, y esa distinción es la que hace que el aviso sirva: una mancha de
+luz desenfocada cambia la franja entera sin agregar un solo contorno, y con la
+primera versión de la medida disparaba un aviso falso. El celular del caso
+mete 13k trazos; el resplandor, cero.
+
+**3 · Un ⚠ no se discute.** En el PROMPT: sólo hay dos finales válidos, **lo
+corregís** o **escribís en notas.txt qué quedó mal y por qué no pudiste**.
+Explicar por qué el aviso no aplica no es una opción — el aviso mide la
+imagen, y el agente no la está midiendo. Con los tres avisos y qué hacer con
+cada uno, en tres líneas.
+
+La captura de comparación es interna y sus avisos se descartan: si no, cada
+aviso salía dos veces, y el segundo con un nombre de archivo temporal.

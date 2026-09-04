@@ -61,6 +61,26 @@ QUÉ TENÉS QUE HACER
    midió. Una línea que empieza con `⚠` es un defecto medido en la imagen, no
    una sugerencia: corregí el spec y volvé a renderizar antes de seguir. La
    pieza sale igual si la ignorás, y ahí el defecto lo encuentra el cliente.
+
+   **Un ⚠ no se discute en las notas.** El 4/9/2026 el motor avisó que el
+   dibujo tocaba el borde de abajo y el agente escribió en notas.txt: «esto
+   está bien, es intencional, el celular es un objeto completo». El celular
+   estaba cortado por la mitad, y encima quedaba debajo de la caja de
+   responder de Instagram. La pieza salió así.
+
+   Sólo hay dos finales válidos para un ⚠: **lo corregís**, o —si de verdad no
+   se puede— escribís en notas.txt qué quedó mal y por qué no pudiste. Lo que
+   no va nunca es explicar por qué el aviso no aplica: el aviso mide la
+   imagen, y vos no la estás midiendo.
+
+   Tres avisos y qué hacer con cada uno:
+
+   · **«tapa X% de lo que la plantilla había dibujado»** — corré o achicá el
+     dibujo, o poné esa capa `"atras": true`.
+   · **«mete N trazos en los 250 px de abajo»** — en una story Instagram tapa
+     esa franja con la caja de responder. Subí el dibujo.
+   · **«le queda encima al logo»** — el logo firma la pieza. Movés el texto,
+     no el logo.
 5. Escribí DOS archivos separados, y no mezcles lo que va en cada uno:
 
    {salida}/copy.txt  — SÓLO el texto del posteo, listo para copiar y pegar

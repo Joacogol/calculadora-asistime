@@ -174,6 +174,53 @@ QUE_ENTRE = """
 """
 
 
+#: La firma de la marca no la pisa nadie. Se mide con geometría y adentro del
+#: navegador, que sabe exactamente dónde quedó cada caja después de aplicar el
+#: retoque — cosa que ninguna comparación de píxeles puede saber.
+#:
+#: El 4/9/2026 el agente subió el titular con un retoque y le quedó encima del
+#: isotipo: 712 píxeles de tinta adentro de la caja del logo. La pieza salió
+#: así. Lo que falla acá no lo causa el dibujo, así que las medidas del dibujo
+#: no lo veían; y no es «tapar» en el sentido de los píxeles, porque el texto
+#: se MOVIÓ. Es una superposición, y una superposición se mide con rectángulos.
+MARCAS_LIBRES = """
+() => {
+  const marcas = [...document.querySelectorAll('.marca-iso, .marca-logo')];
+  if (!marcas.length) return [];
+  // Sólo lo que DIBUJA algo propio: un contenedor se superpone con todo lo
+  // que tiene adentro y avisaría siempre.
+  const MUDOS = ['STYLE','SCRIPT','TITLE','DEFS','METADATA'];
+  const pinta = [...document.querySelectorAll('.canvas *')].filter(
+    el => !MUDOS.includes(el.tagName.toUpperCase()) &&
+      getComputedStyle(el).visibility !== 'hidden' &&
+      [...el.childNodes].some(
+        n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()));
+
+  const avisos = [];
+  for (const m of marcas) {
+    const a = m.getBoundingClientRect();
+    if (!a.width || !a.height) continue;
+    for (const el of pinta) {
+      if (m.contains(el) || el.contains(m)) continue;
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const b = r.getBoundingClientRect();
+      const ancho = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const alto  = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (ancho > 2 && alto > 2) {
+        const texto = el.textContent.trim().slice(0, 40);
+        avisos.push(`«${texto}» le queda encima al logo de la marca `
+          + `(se pisan ${Math.round(ancho)}x${Math.round(alto)} px). `
+          + `El logo firma la pieza: no se le pone nada arriba`);
+        break;
+      }
+    }
+  }
+  return avisos;
+}
+"""
+
+
 class Render:
     """Un Chromium abierto, renderizando piezas de UNA marca.
 
@@ -215,6 +262,9 @@ class Render:
         pg.wait_for_timeout(320)
 
         # El texto se MIDE ya dibujado, justo antes de la foto. Ver `QUE_ENTRE`.
+        for aviso in pg.evaluate(MARCAS_LIBRES):
+            self.avisos.append(f"{destino.stem}: {aviso}")
+
         ajustes = pg.evaluate(QUE_ENTRE, MARGEN_SEGURO)
         rotos = [a for a in ajustes if a["sigue_afuera"] > 1]
         if rotos:
@@ -240,29 +290,44 @@ class Render:
         # de golpe en todas partes. Sobre una foto, cualquier dibujo daría
         # «tapa el 40%» y el aviso sería falso siempre — que es la única
         # manera segura de que nadie lo lea nunca más.
-        if d.get("dibujo") and not d.get("foto") and not d.get("efecto"):
-            self._medir_el_dibujo(pg, tpl, data, fmt, w, h, hecha)
+        if (d.get("dibujo") or d.get("retoque")) and not d.get("foto") \
+                and not d.get("efecto"):
+            self._medir_a_medida(pg, tpl, data, fmt, w, h, hecha)
         return hecha
 
-    def _medir_el_dibujo(self, pg, tpl, data, fmt, w, h, hecha):
-        """La misma pieza sin el dibujo, para saber qué tapó el dibujo.
+    def _medir_a_medida(self, pg, tpl, data, fmt, w, h, hecha):
+        """La misma pieza SIN retoque y SIN dibujo, para saber qué se rompió.
 
         Renderizar dos veces suena caro y no lo es —es una captura más, y sólo
         en las piezas a medida, que son pocas—; a cambio la medida es exacta.
-        Comparar contra la imagen sin dibujo no requiere adivinar dónde está
-        el logo ni qué plantilla se usó: lo que cambió ES el dibujo.
+        Comparar contra la plantilla pelada no requiere adivinar dónde está el
+        logo ni qué plantilla se usó: lo que cambió es lo que se pidió a medida.
+
+        El retoque **sí** se deja puesto en la comparación, y se probó al revés:
+        sacándolo también, mover el titular con un retoque —algo perfectamente
+        legítimo— se leía como «el dibujo tapó el 100% del título», porque en
+        una imagen estaba arriba y en la otra en el medio. Mover no es tapar.
+        Lo que el retoque le pueda hacer al logo o al pie se mide aparte y por
+        geometría, en `_marcas_pisadas`.
         """
         limpio = self._temporal(f"-{hecha.stem}-sin-dibujo.png")
+        # La captura de comparación es interna y no se entrega: sus avisos son
+        # los de la pieza y ya se dieron, con el nombre de verdad. Si no se
+        # descartan, cada aviso sale dos veces y el segundo con un nombre de
+        # archivo temporal, que no le dice nada a nadie.
+        antes = len(self.avisos)
         try:
-            html = self.marca.PLANTILLAS[tpl]({**data, "dibujo": None}, fmt)
-            self._captura(pg, html, w, h, limpio,
-                          {k: v for k, v in data.items() if k != "dibujo"})
+            pelado = {**data, "dibujo": None}
+            html = self.marca.PLANTILLAS[tpl](pelado, fmt)
+            self._captura(pg, html, w, h, limpio, pelado)
+            del self.avisos[antes:]
+            zonas = (getattr(self.marca, "ZONAS_SEGURAS", None) or {}).get(fmt)
             self.avisos += [f"{hecha.stem}: {p}"
-                            for p in revisar.revisar_dibujo(hecha, limpio)]
+                            for p in revisar.revisar_dibujo(hecha, limpio, zonas)]
         except Exception as e:                               # noqa: BLE001
             # Medir no puede romper una pieza que ya salió: si esto falla, la
             # pieza está hecha igual y lo único que se pierde es el aviso.
-            log.warning("no pude medir el dibujo de %s: %s", hecha.stem, e)
+            log.warning("no pude medir %s: %s", hecha.stem, e)
 
     def carrusel(self, pg, data, fmt, nombre, salida, secuencia=False):
         """Todas las diapositivas de un carrusel o secuencia.

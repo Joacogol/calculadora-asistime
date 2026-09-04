@@ -207,7 +207,8 @@ CRUZA_ENTERA = ("<svg viewBox='0 0 1080 1920'><rect x='-200' y='640' width='1500
 if puede_mirar:
     try:
         a = avisos({"svg": CRUZA_EL_PIE})
-        ok("avisa cuando el dibujo cruza el pie", len(a) == 1, a)
+        ok("avisa cuando el dibujo cruza el pie",
+           any("tapa" in x and "plantilla había dibujado" in x for x in a), a)
         ok("y dice dónde", a and "abajo a la izquierda" in a[0], a)
         ok("no avisa por un dibujo en el vacío", not avisos({"svg": EN_EL_VACIO}))
         ok("ni por una capa que va detrás del titular",
@@ -222,6 +223,59 @@ if puede_mirar:
            avisos({"svg": CRUZA_ENTERA, "atras": True}))
     except Exception as e:
         ok("se pudo medir", False, e)
+
+
+print("\n■ Lo que Instagram tapa, y el logo que nadie pisa")
+# Las dos fallas de la pieza del 4/9/2026: un celular apoyado en el borde de
+# abajo de una story —donde va la caja de responder— y un titular subido con
+# un retoque que le quedó encima del isotipo. La primera se mide en píxeles,
+# la segunda con rectángulos adentro del navegador, porque el texto se MOVIÓ
+# y mover no es tapar.
+APOYADO_ABAJO = ("<svg viewBox='0 0 1080 1920'><rect x='300' y='1450' "
+                 "width='480' height='520' rx='50' fill='#0A0B14'/>"
+                 "<g fill='#FFFFFF'>"
+                 + "".join(f"<rect x='340' y='{y}' width='400' height='26' rx='13'/>"
+                           for y in range(1500, 1900, 60))
+                 + "</g></svg>")
+RESPLANDOR = ("<svg viewBox='0 0 1080 1920'><defs><filter id='b'>"
+              "<feGaussianBlur stdDeviation='120'/></filter></defs>"
+              "<ellipse cx='540' cy='1700' rx='400' ry='300' fill='#4D90FF' "
+              "filter='url(#b)' opacity='.5'/></svg>")
+
+if puede_mirar:
+    try:
+        a = avisos({"svg": APOYADO_ABAJO})
+        ok("avisa si el dibujo cae donde Instagram tapa",
+           any("caja de responder" in x for x in a), a)
+        ok("y no por un resplandor de fondo en esa misma franja",
+           not any("caja de responder" in x
+                   for x in avisos({"svg": RESPLANDOR, "atras": True})),
+           avisos({"svg": RESPLANDOR, "atras": True}))
+    except Exception as e:
+        ok("se pudo medir la franja", False, e)
+
+
+def con_retoque(retoque):
+    from motor import render
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        r = render.Render(m, MARCA)
+        r.correr([{"nombre": "d", "plantilla": "titular", "formato": "story",
+                   "data": {"titulo": "Les damos una pista", "estilo": "claro",
+                            "retoque": retoque}}], tmp)
+        return r.avisos
+
+
+if puede_mirar:
+    try:
+        a = con_retoque(".row + .grow{flex:0} .disp{margin-top:-120px}")
+        ok("avisa si el titular le queda encima al logo",
+           any("encima al logo" in x for x in a), a)
+        ok("y no avisa cuando el titular está donde va",
+           not any("encima al logo" in x for x in con_retoque("")),
+           con_retoque(""))
+    except Exception as e:
+        ok("se pudo medir el logo", False, e)
 
 
 print("\n■ Que la marca se pueda agrandar desde un retoque")

@@ -295,6 +295,16 @@ CONTRASTE_MINIMO = 3.0
 #: Treinta píxeles es más que un vértice y menos que cualquier franja.
 BORDE_TOCADO = 30
 
+#: Cuántos TRAZOS nuevos tiene que meter un dibujo en una franja insegura para
+#: que valga avisar. Se cuentan bordes, no píxeles cambiados: un resplandor de
+#: fondo cambia la franja entera sin agregar un solo trazo, y con la primera
+#: versión de esta medida eso disparaba un aviso falso.
+#:
+#: Tres mil es una forma de verdad, no un asomo: el celular cortado del
+#: 4/9/2026 metió mucho más que eso en los 250 px de abajo de una story, que es
+#: donde Instagram pone la caja de responder.
+EN_LA_FRANJA = 3000
+
 
 def _tinta(im):
     """Máscara de lo que está DIBUJADO en la pieza: textos, logos, formas.
@@ -381,7 +391,8 @@ def _bordes_tocados(huella, ancho, alto) -> list[str]:
     return toca
 
 
-def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
+def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path,
+                   zonas: dict | None = None) -> list[str]:
     """Qué se comió el dibujo de una pieza a medida.
 
     La comparación es exacta porque la pieza se renderiza dos veces: con el
@@ -403,6 +414,9 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
       arruinar son dos fallas distintas y hacían falta dos medidas.
     · **Si quedó cortado.** El megáfono que se salía por la derecha y se leía
       como una taza.
+    · **Si cae donde Instagram tapa.** Un celular apoyado en el borde de abajo
+      de una story queda debajo de la caja de respuesta. `zonas` son las
+      franjas que la marca declara como intocables para ese formato.
 
     Esto es un hecho y no una opinión, que es la regla 2 del módulo. Si el
     dibujo quedó feo, desbalanceado o fuera de clima, eso lo tiene que ver
@@ -469,6 +483,24 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
             huella = ImageChops.difference(a, b).convert("L").point(
                 lambda v: 255 if v > 10 else 0)
             toca = _bordes_tocados(huella, ancho, alto)
+
+            # Lo que el dibujo METE en las franjas que Instagram tapa. Se mide
+            # por trazos agregados —bordes que antes no estaban— y no por
+            # píxeles cambiados, y esa distinción es la que hace que el aviso
+            # sirva: una mancha de luz desenfocada de fondo cambia la franja
+            # entera y no molesta a nadie; un teléfono agrega contornos. Con
+            # píxeles cambiados avisaba de los dos.
+            nueva_tinta = ImageChops.subtract(despues, antes)
+            tapado_por_ig = []
+            for lado, alto_franja in (("arriba", (zonas or {}).get("arriba")),
+                                      ("abajo", (zonas or {}).get("abajo"))):
+                if not alto_franja:
+                    continue
+                caja = ((0, 0, ancho, alto_franja) if lado == "arriba"
+                        else (0, alto - alto_franja, ancho, alto))
+                cuantos = _cuantos(nueva_tinta.crop(caja))
+                if cuantos > EN_LA_FRANJA:
+                    tapado_por_ig.append((lado, alto_franja, cuantos))
     except Exception as e:                                   # noqa: BLE001
         log.warning("no pude comparar %s con %s: %s", con, sin, e)
         return problemas
@@ -494,6 +526,12 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
     # quedaba cortado; las cintas cruzaban la pieza y tocaban los dos, que es
     # lo que tiene que hacer una franja. La diferencia es medible y el aviso
     # dice las dos lecturas, porque las dos existen.
+    for lado, alto_franja, cuantos in tapado_por_ig:
+        problemas.append(
+            f"el dibujo mete {cuantos // 1000}k trazos en los {alto_franja} px "
+            f"de {lado}, que es donde Instagram pone {'el nombre de la cuenta' if lado == 'arriba' else 'la caja de responder'}. "
+            f"Ahí no se ve: subilo o achicalo")
+
     for uno, otro in (("izquierdo", "derecho"), ("de arriba", "de abajo")):
         for a_, b_ in ((uno, otro), (otro, uno)):
             if a_ in toca and b_ not in toca:
