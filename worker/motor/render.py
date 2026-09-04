@@ -9,6 +9,7 @@ La marca entra como parámetro: este módulo sólo sabe que existe un objeto con
 `FORMATOS`, `PLANTILLAS` y `DIAPOS`.
 """
 import json
+import logging
 import os
 import pathlib
 import re
@@ -19,6 +20,9 @@ from playwright.sync_api import sync_playwright
 from . import carrusel as mcarrusel
 from . import contrato
 from . import efectos
+from . import revisar
+
+log = logging.getLogger(__name__)
 
 
 def _inyectar_efecto(html: str, data: dict, w: int, h: int) -> str:
@@ -192,6 +196,11 @@ class Render:
         #: la pieza: un texto que se achicó salió bien, pero que haya hecho
         #: falta es una señal de que el pedido venía largo para esa plantilla.
         self.ajustes: list[dict] = []
+        #: Lo que el motor MIDIÓ y está mal, en castellano. Se imprime al
+        #: final del render, que es donde lo lee el agente sin que nadie se lo
+        #: pida: la salida del comando que ya corrió. Un aviso en un archivo
+        #: aparte es un aviso que no se lee.
+        self.avisos: list[str] = []
 
     def _temporal(self, sufijo: str) -> pathlib.Path:
         p = self.raiz / f"_tmp-{os.getpid()}{sufijo}"
@@ -224,7 +233,36 @@ class Render:
     def placa(self, pg, tpl, data, fmt, nombre, salida):
         w, h = self.marca.FORMATOS[fmt]
         html = self.marca.PLANTILLAS[tpl](data, fmt)
-        return self._captura(pg, html, w, h, salida / f"{nombre}.png", data)
+        hecha = self._captura(pg, html, w, h, salida / f"{nombre}.png", data)
+        d = data or {}
+        # Con foto no se mide, y no es pereza: la medida busca la tinta de la
+        # plantilla mirando dónde la imagen cambia de golpe, y una foto cambia
+        # de golpe en todas partes. Sobre una foto, cualquier dibujo daría
+        # «tapa el 40%» y el aviso sería falso siempre — que es la única
+        # manera segura de que nadie lo lea nunca más.
+        if d.get("dibujo") and not d.get("foto") and not d.get("efecto"):
+            self._medir_el_dibujo(pg, tpl, data, fmt, w, h, hecha)
+        return hecha
+
+    def _medir_el_dibujo(self, pg, tpl, data, fmt, w, h, hecha):
+        """La misma pieza sin el dibujo, para saber qué tapó el dibujo.
+
+        Renderizar dos veces suena caro y no lo es —es una captura más, y sólo
+        en las piezas a medida, que son pocas—; a cambio la medida es exacta.
+        Comparar contra la imagen sin dibujo no requiere adivinar dónde está
+        el logo ni qué plantilla se usó: lo que cambió ES el dibujo.
+        """
+        limpio = self._temporal(f"-{hecha.stem}-sin-dibujo.png")
+        try:
+            html = self.marca.PLANTILLAS[tpl]({**data, "dibujo": None}, fmt)
+            self._captura(pg, html, w, h, limpio,
+                          {k: v for k, v in data.items() if k != "dibujo"})
+            self.avisos += [f"{hecha.stem}: {p}"
+                            for p in revisar.revisar_dibujo(hecha, limpio)]
+        except Exception as e:                               # noqa: BLE001
+            # Medir no puede romper una pieza que ya salió: si esto falla, la
+            # pieza está hecha igual y lo único que se pierde es el aviso.
+            log.warning("no pude medir el dibujo de %s: %s", hecha.stem, e)
 
     def carrusel(self, pg, data, fmt, nombre, salida, secuencia=False):
         """Todas las diapositivas de un carrusel o secuencia.
@@ -319,3 +357,9 @@ def desde_linea_de_comandos(marca, raiz, argv):
     for a in r.ajustes:
         print(f"   (se achicó «{a['texto'][:44]}» de {a['de']} a {a['a']} px "
               f"en {a['pieza']} para que entrara)")
+    # Los avisos van al final y con una marca visible: son lo único de esta
+    # salida que pide una acción. Ver `Render.avisos`.
+    for a in r.avisos:
+        print(f"\n⚠  {a}")
+    if r.avisos:
+        print("\n   Corregí y volvé a renderizar antes de seguir.")

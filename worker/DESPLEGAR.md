@@ -3772,3 +3772,64 @@ En los dos lados, que es la lección del 3/9 a la mañana: en el PROMPT de
 `app/disenador.py` —el agente que arma la pieza— y en `plantillas.catalogo()`,
 que es lo que lee el agente del chat. La pregunta sigue siendo la misma:
 **¿lo lee el que tiene que ejecutarlo?**
+
+## Que el motor mida la pieza a medida, en vez de pedirle al agente que mire (3/9/2026)
+
+Con el `dibujo` andando, la story del viernes salió con la consola trazada y
+sin un emoji — el agente escribió en sus notas que no los usó *«porque se
+verían distintos en cada dispositivo y podrían no verse bien sobre el fondo
+azul»*. Entendió el mecanismo y el porqué.
+
+Y la composición seguía floja: la consola cruzando el pie, las notas todas
+arriba, y un fondo claro para un pedido que decía «pum para arriba». La
+corrida usó **un solo `Read`** contra los diez de la anterior: generó y
+entregó casi sin mirarse.
+
+La tentación era insistir en el prompt. Pero «y después MIRÁ EL PNG» ya estaba
+escrito desde el 2/9 — insistir más fuerte sobre una instrucción que ya se
+ignora es la peor clase de arreglo, porque parece trabajo y no cambia nada.
+
+**Lo que se hizo es medir.** Cuando una pieza trae `dibujo`, el motor la
+renderiza dos veces —con el dibujo y sin él— y compara. Lo que cambió ES el
+dibujo, sin adivinar dónde lo puso nadie ni qué plantilla se usó. El aviso
+sale por la salida de `render.py`, que es el comando que el agente ya corrió
+y cuya salida ya lee: no hay que pedirle que vaya a buscar nada.
+
+```
+→ /tmp/salida/viernes.png
+
+⚠  viernes: el dibujo tapa 10% de lo que la plantilla había dibujado abajo a
+   la izquierda — puede ser el logo, el pie o el titular. Corrélo, achicalo, o
+   poné esa capa con "atras": true para que pase por detrás
+```
+
+### Dos versiones de la medida, y por qué la primera estaba mal
+
+**Primera: el porcentaje sobre la pieza entera.** La consola que cruza el pie
+tapaba el 0,4% de la tinta total, o sea nada, porque el titular aporta miles
+de píxeles y el pie unos cientos. El defecto era local y la medida era global.
+Mirado por zonas de 180×192 —el tamaño de un logo o de una línea de pie— la
+misma consola tapa el 10% de esa zona.
+
+**Segunda: «dónde cambió la imagen».** Daba falso positivo con las capas de
+atrás: un recuadro traslúcido detrás del titular cambia el fondo que rodea
+cada letra, y con él el borde de la letra, aunque la letra siga perfectamente
+visible. La pregunta no era si algo cambió alrededor de la marca sino si la
+marca **desapareció** — o sea comparar los dos mapas de bordes y quedarse con
+lo que estaba antes y ya no está.
+
+Con esa medida los tres casos separan limpio: consola sobre el pie **10%**,
+formas en el fondo vacío **0%**, recuadro detrás del titular **0%**. El umbral
+va en 5, cómodo en el medio de una separación que no tiene nada en el medio.
+
+**No se mide sobre foto.** La tinta se detecta por saltos bruscos de color, y
+una foto salta en todas partes: sobre una foto cualquier dibujo daría «tapa el
+40%». Un aviso que aparece siempre se deja de leer, que es la regla 2 de
+`revisar.py` — sólo hechos, y sólo los que se pueden medir.
+
+### Lo que sigue siendo del agente
+
+Las otras dos preguntas —si quedó una zona vacía y si el clima es el que
+pidieron— son criterio y no se miden. Ésas van en el PROMPT como tres
+preguntas concretas a contestarse mirando el PNG, en vez de un «mirá» suelto.
+La diferencia entre pedir atención y pedir una respuesta.

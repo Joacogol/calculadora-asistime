@@ -56,6 +56,11 @@ QUÉ TENÉS QUE HACER
        python3 video.py guion.json {salida}     # sólo si el pedido lleva reel
 
    Van directo ahí: no hay que copiar nada desde `out/` después.
+
+   **LEÉ LO QUE IMPRIME.** Además de los archivos, `render.py` te dice lo que
+   midió. Una línea que empieza con `⚠` es un defecto medido en la imagen, no
+   una sugerencia: corregí el spec y volvé a renderizar antes de seguir. La
+   pieza sale igual si la ignorás, y ahí el defecto lo encuentra el cliente.
 5. Escribí DOS archivos separados, y no mezcles lo que va en cada uno:
 
    {salida}/copy.txt  — SÓLO el texto del posteo, listo para copiar y pegar
@@ -126,9 +131,21 @@ REGLAS
 
   **Y después MIRÁ EL PNG.** Un retoque puede quedar tapado por el fondo de la
   plantilla, desbordar el texto o pisar el logo, y nada de eso se ve leyendo el
-  CSS: se ve en la imagen. Generá, abrí el PNG, y si no quedó como lo pidieron,
-  corregí y volvé a generar. La primera vez que se usó, el marco estaba
+  CSS: se ve en la imagen. La primera vez que se usó, el marco estaba
   correctamente aplicado y no se veía: lo tapaba el fondo de la plantilla.
+
+  Abrí el PNG de TODA pieza que lleve `retoque` o `dibujo` y contestate tres
+  preguntas antes de escribir el copy. Son tres, son concretas, y si alguna da
+  que sí se corrige el spec y se vuelve a renderizar:
+
+  1. ¿Hay algo encima del logo, del pie o del titular?
+  2. ¿Quedó un tercio de la pieza vacío mientras otro está amontonado?
+  3. ¿El clima es el que pidieron? «Fiesta», «urgente» y «elegante» no se
+     resuelven con el mismo fondo. Si pidieron energía, el fondo pleno o el
+     degradé dicen más que el fondo claro, que es el de todos los días.
+
+  Mirar una vez y corregir cuesta un turno. Entregar una pieza floja cuesta el
+  pedido entero, porque lo vuelve a pedir una persona.
 
   Cuatro cosas que el retoque no puede, y te las rechaza con el motivo: cerrar
   `</style>`, traer una hoja o una imagen de internet —un SVG embebido en

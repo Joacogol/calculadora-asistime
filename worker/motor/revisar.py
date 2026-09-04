@@ -248,6 +248,129 @@ def revisar_imagen(imagen: pathlib.Path, *,
     return problemas
 
 
+#: Cuánta tinta puede tapar un dibujo DENTRO DE UNA ZONA antes de que sea un
+#: problema. Se mide por zona y no sobre la pieza entera, y esa fue la primera
+#: versión y estaba mal: la consola de DJ que cruzaba el pie de la story del
+#: 3/9/2026 tapaba el 0,4% de la tinta total —nada— porque el titular aporta
+#: miles de píxeles y el pie unos cientos. Mirado por zona, la misma consola
+#: tapa el 12% del pie. El defecto era local y la medida tenía que serlo.
+#:
+#: Medido sobre esa pieza: la consola que cruza el pie hace desaparecer el 10%
+#: de las marcas del pie; unas notas sueltas en el fondo, 0%; y un recuadro
+#: puesto ATRÁS del titular, también 0%. Entre 0 y 10 no hay nada, así que el
+#: umbral va cómodo en el medio.
+TAPADO_MAXIMO = 0.05
+
+#: Cuántos píxeles de tinta necesita una zona para que valga la pena juzgarla.
+#: Una zona casi vacía da porcentajes enormes con cuatro píxeles.
+TINTA_MINIMA = 150
+
+#: Y cuántos tiene que tapar, en absoluto. Evita que el borde suavizado de una
+#: forma que apenas roza una letra cuente como que la tapó.
+TAPADO_MINIMO = 40
+
+#: En cuántas zonas se parte la pieza. Seis por diez sobre 1080×1920 son
+#: recuadros de 180×192: del tamaño de un logo o de una línea de pie, que es la
+#: escala de lo que se quiere proteger.
+ZONAS = (6, 10)
+
+#: Debajo de esto un píxel no es un trazo sino fondo. Los degradados de marca
+#: cambian de a poco entre píxel y píxel; una letra o un logo saltan de golpe.
+BORDE = 28
+
+
+def _tinta(im):
+    """Máscara de lo que está DIBUJADO en la pieza: textos, logos, formas.
+
+    Un degradé no es tinta aunque tenga color: cambia de a poco. Lo que se
+    busca son los saltos bruscos, que es lo que hace una letra contra su
+    fondo. Es la misma idea que usa cualquier detector de bordes y alcanza de
+    sobra acá, donde no hay que reconocer nada: sólo saber dónde hay algo.
+    """
+    from PIL import ImageFilter
+    return im.convert("L").filter(ImageFilter.FIND_EDGES).point(
+        lambda v: 255 if v > BORDE else 0)
+
+
+def _cuantos(mascara) -> int:
+    return sum(mascara.point(lambda v: 1 if v else 0).convert("L").getdata())
+
+
+def _donde(col: int, fila: int) -> str:
+    """La zona en castellano: «abajo a la izquierda»."""
+    cols, filas = ZONAS
+    vertical = ("arriba" if fila < filas / 3 else
+                "abajo" if fila >= filas * 2 / 3 else "en el medio")
+    lado = ("a la izquierda" if col < cols / 3 else
+            "a la derecha" if col >= cols * 2 / 3 else "al centro")
+    return f"{vertical} {lado}"
+
+
+def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path) -> list[str]:
+    """Qué se comió el dibujo de una pieza a medida.
+
+    La comparación es exacta porque la pieza se renderiza dos veces: con el
+    dibujo y sin él. Lo que cambió entre las dos imágenes ES el dibujo, sin
+    tener que adivinar dónde lo puso nadie ni qué plantilla se usó. Y lo que
+    importa no es que el dibujo ocupe lugar —para eso está— sino **que tape lo
+    que la plantilla ya había dibujado**: el logo, el titular, el pie.
+
+    Una capa `atras` da cero por construcción: queda detrás del texto, así que
+    los píxeles del texto no cambian. Eso no es una casualidad afortunada, es
+    la razón por la que la medida sirve: distingue «cubre» de «está detrás».
+
+    Esto es un hecho y no una opinión, que es la regla 2 del módulo. Si el
+    dibujo quedó feo, desbalanceado o fuera de clima, eso lo tiene que ver
+    alguien mirando; acá sólo se dice qué quedó tapado.
+    """
+    problemas: list[str] = []
+    try:
+        from PIL import Image, ImageChops
+    except Exception:                                        # noqa: BLE001
+        return problemas                                     # regla 3
+    try:
+        with Image.open(con) as a, Image.open(sin) as b:
+            a, b = a.convert("RGB"), b.convert("RGB")
+            if a.size != b.size:
+                return problemas
+            ancho, alto = a.size
+            # Lo que estaba dibujado y ya no está. La primera versión medía
+            # «dónde cambió la imagen», y daba falso positivo con las capas de
+            # atrás: un recuadro traslúcido detrás del titular cambia el fondo
+            # que rodea cada letra, y el borde de la letra cambia con él,
+            # aunque la letra siga perfectamente visible. Lo que importa no es
+            # si algo cambió alrededor de la marca sino si la marca DESAPARECIÓ.
+            antes, despues = _tinta(b), _tinta(a)
+            tinta = antes
+            tapado = ImageChops.subtract(antes, despues)
+
+            cols, filas = ZONAS
+            cw, ch = ancho // cols, alto // filas
+            peor = (0.0, "", 0)
+            for f in range(filas):
+                for c in range(cols):
+                    caja = (c * cw, f * ch, (c + 1) * cw, (f + 1) * ch)
+                    hay = _cuantos(tinta.crop(caja))
+                    if hay < TINTA_MINIMA:
+                        continue
+                    comido = _cuantos(tapado.crop(caja))
+                    parte = comido / hay
+                    if parte > peor[0]:
+                        peor = (parte, _donde(c, f), comido)
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("no pude comparar %s con %s: %s", con, sin, e)
+        return problemas
+
+    parte, donde, comido = peor
+    if parte > TAPADO_MAXIMO and comido >= TAPADO_MINIMO:
+        problemas.append(
+            f"el dibujo tapa {parte * 100:.0f}% de lo que la plantilla había "
+            f"dibujado {donde} — puede ser el logo, el pie o el titular. "
+            f"Corrélo, achicalo, o poné esa capa con \"atras\": true para que "
+            f"pase por detrás")
+    return problemas
+
+
 def en_una_linea(problemas: list[str]) -> str:
     """Los avisos juntos, para escribirlos en `notas` de la fila.
 

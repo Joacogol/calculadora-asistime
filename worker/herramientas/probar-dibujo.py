@@ -151,6 +151,46 @@ if puede_mirar:
     except Exception as e:
         ok("se pudo renderizar", False, e)
 
+print("\n■ Que el motor avise cuando el dibujo tapa algo")
+# La medida compara la pieza con y sin dibujo, así que hay que renderizar las
+# dos. Los tres casos son los que separaron bien el 3/9/2026: una consola que
+# cruza el pie (10%), unas formas en el fondo vacío (0%) y —el que costó una
+# versión entera— un recuadro traslúcido DETRÁS del titular, que también da 0
+# aunque cambie el fondo alrededor de cada letra.
+CRUZA_EL_PIE = ("<svg viewBox='0 0 1080 1920'><g transform='translate(60 1560)' "
+                "fill='none' stroke='#FFFFFF' stroke-width='8'>"
+                "<rect width='900' height='300' rx='26'/>"
+                "<circle cx='200' cy='150' r='90'/></g></svg>")
+EN_EL_VACIO = ("<svg viewBox='0 0 1080 1920'><g fill='#FFFFFF' opacity='.5'>"
+               "<circle cx='200' cy='430' r='34'/><circle cx='880' cy='330' r='30'/>"
+               "</g></svg>")
+DETRAS = ("<svg viewBox='0 0 1080 1920'><rect x='120' y='800' width='840' "
+          "height='400' rx='40' fill='#00000055'/></svg>")
+
+
+def avisos(dibujo):
+    from motor import render
+    import tempfile
+    data = {"titulo": "Mañana es\nVIERNES", "estilo": "degrade",
+            "alineacion": "centro", "dibujo": dibujo}
+    with tempfile.TemporaryDirectory() as tmp:
+        r = render.Render(m, MARCA)
+        r.correr([{"nombre": "d", "plantilla": "titular", "formato": "story",
+                   "data": data}], tmp)
+        return r.avisos
+
+
+if puede_mirar:
+    try:
+        a = avisos({"svg": CRUZA_EL_PIE})
+        ok("avisa cuando el dibujo cruza el pie", len(a) == 1, a)
+        ok("y dice dónde", a and "abajo a la izquierda" in a[0], a)
+        ok("no avisa por un dibujo en el vacío", not avisos({"svg": EN_EL_VACIO}))
+        ok("ni por una capa que va detrás del titular",
+           not avisos({"svg": DETRAS, "atras": True}))
+    except Exception as e:
+        ok("se pudo medir", False, e)
+
 print("\n  todo bien" if not fallos else f"\n  {len(fallos)} fallo(s): "
       + ", ".join(fallos))
 sys.exit(1 if fallos else 0)
