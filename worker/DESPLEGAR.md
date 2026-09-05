@@ -212,8 +212,17 @@ el mismo entorno cargado.
 ## 5 · Republicar el catálogo
 
 ```bash
-ASISTIME_CLAVE=… python3 herramientas/publicar-catalogo.py boss-padel-disenos
+# En Cloud Shell, con sesión de gcloud, va SIN variable: la clave la saca del
+# registro de clientes sola. Es la forma recomendada.
+python3 herramientas/publicar-catalogo.py boss-padel-disenos
 ```
+
+Fuera de Cloud Shell hay que darle la clave en la variable que la marca nombra
+en su `marca.json` (`asistime.clave_env`). **No pegues el ejemplo con puntos
+suspensivos**: el 5/9/2026 el «…» viajó como clave y lo que se vio fue un
+traceback de urllib3 —`'latin-1' codec can't encode character '\u2026'`— treinta
+líneas más abajo, que no nombra ni la clave ni el script. Ahora eso se corta
+antes, con el motivo.
 
 Es lo que le cuenta al agente qué plantillas existen. Es idempotente: si el
 catálogo no cambió, no escribe una versión nueva. **Conviene dejarlo al final
@@ -222,7 +231,7 @@ de `desplegar-chat.sh`** para no tener que acordarse.
 ### Y el prompt, para las marcas que lo generan del repo
 
 ```bash
-ASISTIME_CLAVE_ASISTIME_DISENOS=… python3 herramientas/publicar-prompt.py asistime-disenos
+ASISTIME_CLAVE_ASISTIME_DISENOS=<la clave, o sacá esta variable> python3 herramientas/publicar-prompt.py asistime-disenos
 ```
 
 Mismo criterio y mismas garantías que el catálogo: idempotente, y con

@@ -103,6 +103,21 @@ def main(argv):
             f"Correlo con la variable puesta, o desde Cloud Shell con sesión "
             f"de gcloud para que pueda leer el registro.")
 
+    # Un placeholder pegado tal cual. La documentación escribe la clave como
+    # `ASISTIME_CLAVE=…` y ese «…» se copia entero más seguido de lo que
+    # parece: pasó el 5/9/2026, después de un despliegue que había salido
+    # bien. Lo que se veía era un traceback de urllib3 treinta líneas más
+    # abajo —«'latin-1' codec can't encode character '\u2026'»— que no nombra
+    # ni la clave, ni la variable, ni este script.
+    raro = [c for c in clave if not (32 <= ord(c) < 127)]
+    if raro:
+        raise SystemExit(
+            f"la clave de «{nombre}» tiene un carácter que no puede viajar en "
+            f"una cabecera HTTP: {raro[0]!r}.\n"
+            f"Casi siempre es el «…» del ejemplo pegado tal cual. Corré esto "
+            f"SIN la variable —en Cloud Shell la saca del registro sola— o "
+            f"poné la clave de verdad.")
+
     if not hasattr(marca, "CATALOGO"):
         raise SystemExit(f"«{nombre}» todavía no expone CATALOGO() en marca.py")
 
