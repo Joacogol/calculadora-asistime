@@ -2,7 +2,7 @@
   "id": "dato",
   "nombre": "Dato",
   "descripcion": "el slide oscuro de impacto: un número grande y una frase",
-  "cuando_usarla": "Cuando lo que manda es un número que duele o sorprende: «68% de los mensajes llegan fuera de horario». Es el ÚNICO momento oscuro de la marca y por eso funciona: usalo salteado, nunca dos veces seguidas en una misma serie. El número sale con el degradé de la marca. Siempre con la fuente del dato en `fuente`; un número sin fuente no se publica. Si no hay un número, es `titular`.",
+  "cuando_usarla": "Cuando lo que manda es un número que duele o sorprende: «68% de los mensajes llegan fuera de horario». Va SIEMPRE sobre el fondo de impacto, y por eso funciona: usalo salteado, nunca dos veces seguidas en una misma serie. El número sale con el degradé de la marca. Siempre con la fuente del dato en `fuente`; un número sin fuente no se publica. Si no hay un número, es `titular`.",
   "acento_por_defecto": "azul",
   "medidas": {
     "post": {
