@@ -4485,3 +4485,28 @@ Y una lección sobre las pruebas: `probar-dibujo.py` exigía «ningún aviso» d
 quería decir «ningún aviso sobre el dibujo», así que **una medición nueva y
 verdadera la rompía**. Una prueba que falla cuando el motor aprende a mirar algo
 más no está cuidando nada: está congelando lo que el motor sabe.
+
+## «No encontré información» no es «no se puede» (4/9/2026)
+
+Se pidió, con todo escrito —el texto, la bajada, el color de fondo y la foto—:
+
+> «Una story de expectativa: "Algo grande se está por venir", bajada "Estén
+> atentos", fondo azul oficial de Asistime, con Tony asomándose desde abajo».
+
+El agente de chat buscó en sus documentos, no encontró nada, y contestó: «No
+encontré información específica sobre una plantilla de story de expectativa con
+Tony. ¿Confirmás que querés avanzar?».
+
+Dos errores, y ninguno es del motor:
+
+1. **Buscó una ocasión donde el catálogo lista tipos de pieza.** «Expectativa»
+   no es una plantilla; es un pedido. Lo cubre `titular`, que el catálogo
+   describe como «la pieza de todos los días». No encontrar algo en un
+   documento es información sobre el documento, no sobre lo que se puede hacer.
+2. **Pidió confirmar un pedido que ya estaba completo.** No faltaba un dato:
+   estaban el texto, el color y la foto. Preguntar ahí no cuida a nadie —
+   agrega dos minutos y se ve dubitativo en algo que era claro.
+
+Las dos reglas entraron en `alta/prompt-disenador.md`, que es el prompt del
+agente que atiende el chat. La segunda dice qué preguntar en su lugar: **sólo lo
+que falta para poder hacer la pieza**, junto y una sola vez.
