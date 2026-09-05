@@ -582,6 +582,30 @@ Deno.serve(async (req) => {
   if (adjuntos.length) fila.adjuntos = adjuntos;
   if (logo) fila.logo_socio = logo;
 
+  // ── Corregir una pieza que ya salió ──────────────────────────────────
+  //
+  // Con `corrige` puesto, el worker parte del SPEC exacto de esa pieza y
+  // cambia sólo lo que se pide. Sin esto, un pedido de cambio se trata como
+  // uno nuevo: el agente rehace todo desde el mensaje y vuelve otra pieza.
+  // Pasó el 5/9/2026 — «que la jirafa arranque desde abajo» devolvió otro
+  // fondo, otra tipografía y otro centrado.
+  //
+  // Se valida que sea un UUID acá y no más adentro: un id inventado dejaría
+  // la fila con una referencia rota y el pedido moriría al insertarse, que es
+  // el peor momento para enterarse.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (cuerpo.corrige) {
+    const otro = String(cuerpo.corrige).trim();
+    if (!UUID.test(otro)) {
+      return json({
+        error: "«corrige» tiene que ser el id de un diseño que ya se hizo, " +
+               "tal cual lo devolvió crear_diseno. No lo inventes: si no lo " +
+               "tenés, pedile a la persona el link de la pieza.",
+      }, 400);
+    }
+    fila.corrige = otro;
+  }
+
   const r = await fetch(`${base}/rest/v1/disenos`, {
     method: "POST",
     headers: { ...cab, Prefer: "return=representation" },

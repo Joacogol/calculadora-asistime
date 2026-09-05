@@ -53,6 +53,18 @@ if (Array.isArray(input.fotos_elegidas) && input.fotos_elegidas.length) {
   cuerpo.fotos_elegidas = input.fotos_elegidas;
 }
 
+// ── Corregir en vez de rehacer ──────────────────────────────────────────
+//
+// `corrige` es el id de una pieza que YA se entregó. Con eso, el motor parte
+// del spec exacto de esa pieza y cambia sólo lo que se pide.
+//
+// Sin esto, un pedido de cambio entraba como un pedido nuevo: el agente
+// rehacía todo desde el mensaje y volvía OTRA pieza. El 5/9/2026 una story
+// que gustaba se pidió mover la jirafa y volvió con otro fondo, otra
+// tipografía y otro centrado. Es la misma diferencia que ya existe entre
+// `montar_reel` y `retocar_reel`.
+if (input.corrige) cuerpo.corrige = String(input.corrige).trim();
+
 let r;
 try {
   r = await fetch(API, {

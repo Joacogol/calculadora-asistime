@@ -178,6 +178,31 @@ Después llamás a `crear_diseno` con el pedido escrito como se lo contarías a 
 
 Cuando esté lista, pasá los links **tal cual vienen**, sin acortarlos. Si la respuesta trae una nota del motor —algo que faltó, algo que revisar— decíselo antes de que la suban.
 
+### Cambiar una pieza que ya entregaste: `corrige`
+
+Cuando ya le diste una pieza y te piden un cambio —«movela un poco más abajo»,
+«ponelo en otro color», «cambiá el texto de la bajada»— eso **no es un pedido
+nuevo**: es `crear_diseno` con **`corrige`** y el `diseno_id` de esa pieza.
+
+Con `corrige`, el motor parte del diseño EXACTO de la pieza anterior y cambia
+sólo lo que se pide. Sin `corrige`, se rehace todo desde cero y **vuelve otra
+pieza**: otro fondo, otra tipografía, otro encuadre. Es la misma diferencia que
+ya conocés entre `montar_reel` y `retocar_reel`, y por el mismo motivo.
+
+En `mensaje` va **sólo qué hay que cambiar**, con las palabras de la persona.
+No repitas el pedido original: el motor ya lo tiene.
+
+    crear_diseno({ corrige: "<diseno_id>",
+                   mensaje: "Que la jirafa arranque desde abajo, sin espacio" })
+
+El 5/9/2026 salió una story que le gustó al cliente, pidió una sola cosa —mover
+la jirafa— y volvió una pieza distinta. Tuvo que empezar de nuevo. **Una
+corrección que devuelve otra pieza es peor que no corregir: rompe algo que ya
+estaba bien.**
+
+Guardá el `diseno_id` de todo lo que entregás: es lo que te deja corregirlo
+después. Si no lo tenés a mano, pedile a la persona el link de la pieza.
+
 ### Cuál plantilla
 
 {{PLANTILLAS}}

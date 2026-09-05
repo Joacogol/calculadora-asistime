@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 PROMPT = """Sos el agente de contenidos de {marca_nombre}. Te llegó este pedido \
 por el formulario.
-
+{correccion}
 PEDIDO
 ------
 Lo que pidieron:
@@ -511,6 +511,63 @@ Esto lo mantiene {nombre} en Asistime y es lo más actualizado que hay.
 """, version)
 
 
+CORRECCION = """
+════════════════════════════════════════════════════════════════════
+ESTO ES UNA CORRECCIÓN, NO UNA PIEZA NUEVA
+════════════════════════════════════════════════════════════════════
+
+La persona YA TIENE una pieza que le sirve y pide UN CAMBIO. Abajo está el
+spec EXACTO con el que se dibujó. Tu trabajo es escribir ese mismo spec con
+el cambio pedido y NADA MÁS.
+
+**No lo rehagas.** No cambies la plantilla, ni el estilo, ni la alineación, ni
+la firma, ni el color, ni la tipografía, ni la foto, ni el texto — nada que no
+esté en el pedido. Lo que no se menciona se copia tal cual, carácter por
+carácter.
+
+El 5/9/2026 salió una story que le gustó y pidió una sola cosa: «que la jirafa
+arranque desde abajo sin espacio». Volvió otra pieza —otro fondo, otra
+tipografía, otro centrado, el logo encima de la cara— y hubo que empezar de
+nuevo. Una corrección que devuelve una pieza distinta es peor que no corregir:
+rompe algo que ya estaba bien.
+
+Si el cambio pedido no se puede hacer con este spec, NO inventes otra pieza:
+hacé lo más cercano posible y decí en notas.txt qué no se pudo y por qué.
+
+SPEC DE LA PIEZA ANTERIOR
+-------------------------
+{spec}
+
+Lo que se pidió cuando se hizo, para que entiendas de dónde viene:
+{mensaje}
+════════════════════════════════════════════════════════════════════
+"""
+
+
+def _correccion(cli, pedido: dict) -> str:
+    """El bloque de corrección, o vacío si el pedido no corrige a nadie.
+
+    Si la fila trae `corrige`, se busca el spec de ESA pieza. Sin spec —una
+    pieza vieja, de antes de que se guardaran— se avisa igual que es una
+    corrección: es mejor que el agente sepa que hay algo que respetar aunque no
+    pueda verlo, a que crea que está empezando de cero.
+    """
+    otro = (pedido or {}).get("corrige")
+    if not otro:
+        return ""
+    previo = cli.leer_diseno(otro) if hasattr(cli, "leer_diseno") else None
+    spec = (previo or {}).get("spec")
+    if not spec:
+        return ("\n⚠ ESTO ES UNA CORRECCIÓN de una pieza anterior, pero su spec "
+                "no está guardado (es de antes de que se guardaran). Pedile a "
+                "la persona el link de la pieza que quiere cambiar y qué "
+                "exactamente hay que cambiarle, y avisá en notas.txt que la "
+                "vas a rehacer y puede salir distinta.\n")
+    return CORRECCION.format(
+        spec=json.dumps(spec, ensure_ascii=False, indent=1)[:12000],
+        mensaje=((previo.get("mensaje") or "")[:600] or "(no quedó registrado)"))
+
+
 def _marca(pedido: dict) -> str:
     """Qué skill le toca a este pedido.
 
@@ -800,7 +857,7 @@ def _sede(marca: str, ficha: dict, sede: str) -> dict:
     return datos
 
 
-async def disenar(pedido: dict, salida: Path) -> tuple[bool, str, dict]:
+async def disenar(pedido: dict, salida: Path, cli=None) -> tuple[bool, str, dict]:
     """Genera las piezas. Devuelve (ok, titulo, metricas)."""
     salida.mkdir(parents=True, exist_ok=True)
     marca = _marca(pedido)
@@ -811,6 +868,7 @@ async def disenar(pedido: dict, salida: Path) -> tuple[bool, str, dict]:
     _subidas = _traer_adjuntos(pedido, marca)
     reglas, version_manual = _reglas_de_marca(marca)
     prompt = PROMPT.format(
+        correccion=_correccion(cli, pedido),
         texto=pedido["texto"], sede=sede, cuando=pedido["cuando"],
         quien=pedido["quien"], formatos=_formatos(pedido.get("formatos")),
         fotos_subidas=_subidas[0], videos_subidos=_subidas[1],

@@ -99,7 +99,7 @@ class Cliente:
     # TODOS sus diseños por una columna que ni usa. Se pide, y si la base dice
     # que no existe, se anota y se sigue sin ella.
     COLUMNAS = "id,mensaje,formatos,sede,quien,creado_en,adjuntos"
-    COLUMNAS_NUEVAS = "fotos_elegidas,logo_socio"
+    COLUMNAS_NUEVAS = "fotos_elegidas,logo_socio,corrige"
 
     def leer_pedidos(self, limite: int):
         """Los diseños pendientes, del más viejo al más nuevo."""
@@ -149,6 +149,11 @@ class Cliente:
                 # era cuál, y adivinar termina con el logo de la empresa usado
                 # como foto de fondo.
                 "logo_socio": (f.get("logo_socio") or "").strip(),
+                # El diseño que este pedido viene a CORREGIR. Con esto puesto,
+                # el worker le pasa al agente el spec exacto de esa pieza y le
+                # pide que cambie sólo lo que se pide. Sin esto, un pedido de
+                # cambio rehace la pieza entera y vuelve otra distinta.
+                "corrige": (f.get("corrige") or "") or None,
             })
         return [p for p in pedidos if p["texto"]]
 
@@ -182,6 +187,29 @@ class Cliente:
         return bool(r.json())
 
     # ────────────────────────────────────────────────────────────── FOTOS
+
+    def leer_diseno(self, diseno_id: str) -> dict | None:
+        """Un diseño ya hecho, con su `spec`. Para poder CORREGIRLO.
+
+        Devuelve None y no falla si no está o si la tabla es vieja: una
+        corrección sin spec sigue siendo un pedido válido —se avisa y se rehace
+        a mano— y no vale la pena tirar el trabajo por eso.
+        """
+        try:
+            r = requests.get(
+                self._url("disenos"),
+                headers=self._cab(),
+                params={"id": f"eq.{diseno_id}",
+                        "select": "id,mensaje,spec,urls,titulo",
+                        "limit": 1},
+                timeout=TIEMPO)
+            r.raise_for_status()
+            filas = r.json()
+            return filas[0] if filas else None
+        except Exception as e:
+            log.warning("[%s] no pude leer el diseño %s: %s",
+                        self.marca, diseno_id, e)
+            return None
 
     def leer_fotos(self, limite: int = 60) -> list[dict]:
         """El banco de fotos que cargó el cliente desde su app.

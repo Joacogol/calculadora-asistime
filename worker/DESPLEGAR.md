@@ -4610,3 +4610,68 @@ como el problema.
 
 Cuando el agente improvisa tres veces seguidas sobre lo mismo, la pregunta no
 es qué regla le falta: es **qué le falta ver**.
+
+## Corregir una pieza era imposible (5/9/2026)
+
+Salió una story que al cliente le gustó —el banco ya funcionaba, Tony era la
+foto real apoyada abajo, con el degradé de la marca— y pidió **un** cambio:
+
+> «¿Podés hacer que la jirafa arranque desde abajo sin que haya espacio?»
+
+Volvió **otra pieza**: fondo azul plano en vez del degradé, otra tipografía,
+texto centrado en vez de a la izquierda, y el logo encima de la cara de Tony.
+
+No fue desobediencia. El `spec.json` se escribía en un directorio temporal y
+moría con el contenedor: **no había nada que corregir**. El pedido de cambio
+entraba como un pedido nuevo y el agente rehacía todo desde el mensaje,
+tomando decisiones nuevas cada vez.
+
+Es exactamente el problema que ya estaba resuelto para los reels. El prompt lo
+dice desde hace semanas:
+
+> «NUNCA vuelvas a llamar a `montar_reel` para corregir. Eso empieza de cero:
+> vuelve a escuchar el mismo audio y **se equivoca exactamente igual**.»
+
+Para video había `ver_reel` + `retocar_reel` sobre el guion guardado. Para
+diseño no existía el equivalente, y nadie lo notó porque el síntoma se leía
+como «el agente no entiende».
+
+### El arreglo, de punta a punta
+
+| dónde | qué |
+|---|---|
+| `disenos.spec` (jsonb) | el spec exacto con el que se dibujó la pieza |
+| `disenos.corrige` (uuid) | qué diseño viene a corregir este pedido |
+| `app/chat.py` | guarda `spec.json` al marcar la pieza como lista |
+| `app/supa.py` | `leer_diseno()`, y `corrige` viaja en el pedido |
+| `app/disenador.py` | `_correccion()` arma el bloque con el spec anterior |
+| `funciones/api-disenos` | acepta `corrige` y valida que sea un UUID |
+| `tools-asistime/crear_diseno` | lo pasa |
+| `alta/prompt-disenador.md` | cuándo usarlo, con el ejemplo |
+
+El bloque va **arriba de todo** en el prompt del worker y es explícito: no
+cambies la plantilla, ni el estilo, ni la alineación, ni la firma, ni el color,
+ni la tipografía, ni la foto, ni el texto. Lo que no se menciona se copia tal
+cual. Si el cambio no se puede hacer con ese spec, se hace lo más cercano y se
+dice en notas.txt — **no se inventa otra pieza**.
+
+Una pieza vieja, sin spec guardado, no pasa en silencio: el agente recibe un ⚠
+que le dice que es una corrección, que no puede ver el original, y que avise que
+la pieza puede salir distinta. Creer que empieza de cero es lo que rompió la
+que gustaba.
+
+Las cuatro bases ya tienen las columnas (Asistime, Stadium, Clínica y Boss).
+
+**Y hay que redesplegar la Edge Function `api-disenos`** de cada cliente que la
+use: `desplegar-chat.sh` sube el worker, no las funciones. Sin eso, `corrige`
+llega a la API y se descarta en silencio.
+
+### Lo que enseña
+
+Es la segunda vez en el día que el síntoma apuntó al agente y la causa era una
+pieza de plomería que faltaba —primero el banco de fotos que nunca se sincronizó,
+ahora el spec que nunca se guardó—. En los dos casos el agente **improvisó
+razonablemente con lo que tenía**, y su explicación se leyó como el problema.
+
+Cuando algo falla igual varias veces, la pregunta no es qué regla le falta al
+agente: es **qué no le estamos dando**.

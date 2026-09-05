@@ -65,6 +65,13 @@ create table if not exists public.disenos (
   titulo         text,
   urls           text[] default '{}',    -- las piezas terminadas
   "copy"         text,
+  -- El spec.json exacto con el que se dibujó la pieza. Sin esto, corregir un
+  -- diseño es imposible: cada pedido de cambio lo rehace desde cero y sale
+  -- otra pieza. Ver DESPLEGAR.md, 5/9/2026.
+  spec           jsonb,
+  -- El diseño que este pedido viene a corregir. Con esto puesto, el worker
+  -- parte de SU spec y cambia sólo lo que se pide.
+  corrige        uuid references public.disenos(id) on delete set null,
   mensaje_agente text,
   documentos     jsonb default '[]'::jsonb,
   videos         jsonb default '[]'::jsonb,

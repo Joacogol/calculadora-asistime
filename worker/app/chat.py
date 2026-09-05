@@ -15,6 +15,7 @@ Un cliente caído no frena a los demás — si la base de uno no responde, los
 otros se siguen atendiendo.
 """
 import asyncio
+import json
 import logging
 import re
 import shutil
@@ -99,7 +100,7 @@ async def procesar(cli: Cliente, pedido: dict):
         shutil.rmtree(salida)
 
     try:
-        ok, titulo, metricas = await disenar(pedido, salida)
+        ok, titulo, metricas = await disenar(pedido, salida, cli)
         if not ok:
             # Si el agente dejó escrito por qué no generó nada, ese texto vale
             # mucho más que un mensaje genérico: puede ser «me faltan los
@@ -177,9 +178,31 @@ async def procesar(cli: Cliente, pedido: dict):
             visto = en_una_linea(revisadas)
             notas = f"{notas.rstrip()}\n\n{visto}" if notas else visto
 
+        # ── El spec se GUARDA ────────────────────────────────────────
+        #
+        # Sin esto, corregir una pieza es imposible. El 5/9/2026 salió una story
+        # que estaba bien y se pidió un solo cambio —«que la jirafa arranque
+        # desde abajo sin espacio»—: volvió OTRA pieza, con otro fondo, otra
+        # tipografía y otro centrado. No fue desobediencia: el spec vivía en un
+        # directorio temporal y moría con el contenedor, así que no había nada
+        # que corregir y el pedido se rehizo entero desde el mensaje.
+        #
+        # Es exactamente el problema que ya estaba resuelto para los reels
+        # —`ver_reel` + `retocar_reel` sobre el guion guardado— y que para los
+        # diseños no existía. El spec pesa unos pocos KB y es lo único que hace
+        # falta para que una corrección sea una corrección.
+        spec = None
+        archivo_spec = salida / "spec.json"
+        if archivo_spec.exists():
+            try:
+                spec = json.loads(archivo_spec.read_text(encoding="utf-8"))
+            except Exception:
+                log.warning("[%s] diseño %s: spec.json ilegible, no lo guardo",
+                            cli.marca, pid)
+
         cli.marcar(pid, "listo", titulo=titulo, urls=archivos,
                    documentos=docs, videos=videos, copy=copy, notas=notas,
-                   metricas=metricas)
+                   metricas=metricas, **({"spec": spec} if spec else {}))
         log.info("[%s] diseño %s listo — %d imágenes, %d documentos, %d videos",
                  cli.marca, pid, len(archivos), len(docs), len(videos))
 
