@@ -142,8 +142,30 @@ def sincronizar(cli, marca: str) -> int:
     base = carpeta(marca)
     refs = base / "referencias"
     vivo, semilla = refs / "fotos.json", refs / "fotos-base.json"
+
+    filas = cli.leer_fotos(MAX_FOTOS)
+
+    # ── La carpeta se CREA si el cliente tiene fotos ──────────────────────
+    #
+    # Antes esto era `if not refs.exists(): return 0`, y ahí murió el banco de
+    # Asistime durante días sin que nada lo dijera: su kit nunca trajo una
+    # carpeta `referencias/` —no tenía fotos propias al darse de alta— así que
+    # la sincronía se iba en la primera línea y las fotos de su tabla no
+    # llegaban al disco. El PROMPT le dice al agente «leé
+    # referencias/fotos.json y elegí una foto»; el agente leía un archivo que
+    # no existía, no encontraba nada, y RESOLVÍA: inventó la clave
+    # «tony-pose-inferior», después colocó la foto a mano, y el 5/9/2026
+    # terminó DIBUJANDO la jirafa de la marca en SVG. Tres piezas seguidas con
+    # `fotos_elegidas` vacío y nadie lo relacionó con una carpeta que faltaba.
+    #
+    # Un cliente que cargó fotos en su tabla quiere un banco. Que la carpeta
+    # exista es un detalle de cómo se dio de alta la marca, no una decisión.
     if not refs.exists():
-        return 0
+        if not filas:
+            return 0
+        refs.mkdir(parents=True, exist_ok=True)
+        log.info("[%s] la marca no traía banco y el cliente tiene %d foto(s): "
+                 "creo referencias/", marca, len(filas))
 
     # La copia intacta del banco que vino en el skill. Se hace una sola vez, la
     # primera corrida, y es lo que hace que reconstruir sea seguro.
@@ -158,7 +180,6 @@ def sincronizar(cli, marca: str) -> int:
         log.warning("[%s] fotos-base.json ilegible; no toco el banco", marca)
         return 0
 
-    filas = cli.leer_fotos(MAX_FOTOS)
     if not filas:
         # Sin tabla o sin fotos: el banco del skill queda como está. Igual se
         # reescribe desde la semilla, para deshacer la sincronía de una corrida

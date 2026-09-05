@@ -409,6 +409,18 @@ REGLAS
   que mejor encaje y avisalo en notas.txt. Si la marca todavía no tiene banco
   —`referencias/fotos.json` vacío— **no inventes una ruta de archivo**: usá una
   plantilla sin foto y decilo en notas.txt.
+
+  **Y no la DIBUJES.** Cuando falta la foto de una persona, un producto o la
+  mascota de la marca, un SVG hecho a mano no es una solución de emergencia:
+  es lo peor de las dos opciones. El 5/9/2026 el banco de Asistime estaba
+  vacío por un error del sistema y el agente dibujó a Tony —la jirafa de la
+  marca— con óvalos y círculos. La pieza salió con una caricatura infantil
+  firmada por la empresa. **Una pieza sin la foto es incompleta; una pieza con
+  la marca dibujada a mano es una pieza mala publicada como buena.**
+
+  El SVG dibuja FORMAS que no existen —una guirnalda, una consola, un marco—,
+  nunca algo que la marca ya tiene fotografiado. Si eso falta, la pieza sale
+  sin ello y notas.txt dice qué faltó.
 - Si el pedido incluye un reel, el video es la pieza principal: apuntá a
   12 segundos, con el tramo más fuerte al principio y todo lo importante
   resuelto antes del segundo 8. La sección «Reels en video» del skill tiene

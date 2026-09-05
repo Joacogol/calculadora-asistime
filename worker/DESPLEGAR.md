@@ -4556,3 +4556,57 @@ Tres cierres:
 
 Verificado con el caso exacto: con `.barra` salen dos avisos —el del retoque
 huérfano y el contraste, que sigue en 2,6:1—; con `.marca-pie`, ninguno.
+
+## El banco de Asistime nunca existió (5/9/2026)
+
+Tres piezas seguidas salieron mal por lo mismo, y el diagnóstico se buscó todo
+el tiempo en el lugar equivocado. La secuencia:
+
+1. se pidió «Tony asomándose desde abajo» y el agente inventó una clave que no
+   existe, `tony-pose-inferior`;
+2. después colocó la foto a mano con `<image y="800">`, perdiendo el encuadre
+   medido, y Tony salió flotando;
+3. al final **dibujó la jirafa de la marca en SVG**, con óvalos y círculos. La
+   pieza salió con una caricatura infantil firmada por la empresa.
+
+Las tres tienen `fotos_elegidas` vacío. Y cada vez se corrigió al agente —una
+regla nueva, otra regla— cuando el agente **no tenía ninguna foto que usar**.
+
+`app/banco.py` empezaba así:
+
+```python
+refs = base / "referencias"
+if not refs.exists():
+    return 0
+```
+
+El kit de Asistime nunca trajo una carpeta `referencias/`: al darse de alta no
+tenía fotos propias. Así que la sincronía se iba en la primera línea y **las
+cuatro fotos de Tony cargadas en su tabla nunca llegaron al disco**. Sin error,
+sin log, sin nada.
+
+Del otro lado, el PROMPT le dice al agente: «leé `referencias/fotos.json` y
+elegí la foto que mejor encaje». El agente leía un archivo que no existía, no
+encontraba nada, y **resolvía** — que es lo que hace siempre.
+
+**Un cliente que cargó fotos en su tabla quiere un banco.** Que la carpeta
+exista es un detalle de cómo se dio de alta la marca, no una decisión de nadie:
+ahora se crea sola, con una línea en el log que lo dice. `probar-banco.py`
+cubre los tres casos —sin carpeta, con carpeta, y sin fotos— sin salir a la red.
+
+Y en el PROMPT: **cuando falta una foto, no se dibuja.** Un SVG hecho a mano en
+lugar de la mascota de la marca no es una solución de emergencia, es lo peor de
+las dos opciones. Una pieza sin la foto es incompleta; una pieza con la marca
+dibujada a mano es una pieza mala publicada como buena.
+
+### Lo que este error enseña sobre los otros dos días
+
+Cada vez que una pieza salió mal, la explicación estuvo en el agente: dibujó el
+texto, colocó la foto a mano, discutió con el medidor, se autojustificó. Todo
+eso es cierto y las reglas que se agregaron valen. Pero **la causa raíz de las
+tres últimas era un `if` de dos líneas**, y se tardó en verla porque el agente
+siempre da una explicación plausible de lo que hizo — y esa explicación se lee
+como el problema.
+
+Cuando el agente improvisa tres veces seguidas sobre lo mismo, la pregunta no
+es qué regla le falta: es **qué le falta ver**.
