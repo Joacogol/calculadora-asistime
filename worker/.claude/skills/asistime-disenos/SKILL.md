@@ -19,14 +19,23 @@ este archivo.
 - **Dos colores y un degradado.** Azul `#4D90FF`, violeta `#B362FF`, y el
   degradado de uno al otro. El azul es el acento de todos los días. El
   violeta aparece SOLO dentro del degradado: en la palabra destacada de un
-  título, en el número del dato, en el botón, o en un fondo entero. Nunca
-  como color plano suelto.
+  título, en el número del dato, o en el botón. Nunca como color plano suelto,
+  y **nunca como fondo entero de una pieza**: a sangre completa el degradé sale
+  un azul claro que no es el de Asistime.
 - **Una tipografía: Red Hat Display.** ExtraBold en lo que se lee primero,
   Regular y Medium en lo que se lee después. Los seis pesos estáticos están en
   `fonts/` (licencia OFL) y son los mismos que usa el reel para sus rótulos.
-- **Clara por defecto.** Fondo blanco con un dejo azul-violeta y dos manchas
-  de luz desenfocadas. El fondo oscuro es el del `dato` y va salteado. El
-  fondo `degrade` entero es para una placa que tenga que gritar, o el cierre.
+- **Clara por defecto, con UN fondo de impacto.** El de todos los días es el
+  blanco con un dejo azul-violeta y dos manchas de luz desenfocadas. El de
+  impacto es el navy con resplandor que baja a violeta: es el que la marca
+  reconoce como propio y va cuando la pieza tiene que frenar el pulgar
+  —expectativa, un anuncio, un lanzamiento, el cierre de una serie, el dato que
+  duele—. En una misma serie va salteado, nunca dos veces seguidas.
+
+  **Los nombres del `estilo` no describen el fondo, así que no elijas por el
+  nombre: elegí por para qué es la pieza.** `oscuro` y `degrade` llevan los dos
+  al fondo de impacto, a propósito. `claro` es el de todos los días y `azul` es
+  el azul pleno. El catálogo los lista con su para-qué.
 - **El logo viene pintado.** Isotipo y lockup son PNG en dos versiones
   (color y blanco); el motor elige la blanca sobre fondo oscuro. El azul del
   logo (`#006AFF`) no se usa para nada más.
@@ -54,13 +63,13 @@ diapositiva lleva un `tipo` y **los campos de la plantilla que la dibuja**
 | `dato` | `dato` | el número que duele, una vez por serie |
 | `testimonio` | `testimonio` | la prueba social, en el lugar de la «solución» |
 | `producto` | `producto` | el agente resolviéndolo |
-| `cierre` | `cierre` | «Hablá con Tony». En `estilo: degrade` si la serie venía clara |
+| `cierre` | `cierre` | «Hablá con Tony». En el fondo de impacto si la serie venía clara |
 | `cuadro` | `titular` | el defecto de una secuencia de stories |
 
 La estructura que funcionó en el feed real, en seis: gancho (`portada`) →
 criterio (`texto`) → dato (`dato`) → solución (`testimonio` o `producto`) →
 cierre. El índice y las flechas los pone el motor; sobre el `dato` y sobre
-el cierre en degradé salen en blanco solos.
+un cierre de impacto salen en blanco solos.
 
 ## Lo que no se hace
 
