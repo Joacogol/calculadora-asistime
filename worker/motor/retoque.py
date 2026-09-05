@@ -332,6 +332,57 @@ CSS_CAPAS = """
 """
 
 
+#: Extensiones de imagen que, adentro de un `<image href=…>`, delatan que lo
+#: dibujado es UNA FOTO y no una forma. Un `data:` embebido no cuenta: eso es
+#: un ícono o una textura, no una foto del banco de la marca.
+FOTOS = (".png", ".jpg", ".jpeg", ".webp", ".avif")
+
+
+def foto_adentro(data: dict) -> list[str]:
+    """Las fotos que este `dibujo` trae adentro, si la pieza no usa `foto`.
+
+    ── Por qué existe ──────────────────────────────────────────────────────
+
+    Porque el 5/9/2026 el agente puso a Tony adentro de un `dibujo`:
+
+        "dibujo": [{"svg": "<svg viewBox='0 0 1080 1920'>
+                      <image href='assets/banco/tony-asomandose.png'
+                             x='117' y='614' width='845' height='1056'/></svg>"}]
+        "foto":   (vacío)
+
+    La pieza salió. Nada falló. Y con esa sola decisión se apagaron, en
+    silencio, las cuatro cosas que el motor sabe hacer con una foto:
+
+      · el `object-fit: contain` que evita que un recorte salga cortado;
+      · el velo medido contra la foto —acá no hay foto que velar—;
+      · el `foco` del banco, que para ese archivo ya decía `50% 100%`, o sea
+        «anclalo abajo», que era exactamente lo que se había pedido;
+      · el guardián que avisa si la firma de la marca queda apoyada sobre el
+        sujeto, que mira `foto` y no encuentra ninguna.
+
+    En vez de eso el agente calculó `x`, `y`, `width` y `height` a mano para
+    ubicar una jirafa, y le erró: pidieron «pegada al borde inferior, sin
+    espacio» y quedó terminando en 1670 de 1920.
+
+    No es que el `dibujo` esté mal: está para las FORMAS que la plantilla no
+    tiene. Una foto de la marca no es una forma, y meterla ahí es tomar el
+    camino que ningún guardián mira.
+
+    Devuelve los archivos encontrados, o lista vacía —que es el caso normal:
+    un dibujo de trazos, o una pieza que sí usa `foto`—.
+    """
+    if (data or {}).get("foto"):
+        return []                       # usa el camino bueno; el dibujo es otra cosa
+    vistos = []
+    for capa in _capas(data):
+        for href in re.findall(r"""(?:xlink:)?href\s*=\s*['"]([^'"]+)['"]""",
+                               capa["svg"]):
+            limpio = href.strip().split("?")[0].split("#")[0].lower()
+            if limpio.endswith(FOTOS) and not limpio.startswith("data:"):
+                vistos.append(href.strip())
+    return vistos
+
+
 def dibujos(data: dict) -> tuple[str, str]:
     """(css, html) de las capas dibujadas de esta pieza.
 

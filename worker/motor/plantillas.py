@@ -500,10 +500,27 @@ achica si no entra en el lienzo, el que avisa si algo le queda encima al logo
 o al pie, y el que avisa si se mezclaron alineaciones. Para MOVER o AGRANDAR
 un titular está el `retoque`, no el dibujo.
 
-Un dibujo puede traer una **foto adentro**: `<image href="assets/subidas/
-01-foto.jpg" …/>`, con las rutas relativas a la carpeta de la marca. Eso es lo
-que permite «la captura adentro de un teléfono» o «la foto en un recuadro con
-sombra», que la plantilla no sabe hacer: ella pone la foto de fondo y nada más.
+Un dibujo puede traer una foto adentro **cuando la foto va DENTRO DE UNA
+FORMA**: `<image href="assets/subidas/01-foto.jpg" …/>`, con las rutas
+relativas a la carpeta de la marca. Eso es lo que permite «la captura adentro
+de un teléfono» o «la foto en un recuadro con sombra», que la plantilla no sabe
+hacer.
+
+**Pero la foto principal de la pieza va en `foto`, nunca adentro de un
+`dibujo`.** Es la diferencia entre una foto que está adentro de algo dibujado y
+una foto que ES la pieza. Metida en un dibujo se apagan, sin que nada falle,
+las cuatro cosas que el motor sabe hacer con una foto: encuadrarla con
+`contain` para que un recorte no salga cortado, medir el velo, usar el `foco`
+que el banco ya tiene guardado para ese archivo, y avisar si la firma de la
+marca queda apoyada sobre el sujeto.
+
+Y para ubicarla no hace falta calcular nada: **`foco` es la posición dentro del
+lienzo**. `"50% 100%"` la apoya en el borde de abajo —que es lo que se pide
+cuando alguien dice «que arranque desde abajo, sin espacio»—, `"50% 0%"` arriba,
+`"50% 50%"` centrada. El 5/9/2026 se pidió cuatro veces «Tony pegado al borde
+inferior» y las cuatro se resolvió con un `<image>` en un dibujo, con `x`, `y`,
+`width` y `height` calculados a mano — y las cuatro quedó flotando. El `foco`
+de esa foto en el banco ya decía `50% 100%`.
 
 **Una captura de pantalla no es una foto.** Recortada y con velo no se lee.
 Va como objeto, entera y grande, nunca de fondo completo.

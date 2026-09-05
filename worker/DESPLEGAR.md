@@ -4755,3 +4755,67 @@ lo mismo que darle a la plantilla con qué evitarlo**. Es la misma forma de las
 dos plomerías del día anterior —el banco que nunca sincronizó, el spec que nunca
 se guardó—: cuando el agente improvisa varias veces sobre lo mismo, la pregunta
 no es qué regla le falta, es **qué le falta ver**.
+
+---
+
+## La foto por la puerta de atrás (5/9/2026, la tercera vez del mismo día)
+
+Se pidió cuatro veces «Tony asomándose desde abajo, pegado al borde, sin
+espacio». Las cuatro salió flotando en el medio, y una de ellas con
+«ASISTIME.AI» escrito sobre la oreja. Los arreglos de la mañana —el `contain`
+para recortes, el velo que no se pinta sobre un recorte, el guardián de la
+firma sobre el sujeto— estaban desplegados y no hicieron nada.
+
+Mirando el `spec` guardado de la pieza real, la causa:
+
+    "dibujo": [{"svg": "<svg viewBox='0 0 1080 1920'>
+                  <image href='assets/banco/tony-asomandose.png'
+                         x='117' y='614' width='845' height='1056'/></svg>"}]
+    "foto":   (vacío)
+
+**Tony no entraba por `foto`. Entraba adentro de un `dibujo`.** Y con esa sola
+decisión se apagaron, sin que nada fallara, las cuatro cosas que el motor sabe
+hacer con una foto:
+
+| lo que se apagó | qué hacía |
+|---|---|
+| `object-fit: contain` | que un recorte no salga cortado |
+| el velo medido | oscurecer sólo lo que hace falta |
+| el `foco` del banco | ese archivo ya tenía guardado `50% 100%` — «anclalo abajo» |
+| `ocupa()` / la firma sobre el sujeto | mira `foto`, y no había ninguna |
+
+En vez de eso el agente calculó `x`, `y`, `width` y `height` a mano para ubicar
+una jirafa. `y=614 height=1056` termina en 1670 de 1920: de ahí el espacio de
+abajo que se pidió cuatro veces que no estuviera.
+
+**Y el catálogo se lo había enseñado.** Decía «un dibujo puede traer una foto
+adentro» con un ejemplo de `<image href=…>`, sin distinguir entre una foto
+DENTRO DE UNA FORMA —la captura adentro de un teléfono, que es para lo que
+existe— y la foto que ES la pieza.
+
+### Lo que se hizo
+
+1. **`retoque.foto_adentro(data)`** — detecta un `<image href="…​.png">` en un
+   `dibujo` cuando `foto` está vacío, y `render` lo dice como aviso: qué se
+   apagó y que la ubicación se resuelve con `foco`, no con aritmética.
+2. **El catálogo y el SKILL.md** ahora separan los dos casos y dicen que
+   `foco: "50% 100%"` apoya la foto en el borde de abajo.
+3. **La paleta `azul`** dice que NO es «el fondo azul de Asistime»: se pidió
+   «fondo azul oficial» y salió el pleno #4D90FF cuatro veces. `oscuro` dice
+   que cuando alguien pide «el azul de la marca» para un fondo, es ése.
+
+Con la misma foto y el mismo pedido, por el camino bueno —`foto` +
+`foco: "50% 100%"` + `estilo: "oscuro"`— la pieza sale con Tony pegado al borde,
+el pie sin pisar la oreja y sin un solo aviso.
+
+### Lo que enseña
+
+Es la tercera vez en el día que el síntoma apuntaba al agente y la causa era
+otra: el banco que nunca sincronizó, el spec que nunca se guardó, y ahora una
+**puerta de atrás que apaga a todos los guardianes**. Los tres son la misma
+forma. La nueva, y es la que más importa:
+
+**Un camino alternativo que desactiva las mediciones tiene que avisar que las
+desactivó.** Si no, cada guardián que se agregue sobre el camino principal
+empuja al agente hacia el que no mira nadie — y el sistema se ve cada vez más
+protegido mientras se vuelve más fácil de esquivar.

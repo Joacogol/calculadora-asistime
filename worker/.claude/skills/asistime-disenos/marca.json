@@ -140,7 +140,7 @@
         "tinta": "$blanco",
         "acento": "$azul",
         "secundario": "#B8BDD9",
-        "cuando": "EL FONDO DE IMPACTO de Asistime. Va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre de una serie, y el dato que duele. Es el navy con resplandor que baja a violeta — el look que la marca reconoce como propio."
+        "cuando": "EL FONDO DE IMPACTO de Asistime, y el que la marca reconoce como suyo: el navy con resplandor que baja a violeta. Va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre de una serie, y el dato que duele. **Cuando alguien pide «el fondo azul de Asistime», «el azul oficial» o «los colores de la marca» para una pieza, es ÉSTE.** Se pide con esas palabras y no con el nombre de la paleta, así que ante la duda entre este fondo y `azul`, es este."
       },
       "degrade": {
         "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
@@ -154,7 +154,7 @@
         "tinta": "$blanco",
         "acento": "$blanco",
         "secundario": "$blanco",
-        "cuando": "El azul pleno #4D90FF, para una pieza que tiene que ser inconfundiblemente de la marca y no necesita el peso del fondo de impacto. Si dudás entre esta y el impacto, elegí el impacto."
+        "cuando": "El azul pleno #4D90FF a sangre. **No es «el fondo azul de Asistime»: ese es el de impacto (`oscuro`).** Éste es el color de acento usado como fondo, y es la excepción — una placa corta y muy simple donde el fondo de impacto sería demasiado peso. El 5/9/2026 se pidió cuatro veces «fondo azul oficial de Asistime» y salió este, y las cuatro estuvo mal: la palabra «azul» del pedido no es el nombre de esta paleta. Si dudás, es `oscuro`."
       }
     },
     "acento_por_defecto": "azul",

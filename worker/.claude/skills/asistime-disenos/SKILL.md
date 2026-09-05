@@ -71,6 +71,21 @@ criterio (`texto`) → dato (`dato`) → solución (`testimonio` o `producto`) �
 cierre. El índice y las flechas los pone el motor; sobre el `dato` y sobre
 un cierre de impacto salen en blanco solos.
 
+## Tony va en `foto`, con su `foco`
+
+La foto de Tony —o cualquier foto del banco— va en el campo **`foto`** de la
+plantilla, y se ubica con **`foco`**: `"50% 100%"` la apoya en el borde de
+abajo, que es lo que hace falta cuando piden «Tony asomándose desde abajo, sin
+espacio». El banco ya trae ese `foco` guardado para cada foto.
+
+**Nunca adentro de un `dibujo`.** Un `<image>` en un dibujo apaga en silencio
+las cuatro cosas que el motor sabe hacer con una foto: encuadrarla para que un
+recorte no salga cortado, medir el velo, usar el `foco`, y avisar si la firma
+queda apoyada sobre el sujeto. El 5/9/2026 se hizo así cuatro veces, calculando
+`x`, `y`, `width` y `height` a mano, y las cuatro Tony quedó flotando en el
+medio en vez de pegado al borde. El `dibujo` es para FORMAS que la plantilla no
+tiene.
+
 ## Lo que no se hace
 
 - No se inventa otro CTA: es «Hablá con Tony».

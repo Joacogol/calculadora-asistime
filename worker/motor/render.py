@@ -20,6 +20,7 @@ from playwright.sync_api import sync_playwright
 from . import carrusel as mcarrusel
 from . import contrato
 from . import efectos
+from . import retoque as _retoque
 from . import revisar
 
 log = logging.getLogger(__name__)
@@ -436,6 +437,27 @@ class Render:
                       "del retoque NO hizo nada y la pieza salió igual que sin "
                       "ella. Mirá el HTML para ver cómo se llama de verdad lo "
                       "que querías tocar")
+
+        # ── ¿La foto entró por la puerta de atrás? ────────────────────
+        #
+        # Un `dibujo` con una foto adentro y `foto` vacío apaga en silencio
+        # todo lo que el motor sabe hacer con una foto. Ver la nota larga en
+        # `retoque.foto_adentro`.
+        try:
+            colados = _retoque.foto_adentro(data or {})
+        except Exception:                                    # noqa: BLE001
+            colados = []
+        if colados:
+            self.avisos.append(
+                f"{destino.stem}: la foto «{colados[0]}» está metida adentro "
+                f"de un `dibujo` y el campo `foto` quedó vacío. Así el motor "
+                f"no la trata como foto: no la encuadra con `contain` —puede "
+                f"salir cortada—, no mide el velo, ignora el `foco` que el "
+                f"banco ya tiene guardado para ese archivo, y el guardián que "
+                f"avisa si la firma queda sobre el sujeto no la ve. Pasala en "
+                f"`foto` y acomodala con `foco` (por ejemplo `\"50% 100%\"` "
+                f"para que se apoye en el borde de abajo). El `dibujo` es "
+                f"para FORMAS que la plantilla no tiene, no para una foto")
 
         cajas = pg.evaluate(CAJAS_DE_MARCA)
         pg.locator(".canvas").screenshot(path=str(destino))
