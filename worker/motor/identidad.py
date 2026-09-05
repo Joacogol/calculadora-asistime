@@ -222,5 +222,6 @@ def cargar(archivo_marca) -> types.SimpleNamespace:
     # El catálogo cuenta lo del carrusel sólo si la marca lo sabe hacer. Se
     # mira sobre el módulo ya armado y no acá, por lo del `marca.py`.
     m.CATALOGO = lambda: _plantillas.catalogo(
-        carpeta, (), con_carrusel=hasattr(m, "DIAPOS"), diapos=mapa or None)
+        carpeta, (), con_carrusel=hasattr(m, "DIAPOS"), diapos=mapa or None,
+        marca=m)
     return m

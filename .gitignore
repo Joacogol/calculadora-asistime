@@ -5,3 +5,7 @@ __pycache__/
 worker/.claude/skills/*/alta.json
 # Enlaces que crea alta.py para el CLI de Supabase.
 worker/supabase/
+# Las fotos del banco las baja `app/banco.py` de la tabla del cliente en cada
+# corrida. No son del repositorio: son del cliente, cambian sin que nadie
+# commitee y pesan. Ver el encabezado de app/banco.py.
+worker/.claude/skills/*/assets/banco/

@@ -15,8 +15,26 @@
     arriba, que es donde queda el texto, y el resto limpio. Y el pie no va:
     sobre un video de diez segundos, una línea legal abajo es ruido. -#}
 {%- set pal = paleta(d.estilo) -%}
-{%- set encima = d.foto or d.sobre_video -%}
-{%- set pleno = d.estilo in ('degrade', 'azul') -%}
+{#- «Encima» es «el texto se apoya EN la foto». Un recorte sin fondo no está
+    debajo del texto: el texto se apoya en el fondo de la marca y el recorte
+    vive en otra parte de la pieza. Tratarlos igual apagaba el degradé de la
+    palabra destacada en todas las piezas con Tony. -#}
+{%- set recorte = recortada(d.foto) -%}
+{%- set encima = (d.foto and not recorte) or d.sobre_video -%}
+{#- `pleno` es «el fondo es UN color plano», y por eso el degradé en el texto
+    no se puede usar: sobre un color plano de la marca no se distingue. El
+    fondo de impacto NO es plano —es el navy con resplandor— y ahí el degradé
+    azul→violeta en una palabra es justamente lo que hace la pieza. Hasta el
+    5/9/2026 `degrade` estaba en esta lista porque era un fondo azul claro a
+    sangre; ahora es el fondo de impacto y el destacado vuelve a pintarse. -#}
+{%- set pleno = d.estilo == 'azul' -%}
+{#- «Noche» es «el fondo de esta paleta es oscuro», y se pregunta por la
+    PALETA y no por el nombre del estilo. Ésa fue la causa de fondo del
+    5/9/2026: la marca tiene UN solo fondo de impacto y dos nombres que llevan
+    a él, así que una plantilla que preguntaba por el nombre dibujaba distinto
+    según con cuál de los dos se lo pidieran. El mismo fondo tiene que dar la
+    misma pieza. -#}
+{%- set noche = pal.tinta|upper in ('#FFFFFF', '#FFF') -%}
 {%- if encima -%}
   {%- set pal = dict(pal, tinta=c.blanco, acento=c.blanco, secundario='#E6ECFF') -%}
 {%- endif -%}
@@ -33,7 +51,33 @@
 {%- if d.destacado and d.destacado in d.titulo and not encima and not pleno -%}
   {%- set titulo = d.titulo.replace(d.destacado, '<span class="texto-degrade">' ~ d.destacado ~ '</span>') -%}
 {%- endif -%}
-{%- set chip = 'chip-oscuro' if (encima or pleno or d.estilo == 'oscuro') else 'chip-suave' -%}
+{%- set chip = 'chip-oscuro' if (encima or pleno or noche) else 'chip-suave' -%}
+
+{#- LA FIRMA NO SE APOYA SOBRE EL SUJETO.
+
+    Un recorte va anclado abajo —para eso se recorta: para que Tony se asome
+    desde el borde— y el pie escrito también va abajo. Cuando los dos ocupan la
+    misma franja, «ASISTIME.AI» sale escrito encima de la oreja. Pasó cuatro
+    veces el 4 y el 5/9/2026, y el guardián de contraste lo veía bien —2,6:1
+    sobre el pelaje— pero recién DESPUÉS de renderizar. Un diseñador no firma
+    sobre el sujeto y después mide si se lee.
+
+    Medido con Tony: anclado abajo tapa el 84% de la línea del pie; el mismo
+    recorte centrado, el 5,6%; arriba, 0%. Entre 6 y 80 no hay nada, así que el
+    umbral va cómodo en el medio.
+
+    Y la salida es no firmar dos veces, no mover el pie: el sujeto ocupa todo
+    el ancho de abajo, así que no hay adónde correrlo. Si la pieza ya está
+    firmada arriba, el pie sobra; si no lo está, el pie se queda igual —una
+    pieza sin firma es peor que una firma sobre una oreja—. -#}
+{%- set mg = margen_seguro(fmt, m.pad) -%}
+{%- set y_pie = (m.alto - mg.abajo) / m.alto -%}
+{%- set firmada_arriba = (d.firma or 'iso')|lower not in ('ninguna', 'sin', 'no') -%}
+{%- set pie_sobre_sujeto = recorte and ocupa(
+     d.foto, 1080, m.alto,
+     (mg.izquierda / 1080, y_pie - m.legal * 1.6 / m.alto, 0.55, y_pie),
+     d.foco) > 0.20 -%}
+{%- set con_pie = not d.get('en_carrusel') and not (pie_sobre_sujeto and firmada_arriba) -%}
 
 {#- EL FONDO DE LA MARCA VA SIEMPRE, tenga foto o no.
 
@@ -45,9 +89,9 @@
     Nadie pide un color y un fondo esperando que el motor tire uno. -#}
 {% if not d.sobre_video %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
-{% if d.estilo in ('claro', 'oscuro') %}
-<div class="glow glow-azul" style="width:{{ m.alto * 0.55 }}px;height:{{ m.alto * 0.55 }}px;right:-{{ m.alto * 0.18 }}px;top:-{{ m.alto * 0.16 }}px;opacity:{{ '.9' if d.estilo == 'oscuro' else '.45' }}"></div>
-<div class="glow glow-violeta" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;left:-{{ m.alto * 0.2 }}px;bottom:-{{ m.alto * 0.22 }}px;opacity:{{ '.8' if d.estilo == 'oscuro' else '.38' }}"></div>
+{% if not pleno %}
+<div class="glow glow-azul" style="width:{{ m.alto * 0.55 }}px;height:{{ m.alto * 0.55 }}px;right:-{{ m.alto * 0.18 }}px;top:-{{ m.alto * 0.16 }}px;opacity:{{ '.9' if noche else '.45' }}"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;left:-{{ m.alto * 0.2 }}px;bottom:-{{ m.alto * 0.22 }}px;opacity:{{ '.8' if noche else '.38' }}"></div>
 {% endif %}
 {% endif %}
 
@@ -95,7 +139,7 @@
   <div class="grow"></div>
   {% if not d.sobre_video %}
   <div class="row" style="width:100%;align-items:flex-end">
-    {% if not d.get('en_carrusel') %}<div class="kicker marca-pie" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_chica }}">asistime.ai</div>{% endif %}
+    {% if con_pie %}<div class="kicker marca-pie" style="color:{{ c.blanco if pie_sobre_sujeto else pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em;{{ sombra_texto() if pie_sobre_sujeto else sombra_chica }}">asistime.ai</div>{% endif %}
     {% if d.pie %}
     <div class="legal" style="margin-left:auto;color:{{ pal.secundario }};font-size:{{ m.legal }}px;max-width:520px;text-align:right;{{ sombra_chica }}">{{ d.pie }}</div>
     {% endif %}

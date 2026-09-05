@@ -14,7 +14,7 @@
   "telefono_por_defecto": false,
   "regla_telefono": "No lleva teléfono. El llamado a la acción de la marca es «Hablá con Tony» y la web asistime.ai.",
   "quien_es": "Trabajás para Asistime.ai, la plataforma de agentes de IA de LAiB: un negocio crea agentes conversando, y esos agentes atienden por WhatsApp, Instagram, Facebook y TikTok. Le habla a dueños de pymes y emprendedores, no a técnicos. Lo que cada pieza tiene que dejar es alivio: «esto me devuelve tiempo». El tagline es «más tiempo para lo que amas».",
-  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Dos colores y un degradado, nada más.** La identidad oficial (kit del 3/9/2026) es el azul `#4D90FF`, el violeta `#B362FF` y el degradado del uno al otro. El azul es el acento de todos los días; el violeta aparece SOLO dentro del degradado —una palabra del título, el botón, un fondo entero— y nunca como color plano suelto. La marca es clara por defecto: el fondo oscuro es el del dato que duele —la plantilla `dato`— y va salteado, nunca dos veces seguidas en una misma serie. El fondo `degrade` entero es para UNA pieza que tenga que gritar, o el cierre.\n\n**4 · Una sola tipografía: Red Hat Display.** Titulares en ExtraBold, cuerpo en Regular o Medium. No se mezcla con otra.\n\n**5 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.\n\n**6 · Un dato lleva fuente y un testimonio lleva nombre.** Un número sin fuente o una cita sin quién la dijo no se publican: si faltan, preguntá.",
+  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Dos colores y un degradado, nada más.** La identidad oficial (kit del 3/9/2026) es el azul `#4D90FF`, el violeta `#B362FF` y el degradado del uno al otro. El azul es el acento de todos los días; el violeta aparece SOLO dentro del degradado —una palabra del título, el botón, un fondo entero— y nunca como color plano suelto. La marca es clara por defecto, y tiene UN fondo de impacto: el navy con resplandor que baja a violeta (`estilo: \"oscuro\"`). Ése es el que la marca reconoce como propio y va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre, y el dato que duele. En una misma serie va salteado, nunca dos veces seguidas. **El degradé azul→violeta NO va como fondo entero de una pieza**: a sangre completa sale un azul claro que no es el de Asistime. Va en UNA palabra del título, con `destacado`.\n\n**4 · Una sola tipografía: Red Hat Display.** Titulares en ExtraBold, cuerpo en Regular o Medium. No se mezcla con otra.\n\n**5 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.\n\n**6 · Un dato lleva fuente y un testimonio lleva nombre.** Un número sin fuente o una cita sin quién la dijo no se publican: si faltan, preguntá.",
   "como_habla": "Voseo rioplatense, frases cortas, cálido y concreto. Le hablás a quien tiene un negocio y poco tiempo, así que sin jerga: no decís «orquestación» ni «LLM», decís «un agente que atiende». Sin viñetas para lo que entra en dos renglones.",
   "fotos": {
     "creditos_maximos": 100
@@ -132,25 +132,29 @@
         "fondo": "linear-gradient(160deg,#FFFFFF 0%,#F7F9FF 50%,#F1EDFF 100%)",
         "tinta": "$tinta",
         "acento": "$azul",
-        "secundario": "$tinta_70"
+        "secundario": "$tinta_70",
+        "cuando": "La pieza de todos los días. Es como se ve la marca cuando no tiene que gritar: un beneficio, una idea, una placa suelta, la apertura de una serie."
       },
       "oscuro": {
         "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
         "tinta": "$blanco",
         "acento": "$azul",
-        "secundario": "#B8BDD9"
+        "secundario": "#B8BDD9",
+        "cuando": "EL FONDO DE IMPACTO de Asistime. Va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre de una serie, y el dato que duele. Es el navy con resplandor que baja a violeta — el look que la marca reconoce como propio."
       },
       "degrade": {
-        "fondo": "linear-gradient(135deg,#4D90FF 0%,#B362FF 100%)",
+        "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
         "tinta": "$blanco",
-        "acento": "$blanco",
-        "secundario": "#EEF1FF"
+        "acento": "$azul",
+        "secundario": "#B8BDD9",
+        "cuando": "Es el MISMO fondo de impacto que «oscuro»: los dos nombres llevan al mismo lugar a propósito. El degradé azul→violeta de la marca NO va como fondo entero de una pieza —sale un azul claro que no es el de Asistime—: va en UNA palabra del título, con `destacado`."
       },
       "azul": {
         "fondo": "$azul",
         "tinta": "$blanco",
         "acento": "$blanco",
-        "secundario": "#E3EEFF"
+        "secundario": "$blanco",
+        "cuando": "El azul pleno #4D90FF, para una pieza que tiene que ser inconfundiblemente de la marca y no necesita el peso del fondo de impacto. Si dudás entre esta y el impacto, elegí el impacto."
       }
     },
     "acento_por_defecto": "azul",

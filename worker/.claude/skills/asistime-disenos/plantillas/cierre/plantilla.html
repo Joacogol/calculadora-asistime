@@ -2,16 +2,24 @@
     una imagen de Tony, va a la derecha apoyada en el borde inferior, como en
     los carruseles publicados — nunca centrada ni flotando en el texto.
 
-    Sobre `degrade` todo va en blanco —el botón también, con el texto en
-    azul— y el lockup es el archivo blanco. -#}
+    Sobre un fondo PLANO de la marca el botón va blanco con el texto en
+    azul: el botón normal ya ES el degradé y sobre un color pleno compite.
+    Sobre el fondo de impacto el botón normal se lee perfecto. -#}
 {%- set pal = paleta(d.estilo) -%}
-{%- set pleno = d.estilo == 'degrade' -%}
+{%- set pleno = d.estilo == 'azul' -%}
+{#- «Noche» es «el fondo de esta paleta es oscuro», y se pregunta por la
+    PALETA y no por el nombre del estilo. Ésa fue la causa de fondo del
+    5/9/2026: la marca tiene UN solo fondo de impacto y dos nombres que llevan
+    a él, así que una plantilla que preguntaba por el nombre dibujaba distinto
+    según con cuál de los dos se lo pidieran. El mismo fondo tiene que dar la
+    misma pieza. -#}
+{%- set noche = pal.tinta|upper in ('#FFFFFF', '#FFF') -%}
 {%- set t = d.titulo|length -%}
 {%- set cuerpo = m.titulo if t <= 22 else (m.titulo * 0.8 if t <= 40 else m.titulo * 0.62) -%}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% if not pleno %}
-<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.16 }}px;top:-{{ m.alto * 0.14 }}px;opacity:.45"></div>
-<div class="glow glow-violeta" style="width:{{ m.alto * 0.46 }}px;height:{{ m.alto * 0.46 }}px;left:-{{ m.alto * 0.18 }}px;bottom:-{{ m.alto * 0.2 }}px;opacity:.38"></div>
+<div class="glow glow-azul" style="width:{{ m.alto * 0.5 }}px;height:{{ m.alto * 0.5 }}px;right:-{{ m.alto * 0.16 }}px;top:-{{ m.alto * 0.14 }}px;opacity:{{ '.9' if noche else '.45' }}"></div>
+<div class="glow glow-violeta" style="width:{{ m.alto * 0.46 }}px;height:{{ m.alto * 0.46 }}px;left:-{{ m.alto * 0.18 }}px;bottom:-{{ m.alto * 0.2 }}px;opacity:{{ '.8' if noche else '.38' }}"></div>
 {% endif %}
 
 {% if d.tony %}

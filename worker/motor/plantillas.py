@@ -35,7 +35,7 @@ import jinja2
 
 from . import retoque as _retoque
 
-from motor import legibilidad
+from motor import legibilidad, silueta
 
 CARPETA = "plantillas"
 
@@ -147,6 +147,45 @@ def _ayudas(marca, raiz):
                                         objetivo_blanco=objetivo_blanco,
                                         objetivo_acento=objetivo_acento)
 
+    def _recortada(foto) -> bool:
+        """¿Esta foto es un objeto recortado y no una foto de fondo?
+
+        Lo necesita la plantilla para razonar bien: «hay foto, así que el texto
+        va blanco y sin degradé» es correcto sobre una FOTO —el texto se apoya
+        en ella— y es falso sobre un recorte, donde el texto se apoya en el
+        fondo de la marca y el recorte está en otra parte de la pieza.
+
+        El 5/9/2026 eso apagó el degradé de la palabra destacada en todas las
+        piezas con Tony: el titular salía blanco entero sobre el fondo de
+        impacto, que es justo donde el degradé azul→violeta luce.
+        """
+        if not foto:
+            return False
+        ruta = pathlib.Path(foto)
+        if not ruta.is_absolute():
+            ruta = pathlib.Path(raiz) / ruta
+        return legibilidad.transparencia(ruta) >= legibilidad.RECORTE_MINIMO
+
+    def _ocupa(foto, ancho, alto, zona, foco="50% 50%") -> float:
+        """¿Cuánto de este rectángulo de la pieza tapa el sujeto recortado?
+
+        La plantilla pregunta por la zona donde va a poner algo —el pie, el
+        logo, un botón— y decide. El motor sólo mide: ver `motor/silueta.py`.
+
+        Existe porque «ASISTIME.AI» salió cuatro veces escrito encima de la
+        oreja de Tony. El guardián de contraste lo veía DESPUÉS de renderizar
+        y avisaba; un diseñador no firma sobre el sujeto y después mide si se
+        lee, mira dónde está el sujeto y firma en otro lado. Esto es lo que le
+        faltaba ver a la plantilla para poder hacer lo mismo.
+        """
+        ruta = pathlib.Path(foto) if foto else None
+        if ruta is not None and not ruta.is_absolute():
+            ruta = pathlib.Path(raiz) / ruta
+        return silueta.ocupacion(str(ruta) if ruta else "", int(ancho),
+                                 int(alto), tuple(zona), foco or "50% 50%")
+
+    ayudas["recortada"] = _recortada
+    ayudas["ocupa"] = _ocupa
     ayudas["plan_titular"] = _plan_titular
     # El degradé que entrega el velo medido justo donde arranca el texto. Va
     # de la mano de `plan_titular` —uno mide y el otro dibuja lo medido— y es
@@ -635,7 +674,38 @@ placa.
 """
 
 
-def catalogo(raiz, escritas_en_python=(), con_carrusel=True, diapos=None):
+PALETAS = """
+## Los fondos de esta marca, y para qué es cada uno
+
+El campo `estilo` de una plantilla elige el fondo. **Elegí por para qué es la
+pieza, no por cómo se llama el fondo.**
+
+Se dice acá porque el 5/9/2026 costó dos días de piezas equivocadas: el agente
+leyó «degrade» y entendió «el degradé de la marca», así que lo usó para una
+pieza de expectativa — y el fondo que la marca reconoce como suyo se llamaba
+«oscuro», que sonaba a otra cosa. Las dos veces eligió por el nombre, porque
+era lo único que tenía para elegir.
+
+{lista}
+"""
+
+
+def _paletas(marca) -> str:
+    """Qué fondos tiene la marca y cuándo va cada uno.
+
+    Una paleta sin `cuando` no se cuenta: mejor que el agente no la conozca a
+    que la elija adivinando por el nombre, que es exactamente lo que salió mal.
+    """
+    filas = []
+    for nombre, pal in (getattr(marca, "PALETAS", None) or {}).items():
+        cuando = (pal or {}).get("cuando")
+        if cuando:
+            filas.append(f"- **`{nombre}`** — {cuando}")
+    return PALETAS.format(lista="\n".join(filas)) if filas else ""
+
+
+def catalogo(raiz, escritas_en_python=(), con_carrusel=True, diapos=None,
+             marca=None):
     """El catálogo de plantillas de una marca, generado de los contratos.
 
     Es la mitad del punto de todo esto: el mismo archivo que dibuja el
@@ -671,6 +741,9 @@ def catalogo(raiz, escritas_en_python=(), con_carrusel=True, diapos=None):
         lista = "\n".join(f"- `{tipo}` → plantilla `{pid}`"
                           for tipo, pid in diapos.items())
         carrusel += DIAPOS_DE_DATOS.format(lista=lista)
+    paletas = _paletas(marca)
+    if paletas:
+        partes.append(paletas.strip())
     cierre = (CIERRE_ANTES + carrusel + CIERRE_DESPUES)
     cierre = cierre.replace(
         "{codigo}", CODIGO_CON_CARRUSEL if con_carrusel else CODIGO_SIN_CARRUSEL)

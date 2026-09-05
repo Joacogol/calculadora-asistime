@@ -4675,3 +4675,83 @@ razonablemente con lo que tenía**, y su explicación se leyó como el problema.
 
 Cuando algo falla igual varias veces, la pregunta no es qué regla le falta al
 agente: es **qué no le estamos dando**.
+
+---
+
+## El fondo de la marca y la firma sobre el sujeto (5/9/2026)
+
+Dos defectos que venían apareciendo juntos en las piezas de Asistime, y ninguno
+era del agente.
+
+### 1 · El fondo se elegía por el nombre, no por para qué era
+
+La marca tenía cuatro paletas y ninguna decía **cuándo** se usa. El agente leía
+`degrade` y entendía «el degradé de la marca», así que lo ponía de fondo entero
+en una pieza de expectativa: salía un azul claro que no es el de Asistime. Y el
+fondo que la marca sí reconoce como propio —el navy con resplandor que baja a
+violeta— se llamaba `oscuro`, que suena a otra cosa. Las dos veces eligió por el
+nombre, porque era lo único que tenía para elegir.
+
+Ahora la marca tiene **un solo fondo de impacto** y `oscuro` y `degrade` llevan
+los dos al mismo lugar a propósito. El degradé azul→violeta no va nunca como
+fondo entero: va en UNA palabra del título, con `destacado`.
+
+Lo que se arregló no es la paleta de Asistime: es que **una paleta pueda decir
+para qué es**. Cada entrada de `paletas` en `marca.json` acepta `cuando`, y el
+catálogo que lee el agente lista los fondos con su para-qué (`plantillas.PALETAS`
++ `_paletas`). Vale para cualquier cliente, y una paleta sin `cuando` no se
+lista: mejor que el agente no la conozca a que la elija adivinando por el nombre.
+
+### 1b · Y las plantillas también elegían por el nombre
+
+Poner los dos nombres en el mismo fondo no alcanzaba: `titular` y `cierre`
+preguntaban `d.estilo == 'oscuro'` / `== 'degrade'` para decidir el resplandor,
+la píldora del antetítulo y el botón. Con el mismo fondo y distinto nombre salían
+**piezas distintas** — medido con las cinco plantillas y los dos nombres.
+
+Ahora preguntan por la PALETA y no por su nombre: `noche` es «la tinta de esta
+paleta es blanca», o sea «el fondo es oscuro», y `pleno` es «el fondo es un color
+plano». Las cinco plantillas dan ahora el mismo HTML con `oscuro` y con `degrade`.
+
+Es la misma regla de siempre, en la capa de abajo: **una plantilla que pregunta
+por un nombre está adivinando igual que el agente.**
+
+### 2 · La firma no se apoya sobre el sujeto
+
+Cuatro veces «ASISTIME.AI» salió escrito encima de la oreja de Tony. El guardián
+de contraste lo veía —2,6:1 sobre el pelaje— y eso está bien, pero avisaba
+DESPUÉS de renderizar. Un diseñador no firma sobre el sujeto y después mide si
+se lee: mira dónde está el sujeto y firma en otro lado.
+
+Para poder mirar hay que saber dónde quedó el recorte, y no es obvio: entra al
+lienzo con `object-fit: contain` y `object-position`, así que no ocupa el
+rectángulo ni está donde está en el archivo. **`motor/silueta.py`** hace esa
+cuenta —la misma del navegador— y mide el alfa real en el pedazo de pieza que se
+pregunte. La plantilla lo llama con la ayuda `ocupa(foto, ancho, alto, zona,
+foco)`; `margen_seguro(fmt, pad)` le da los cuatro márgenes en números, porque
+`pad_seguro` devuelve la línea de CSS y con eso no se razona: en una story el
+margen de abajo son los 250 px que exige Instagram, no los 96 de la plantilla, y
+una banda calculada a 96 no toca el pie por 150 píxeles.
+
+Medido con Tony, en la banda del pie: anclado abajo **84%**, el mismo recorte
+centrado **5,6%**, arriba **0%**. Entre 6 y 80 no hay nada, así que el umbral va
+en 20.
+
+La salida es **no firmar dos veces**, no mover el pie: el sujeto ocupa todo el
+ancho de abajo y no hay adónde correrlo. Si la pieza ya está firmada arriba, el
+pie sobra. Si no lo está —`firma: ninguna` pedido a mano— el pie se queda, en
+blanco y con sombra, porque una pieza sin firma es peor que una firma sobre una
+oreja; medido, eso solo saca el aviso de 2,6:1.
+
+`herramientas/probar-silueta.py` fija la cuenta, que es la única parte que puede
+estar mal en silencio: si `ocupacion` devuelve 0 con el sujeto ahí, la plantilla
+firma encima y nadie se entera hasta ver el PNG.
+
+### Lo que enseña
+
+El guardián de contraste hizo su trabajo las cuatro veces. Que el defecto se
+repitiera igual no era falta de aviso: **avisar de un defecto ya cometido no es
+lo mismo que darle a la plantilla con qué evitarlo**. Es la misma forma de las
+dos plomerías del día anterior —el banco que nunca sincronizó, el spec que nunca
+se guardó—: cuando el agente improvisa varias veces sobre lo mismo, la pregunta
+no es qué regla le falta, es **qué le falta ver**.

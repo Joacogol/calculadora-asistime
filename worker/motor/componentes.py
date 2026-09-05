@@ -320,6 +320,26 @@ def pad_seguro(ident):
     return _pad
 
 
+def margen_seguro(ident):
+    """Los mismos cuatro márgenes que `pad_seguro`, pero en números.
+
+    `pad_seguro` devuelve la línea de CSS, que sirve para dibujar y no para
+    razonar: una plantilla que quiera saber DÓNDE va a quedar su pie —para
+    preguntar si ahí hay un sujeto recortado, por ejemplo— necesita el número,
+    no el texto. Antes lo tenía que adivinar, y adivinar mal es peor que no
+    preguntar: en una story el margen de abajo no son los 96 px de la
+    plantilla sino los 250 que exige Instagram, y una banda calculada a 96 no
+    toca el pie por 150 píxeles.
+    """
+    zonas = ident.ZONAS_SEGURAS or ZONAS_SEGURAS
+
+    def _margen(fmt, pad):
+        z = zonas.get(fmt) or {}
+        return {lado: max(pad, z.get(lado, 0))
+                for lado in ("arriba", "abajo", "izquierda", "derecha")}
+    return _margen
+
+
 def firma(ident):
     """Con qué marca firma ESTA pieza. La firma no es siempre la misma.
 
@@ -373,4 +393,5 @@ TODOS = {
     "barra": barra, "paleta": paleta, "subrayado": subrayado,
     "etiqueta_persona": etiqueta_persona, "fila_logos": fila_logos,
     "sombra_texto": sombra_texto, "pad_seguro": pad_seguro,
+    "margen_seguro": margen_seguro,
 }
