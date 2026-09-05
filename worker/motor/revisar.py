@@ -363,11 +363,19 @@ def firma_legible(pieza, cajas) -> list[str]:
             l_marca = alto if abs(alto - l_fondo) >= abs(l_fondo - bajo) else bajo
             c = _contraste(l_marca, l_fondo)
             if c < CONTRASTE_MINIMO:
+                # El número dice sobre QUÉ se midió, y no es un detalle.
+                # El 5/9/2026 el agente descartó este mismo aviso escribiendo
+                # que era «una medición previa a la aplicación del retoque
+                # CSS». No existe tal cosa: el retoque se aplica antes de
+                # renderizar y esto se mide sobre el PNG terminado. Un número
+                # sin decir de dónde sale invita a inventarle una explicación.
                 avisos.append(
                     f"{caja['que']} contrasta {c:.1f}:1 con lo que tiene "
                     f"detrás, y hace falta {CONTRASTE_MINIMO:.0f}:1 para que "
-                    f"se lea. La firma de la marca no se pone donde no se ve: "
-                    f"movela, o cambiá el fondo o el color con que firma")
+                    f"se lea. Medido sobre el PNG FINAL, con el retoque ya "
+                    f"aplicado: es lo que se va a ver. La firma de la marca no "
+                    f"se pone donde no se ve — movela, o cambiá el fondo o el "
+                    f"color con que firma, y volvé a renderizar")
     return avisos
 
 

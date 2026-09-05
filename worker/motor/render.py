@@ -189,6 +189,44 @@ QUE_ENTRE = """
 #: así. Lo que falla acá no lo causa el dibujo, así que las medidas del dibujo
 #: no lo veían; y no es «tapar» en el sentido de los píxeles, porque el texto
 #: se MOVIÓ. Es una superposición, y una superposición se mide con rectángulos.
+APUNTA_A_ALGO = """
+(selectores) => {
+  // ¿El retoque le pegó a algo? Un selector que no existe en la pieza no da
+  // error: el navegador lo ignora y la pieza sale igual que sin retoque.
+  const huerfanos = [];
+  for (const s of selectores) {
+    try { if (!document.querySelectorAll(s).length) huerfanos.push(s); }
+    catch (e) { huerfanos.push(s); }   // un selector mal escrito tampoco pega
+  }
+  return huerfanos;
+}
+"""
+
+
+def _selectores(css: str) -> list[str]:
+    """Los selectores de un bloque de CSS, para poder preguntarle a la página.
+
+    Un análisis de CSS completo sería otro proyecto; esto alcanza porque lo
+    único que hace falta es el texto que hay antes de cada `{`.
+
+    Lo que hay ADENTRO de una regla de arroba (`@media`, `@supports`) no se
+    mira, y es a propósito: se pierde algún selector y por lo tanto algún
+    aviso. Preferimos eso a lo contrario. **Un guardián que avisa de más enseña
+    a ignorarlo**, y un aviso ignorado no vale nada — que es exactamente el
+    problema que este guardián vino a arreglar.
+    """
+    fuera = []
+    for trozo in re.sub(r"/\*.*?\*/", "", css or "", flags=re.S).split("}"):
+        cabeza = trozo.split("{")[0].strip()
+        if not cabeza or cabeza.startswith("@"):
+            continue
+        for uno in cabeza.split(","):
+            uno = uno.strip()
+            if uno and not uno.startswith("@"):
+                fuera.append(uno)
+    return fuera[:40]
+
+
 CAJAS_DE_MARCA = """
 () => {
   // Dónde quedó cada firma, para poder mirar el PNG ahí. El navegador sabe la
@@ -375,6 +413,29 @@ class Render:
                 f"plantilla — una pieza con el texto cortado no se publica.")
         if ajustes:
             self.ajustes.extend({**a, "pieza": destino.stem} for a in ajustes)
+
+        # ── ¿El retoque tocó algo? ────────────────────────────────────
+        #
+        # El 5/9/2026 el agente escribió `.barra{color:#FFF!important}` para
+        # aclarar el pie de una story. `.barra` no existe en esa plantilla —el
+        # pie es otro elemento— así que el retoque no hizo NADA, la pieza salió
+        # igual, y el agente anotó que el problema estaba resuelto. Un selector
+        # que no existe no es un error para el navegador: lo ignora en silencio.
+        #
+        # Es el mismo agujero que el del logo que no se podía agrandar: el
+        # pedido no era difícil, era imposible, y nada avisaba.
+        sueltos = _selectores(str((data or {}).get("retoque") or ""))
+        if sueltos:
+            huerfanos = pg.evaluate(APUNTA_A_ALGO, sueltos)
+            if huerfanos:
+                self.avisos.append(
+                    f"{destino.stem}: el retoque apunta a "
+                    + ", ".join(f"«{h}»" for h in huerfanos[:4])
+                    + (" y a más" if len(huerfanos) > 4 else "")
+                    + ", y en esta pieza no hay ningún elemento así: esa parte "
+                      "del retoque NO hizo nada y la pieza salió igual que sin "
+                      "ella. Mirá el HTML para ver cómo se llama de verdad lo "
+                      "que querías tocar")
 
         cajas = pg.evaluate(CAJAS_DE_MARCA)
         pg.locator(".canvas").screenshot(path=str(destino))

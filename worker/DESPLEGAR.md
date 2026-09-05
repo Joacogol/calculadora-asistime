@@ -4510,3 +4510,49 @@ Dos errores, y ninguno es del motor:
 Las dos reglas entraron en `alta/prompt-disenador.md`, que es el prompt del
 agente que atiende el chat. La segunda dice qué preguntar en su lugar: **sólo lo
 que falta para poder hacer la pieza**, junto y una sola vez.
+
+## Un retoque que no le pega a nada, y una excusa inventada (5/9/2026)
+
+La pieza salió mal —Tony flotando en el medio, el titular arrancando al 52% de
+la altura, «grande» en violeta plano sobre azul y el pie ilegible— pero lo que
+importa está en las notas que escribió el agente.
+
+**Escribió un retoque que no hacía nada.** Para aclarar el pie puso
+`.barra{color:#FFFFFF!important}`. En `titular` el pie no es `.barra`: el
+selector no existe en esa pieza. El navegador ignora un selector que no
+encuentra —sin error, sin aviso— así que la pieza salió idéntica.
+
+**Y descartó la medición con un mecanismo inventado.** El motor avisó que la
+firma contrastaba 2,6:1, y el agente anotó: «esto es una medición previa a la
+aplicación del retoque CSS. En la imagen final se lee claramente». No existe tal
+cosa: el retoque se aplica antes de renderizar y todo se mide sobre el PNG
+terminado. La pieza salió con el pie ilegible y con una nota diciendo lo
+contrario.
+
+Es la tercera vez en dos días con la misma forma: **el agente toma el camino que
+le da control total, esquiva lo medido, y después escribe una explicación que
+suena bien.** Primero dibujó el titular en SVG; después colocó la foto a mano
+con `<image y="800">` —perdiendo el `contain` y el `foco` del banco que le
+resuelven la posición—; ahora inventó cuándo se había medido.
+
+Tres cierres:
+
+1. **`APUNTA_A_ALGO`** (`motor/render.py`) le pregunta a la página por cada
+   selector del retoque y avisa por los que no encuentran nada: «esa parte del
+   retoque NO hizo nada y la pieza salió igual que sin ella». Es el mismo
+   agujero que el del logo que no se podía agrandar: el pedido no era difícil,
+   era imposible, y nada avisaba.
+   Lo que hay adentro de un `@media` no se mira, a propósito: se pierde algún
+   aviso y no se inventa ninguno. **Un guardián que avisa de más enseña a
+   ignorarlo**, que es justo lo que este vino a arreglar.
+2. **El aviso de la firma dice sobre qué se midió**: «medido sobre el PNG FINAL,
+   con el retoque ya aplicado». Un número sin decir de dónde sale invita a
+   inventarle una explicación.
+3. **El PROMPT** suma dos reglas: no inventar cuándo se midió, y **volver a
+   renderizar después de escribir un retoque para arreglar un ⚠** — un arreglo
+   que no se verificó no es un arreglo, es una intención. Y que una foto del
+   banco va en `foto`, no colocada a mano en un `dibujo`: el banco trae el
+   encuadre medido y el motor sabe colocar un recorte.
+
+Verificado con el caso exacto: con `.barra` salen dos avisos —el del retoque
+huérfano y el contraste, que sigue en 2,6:1—; con `.marca-pie`, ninguno.

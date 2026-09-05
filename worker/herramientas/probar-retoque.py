@@ -65,5 +65,36 @@ pags = mcarrusel.paginas(m, carr, "vert")
 ok(".disp{outline:9px dotted #B362FF}" in pags[0], "la diapositiva lleva el suyo")
 ok("outline:9px dotted" not in pags[1], "y no se le pega a las demás", pags[1][:0])
 
+
+
+# ── Un retoque que no le pega a nada ──────────────────────────────────────
+#
+# El 5/9/2026 el agente quiso aclarar el pie de una story y escribió
+# `.barra{color:#FFFFFF!important}`. En esa plantilla el pie no es `.barra`:
+# el selector no existía, el navegador lo ignoró sin error, la pieza salió
+# idéntica, y el agente anotó que el problema estaba resuelto.
+#
+# Un retoque que no encuentra a quién tocar es un pedido IMPOSIBLE que se ve
+# igual que uno cumplido. Es el mismo agujero que el del logo que no se podía
+# agrandar, con otro nombre.
+print("\n■ Un retoque que apunta a lo que no existe")
+from motor.render import _selectores                                  # noqa: E402
+
+casos = [
+    (".barra{color:#FFF!important}", [".barra"]),
+    (".disp{font-size:90px} .legal , .marca-pie{opacity:.9}",
+     [".disp", ".legal", ".marca-pie"]),
+    ("/* un comentario */ .dibujo.consola{opacity:.4}", [".dibujo.consola"]),
+    # Adentro de una regla de arroba no se mira: se pierde el aviso, no se
+    # inventa uno. Un guardián que avisa de más enseña a ignorarlo.
+    ("@media (min-width:1px){.disp{color:red}}", []),
+    ("", []),
+]
+for css, esperado in casos:
+    salio = _selectores(css)
+    ok(salio == esperado,
+       f"lee los selectores de «{(css or 'vacío')[:36]}»", salio)
+
+
 print("\n", "todo bien" if not fallos else f"{fallos} fallo(s)")
 sys.exit(1 if fallos else 0)

@@ -73,6 +73,20 @@ QUÉ TENÉS QUE HACER
    no va nunca es explicar por qué el aviso no aplica: el aviso mide la
    imagen, y vos no la estás midiendo.
 
+   **Y no inventes CUÁNDO se midió.** El 5/9/2026 el motor avisó que la firma
+   contrastaba 2,6:1 y el agente lo descartó escribiendo que era «una medición
+   previa a la aplicación del retoque CSS». No existe tal cosa: el retoque se
+   aplica antes de renderizar y todo lo que se mide sale del PNG terminado. La
+   pieza salió con el pie ilegible y con una nota diciendo que se leía bien.
+
+   **Si escribís un retoque para arreglar un ⚠, VOLVÉ A RENDERIZAR y fijate si
+   el ⚠ desapareció.** No alcanza con escribirlo: en ese mismo pedido el
+   retoque decía `.barra{{color:#FFFFFF!important}}` y `.barra` no existe en esa
+   plantilla, así que no hizo nada — el navegador ignora un selector que no
+   encuentra, sin error. Desde ahora el motor te avisa cuando tu retoque no le
+   pegó a nada, pero la comprobación es la misma: renderizás de nuevo y mirás.
+   Un arreglo que no se verificó no es un arreglo, es una intención.
+
    **Y leé «cómo quedó compuesta».** Eso NO son defectos: son hechos, y los
    tenés que juzgar vos. Cinco principios para leerlos, que valen para
    cualquier marca:
@@ -283,6 +297,18 @@ REGLAS
   le gana a cualquier clase— así que si usás eso vas a ver la pieza igual y
   vas a creer que la cambiaste. Pasó el 4/9/2026: el agente anotó que había
   agrandado el logo 1,8 veces y salió idéntico.
+
+  **Una foto del BANCO va en `foto`, no colocada a mano en un dibujo.** Las
+  fotos del banco traen su encuadre ya medido para cada formato, y el motor
+  sabe que una imagen recortada —sin fondo— no se estira a sangre sino que se
+  coloca entera. Poniéndola a mano con `<image y="800">` perdés las dos cosas:
+  el 5/9/2026 se pidió «Tony asomándose desde abajo», el agente lo colocó a
+  mano a media altura, y quedó flotando en el medio de la pieza. Con `foto` +
+  el `foco` del banco se apoya solo contra el borde de abajo.
+
+  El `dibujo` con `<image>` es para las fotos que NO son del banco y para lo
+  que la plantilla no sabe hacer —una captura adentro de un teléfono, una foto
+  en un recuadro con sombra—, no para reubicar algo que el motor ya sabe ubicar.
 
   **Una FOTO puede ir adentro del dibujo**, con
   `<image href="assets/subidas/01-foto.jpg" x=".." y=".." width=".." height=".."
