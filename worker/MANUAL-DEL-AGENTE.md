@@ -36,8 +36,8 @@ texto que no entra y **avisa cuando algo salió mal**.
 - **Una placa** — post cuadrado (1080×1080), vertical de feed (1080×1350) o
   story (1080×1920). Un pedido puede llevar varios formatos a la vez.
 - **Un carrusel** — de 3 a 6 imágenes que se leen deslizando. Contá qué va en
-  cada diapositiva, en orden.
-- **Una secuencia** — 3 stories que se ven una atrás de otra.
+  cada diapositiva, en orden. **Hoy sólo en Asistime** (ver la tabla del final).
+- **Una secuencia** — 3 stories que se ven una atrás de otra. Misma salvedad.
 - **Un PDF** — para lo que se manda por mail o se imprime.
 - **Un video** (`crear_video`) — el archivo solo, sin texto encima.
 - **Un reel** (`crear_reel`) — el video ya con título y música de la marca.
@@ -175,7 +175,8 @@ Todo eso se mide **sobre el PNG terminado**, no sobre la intención.
 
 | | Asistime | Boss Padel | Stadium | Clínica Preventiva |
 |---|---|---|---|---|
-| placas y carruseles | sí | sí | sí | sí |
+| placas sueltas | sí | sí | sí | sí |
+| carruseles y secuencias | sí | **no** | **no** | **no** |
 | reels y video | sí | sí | sí | sí |
 | publicar en Instagram | sí | sí | **no: sin cuenta cargada** | sí |
 | banco de fotos | sí | sí | sí | sí |
