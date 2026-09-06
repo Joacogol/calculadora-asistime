@@ -4892,3 +4892,43 @@ aviso, y los 20 hashes del golden sin tocar.
 Antes de endurecer un guardián, probar el camino que el guardián empuja a usar.
 Bloquear el atajo sin arreglar la puerta deja al agente sin ninguna salida —
 y la anterior, al menos, entregaba algo.
+
+---
+
+## `api-disenos` al día en los cuatro clientes (6/9/2026)
+
+El `corrige` se desplegó el 5/9 sólo en Asistime. Los otros tres quedaron con
+la función del 1 y el 2/9, así que el dato llegaba y **se descartaba en
+silencio**: pedir un cambio rehacía la pieza entera. Se encontró auditando, no
+por un error — porque no daba ninguno.
+
+| cliente | project ref | antes | ahora |
+|---|---|---|---|
+| Asistime | `qxjvtxumkljsroukpkny` | v3 (5/9) | v3 |
+| Stadium | `heajbidxysjxxegqemka` | v4 (2/9) | **v5** |
+| Boss Padel | `ndulchsiqutxibiwzzlc` | v12 (1/9) | **v13** |
+| Clínica | `jejohzzxxnhktdxpdqpy` | v10 (2/9) | **v11** |
+
+Los tres con `verify_jwt: false`, como estaban: la función hace su propia
+autenticación con `x-api-clave`.
+
+**Cómo se verificó.** Un POST con una clave inválida a cada uno: los tres
+contestan `401 {"error":"clave inválida"}` y el `OPTIONS` devuelve 200. Eso
+prueba que el archivo compiló, que la función arranca y que corre su código de
+autenticación — que es lo que un despliegue puede romper. Vale más que comparar
+archivos: un byte de más en un comentario no cambia nada, y uno de menos en el
+código no arranca.
+
+Los `ezbr_sha256` de los tres bundles son distintos entre sí aunque el fuente
+sea el mismo, y no es una señal de nada: el `entrypoint_path` que Deno empaqueta
+lleva adentro el ref del proyecto y el número de versión.
+
+**Lo que todavía falta para que la corrección funcione de punta a punta** en
+esos tres: su herramienta `crear_diseno` en el panel de Asistime tiene que
+mandar el campo. En el repo sólo existe la de Asistime
+(`tools-asistime/crear_diseno-asistime.js`); las otras tres están escritas a
+mano en el panel. Va una línea en el cuerpo del POST:
+
+    if (input.corrige) cuerpo.corrige = String(input.corrige).trim();
+
+más el parámetro `corrige` (opcional, string) en la definición de la tool.

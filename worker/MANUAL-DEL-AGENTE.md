@@ -69,9 +69,10 @@ eso — no lo rehace.
 Si en cambio volvés a describir la pieza entera, la va a hacer de nuevo desde
 cero y va a salir distinta. **No es lo mismo corregir que volver a pedir.**
 
-> ⚠ Al 6/9/2026 esto funciona en **Asistime**. En Boss, Stadium y Clínica
-> Preventiva la corrección todavía rehace la pieza: falta desplegarles la
-> función `api-disenos`. Está en la lista.
+> ⚠ Al 6/9/2026 esto funciona de punta a punta en **Asistime**. En Boss,
+> Stadium y Clínica la API ya lo acepta —`api-disenos` desplegada—, pero falta
+> que su herramienta `crear_diseno` en el panel de Asistime mande el dato. Hasta
+> entonces, en esos tres clientes un pedido de cambio sigue rehaciendo la pieza.
 
 ### Cambiar cómo trabaja
 
@@ -178,7 +179,7 @@ Todo eso se mide **sobre el PNG terminado**, no sobre la intención.
 | reels y video | sí | sí | sí | sí |
 | publicar en Instagram | sí | sí | **no: sin cuenta cargada** | sí |
 | banco de fotos | sí | sí | sí | sí |
-| **corregir sin rehacer** | **sí** | falta desplegar | falta desplegar | falta desplegar |
+| **corregir sin rehacer** | **sí** | falta la tool | falta la tool | falta la tool |
 | kit como datos (sin código) | sí | **no** | sí | **no** |
 | paletas con su para-qué | 4 de 4 | — | 6 de 6 | — |
 
