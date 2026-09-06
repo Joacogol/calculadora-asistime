@@ -261,6 +261,34 @@ def revisar_imagen(imagen: pathlib.Path, *,
 #: umbral va cómodo en el medio.
 TAPADO_MAXIMO = 0.05
 
+#: Y a partir de cuánto deja de ser un aviso y pasa a ser un no.
+#:
+#: La regla 1 de este archivo —«no frena nada»— nació con el video, y su razón
+#: es económica: en ese punto el reel ya se generó y se pagó, así que retenerlo
+#: cambia «una pieza con un problema» por «ninguna pieza y la plata gastada».
+#: **Una placa no se pagó.** Volver a renderizarla cuesta cuatro segundos, así
+#: que para una placa el mismo razonamiento dice lo contrario: entregar la
+#: rota es la opción cara.
+#:
+#: El 6/9/2026 un mockup de teléfono dibujado a mano tapaba el 46% del titular.
+#: El aviso salió, con el número y con qué hacer, y la pieza se entregó igual.
+#: Un aviso que se puede ignorar se ignora.
+#:
+#: 25% es la línea entre las dos lecturas y no está en el medio por comodidad:
+#: tapar un poco puede ser a propósito —una etiqueta encima de una palabra, un
+#: sello sobre una esquina— y tapar un cuarto de lo que la plantilla dibujó no
+#: lo es nunca. Debajo de esto sigue siendo un aviso.
+TAPADO_GRAVE = 0.25
+
+
+class DibujoTapaLaPieza(Exception):
+    """El dibujo se comió una parte de la plantilla que no se puede entregar.
+
+    Se levanta en vez de avisar, y el motor borra el PNG: es el mismo trato
+    que `TextoNoEntra`, por la misma razón —lo que no entra no se entrega— y
+    con la misma salida, que es corregir el spec y volver a renderizar.
+    """
+
 #: Cuántos píxeles de tinta necesita una zona para que valga la pena juzgarla.
 #: Una zona casi vacía da porcentajes enormes con cuatro píxeles.
 TINTA_MINIMA = 150
@@ -592,11 +620,20 @@ def revisar_dibujo(con: pathlib.Path, sin: pathlib.Path,
 
     parte, donde, comido = peor
     if parte > TAPADO_MAXIMO and comido >= TAPADO_MINIMO:
+        que_hacer = (f"Corrélo, achicalo, o poné esa capa con \"atras\": true "
+                     f"para que pase por detrás")
+        if parte > TAPADO_GRAVE:
+            raise DibujoTapaLaPieza(
+                f"el dibujo tapa {parte * 100:.0f}% de lo que la plantilla "
+                f"había dibujado {donde} — el logo, el pie o el titular. A esa "
+                f"altura no es un detalle: la pieza no se entrega así. "
+                f"{que_hacer}. Y si lo que estás dibujando a mano es una forma "
+                f"que ya tiene una plantilla —una conversación adentro de un "
+                f"teléfono, por ejemplo— usá esa plantilla en vez de dibujarla")
         problemas.append(
             f"el dibujo tapa {parte * 100:.0f}% de lo que la plantilla había "
             f"dibujado {donde} — puede ser el logo, el pie o el titular. "
-            f"Corrélo, achicalo, o poné esa capa con \"atras\": true para que "
-            f"pase por detrás")
+            f"{que_hacer}")
 
     if ilegible:
         c2, c1, donde = ilegible

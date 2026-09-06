@@ -9,3 +9,5 @@ worker/supabase/
 # corrida. No son del repositorio: son del cliente, cambian sin que nadie
 # commitee y pesan. Ver el encabezado de app/banco.py.
 worker/.claude/skills/*/assets/banco/
+# Y lo que sube una persona para UNA pieza, que baja `_traer_adjuntos`.
+worker/.claude/skills/*/assets/subidas/

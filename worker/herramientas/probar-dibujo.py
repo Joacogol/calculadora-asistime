@@ -27,7 +27,7 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
-from motor import identidad, retoque                                    # noqa: E402
+from motor import identidad, retoque, revisar                                    # noqa: E402
 
 MARCA = RAIZ / ".claude/skills/asistime-disenos"
 fallos = []
@@ -187,9 +187,19 @@ if puede_mirar:
         verde, blanco = pintado(atras=True)
         ok("la capa de atrás se ve", verde > 100000, f"{verde} px verdes")
         ok("y el texto le queda encima", blanco > 20000, f"{blanco} px blancos")
-        verde_e, blanco_e = pintado(atras=False)
-        ok("la capa de encima tapa el texto", blanco_e < blanco / 4,
-           f"{blanco_e} px blancos contra {blanco} de la de atrás")
+        # La misma capa SIN `atras` tapa el texto, y desde el 6/9/2026 eso ya
+        # no se entrega: el motor la rechaza en vez de avisar. Así que la
+        # prueba del orden es la excepción — que es una afirmación más fuerte
+        # que la de antes, porque antes se conformaba con contar píxeles.
+        try:
+            pintado(atras=False)
+            ok("la capa de encima, que tapa el texto, se rechaza", False,
+               "salió la pieza igual")
+        except revisar.DibujoTapaLaPieza as e:
+            ok("la capa de encima, que tapa el texto, se rechaza", True)
+            ok("y el motivo dice cuánto tapó", "%" in str(e), e)
+    except revisar.DibujoTapaLaPieza:
+        raise
     except Exception as e:
         ok("se pudo renderizar", False, e)
 
@@ -351,7 +361,12 @@ if puede_mirar:
         # Las varas. Un número sin con qué compararlo no le sirvió al agente:
         # la lectura decía «41% del alto», el principio pedía 45-70, y nadie
         # cruzó las dos cosas.
-        chico = ("<svg viewBox='0 0 1080 1920'><rect x='420' y='900' "
+        # Abajo y no en el medio del lienzo: un rectángulo negro opaco donde
+        # cae el titular lo hace desaparecer —da igual que vaya detrás, porque
+        # tinta oscura sobre negro no tiene borde— y desde el 6/9/2026 eso el
+        # motor lo rechaza, con razón. Acá se quiere leer la COMPOSICIÓN, no
+        # fabricar una pieza rota: el objeto va donde no hay texto.
+        chico = ("<svg viewBox='0 0 1080 1920'><rect x='420' y='1450' "
                  "width='240' height='300' rx='24' fill='#0A0B14'/></svg>")
         texto = leer({"svg": chico})
         ok("dice cuándo el objeto es chico para ser protagonista",
@@ -360,6 +375,8 @@ if puede_mirar:
 
         # El titular empujado abajo: es lo que se ve como «mal estructurado»
         # y desde adentro no se nota, porque el bloque en sí está bien armado.
+        # El titular empujado abajo, sin llegar a pisar el objeto: lo que se
+        # mide es dónde ARRANCA lo que pesa, no si algo lo tapa.
         texto = leer({"svg": chico}, ".disp{margin-top:520px}")
         ok("dice si lo que pesa arranca demasiado abajo",
            "lo esperable es entre" in texto, texto)

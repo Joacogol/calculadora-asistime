@@ -518,6 +518,12 @@ class Render:
                             for p in revisar.revisar_dibujo(hecha, limpio, zonas)]
             self.composicion += [f"{hecha.stem}: {l}"
                                  for l in revisar.composicion(hecha, limpio)]
+        except revisar.DibujoTapaLaPieza:
+            # La única medición que sí frena. Y el PNG se borra: si queda en
+            # disco, el agente lo entrega igual —pasó el 6/9/2026 con el aviso
+            # a la vista— y entonces frenar no frenó nada.
+            hecha.unlink(missing_ok=True)
+            raise
         except Exception as e:                               # noqa: BLE001
             # Medir no puede romper una pieza que ya salió: si esto falla, la
             # pieza está hecha igual y lo único que se pierde es el aviso.
@@ -606,7 +612,7 @@ def desde_linea_de_comandos(marca, raiz, argv):
     r = Render(marca, raiz)
     try:
         hechas = r.correr(spec, destino)
-    except TextoNoEntra as e:
+    except (TextoNoEntra, revisar.DibujoTapaLaPieza) as e:
         print(f"\nNO SE DIBUJÓ: {e}\n", file=sys.stderr)
         raise SystemExit(2)
     for p in hechas:

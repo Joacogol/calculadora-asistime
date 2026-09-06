@@ -34,7 +34,12 @@
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:flex-start">
   <div class="row" style="width:100%">{{ firma(d.firma, m.iso, pal.tinta) }}</div>
-  <div style="height:{{ m.titulo * 0.35 }}px"></div>
+  {#- El aire entre la firma y el título. Con captura hace falta más: la
+      tarjeta se estira hasta llenar el lienzo y ya no queda resorte que
+      absorba nada, así que este espacio es TODO el aire que hay ahí. Medido
+      en post y vert quedaba en 13 y 15 px, y el mínimo para que la firma se
+      lea como firma y no como un renglón más del título son 18. -#}
+  <div style="height:{{ m.titulo * (0.62 if d.pantalla else 0.35) }}px"></div>
 
   <div style="max-width:94%">
     {% if d.kicker %}
@@ -48,15 +53,35 @@
     {% endif %}
   </div>
 
-  <div class="grow"></div>
+  {% if not d.pantalla %}<div class="grow"></div>{% endif %}
 
   {#- La tarjeta. Centrada, con el ancho de la medida; la altura la da el
       contenido, y por eso los mensajes se cortan en cinco. -#}
-  <div style="width:100%;display:flex;justify-content:center">
+  <div style="width:100%;display:flex;justify-content:center;
+    {{ 'flex:1 1 0;min-height:0;padding:%dpx 0' % (m.titulo * 0.3) if d.pantalla else '' }}">
     <div class="{{ 'tarjeta-oscura' if oscuro else 'tarjeta' }}" style="width:{{ tarjeta_w }}px;overflow:hidden;
-      {{ 'background:rgba(255,255,255,.94);' if pleno else '' }}">
+      {{ 'height:100%;' if d.pantalla else '' }}{{ 'background:rgba(255,255,255,.94);' if pleno else '' }}">
+      {#- La captura CON TECHO. Sin él, `height:auto` deja que una captura de
+          celular —altísima: 1170×2532 es lo normal— estire la tarjeta hasta
+          sacar el pie de la pieza. El 6/9/2026 esta plantilla no renderizaba
+          con una captura real: se pasaba 207 px y no salía nada. Por eso el
+          agente terminó dibujando el teléfono a mano en SVG, y ahí el dibujo
+          le tapó el titular: el camino bueno estaba roto y tomó el de al lado.
+
+          El techo NO se calcula acá. Se probó, y una fórmula con los márgenes
+          seguros, los renglones del título y el alto de la firma erraba por
+          treinta píxeles y el titular terminaba pisando el logo — con títulos
+          CORTOS, que es al revés de lo que uno esperaría. Lo que sobra en un
+          lienzo lo sabe el navegador: la tarjeta toma `flex:1` y los dos
+          resortes del layout le ceden el lugar. Una cuenta menos que puede
+          estar mal.
+
+          `cover` con el foco arriba muestra el principio de la conversación,
+          que es donde está el contexto; el resto se recorta, que es lo que
+          hace cualquiera cuando muestra una captura larga. -#}
       {% if d.pantalla %}
-      <img src="{{ d.pantalla }}" style="display:block;width:100%;height:auto">
+      <img src="{{ d.pantalla }}" style="display:block;width:100%;height:100%;
+        object-fit:cover;object-position:top">
       {% else %}
       <div class="row" style="padding:{{ m.chat * 0.8 }}px {{ m.chat * 1.0 }}px;gap:{{ m.chat * 0.6 }}px;
         border-bottom:1px solid {{ 'rgba(255,255,255,.12)' if oscuro else 'rgba(10,11,20,.08)' }}">
@@ -94,7 +119,7 @@
   </div>
   {% endif %}
 
-  <div class="grow"></div>
+  {% if not d.pantalla %}<div class="grow"></div>{% endif %}
   <div class="row" style="width:100%;align-items:flex-end">
     {% if not d.get('en_carrusel') %}<div class="kicker marca-pie" style="color:{{ pal.secundario }};font-size:{{ m.legal }}px;letter-spacing:.12em">asistime.ai</div>{% endif %}
   </div>

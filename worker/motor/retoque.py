@@ -375,11 +375,26 @@ def foto_adentro(data: dict) -> list[str]:
         return []                       # usa el camino bueno; el dibujo es otra cosa
     vistos = []
     for capa in _capas(data):
-        for href in re.findall(r"""(?:xlink:)?href\s*=\s*['"]([^'"]+)['"]""",
-                               capa["svg"]):
-            limpio = href.strip().split("?")[0].split("#")[0].lower()
-            if limpio.endswith(FOTOS) and not limpio.startswith("data:"):
-                vistos.append(href.strip())
+        for etiqueta in re.findall(r"<image\b[^>]*>", capa["svg"], re.I):
+            m = re.search(r"""(?:xlink:)?href\s*=\s*['"]([^'"]+)['"]""", etiqueta)
+            if not m:
+                continue
+            href = m.group(1).strip()
+            limpio = href.split("?")[0].split("#")[0].lower()
+            if not limpio.endswith(FOTOS) or limpio.startswith("data:"):
+                continue
+            # Una imagen RECORTADA está adentro de una forma —la pantalla de un
+            # teléfono, un recuadro con sombra, un círculo— y ése es el caso
+            # para el que el `dibujo` existe. No se avisa.
+            #
+            # La distinción importa más que el aviso: el 6/9/2026 la misma
+            # pieza sacó este aviso, que estaba mal, junto al que decía que el
+            # dibujo tapaba el 46% del titular, que estaba bien. Dos avisos y
+            # uno equivocado enseñan a ignorar los dos. Ver la regla 2 de
+            # `motor/revisar.py`.
+            if re.search(r"clip-path\s*=|mask\s*=", etiqueta, re.I):
+                continue
+            vistos.append(href)
     return vistos
 
 

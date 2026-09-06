@@ -4828,3 +4828,67 @@ forma. La nueva, y es la que más importa:
 desactivó.** Si no, cada guardián que se agregue sobre el camino principal
 empuja al agente hacia el que no mira nadie — y el sistema se ve cada vez más
 protegido mientras se vuelve más fácil de esquivar.
+
+---
+
+## El aviso que se podía ignorar, y por qué el agente dibujaba a mano (6/9/2026)
+
+Tres piezas seguidas con la captura de un chat adentro de un teléfono salieron
+con el título pisado por el mockup. Mirando el `spec` guardado, el agente había
+usado `titular` y **dibujado el teléfono entero a mano en SVG** —`rect x='295'
+y='605' width='490' height='1028'`— más un `retoque` para empujar el título.
+
+### 1 · El guardián no faltaba: se ignoró
+
+Reproducida la pieza, el motor dijo, textual:
+
+> ⚠ el dibujo tapa **46%** de lo que la plantilla había dibujado arriba al
+> centro — puede ser el logo, el pie o el titular
+
+Y la pieza se entregó igual. **Un aviso que se puede ignorar se ignora.**
+
+La regla 1 de `motor/revisar.py` —«no frena nada»— nació con el video y su
+razón es económica: ahí el reel ya se generó y se pagó. **Una placa no se
+pagó**: volver a renderizarla cuesta cuatro segundos, así que el mismo
+razonamiento dice lo contrario. Desde 25% de tapado (`TAPADO_GRAVE`), el motor
+levanta `DibujoTapaLaPieza`, **borra el PNG** y no entrega. Debajo de eso sigue
+siendo un aviso: tapar un poco puede ser a propósito, tapar un cuarto no lo es
+nunca.
+
+El PNG se borra a propósito. Si queda en disco, se entrega igual — que es
+exactamente lo que pasó con el aviso a la vista.
+
+### 2 · Mi propio guardián avisaba de más
+
+En la misma corrida salieron dos avisos y **uno estaba mal**: el de
+`foto_adentro` (del día anterior) se quejaba de la captura, y una captura
+adentro de la pantalla de un teléfono es justamente el caso legítimo. Ahora una
+`<image>` con `clip-path` o `mask` no se avisa: está dentro de una forma.
+
+Importa más que el aviso en sí. Dos avisos donde uno está equivocado enseñan a
+ignorar los dos — es la regla 2 de `revisar.py` aplicada a mí mismo.
+
+### 3 · Y la razón de fondo: el camino bueno estaba roto
+
+`producto` es la plantilla hecha exactamente para esto, con campo `pantalla`.
+Probada con una captura de celular real, **no renderizaba**: el `<img>` iba con
+`height:auto`, una captura de 1170×2532 estiraba la tarjeta y la pieza se
+pasaba 207 px. No salía nada.
+
+Por eso el agente dibujaba el teléfono a mano. No estaba improvisando de más:
+la puerta estaba cerrada y usó la de al lado.
+
+La tarjeta ahora toma `flex:1` y la captura la llena con `cover` desde arriba
+— **el techo no se calcula**. Se intentó con una fórmula de márgenes seguros,
+renglones del título y alto de la firma: erraba por treinta píxeles y el
+titular pisaba el logo con títulos CORTOS, que es al revés de lo que uno
+esperaría. Lo que sobra en un lienzo lo sabe el navegador.
+
+Verificado en los cuatro formatos × título corto y largo: ocho piezas, ni un
+aviso, y los 20 hashes del golden sin tocar.
+
+### Lo que enseña
+
+Antes de endurecer un guardián, probar el camino que el guardián empuja a usar.
+Bloquear el atajo sin arreglar la puerta deja al agente sin ninguna salida —
+y la anterior, al menos, entregaba algo.
