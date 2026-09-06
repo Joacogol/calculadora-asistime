@@ -191,14 +191,30 @@ async def procesar(cli: Cliente, pedido: dict):
         # —`ver_reel` + `retocar_reel` sobre el guion guardado— y que para los
         # diseños no existía. El spec pesa unos pocos KB y es lo único que hace
         # falta para que una corrección sea una corrección.
+        #
+        # Se busca en DOS lugares y no en uno. El prompt decía «escribí un
+        # spec.json» y el agente corre parado en la raíz del worker, así que la
+        # mitad de las veces el archivo quedaba ahí y no en la carpeta de
+        # salida: medido sobre las nueve piezas siguientes al despliegue del
+        # 5/9/2026, cuatro se guardaron sin spec. Y una pieza sin spec no se
+        # puede corregir — vuelve a hacerse entera desde el mensaje, que es
+        # justo el defecto que este campo vino a arreglar.
+        #
+        # El prompt ya pide la ruta completa. Esto es el cinturón: una pieza
+        # perdida por dónde quedó un archivo temporal es demasiado caro.
         spec = None
-        archivo_spec = salida / "spec.json"
-        if archivo_spec.exists():
+        for archivo_spec in (salida / "spec.json", config.RAIZ / "spec.json"):
+            if not archivo_spec.exists():
+                continue
             try:
                 spec = json.loads(archivo_spec.read_text(encoding="utf-8"))
+                break
             except Exception:
-                log.warning("[%s] diseño %s: spec.json ilegible, no lo guardo",
-                            cli.marca, pid)
+                log.warning("[%s] diseño %s: %s ilegible, sigo buscando",
+                            cli.marca, pid, archivo_spec.name)
+        if spec is None:
+            log.warning("[%s] diseño %s: no encontré el spec; esta pieza no se "
+                        "va a poder corregir", cli.marca, pid)
 
         cli.marcar(pid, "listo", titulo=titulo, urls=archivos,
                    documentos=docs, videos=videos, copy=copy, notas=notas,

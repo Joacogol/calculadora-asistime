@@ -697,11 +697,11 @@ PALETAS = """
 El campo `estilo` de una plantilla elige el fondo. **Elegí por para qué es la
 pieza, no por cómo se llama el fondo.**
 
-Se dice acá porque el 5/9/2026 costó dos días de piezas equivocadas: el agente
-leyó «degrade» y entendió «el degradé de la marca», así que lo usó para una
-pieza de expectativa — y el fondo que la marca reconoce como suyo se llamaba
-«oscuro», que sonaba a otra cosa. Las dos veces eligió por el nombre, porque
-era lo único que tenía para elegir.
+El nombre de una paleta es una etiqueta interna, no una descripción: puede
+sonar a algo que no es, y dos nombres distintos pueden llevar al mismo lugar.
+El 5/9/2026 eso costó dos días de piezas equivocadas en una marca — se eligió
+por el nombre cuatro veces seguidas, porque el nombre era lo único que había
+para elegir. Debajo está para qué es cada una.
 
 {lista}
 """

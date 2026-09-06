@@ -150,42 +150,48 @@
         "tinta": "$tinta",
         "acento": "$naranja",
         "voz": "normal",
-        "subrayado": false
+        "subrayado": false,
+        "cuando": "LA PALETA DE TODOS LOS DÍAS: blanco, tinta y el naranja de la marca. Es la que va cuando no hay una razón para usar otra — un producto, un horario, un aviso, una novedad. Ante la duda, ésta."
       },
       "papa": {
         "fondo": "#D8C4A4",
         "tinta": "#2E93D4",
         "acento": "$blanco",
         "voz": "cond",
-        "subrayado": true
+        "subrayado": true,
+        "cuando": "CAMPAÑA DEL DÍA DEL PADRE. Beige y celeste, tipografía condensada y subrayado. Se usa SÓLO en piezas de esa campaña — no porque el pedido mencione a un padre, sino porque la pieza es de la campaña del Día del Padre. Fuera de esa fecha, la paleta es `stadium`."
       },
       "papa_estudio": {
         "fondo": "$blanco",
         "tinta": "#2E93D4",
         "acento": "$tinta",
         "voz": "cond",
-        "subrayado": true
+        "subrayado": true,
+        "cuando": "La misma campaña del Día del Padre, en su versión clara: fondo blanco con el celeste de tinta. Para la pieza de la campaña que lleva foto de producto recortado sobre blanco, donde el beige competiría con la foto."
       },
       "madre": {
         "fondo": "#F2EBE1",
         "tinta": "#6E4B2E",
         "acento": "#A8825C",
         "voz": "serif",
-        "subrayado": false
+        "subrayado": false,
+        "cuando": "CAMPAÑA DEL DÍA DE LA MADRE. Crema y marrón, con voz serif. Mismo criterio que la del padre: se usa SÓLO en piezas de esa campaña, no cada vez que un pedido nombra a una madre. Fuera de esa fecha, la paleta es `stadium`."
       },
       "promo": {
         "fondo": "$naranja",
         "tinta": "$blanco",
         "acento": "$blanco",
         "voz": "cond",
-        "subrayado": false
+        "subrayado": false,
+        "cuando": "El naranja pleno a sangre, con todo el texto en blanco. Para cuando la pieza ES la oferta y tiene que gritar desde el feed: un descuento, una liquidación, un 2x1, las últimas unidades. No la uses para una novedad que no tiene precio: sin número que mostrar, el naranja pleno queda vacío."
       },
       "oscura": {
         "fondo": "$negro",
         "tinta": "$blanco",
         "acento": "$naranja",
         "voz": "normal",
-        "subrayado": false
+        "subrayado": false,
+        "cuando": "Fondo negro con el naranja de acento. Para producto premium, una presentación o un lanzamiento — lo que se mira antes de leerlo. Va salteada: es el contraste con el blanco lo que la hace funcionar."
       }
     },
     "_paletas_nota": "Los colores de las campañas están SACADOS A OJO de capturas del feed. Los de `stadium` sí son exactos: salen del logo oficial.",

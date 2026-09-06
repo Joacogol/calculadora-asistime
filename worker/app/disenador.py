@@ -52,8 +52,8 @@ QUÉ TENÉS QUE HACER
 4. Escribí en un solo `spec.json` TODOS los formatos pedidos y renderizalos de
    una, indicando la carpeta de salida como segundo argumento:
 
-       python3 render.py spec.json {salida}
-       python3 video.py guion.json {salida}     # sólo si el pedido lleva reel
+       python3 render.py {salida}/spec.json {salida}
+       python3 video.py {salida}/guion.json {salida}   # sólo si el pedido lleva reel
 
    Van directo ahí: no hay que copiar nada desde `out/` después.
 
@@ -153,8 +153,8 @@ EL CAMINO CORTO
 Para una placa, esto son cuatro pasos y no hace falta ninguno más:
 
   1. leer `referencias/fotos.json` y elegir foto + copiar su `foco`
-  2. escribir un `spec.json` con un trabajo por formato pedido
-  3. `python3 render.py spec.json {salida}`
+  2. escribir `{salida}/spec.json` con un trabajo por formato pedido
+  3. `python3 render.py {salida}/spec.json {salida}`
   4. escribir `copy.txt` y `notas.txt`
 
 Todo lo que necesitás saber está en el SKILL.md y en `fotos.json`. **No
