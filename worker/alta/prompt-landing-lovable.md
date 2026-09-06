@@ -38,9 +38,17 @@ Lo que hay que dejar claro, porque es lo que lo diferencia:
 - **Se corrige sin rehacer.** «Subí un poco el título y sacale el botón» cambia
   eso y nada más — no devuelve otra pieza.
 
+- **Y lo publica.** No termina en un archivo que hay que bajar y subir: el
+  agente publica en el Instagram de la empresa desde el mismo chat — feed,
+  carrusel, story y reel. Se le dice «subilo» y sube, con su epígrafe.
+
 Qué entrega: post cuadrado, vertical de feed, story, carrusel, secuencia de
 stories, PDF, y video —reels con título y música de la marca—. Una placa tarda
 2 a 4 minutos.
+
+**Sobre las redes, decí sólo Instagram.** Es lo único que publica hoy y no
+inventamos lo que no está. Si el texto necesita hablar de redes en plural, decí
+«tus redes» sin enumerar, pero cuando nombres una, es Instagram.
 
 **Ninguna promesa de resultado de negocio.** Nada de «vendé más» ni «duplicá
 tus seguidores». Lo que se promete es tiempo y consistencia de marca.
@@ -67,7 +75,9 @@ botón fijo arriba a la derecha que lleva al formulario.
    real: (1) nos contás de tu marca y nosotros armamos tu kit — colores,
    tipografías, plantillas, banco de fotos; (2) le pedís la pieza por chat, con
    tus palabras; (3) el motor la dibuja, la mide y la corrige antes de
-   entregártela; (4) si algo no te gusta, se lo decís y lo cambia sin rehacerla.
+   entregártela; (4) si algo no te gusta, se lo decís y lo cambia sin
+   rehacerla; (5) cuando está, le decís que lo publique y lo sube a tu
+   Instagram con su epígrafe.
 4. **Qué te entrega.** Una grilla con los formatos, cada uno con su medida real
    (post 1080×1080, vertical 1080×1350, story 1080×1920, carrusel, PDF, reel).
 5. **Por qué no es un generador de imágenes.** Dos o tres pares
@@ -144,6 +154,11 @@ Campos, en este orden. Los marcados con \* son obligatorios:
 - ¿Qué querés que haga tu agente? \* — casillas múltiples: placas para el feed ·
   stories · carruseles · piezas con precios o promociones · reels con música y
   título · **videos generados con IA** · PDF para mandar o imprimir
+- ¿En qué redes publicás hoy? \* — casillas múltiples: Instagram · Facebook ·
+  TikTok · LinkedIn · otra — *ayuda: «Hoy publicamos en Instagram. Nos sirve
+  saber dónde más estás.»*
+- ¿Querés que el agente publique por vos, o preferís bajarte la pieza y
+  subirla vos? \* — que publique / prefiero subirla yo / todavía no sé
 - ¿Tenés el logo en vector y una guía de marca? \* — sí, completa / algo tengo /
   no tengo nada — *ayuda: «Si no tenés, no es un problema: lo armamos nosotros.»*
 - ¿Tenés fotos propias para usar? \* — sí, un banco armado / algunas sueltas / no
@@ -190,3 +205,18 @@ ni testimonios, ni logos de empresas.
 
 Responsive de verdad, y que funcione en los dos temas del navegador —claro y
 oscuro— definiendo los colores como variables CSS.
+
+## 8 · Lo que la página NO puede decir
+
+Esto no es estilo, es exactitud. Cada una está verificada contra el sistema:
+
+- **No prometas Facebook, TikTok ni LinkedIn.** Hoy publica en Instagram y nada
+  más. La casilla del formulario pregunta por las otras redes para medir la
+  demanda, no para prometerlas.
+- **No digas «automático» ni «sin intervención humana».** Es exactamente lo
+  contrario de lo que vendemos: hay un equipo que arma y entrena cada agente.
+- **No prometas resultados de negocio.** Ni ventas, ni seguidores, ni alcance.
+- **No inventes clientes, testimonios, logos ni cifras.** Si hace falta una
+  prueba, es el detalle del funcionamiento —las mediciones, los formatos, los
+  minutos—, no un número de fantasía.
+- **No digas «ilimitado».** Hay topes reales.
