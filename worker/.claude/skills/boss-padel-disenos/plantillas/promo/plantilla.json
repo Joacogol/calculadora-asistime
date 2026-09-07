@@ -1,0 +1,96 @@
+{
+  "id": "promo",
+  "nombre": "Promo",
+  "descripcion": "membresías, beneficios, sponsors",
+  "cuando_usarla": "Cuando hay una oferta con precio y una lista de lo que incluye.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "HACETE<br>SOCIO."
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "default": ""
+    },
+    {
+      "id": "precio",
+      "tipo": "texto",
+      "etiqueta": "Precio",
+      "default": "",
+      "nota": "Si va vacío desaparece el bloque entero, símbolo y unidad incluidos."
+    },
+    {
+      "id": "unidad",
+      "tipo": "texto",
+      "etiqueta": "Unidad",
+      "default": "/mes"
+    },
+    {
+      "id": "bullets",
+      "tipo": "lista",
+      "etiqueta": "Lo que incluye",
+      "default": [],
+      "columnas": [
+        {
+          "id": "texto",
+          "etiqueta": "Ítem"
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "QUIERO SUMARME"
+    },
+    {
+      "id": "contacto",
+      "tipo": "texto",
+      "etiqueta": "Contacto",
+      "default": ""
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

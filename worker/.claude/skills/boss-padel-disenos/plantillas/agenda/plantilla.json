@@ -1,0 +1,89 @@
+{
+  "id": "agenda",
+  "nombre": "Agenda",
+  "descripcion": "la grilla de fechas del mes",
+  "cuando_usarla": "Calendario de varios eventos. Para los horarios libres del día es `horarios`.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "LO QUE<br>SE VIENE."
+    },
+    {
+      "id": "items",
+      "tipo": "lista",
+      "etiqueta": "Fechas",
+      "requerido": true,
+      "columnas": [
+        {
+          "id": "dia",
+          "etiqueta": "Día"
+        },
+        {
+          "id": "mes",
+          "etiqueta": "Mes"
+        },
+        {
+          "id": "texto",
+          "etiqueta": "Qué es"
+        },
+        {
+          "id": "sede",
+          "etiqueta": "Sede"
+        }
+      ]
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "default": ""
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Pie",
+      "default": ""
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

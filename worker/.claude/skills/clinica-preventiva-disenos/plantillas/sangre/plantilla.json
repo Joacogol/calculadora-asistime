@@ -1,0 +1,128 @@
+{
+  "id": "sangre",
+  "nombre": "Sangre",
+  "descripcion": "foto a toda la pieza, titular abajo sobre el degradé",
+  "cuando_usarla": "Noticias y novedades: cuando lo que importa es el ambiente —la sala de espera, el equipo, la sede— y no un precio.",
+  "acento_por_defecto": "rojo",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "cuerpo": 58,
+      "alto_pie": 96,
+      "pad_top": 60,
+      "pad_bottom": 134,
+      "pad_bottom_sedes": 96
+    },
+    "vert": {
+      "alto": 1350,
+      "cuerpo": 66,
+      "alto_pie": 96,
+      "pad_top": 60,
+      "pad_bottom": 134,
+      "pad_bottom_sedes": 96
+    },
+    "story": {
+      "alto": 1920,
+      "cuerpo": 78,
+      "alto_pie": 160,
+      "pad_top": 190,
+      "pad_bottom": 198,
+      "pad_bottom_sedes": 160
+    },
+    "reel": {
+      "alto": 1920,
+      "cuerpo": 78,
+      "alto_pie": 160,
+      "pad_top": 190,
+      "pad_bottom": 198,
+      "pad_bottom_sedes": 160
+    }
+  },
+  "campos": [
+    {
+      "id": "foto",
+      "tipo": "foto",
+      "etiqueta": "Foto",
+      "requerido": true,
+      "ejemplo": "assets/marcador-claro.jpg",
+      "ayuda": "Ocupa toda la pieza. Se mide para calcular cuánto hay que oscurecerla donde cae el titular."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Foco de la foto",
+      "requerido": false,
+      "default": "50% 40%"
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "requerido": false,
+      "ejemplo": "NOVEDADES"
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "Te esperamos en"
+    },
+    {
+      "id": "destacado",
+      "tipo": "texto",
+      "etiqueta": "Destacado",
+      "requerido": false,
+      "ejemplo": "nuestras dos sedes",
+      "ayuda": "Sale en rojo si la foto lo permite y en bloque rojo si no. Lo decide el motor midiendo."
+    },
+    {
+      "id": "texto",
+      "tipo": "texto",
+      "etiqueta": "Texto",
+      "requerido": false,
+      "ejemplo": "Análisis clínicos con resultados en 24 a 48 horas."
+    },
+    {
+      "id": "sedes",
+      "tipo": "lista",
+      "etiqueta": "Sedes",
+      "requerido": false,
+      "ayuda": "Si hay sedes el titular sube, porque la tarjeta ocupa la parte de abajo.",
+      "columnas": [
+        {"id": "nombre", "etiqueta": "Sede"},
+        {"id": "direccion", "etiqueta": "Dirección"},
+        {"id": "horario", "etiqueta": "Horario"},
+        {"id": "horario2", "etiqueta": "Horario 2"}
+      ],
+      "ejemplo": [
+        {
+          "nombre": "Montevideo",
+          "direccion": "Gral. Flores 3131 esq. Bvar. Artigas",
+          "horario": "L-V 7:00-16:45",
+          "horario2": "Sáb 8:00-11:45"
+        },
+        {
+          "nombre": "Ciudad de la Costa",
+          "direccion": "Costa Urbana Shopping, Local 208",
+          "horario": "L-V 7:00-18:45",
+          "horario2": "Sáb 8:00-11:45"
+        }
+      ]
+    },
+    {
+      "id": "tel",
+      "tipo": "texto",
+      "etiqueta": "WhatsApp del pie",
+      "requerido": false,
+      "default": "092 566 967"
+    },
+    {
+      "id": "web",
+      "tipo": "texto",
+      "etiqueta": "Web del pie",
+      "requerido": false,
+      "default": "www.clinicapreventiva.com"
+    }
+  ]
+}

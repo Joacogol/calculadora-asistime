@@ -1,0 +1,36 @@
+
+{% if d.foto %}<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}"><div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,.70),rgba(10,10,10,.40) 42%,rgba(10,10,10,.92))"></div>{% else %}<div class="scrim" style="background:linear-gradient(155deg,{{ c.azul }} 0%,#0A0A0A 115%)"></div><div style="position:absolute;bottom:-130px;right:-200px;opacity:.24">{{ aros(430,"#FAFAFA",2.6) }}</div>{% endif %}
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px;z-index:2">
+  <div class="row">
+    <div class="kicker" style="color:{{ ac }};font-size:30px;letter-spacing:.34em">
+      {{ d.kicker }}</div>
+    {{ logo(1.2) }}
+  </div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;min-height:0">
+    <div class="disp-b" style="color:#FAFAFA;font-size:{{ m.dia_fs }}px;line-height:.88;
+      letter-spacing:-.02em">{{ d.dia }}</div>
+    <div style="display:flex;align-items:baseline;gap:24px;margin-top:16px">
+      <div class="disp" style="color:{{ ac }};font-size:{{ m.hora_fs }}px;line-height:1">{{ d.hora }}</div>
+      <div class="kicker" style="color:#FAFAFA;opacity:.8;font-size:32px;letter-spacing:.22em">
+        {{ d.fecha }}</div>
+    </div>
+    <div class="kicker" style="color:{{ ac }};font-size:34px;letter-spacing:.46em;margin-top:22px">
+      {{ d.sede }}</div>
+    <div class="body" style="color:#FAFAFA;opacity:.82;font-size:32px;margin-top:10px;
+      letter-spacing:.04em">{{ d.nivel }}</div>
+    {% if d.cupos %}<div style="display:flex;align-items:baseline;gap:14px;
+          border:2px solid {{ ac }};padding:14px 26px;align-self:flex-start;margin-top:26px">
+          <div class="disp-b" style="color:{{ ac }};font-size:56px;line-height:.9">{{ d.cupos }}</div>
+          <div class="eyebrow" style="color:{{ ac }};font-size:26px;letter-spacing:.14em">
+            {{ d.rotulo_cupos }}</div></div>{% endif %}
+  </div>
+  <div class="row" style="align-items:flex-end">
+    <div>
+      <div style="display:inline-block;background:{{ ac }};color:#0A0A0A;padding:20px 38px">
+        <span class="eyebrow" style="font-weight:700;font-size:30px;letter-spacing:.16em">
+          {{ d.cta }}</span></div>
+      {% if d.incluye %}<div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:14px">{% for x in d.incluye %}<span class="body" style="color:#FAFAFA;opacity:.78;font-size:27px">{{ x }}</span>{% endfor %}</div>{% endif %}
+    </div>
+    {% if d.precio %}<div class="disp-b" style="color:#FAFAFA;font-size:52px;line-height:1">${{ d.precio }}</div>{% endif %}
+  </div>
+</div>

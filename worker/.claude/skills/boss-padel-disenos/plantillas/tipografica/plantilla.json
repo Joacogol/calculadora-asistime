@@ -1,0 +1,72 @@
+{
+  "id": "tipografica",
+  "nombre": "Tipográfica",
+  "descripcion": "negro + aros + texto grotesco light con acento",
+  "cuando_usarla": "Carruseles, frases, humor. Sin foto: cuando el texto es el contenido.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "fs": 62
+    },
+    "vert": {
+      "alto": 1350,
+      "fs": 68
+    },
+    "story": {
+      "alto": 1920,
+      "fs": 76
+    },
+    "reel": {
+      "alto": 1920,
+      "fs": 76
+    }
+  },
+  "campos": [
+    {
+      "id": "lineas",
+      "tipo": "lista",
+      "etiqueta": "Líneas",
+      "requerido": true,
+      "columnas": [
+        {
+          "id": "texto",
+          "etiqueta": "Texto"
+        },
+        {
+          "id": "estilo",
+          "etiqueta": "Estilo",
+          "tipo": "opcion",
+          "opciones": [
+            0,
+            1,
+            2
+          ],
+          "nota": "0 blanco · 1 acento · 2 acento con tracking abierto"
+        }
+      ]
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Pie",
+      "default": ""
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": ""
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ],
+  "notas": "Segundo valor de cada línea: `0` blanco · `1` acento · `2` acento con tracking abierto. La primera diapositiva de un carrusel es un gancho, no un título."
+}

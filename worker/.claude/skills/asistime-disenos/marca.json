@@ -1,0 +1,206 @@
+{
+  "nombre": "Asistime",
+  "slug": "asistime",
+  "web": "asistime.ai",
+  "instagram": "@asistime.ai",
+  "formato_por_defecto": "vert",
+  "sedes": {
+    "Todas": {
+      "contacto": "asistime.ai",
+      "acento": "azul"
+    }
+  },
+  "sede_por_defecto": "Todas",
+  "telefono_por_defecto": false,
+  "regla_telefono": "No lleva teléfono. El llamado a la acción de la marca es «Hablá con Tony» y la web asistime.ai.",
+  "quien_es": "Trabajás para Asistime.ai, la plataforma de agentes de IA de LAiB: un negocio crea agentes conversando, y esos agentes atienden por WhatsApp, Instagram, Facebook y TikTok. Le habla a dueños de pymes y emprendedores, no a técnicos. Lo que cada pieza tiene que dejar es alivio: «esto me devuelve tiempo». El tagline es «más tiempo para lo que amas».",
+  "cuidados": "**1 · Tony no es el producto, es el ejemplo.** Tony es la jirafa con anteojos: la cara de un agente. La línea correcta es «En Asistime lo llamamos Tony. El tuyo se puede llamar como quieras». Tony aparece en cierres y en slides de solución, nunca en los de problema.\n\n**2 · El CTA canónico es «Hablá con Tony».** No inventes otro llamado a la acción. La web es asistime.ai.\n\n**3 · Dos colores y un degradado, nada más.** La identidad oficial (kit del 3/9/2026) es el azul `#4D90FF`, el violeta `#B362FF` y el degradado del uno al otro. El azul es el acento de todos los días; el violeta aparece SOLO dentro del degradado —una palabra del título, el botón, un fondo entero— y nunca como color plano suelto. La marca es clara por defecto, y tiene UN fondo de impacto: el navy con resplandor que baja a violeta (`estilo: \"oscuro\"`). Ése es el que la marca reconoce como propio y va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre, y el dato que duele. En una misma serie va salteado, nunca dos veces seguidas. **El degradé azul→violeta NO va como fondo entero de una pieza**: a sangre completa sale un azul claro que no es el de Asistime. Va en UNA palabra del título, con `destacado`.\n\n**4 · Una sola tipografía: Red Hat Display.** Titulares en ExtraBold, cuerpo en Regular o Medium. No se mezcla con otra.\n\n**5 · Sin promesas de resultados.** Nada de «duplicá tus ventas». Lo que se promete es tiempo: atención 24/7, respuestas al instante, el equipo liberado de lo repetitivo.\n\n**6 · Un dato lleva fuente y un testimonio lleva nombre.** Un número sin fuente o una cita sin quién la dijo no se publican: si faltan, preguntá.",
+  "como_habla": "Voseo rioplatense, frases cortas, cálido y concreto. Le hablás a quien tiene un negocio y poco tiempo, así que sin jerga: no decís «orquestación» ni «LLM», decís «un agente que atiende». Sin viñetas para lo que entra en dos renglones.",
+  "fotos": {
+    "creditos_maximos": 100
+  },
+  "asistime": {
+    "tenant": 1,
+    "agente": 594,
+    "documento": 860,
+    "catalogo": 861,
+    "clave_env": "ASISTIME_CLAVE_ASISTIME_DISENOS",
+    "clave_secreto": "asistime-api-asistime",
+    "_nota": "Asistime ya era el tenant 1 en su propia plataforma desde el 2/3/2026, con su perfil de negocio cargado. El alta lo reusa: crear un segundo «Asistime» partiría la cuenta en dos.",
+    "_documentos": "`documento` es el manual de marca que edita Asistime. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_agente": "El id del agente queda anotado acá porque esta alta se hizo a mano, sin `alta.json`. Las otras tres marcas no lo tienen y no hace falta que lo tengan: no lo lee ningún script.",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
+  },
+  "identidad": {
+    "colores": {
+      "azul": "#4D90FF",
+      "violeta": "#B362FF",
+      "azul_logo": "#006AFF",
+      "azul_texto": "#2F6FE0",
+      "azul_profundo": "#1B3FA8",
+      "tinta": "#0A0B14",
+      "tinta_70": "#4A4E63",
+      "tinta_45": "#8A8FA3",
+      "oscuro": "#05061A",
+      "fondo": "#FBFCFF",
+      "blanco": "#FFFFFF",
+      "whatsapp": "#25D366"
+    },
+    "roles": {
+      "acento": "azul",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "tipografias": [
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Regular.ttf",
+        "pesos": "400"
+      },
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Medium.ttf",
+        "pesos": "500"
+      },
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-SemiBold.ttf",
+        "pesos": "600"
+      },
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Bold.ttf",
+        "pesos": "700"
+      },
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-ExtraBold.ttf",
+        "pesos": "800"
+      },
+      {
+        "familia": "Red Hat Display",
+        "archivo": "fonts/RedHatDisplay-Black.ttf",
+        "pesos": "900"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/lockup-color.png",
+      "claro": "assets/lockup-blanco.png",
+      "ratio": 5.0,
+      "ancho": 320,
+      "_nota": "El lockup oficial mide 2000×400: ratio 5. Es PNG y viene pintado (isotipo en azul_logo #006AFF, texto negro), así que sobre oscuro va el archivo blanco en vez de pintarse."
+    },
+    "iso": {
+      "archivo": "assets/isotipo-azul.png",
+      "claro": "assets/isotipo-blanco.png",
+      "ratio": 1.0,
+      "alto": 78,
+      "_nota": "El isotipo va arriba a la izquierda. Estaba en 52 px sobre 1080 —un 4,8% del ancho— y el 4/9/2026 se pidió más grande: en story el isotipo terminaba midiendo 48×40 px de tinta visible y se perdía. A 78 px de base, con el 1,15 de story, la firma se lee sin competirle al titular."
+    },
+    "componentes": {
+      "barra": {
+        "texto": "asistime.ai"
+      },
+      "paleta": {
+        "por_defecto": "claro"
+      },
+      "pastilla": {
+        "radio": 999,
+        "_nota": "Todo en Asistime es píldora: botones, chips, etiquetas."
+      }
+    },
+    "paletas": {
+      "claro": {
+        "fondo": "linear-gradient(160deg,#FFFFFF 0%,#F7F9FF 50%,#F1EDFF 100%)",
+        "tinta": "$tinta",
+        "acento": "$azul",
+        "secundario": "$tinta_70",
+        "cuando": "La pieza de todos los días. Es como se ve la marca cuando no tiene que gritar: un beneficio, una idea, una placa suelta, la apertura de una serie."
+      },
+      "oscuro": {
+        "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
+        "tinta": "$blanco",
+        "acento": "$azul",
+        "secundario": "#B8BDD9",
+        "cuando": "EL FONDO DE IMPACTO de Asistime, y el que la marca reconoce como suyo: el navy con resplandor que baja a violeta. Va cuando la pieza tiene que frenar el pulgar: expectativa, un anuncio, un lanzamiento, el cierre de una serie, y el dato que duele. **Cuando alguien pide «el fondo azul de Asistime», «el azul oficial» o «los colores de la marca» para una pieza, es ÉSTE.** Se pide con esas palabras y no con el nombre de la paleta, así que ante la duda entre este fondo y `azul`, es este."
+      },
+      "degrade": {
+        "fondo": "radial-gradient(110% 80% at 80% 70%,#2A1F6B 0%,#0D1145 40%,#05061A 80%)",
+        "tinta": "$blanco",
+        "acento": "$azul",
+        "secundario": "#B8BDD9",
+        "cuando": "Es el MISMO fondo de impacto que «oscuro»: los dos nombres llevan al mismo lugar a propósito. El degradé azul→violeta de la marca NO va como fondo entero de una pieza —sale un azul claro que no es el de Asistime—: va en UNA palabra del título, con `destacado`."
+      },
+      "azul": {
+        "fondo": "$azul",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "secundario": "$blanco",
+        "cuando": "El azul pleno #4D90FF a sangre. **No es «el fondo azul de Asistime»: ese es el de impacto (`oscuro`).** Éste es el color de acento usado como fondo, y es la excepción — una placa corta y muy simple donde el fondo de impacto sería demasiado peso. El 5/9/2026 se pidió cuatro veces «fondo azul oficial de Asistime» y salió este, y las cuatro estuvo mal: la palabra «azul» del pedido no es el nombre de esta paleta. Si dudás, es `oscuro`."
+      }
+    },
+    "acento_por_defecto": "azul",
+    "reel": {
+      "tipografias": [
+        "RedHatDisplay-ExtraBold.ttf",
+        "RedHatDisplay-SemiBold.ttf"
+      ],
+      "animo_musica": "calmo",
+      "acento": "azul",
+      "plantilla": "titular",
+      "_plantilla": "Con cuál de las plantillas de esta marca se dibuja el rótulo del reel. En Boss y Stadium se llama `campana`; Asistime no tiene ninguna con ese nombre y usa `titular` en modo `sobre_video`. Hasta el 2/9/2026 el nombre estaba escrito adentro del motor, así que una marca sin `campana` moría al dibujar el rótulo — o sea después de pagar el video.",
+      "encuadre": "caras",
+      "_encuadre": "Al montar un video apaisado, el recorte vertical sigue a las caras: se centra en la persona en primer plano y se abre para que entren todas en un plano de dos. Asistime publica gente hablando; sin esto el recorte centrado partía la cara del primer plano (medido el 2/9/2026)."
+    },
+    "carrusel": {
+      "color_cromo": "tinta",
+      "fuente_cromo": "'Red Hat Display',sans-serif",
+      "fuente_texto": "'Red Hat Display',sans-serif",
+      "diapos": {
+        "portada": "titular",
+        "texto": "titular",
+        "cuadro": "titular",
+        "dato": "dato",
+        "testimonio": "testimonio",
+        "producto": "producto",
+        "cierre": "cierre"
+      },
+      "_diapos": "Con qué plantilla se dibuja cada tipo de diapositiva de un carrusel o una secuencia. Es lo que le da carruseles a una marca de datos sin escribir Python: el motor arma `DIAPOS` con estas plantillas (ver motor/identidad.py). `portada` y `cierre` son obligatorios; `cuadro` es el defecto de una secuencia de stories. Cada diapositiva lleva los campos de su plantilla."
+    },
+    "vocabulario": "Hablamos de Asistime, la plataforma de agentes de IA. ¿Tu negocio atiende por WhatsApp, Instagram o TikTok? Tony responde al instante, las 24 horas. En los videos se habla de Claude, Claude Cowork y Anthropic; de ChatGPT y OpenAI; de Gemini y Google; de Sam Altman, Dario Amodei y Elon Musk; de Copilot, Cursor y Perplexity. También de agentes de IA, prompts, tokens y de la singularidad.",
+    "_vocabulario": "Lo que Whisper lee ANTES de escuchar, en prosa y con signos. El 2/9/2026 transcribió «Cloud Cowork» donde decían «Claude Cowork»: los nombres de los productos de IA no estaban, y Asistime habla de eso todo el tiempo.",
+    "_colores": "Los dos oficiales son `azul` y `violeta`, y el degradado va del uno al otro (ver `paletas.degrade` y `.fondo-degrade` / `.texto-degrade` en estilo.css). `azul_logo` es el azul del isotipo y el lockup PNG, que vienen pintados: no se usa para nada más. `azul_texto` es el azul oscurecido para texto chico sobre blanco: `azul` a 34 px no llega al contraste mínimo. La tinta es casi negra, como el texto del lockup oficial.",
+    "_tipografias": "La única tipografía de la marca, en los seis pesos estáticos del kit oficial (licencia OFL, en fonts/OFL.txt). TTF y no woff2 a propósito: los mismos archivos los usa ffmpeg para los rótulos del reel, y freetype no lee woff2 ni fuentes variables.",
+    "_paletas": "`claro` es la marca (blanco con un dejo azul-violeta). `oscuro` es el slide de impacto. `degrade` es el degradado oficial entero, para una pieza que tenga que gritar o el cierre. `azul` es el pleno, por si una placa suelta lo pide."
+  },
+  "_sedes": "Asistime no tiene locales, así que tiene una sola sede que es la marca entera. Igual va como diccionario `nombre → {contacto, acento}`: la forma la fija el motor. Escrita como lista —así estuvo el 2/9/2026— el diseño muere con «'list' object has no attribute 'get'», cuatro minutos después de pedirlo y sin decir de qué marca ni de qué campo habla.",
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "musica": [],
+    "_calidad": "Qué modelo de video se usa cuando la persona no pide otra cosa, que es casi siempre. `normal` es Seedance 2.0 Mini a 720p (140 créditos por segundo), `borrador` el mismo a 480p (70) y `maxima` Seedance 2.5 a 720p (440). Acá es donde está la plata.",
+    "_costo": "Un reel de 10 segundos: 700 en borrador, 1.400 en normal, 4.400 en máxima. Medido en Stadium el 26/8/2026. Mini sólo hace 5 o 10 exactos.",
+    "_topes": "`creditos_maximos` es por pieza: en 4.500 entra hasta un reel de 10 segundos en calidad máxima. Si algo no entra, el worker primero acorta, después baja calidad, y sólo rechaza si ni el más barato entra.",
+    "_musica": "VACÍO a propósito. Asistime no tiene todavía una pista de la casa, y un reel sin música NO falla por eso: sale con el sonido del clip. Cuando haya una, se agrega acá con su `clave` y el mp3 en `musica/` de esta carpeta, y desde ese momento un reel sin música pedida sale con la primera de la lista.",
+    "_regla": "Un reel de Asistime muestra el producto —una pantalla, un chat que se contesta solo, el alivio de alguien que deja el teléfono— y no personas reconocibles. Tony es un dibujo y va como dibujo: pedirle a un modelo de video que anime la jirafa da una jirafa que no es Tony."
+  }
+}

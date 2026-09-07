@@ -1,0 +1,124 @@
+{
+  "id": "recorte",
+  "nombre": "Recorte",
+  "descripcion": "persona recortada sobre fondo gris claro, titular a la derecha",
+  "cuando_usarla": "La más limpia y la que mejor tolera un texto largo. Las fichas blancas son para los datos duros: horarios, servicios, requisitos.",
+  "acento_por_defecto": "rojo",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "cuerpo": 62,
+      "puntos_top": 324,
+      "foto_top": 167,
+      "bloque_top": 59
+    },
+    "vert": {
+      "alto": 1350,
+      "cuerpo": 72,
+      "puntos_top": 405,
+      "foto_top": 209,
+      "bloque_top": 74
+    },
+    "story": {
+      "alto": 1920,
+      "cuerpo": 84,
+      "puntos_top": 576,
+      "foto_top": 297,
+      "bloque_top": 105
+    },
+    "reel": {
+      "alto": 1920,
+      "cuerpo": 84,
+      "puntos_top": 576,
+      "foto_top": 297,
+      "bloque_top": 105
+    }
+  },
+  "campos": [
+    {
+      "id": "foto",
+      "tipo": "foto",
+      "etiqueta": "Foto",
+      "requerido": true,
+      "ejemplo": "assets/marcador-medio.jpg",
+      "ayuda": "Va del lado izquierdo, de la mitad de la pieza para abajo. Funciona mejor con una persona."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Foco de la foto",
+      "requerido": false,
+      "default": "50% 20%"
+    },
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "Medicina laboral"
+    },
+    {
+      "id": "destacado",
+      "tipo": "texto",
+      "etiqueta": "Destacado",
+      "requerido": false,
+      "ejemplo": "para empresas"
+    },
+    {
+      "id": "fichas",
+      "tipo": "lista",
+      "etiqueta": "Fichas",
+      "requerido": false,
+      "ayuda": "Cada ficha es un rótulo y un valor. Para los datos duros que se leen de un vistazo.",
+      "columnas": [
+        {"id": "rotulo", "etiqueta": "Rótulo"},
+        {"id": "valor", "etiqueta": "Valor"}
+      ],
+      "ejemplo": [
+        ["Resultados", "24 a 48 hs"],
+        ["Habilitación", "MTOP y MSP"]
+      ]
+    },
+    {
+      "id": "sedes",
+      "tipo": "lista",
+      "etiqueta": "Sedes",
+      "requerido": false,
+      "ayuda": "Cada sede lleva nombre, dirección y hasta dos líneas de horario.",
+      "columnas": [
+        {"id": "nombre", "etiqueta": "Sede"},
+        {"id": "direccion", "etiqueta": "Dirección"},
+        {"id": "horario", "etiqueta": "Horario"},
+        {"id": "horario2", "etiqueta": "Horario 2"}
+      ],
+      "ejemplo": [
+        {
+          "nombre": "Montevideo",
+          "direccion": "Gral. Flores 3131 esq. Bvar. Artigas",
+          "horario": "L-V 7:00-16:45",
+          "horario2": "Sáb 8:00-11:45"
+        },
+        {
+          "nombre": "Ciudad de la Costa",
+          "direccion": "Costa Urbana Shopping, Local 208",
+          "horario": "L-V 7:00-18:45",
+          "horario2": "Sáb 8:00-11:45"
+        }
+      ]
+    },
+    {
+      "id": "pie1",
+      "tipo": "texto",
+      "etiqueta": "Pie, línea 1",
+      "requerido": false,
+      "ejemplo": "Coordiná tu visita"
+    },
+    {
+      "id": "pie2",
+      "tipo": "texto",
+      "etiqueta": "Pie, línea 2",
+      "requerido": false,
+      "ejemplo": "092 566 967"
+    }
+  ]
+}

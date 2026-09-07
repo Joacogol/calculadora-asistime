@@ -1,0 +1,16 @@
+
+{% if d.foto %}<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}"><div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,.80),rgba(10,10,10,.93))"></div>{% else %}<div class="scrim" style="background:{{ c.negro }}"></div>{% endif %}
+<div style="position:absolute;top:-84px;right:-150px;opacity:.30">{{ aros(300,'#FAFAFA',2.4) }}</div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px">
+  <div class="row">{{ logo(1.3, align='left') }}
+    <div class="kicker" style="color:{{ ac }};font-size:28px;text-align:right;line-height:1.5">{{ d.sede }}</div></div>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;min-height:0">
+    <div class="disp-b" style="color:#FAFAFA;font-size:{{ m.titulo_fs }}px;line-height:.94;margin-bottom:28px">{{ d.titulo }}</div>
+    <div style="border-top:1px solid rgba(250,250,250,.14)">{% for cat, dupla in d.filas %}
+      <div style="display:flex;align-items:baseline;gap:28px;padding:17px 0;border-bottom:1px solid rgba(250,250,250,.14)">
+        <div class="kicker" style="color:{{ ac }};font-size:{{ m.fs - 8 }}px;letter-spacing:.24em;width:150px">{{ cat }}</div>
+        <div class="body" style="color:#FAFAFA;font-weight:600;font-size:{{ m.fs }}px;flex:1">{{ dupla }}</div>
+      </div>{% endfor %}</div>
+  </div>
+  <div class="body" style="color:#FAFAFA;opacity:.62;font-size:26px;letter-spacing:.08em">{{ d.pie }}</div>
+</div>

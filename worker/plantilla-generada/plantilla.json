@@ -1,0 +1,147 @@
+{
+  "id": "clase",
+  "nombre": "Clase",
+  "descripcion": "la clase de un profe: quién la da, cuándo, dónde y cuánto",
+  "cuando_usarla": "Anuncio de clase o entrenamiento con profe a cargo. Si es una partida abierta sin profe usá `americano`; si es la idea de las clases sin datos duros, `titular`.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "nombre_fs": 96,
+      "dato_fs": 56,
+      "fila_fs": 32,
+      "rotulo_w": 150,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "nombre_fs": 108,
+      "dato_fs": 64,
+      "fila_fs": 35,
+      "rotulo_w": 165,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "nombre_fs": 122,
+      "dato_fs": 74,
+      "fila_fs": 40,
+      "rotulo_w": 185,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "nombre_fs": 122,
+      "dato_fs": 74,
+      "fila_fs": 40,
+      "rotulo_w": 185,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "profe",
+      "tipo": "texto",
+      "etiqueta": "Profe",
+      "requerido": true,
+      "ejemplo": "Delfina Methol"
+    },
+    {
+      "id": "dia",
+      "tipo": "texto",
+      "etiqueta": "Día",
+      "requerido": true,
+      "ejemplo": "MARTES Y JUEVES"
+    },
+    {
+      "id": "hora",
+      "tipo": "texto",
+      "etiqueta": "Hora",
+      "requerido": true,
+      "ejemplo": "19:30"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true,
+      "ejemplo": "CARRASCO"
+    },
+    {
+      "id": "nivel",
+      "tipo": "texto",
+      "etiqueta": "Nivel",
+      "default": "",
+      "ejemplo": "3RA Y 4TA",
+      "nota": "Sale entre corchetes, como los detalles de torneo. Sin nivel desaparece la fila entera."
+    },
+    {
+      "id": "precio",
+      "tipo": "texto",
+      "etiqueta": "Precio",
+      "default": "",
+      "ejemplo": "890",
+      "nota": "Sin el signo: lo pone la plantilla. Si va vacío desaparece la fila con el $ y la unidad."
+    },
+    {
+      "id": "unidad",
+      "tipo": "texto",
+      "etiqueta": "Unidad del precio",
+      "default": "/clase"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto del profe",
+      "default": "",
+      "ejemplo": "assets/profe-tribuna.jpg"
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 30%",
+      "nota": "La cara va en el tercio de arriba: abajo vive el bloque de datos."
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "default": "CLASES"
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "RESERVÁ TU LUGAR"
+    },
+    {
+      "id": "contacto",
+      "tipo": "texto",
+      "etiqueta": "Contacto",
+      "default": "",
+      "nota": "El teléfono no va por defecto. Sólo si el pedido lo pide."
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": "",
+      "nota": "Sólo se ve cuando no hay foto."
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ],
+  "notas": "El héroe es el profe, no la fecha: a una clase uno se anota **con alguien**. Por eso el nombre va grande arriba de la línea de acento y el día con la hora abajo. Si lo que importa es la fecha y no quién la da, esa pieza es `americano`.\n\nDos cosas se miden solas y por eso la plantilla aguanta nombres reales:\n\n· El nombre baja dos escalones según el largo — «María Fernanda Rodríguez» desbordaba el ancho y salía cortado.\n· El día y la hora comparten renglón y el cuerpo sale del texto, no del formato: el ancho útil es siempre 928 px, así que «LUNES, MIÉRCOLES Y VIERNES» achica el par entero en vez de partirse en tres líneas. Ojo si se pone el día con `<br>`: eso lo pelea con el cálculo.\n\nEl bloque de datos vive en la mitad de abajo, que es justo donde la foto molesta. El velo del degradé no es un número elegido a ojo: sale de medir la foto con `plan_titular` sobre la franja 52–100%. Si el acento no llega a contraste ni con velo —le pasa al naranja sobre foto clara— el piso sube a 0.88 y la foto queda casi apagada ahí abajo. Es a propósito: primero se lee, después se luce.\n\nSin foto la pieza funciona entera —degradé azul y aros, como `americano`— y el bloque se centra en vez de apoyarse abajo, porque si no queda medio metro de azul vacío arriba. Es la salida cuando el profe no quiere salir en cámara.\n\nSede, nivel y precio son filas rotuladas y no columnas justamente porque «PUNTA DEL ESTE» y «PRINCIPIANTES Y 5TA» son largos: en columnas se parten, en filas respiran. Cada una desaparece sola con su rótulo.\n\nQué mirar en el preview: que la cara del profe no quede tapada por el bloque de datos (se corrige con `foco`, no achicando el texto) y que el CTA no caiga sobre una zona clara de la foto."
+}

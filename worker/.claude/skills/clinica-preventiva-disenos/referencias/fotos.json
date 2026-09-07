@@ -1,0 +1,13 @@
+{
+  "_nota": "Vacío a propósito. Las imágenes publicadas en Instagram son piezas terminadas, con texto y logo incrustados: recortarles la foto da un pedazo de baja resolución con elementos de la placa vieja adentro. Mientras no haya fotos propias, usá la que suba la persona (assets/subidas/) o la plantilla `tipografica`, que está hecha para no llevar foto.",
+  "_faltantes": [
+    "recepción de la sede de Montevideo (Gral. Flores 3131)",
+    "recepción de la sede de Ciudad de la Costa (Costa Urbana Shopping)",
+    "el laboratorio y el equipo trabajando",
+    "una extracción de sangre, plano corto y limpio",
+    "personal médico de la clínica, retrato sobre fondo claro",
+    "fachada de cada sede, para las piezas de ubicación",
+    "un trabajador de industria o transporte, para psicotécnico y libreta"
+  ],
+  "_formato": "Cuando haya fotos, cada entrada lleva: descripcion, usar_para, quien {genero, cantidad, edad, apariencia}, foco {post, vert, story, reel} y calidad. El campo `foco` es el que evita que la cara choque con el titular y que la misma foto salga distinta en cada corrida."
+}

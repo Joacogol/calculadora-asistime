@@ -1,0 +1,98 @@
+{
+  "id": "resultados",
+  "nombre": "Resultados",
+  "descripcion": "el podio post-torneo",
+  "cuando_usarla": "Después de un torneo. Anunciar un torneo y no publicar el podio es uno de los errores de la lista.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "ASÍ QUEDÓ EL TORNEO"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede y fecha",
+      "requerido": true,
+      "ejemplo": "BOSS CARRASCO<br>AGOSTO 2026"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "requerido": true
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "podio",
+      "tipo": "lista",
+      "etiqueta": "Podio",
+      "requerido": true,
+      "columnas": [
+        {
+          "id": "pos",
+          "etiqueta": "Puesto"
+        },
+        {
+          "id": "nombre",
+          "etiqueta": "Dupla"
+        },
+        {
+          "id": "cat",
+          "etiqueta": "Categoría"
+        }
+      ]
+    },
+    {
+      "id": "sponsors",
+      "tipo": "lista",
+      "etiqueta": "Sponsors",
+      "default": [],
+      "columnas": [
+        {
+          "id": "nombre",
+          "etiqueta": "Sponsor"
+        }
+      ]
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

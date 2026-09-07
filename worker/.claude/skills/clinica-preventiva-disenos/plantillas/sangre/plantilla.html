@@ -1,0 +1,17 @@
+
+{%- set zona = [0.44, 0.68] if d.sedes else [0.55, 0.94] -%}
+{%- set plan = plan_titular(d.foto, c.rojo, c.tinta, zona, 4.5, 3.0) -%}
+{%- set velo = degrade(plan.velo, zona[0]) %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div style="position:absolute;left:0;right:0;top:0;height:10px;background:{{ c.rojo }};z-index:4"></div>
+<div class="scrim" style="background:{{ velo }}"></div>
+<div class="pad" style="padding:{{ m.pad_top }}px 60px {{ m.pad_bottom_sedes if d.sedes else m.pad_bottom }}px;z-index:2">
+  {{ logo(1.15, "#FFFFFF", "center") }}
+  <div class="grow"></div>
+  {{ '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div style="width:5px;height:24px;background:' ~ c.rojo ~ ';flex:none"></div><div class="kicker" style="color:#FFFFFF;font-size:26px">' ~ d.kicker ~ '</div></div>' if d.kicker else '' }}
+  <div style="text-transform:none;text-shadow:0 2px 14px rgba(0,0,0,.75)">
+    {{ titular_sobre_foto(d.titulo, d.destacado, m.cuerpo, plan) }}</div>
+  {{ '<div class="body" style="font-size:27px;color:rgba(255,255,255,.90);margin-top:18px;\n    max-width:840px">' ~ d.texto ~ '</div>' if d.texto else '' }}
+  {{ '<div style="margin-top:26px">' ~ sedes(d.sedes, fmt, sobre_foto=True) ~ '</div>' if d.sedes else '' }}
+</div>
+{{ pie(True, d.tel, d.web, m.alto_pie) }}

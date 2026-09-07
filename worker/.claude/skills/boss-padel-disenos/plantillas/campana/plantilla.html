@@ -1,0 +1,89 @@
+{#- CAMPAÑA — un anuncio de una sola idea, y el RÓTULO de los reels.
+
+    Las dos cosas son la misma plantilla a propósito. El texto que se monta
+    encima de un video se dibuja con el mismo molde que una pieza, así que el
+    día que cambie la tipografía de Boss cambia también el rótulo, sin que
+    nadie se acuerde de venir acá.
+
+    Tres fondos posibles y el tercero es el que importa:
+
+    · con `foto`     → foto full más el degradado de siempre
+    · con `sobre_video` → NADA de fondo: sale transparente para montarse
+      encima del clip. Sólo un degradado suave donde cae el texto, porque un
+      velo entero taparía el video que se pagó.
+    · sin ninguno    → negro y aros, como `tipografica`
+
+    No usa `plan_titular` ni `degrade` aunque estén disponibles: el resto de
+    las plantillas de Boss resuelve el contraste con un degradado fijo, y una
+    sola que mida distinto haría que dos piezas de la misma marca se vean
+    distintas sin que nadie sepa por qué. -#}
+
+{%- set sobre = d.sobre_video -%}
+{%- set pos = d.posicion if d.posicion in ('arriba', 'centro', 'abajo') else 'centro' -%}
+
+{#- El título baja de cuerpo solo. Un torneo se anuncia con dos palabras y una
+    inauguración con doce, y el mismo cuerpo para las dos deja la segunda
+    partida en cinco renglones. -#}
+{%- set n = d.titulo|length -%}
+{%- set fs = m.fs if n <= 24 else (m.fs * 0.74 if n <= 46 else m.fs * 0.56) -%}
+
+{#- Sobre foto o sobre video va sombra, además del degradado. El degradado se
+    fija de antemano y por eso no ve la mancha clara puntual —un reflejo de la
+    cancha, una remera blanca— que se come tres letras. La sombra es local y
+    arregla justo ese punto sin ensuciar la imagen. -#}
+{%- set sombra = 'text-shadow:0 2px 20px rgba(10,10,10,.60),0 0 4px rgba(10,10,10,.50);' if (sobre or d.foto) else '' -%}
+{%- set sombra_chica = 'text-shadow:0 1px 10px rgba(10,10,10,.70),0 0 3px rgba(10,10,10,.55);' if (sobre or d.foto) else '' -%}
+
+{% if sobre %}
+{#- El degradado sigue a la posición del texto: si el título va arriba, se
+    oscurece arriba. Al revés taparía el video justo donde no hace falta. -#}
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(10,10,10,.62),rgba(10,10,10,.10) 46%,rgba(10,10,10,0) 62%)"></div>
+{#- Y una pizca abajo, sólo para que el logo no se pierda contra un fondo
+    claro. Va aparte del de arriba para que no se sumen en el medio. -#}
+<div class="scrim" style="background:linear-gradient(0deg,rgba(10,10,10,.45),rgba(10,10,10,0) 22%)"></div>
+{% elif d.foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(10,10,10,.80),rgba(10,10,10,.06) 55%,rgba(10,10,10,.38))"></div>
+{% else %}
+<div class="scrim" style="background:{{ d.fondo or c.negro_puro }}"></div>
+<div style="position:absolute;top:-72px;left:-160px">{{ aros(300,'#FAFAFA',2.4) }}</div>
+<div style="position:absolute;bottom:-72px;right:-160px">{{ aros(300,'#FAFAFA',2.4) }}</div>
+{% endif %}
+
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px;
+  text-align:center;align-items:center">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div style="max-width:100%">
+    {% if d.kicker %}
+    <div class="kicker" style="color:{{ ac }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker }}px;{{ sombra_chica }}">{{ d.kicker }}</div>
+    {% endif %}
+
+    {#- El salto de línea que escribieron se RESPETA. Quien pide la pieza sabe
+        mejor que el navegador dónde quiere que corte «HOY ARRANCA / EL
+        TORNEO». -#}
+    <div class="disp-b" style="color:#FAFAFA;font-size:{{ fs }}px;line-height:1.02;
+      white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+
+    {% if d.bajada %}
+    <div class="body" style="color:{{ ac }};font-size:{{ m.bajada }}px;
+      letter-spacing:.04em;margin-top:{{ m.bajada * 0.9 }}px;{{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  <div>
+    {{ logo(1.15, align='center') }}
+    {% if d.pie %}
+    <div class="kicker" style="color:#FAFAFA;opacity:.65;font-size:{{ m.pie }}px;
+      margin-top:{{ m.pie }}px;{{ sombra_chica }}">{{ d.pie }}</div>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,8 @@
+
+<div class="scrim" style="background:{{ d.fondo or c.negro_puro }}"></div>
+<div style="position:absolute;top:-72px;left:-160px">{{ aros(300,'#FAFAFA',2.4) }}</div>
+<div style="position:absolute;bottom:-72px;right:-160px">{{ aros(300,'#FAFAFA',2.4) }}</div>
+<div class="pad" style="justify-content:center;padding-left:110px;padding-right:110px">
+  <div>{% for t, a in d.lineas %}<div class="disp" style="color:{{ ac if a else '#FAFAFA' }};font-size:{{ m.fs }}px;line-height:1.30;letter-spacing:{{ '.22em' if a == 2 else '.005em' }}">{{ t }}</div>{% endfor %}{% if d.pie %}<div class="kicker" style="color:#FAFAFA;opacity:.55;font-size:26px;margin-top:44px">{{ d.pie }}</div>{% endif %}</div>
+</div>
+<div style="position:absolute;top:70px;right:76px">{{ logo(1.0) }}</div>

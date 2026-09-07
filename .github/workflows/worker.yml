@@ -1,0 +1,83 @@
+# El worker se despliega solo.
+#
+# Hasta el 7/9/2026 desplegar era abrir Cloud Shell, clonar, copiar sobre
+# ~/worker y correr ./desplegar-chat.sh a mano. Esto corre exactamente ese
+# script, con las mismas comprobaciones y las mismas claves de Secret Manager,
+# cada vez que main cambia algo adentro de worker/. En cualquier otra rama
+# sólo corren las pruebas: se ve si algo se rompió antes de mezclar.
+#
+# No hay ninguna clave guardada en GitHub. La organización de Google prohíbe
+# crear claves de cuentas de servicio (iam.disableServiceAccountKeyCreation),
+# así que GitHub se identifica con su propio token OIDC ante un pool de
+# Workload Identity Federation del proyecto, que sólo acepta este repo, y
+# actúa como la cuenta de servicio `despliegue-github`. Las claves de los
+# clientes, de Anthropic, de Magnific, fal y Gemini siguen en Secret Manager:
+# el despliegue sólo las MONTA en el job, nunca las lee.
+name: worker
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  pull_request:
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: worker
+
+jobs:
+  pruebas:
+    name: Pruebas del motor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ffmpeg y dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          pip install -q jinja2 requests Pillow numpy
+      - name: Las marcas cargan
+        run: python3 herramientas/probar-marcas.py
+      - name: Las pruebas que corre el despliegue
+        run: |
+          for P in probar-precios.py probar-video-solo.py probar-libro.py probar-revisor.py probar-cortes.py; do
+            echo "── $P"; python3 "herramientas/$P"
+          done
+
+  desplegar:
+    name: Desplegar a Cloud Run
+    needs: pruebas
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ffmpeg y dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          pip install -q jinja2 requests Pillow numpy
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1038198143215/locations/global/workloadIdentityPools/github/providers/github
+          service_account: despliegue-github@boss-padel-disenos.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: boss-padel-disenos
+      - name: desplegar-chat.sh
+        run: |
+          chmod +x desplegar-chat.sh
+          ./desplegar-chat.sh

@@ -1,0 +1,186 @@
+[
+ {
+  "plantilla": "torneo",
+  "formato": "post",
+  "nombre": "01-torneo-ago-post",
+  "data": {
+   "fecha_l1": "28, 29 Y 30 DE",
+   "fecha_l2": "AGOSTO",
+   "sede": "CARRASCO",
+   "cats_libres": "2DA, 3RA, 4TA, 5TA, 6TA",
+   "cats_fem": "3RA, 4TA, 5TA",
+   "contacto": "097 406 148",
+   "foto": "assets/ph-cancha.jpg",
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "torneo",
+  "formato": "story",
+  "nombre": "01-torneo-ago-story",
+  "data": {
+   "fecha_l1": "28, 29 Y 30 DE",
+   "fecha_l2": "AGOSTO",
+   "sede": "CARRASCO",
+   "cats_libres": "2DA, 3RA, 4TA, 5TA, 6TA",
+   "cats_fem": "3RA, 4TA, 5TA",
+   "contacto": "097 406 148",
+   "foto": "assets/ph-cancha.jpg",
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "torneo",
+  "formato": "vert",
+  "nombre": "01-torneo-ago-vert",
+  "data": {
+   "fecha_l1": "28, 29 Y 30 DE",
+   "fecha_l2": "AGOSTO",
+   "sede": "CARRASCO",
+   "cats_libres": "2DA, 3RA, 4TA, 5TA, 6TA",
+   "cats_fem": "3RA, 4TA, 5TA",
+   "contacto": "097 406 148",
+   "foto": "assets/ph-indoor.jpg",
+   "acento": "naranja"
+  }
+ },
+ {
+  "plantilla": "resultados",
+  "formato": "post",
+  "nombre": "02-resultados",
+  "data": {
+   "titulo": "ASÍ QUEDÓ EL TORNEO",
+   "sede": "BOSS CARRASCO<br>AGOSTO 2026",
+   "foto": "assets/ph-noche.jpg",
+   "podio": [
+    [
+     "01",
+     "Kiki Reboredo / Nico Rosas",
+     "1ERA"
+    ],
+    [
+     "02",
+     "Facu Savio / Nacho Rosas",
+     "1ERA"
+    ],
+    [
+     "03",
+     "Paqui / Nico Lang",
+     "1ERA"
+    ]
+   ],
+   "sponsors": [
+    "BIGG",
+    "UES",
+    "SANTANDER",
+    "DECATHLON"
+   ],
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "titular",
+  "formato": "post",
+  "nombre": "03-titular",
+  "data": {
+   "linea1": "Mucho más que",
+   "linea2": "PÁDEL",
+   "foto": "assets/ph-indoor.jpg",
+   "pie": "CARRASCO · HÍPICO · PUNTA DEL ESTE",
+   "pos": "top",
+   "acento": "blanco"
+  }
+ },
+ {
+  "plantilla": "tipografica",
+  "formato": "post",
+  "nombre": "04-tipografica",
+  "data": {
+   "lineas": [
+    [
+     "TIPOS DE",
+     0
+    ],
+    [
+     "JUGADORES EN",
+     0
+    ],
+    [
+     "UN TORNEO",
+     1
+    ],
+    [
+     "B O S S",
+     2
+    ]
+   ],
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "promo",
+  "formato": "post",
+  "nombre": "05-promo",
+  "data": {
+   "kicker": "BOSS CARRASCO",
+   "titulo": "HACETE<br>SOCIO.",
+   "precio": "6.800",
+   "unidad": "/mes",
+   "bullets": [
+    "Acceso libre toda la semana",
+    "Prioridad de reserva",
+    "Eventos exclusivos",
+    "Descuentos en torneos"
+   ],
+   "cta": "QUIERO SER SOCIO",
+   "contacto": "Te contactamos por WhatsApp · 097 406 148",
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "agenda",
+  "formato": "post",
+  "nombre": "06-agenda",
+  "data": {
+   "kicker": "CALENDARIO 2026",
+   "titulo": "LO QUE<br>SE VIENE.",
+   "items": [
+    [
+     "28",
+     "AGO",
+     "Torneo Boss · 28-29-30",
+     "CARRASCO"
+    ],
+    [
+     "11",
+     "SEP",
+     "Torneo Boss · 11-12-13",
+     "HÍPICO"
+    ],
+    [
+     "16",
+     "OCT",
+     "Torneo Boss · 16-17-18",
+     "CARRASCO"
+    ]
+   ],
+   "pie": "INSCRIPCIONES POR WHATSAPP",
+   "acento": "lima"
+  }
+ },
+ {
+  "plantilla": "torneo",
+  "formato": "reel",
+  "nombre": "01-torneo-ago-reel",
+  "data": {
+   "fecha_l1": "28, 29 Y 30 DE",
+   "fecha_l2": "AGOSTO",
+   "sede": "CARRASCO",
+   "cats_libres": "2DA, 3RA, 4TA, 5TA, 6TA",
+   "cats_fem": "3RA, 4TA, 5TA",
+   "contacto": "097 406 148",
+   "foto": "assets/ph-cancha.jpg",
+   "acento": "lima"
+  }
+ }
+]

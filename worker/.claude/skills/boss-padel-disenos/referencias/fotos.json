@@ -1,0 +1,556 @@
+{
+  "_nota": "Banco de fotos del club. El encuadre por formato está fijo acá a propósito: si lo decidiera el modelo en cada corrida, la misma foto saldría distinta cada vez y a veces la cara del sujeto chocaría con el titular. Como dato, es consistente. Los valores son object-position de CSS: 'X% Y%'.",
+  "_quien": "Cada foto declara quién aparece, para poder responder pedidos del tipo 'que sea con jugadoras', 'sin gente' o 'que no sea rubio'. Valores de `genero`: 'masculino', 'femenino', 'mixto', 'ninguno'. `apariencia` describe pelo y ropa: es lo que permite filtrar por aspecto sin abrir las fotos. Si el pedido pide algo que el banco no tiene, elegí lo más cercano, GENERÁ IGUAL la pieza, y decilo en copy.txt — nunca lo ignores en silencio ni te quedes buscando.",
+  "_faltantes": [
+    "Jugadores de pelo oscuro EN ACCIÓN. Las tres fotos de golpe con pelota son de jugadoras rubias o del jugador rubio de remera roja. Un pedido de 'un buen golpe, que no sea rubio' hoy no se puede cumplir: lo más cerca es `jugador-azul`, que es de pelo oscuro pero está parado, no golpeando.",
+    "Sedes Hípico y Punta del Este — todo el material es de la sede Carrasco.",
+    "Fotos de día — todo el banco es nocturno o techado.",
+    "Podios y festejos — no hay ninguna foto de premiación, que es justo lo que pide la plantilla `campeones`."
+  ],
+  "forlan-posicion": {
+    "descripcion": "Jugador de remera roja en posición de espera, cancha techada, fondo oscuro",
+    "usar_para": "Anuncios de torneo, piezas grandes con titular corto",
+    "sujeto": "una persona, centro-derecha",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "jugador adulto, cara visible",
+      "apariencia": "pelo claro, rubio ondulado; remera roja"
+    },
+    "foco": {
+      "post": "46% 22%",
+      "vert": "46% 30%",
+      "story": "46% 45%",
+      "reel": "46% 45%"
+    },
+    "calidad": "alta"
+  },
+  "decathlon-publico": {
+    "descripcion": "Punto en juego con público de fondo, ambiente de torneo",
+    "usar_para": "Cuenta regresiva, ambiente, convocatoria",
+    "sujeto": "varias personas, plano general",
+    "quien": {
+      "genero": "mixto",
+      "cantidad": "grupo",
+      "edad": "adultos",
+      "detalle": "jugadores en cancha y público en tribuna, caras chicas",
+      "apariencia": "varios, caras chicas; no se distingue el pelo"
+    },
+    "foco": {
+      "post": "50% 30%",
+      "vert": "50% 35%",
+      "story": "50% 40%",
+      "reel": "50% 40%"
+    },
+    "calidad": "alta"
+  },
+  "jugador-azul": {
+    "descripcion": "Jugador de remera azul concentrado, partido de noche, mucho negro alrededor",
+    "usar_para": "Campeones, resultados, piezas con lista de nombres",
+    "sujeto": "una persona, derecha",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "jugador adulto, plano medio",
+      "apariencia": "pelo oscuro, corto; remera azul petróleo"
+    },
+    "foco": {
+      "post": "50% 30%",
+      "vert": "68% 40%",
+      "story": "64% 38%",
+      "reel": "64% 38%"
+    },
+    "calidad": "alta",
+    "foco_confirmado": true
+  },
+  "publico-comunidad": {
+    "descripcion": "Tribuna llena mirando un partido",
+    "usar_para": "Ranking, comunidad, convocatorias",
+    "sujeto": "grupo, plano general",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "grupo",
+      "edad": "adultos",
+      "detalle": "seis hombres sentados en la tribuna mirando el partido. NO es un grupo mixto: no aparece ninguna mujer",
+      "apariencia": "seis hombres, pelo oscuro en su mayoría, uno pelado"
+    },
+    "foco": {
+      "post": "50% 40%",
+      "vert": "50% 42%",
+      "story": "50% 45%",
+      "reel": "50% 45%"
+    },
+    "calidad": "media"
+  },
+  "profe-tribuna": {
+    "descripcion": "Profe con gorra sentado al borde de la cancha, relajado y sonriendo",
+    "usar_para": "Clases, academia, tips, contenido humano",
+    "sujeto": "una persona, centro-izquierda",
+    "quien": {
+      "genero": "mixto",
+      "cantidad": "dos personas",
+      "edad": "adultos",
+      "detalle": "profe hombre en primer plano; atrás a la izquierda se ve una jugadora de remera fucsia, de cuerpo entero pero sin cara. Es lo más cerca que tiene el banco de mostrar una mujer",
+      "apariencia": "pelo oscuro, gorra puesta; la jugadora del fondo es de pelo oscuro"
+    },
+    "foco": {
+      "post": "52% 42%",
+      "vert": "52% 42%",
+      "story": "52% 42%",
+      "reel": "52% 42%"
+    },
+    "calidad": "alta"
+  },
+  "perro-lounge": {
+    "descripcion": "Perro del club en el lounge, luz cálida",
+    "usar_para": "Comunidad, after, contenido cálido y humano",
+    "sujeto": "animal, centro",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "sólo el perro del club"
+    },
+    "foco": {
+      "post": "50% 40%",
+      "vert": "50% 40%",
+      "story": "50% 42%",
+      "reel": "50% 42%"
+    },
+    "calidad": "media"
+  },
+  "forlan-banco": {
+    "descripcion": "Jugador sentado en el banco, momento de pausa",
+    "usar_para": "Contenido reflexivo, tips, descanso",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "jugador adulto sentado, plano cálido",
+      "apariencia": "pelo claro, rubio ondulado; remera roja"
+    },
+    "foco": {
+      "post": "50% 35%",
+      "vert": "50% 38%",
+      "story": "50% 42%",
+      "reel": "50% 42%"
+    },
+    "calidad": "media"
+  },
+  "ph-noche": {
+    "descripcion": "Rectángulo casi negro con un leve degradé azulado. Apenas se intuye una cancha. Sirve como fondo cuando el texto manda, pero no aporta imagen: candidata a reemplazo.",
+    "usar_para": "Fondos neutros cuando el texto es protagonista",
+    "sujeto": "sin personas",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "cancha vacía. Es la salida cuando el pedido pide gente que el banco no tiene y preferís no contradecirlo"
+    },
+    "foco": {
+      "post": "50% 50%",
+      "vert": "50% 50%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "baja"
+  },
+  "ph-indoor": {
+    "descripcion": "Rectángulo casi negro con una luz cálida difusa arriba a la izquierda. Casi no se lee como cancha: candidata a reemplazo.",
+    "usar_para": "Fondos neutros",
+    "sujeto": "sin personas",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "cancha vacía"
+    },
+    "foco": {
+      "post": "50% 50%",
+      "vert": "50% 50%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "baja"
+  },
+  "ph-cancha": {
+    "descripcion": "Rectángulo casi negro con degradé azul. No se distingue una cancha: candidata a reemplazo.",
+    "usar_para": "Fondos neutros, agenda",
+    "sujeto": "sin personas",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "cancha vacía desde arriba"
+    },
+    "foco": {
+      "post": "50% 50%",
+      "vert": "50% 50%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "baja"
+  },
+  "ph-cesped": {
+    "descripcion": "Rectángulo casi negro con un verde muy apagado. Textura apenas perceptible: último recurso real.",
+    "usar_para": "Fondo de textura, último recurso",
+    "sujeto": "textura",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "sólo textura"
+    },
+    "foco": {
+      "post": "50% 50%",
+      "vert": "50% 50%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "baja"
+  },
+  "jugadora-resto-azul": {
+    "descripcion": "Jugadora de musculosa azul en posición de resto, paleta al frente, fondo negro",
+    "usar_para": "Torneo femenino, anuncios grandes con titular corto, la placa insignia de categoría femenina",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora adulta en cancha, cara visible y concentrada",
+      "apariencia": "rubia, pelo atado; musculosa azul"
+    },
+    "foco": {
+      "post": "50% 26%",
+      "vert": "50% 52%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-resto-negro": {
+    "descripcion": "Jugadora de vestido negro esperando el golpe, plano medio, fondo muy oscuro",
+    "usar_para": "Torneo femenino, campeonas, piezas con lista de nombres",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora adulta, plano medio, mucho negro alrededor",
+      "apariencia": "rubia, pelo suelto corto; vestido negro"
+    },
+    "foco": {
+      "post": "50% 30%",
+      "vert": "50% 60%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-saque": {
+    "descripcion": "Jugadora sacando, brazo estirado hacia arriba, cuerpo entero",
+    "usar_para": "Cuenta regresiva, energía, convocatoria a torneo femenino",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora en pleno saque, gesto de máxima extensión",
+      "apariencia": "rubia, pelo atado; musculosa azul"
+    },
+    "foco": {
+      "post": "50% 18%",
+      "vert": "50% 36%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-golpe": {
+    "descripcion": "Jugadora golpeando de derecha con la pelota en el aire, vestido negro",
+    "usar_para": "Acción, torneo femenino, piezas dinámicas",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora golpeando, la pelota se ve en el encuadre",
+      "apariencia": "rubia, pelo suelto; vestido negro"
+    },
+    "foco": {
+      "post": "50% 30%",
+      "vert": "50% 60%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-cancha": {
+    "descripcion": "Jugadora de pie en la cancha, cuerpo entero a la izquierda, mucho negro libre a la derecha",
+    "usar_para": "La mejor para titular largo: el texto entra en el vacío de la derecha",
+    "sujeto": "una persona, izquierda",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora de cuerpo entero, con espacio negro alrededor",
+      "apariencia": "rubia, pelo atado; vestido negro"
+    },
+    "foco": {
+      "post": "44% 34%",
+      "vert": "44% 68%",
+      "story": "44% 50%",
+      "reel": "44% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadoras-dupla": {
+    "descripcion": "Dos jugadoras juntas en la cancha entre puntos, una de azul y una de negro",
+    "usar_para": "Campeonas, duplas, resultados de femenina",
+    "sujeto": "dos personas, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "dos personas",
+      "edad": "adultas",
+      "detalle": "dos jugadoras compartiendo cancha, plano general",
+      "apariencia": "las dos rubias; una de azul y una de negro"
+    },
+    "foco": {
+      "post": "52% 40%",
+      "vert": "52% 80%",
+      "story": "52% 50%",
+      "reel": "52% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-actitud": {
+    "descripcion": "Jugadora de negro con la mano en la cintura, mirada al costado, fondo negro",
+    "usar_para": "Retrato con carácter, campeona, piezas de perfil de jugadora",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "retrato de medio cuerpo, actitud de seguridad",
+      "apariencia": "rubia, pelo suelto corto; vestido negro"
+    },
+    "foco": {
+      "post": "50% 34%",
+      "vert": "50% 68%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadora-perfil": {
+    "descripcion": "Jugadora de azul de perfil esperando, mucho negro libre a la izquierda",
+    "usar_para": "Titular a la izquierda, agenda, piezas tipográficas con foto de apoyo",
+    "sujeto": "una persona, derecha",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "jugadora de perfil, con espacio negro para texto",
+      "apariencia": "rubia, pelo atado; musculosa azul"
+    },
+    "foco": {
+      "post": "58% 32%",
+      "vert": "58% 64%",
+      "story": "58% 50%",
+      "reel": "58% 50%"
+    },
+    "calidad": "alta"
+  },
+  "publico-mixto": {
+    "descripcion": "Cuatro personas en la tribuna mirando un partido, dos mujeres y dos hombres",
+    "usar_para": "Comunidad, ranking, convocatorias — la foto de público que sí es mixta",
+    "sujeto": "grupo, plano medio",
+    "quien": {
+      "genero": "mixto",
+      "cantidad": "grupo",
+      "edad": "adultos",
+      "detalle": "dos mujeres y dos hombres mirando el partido, caras visibles",
+      "apariencia": "cuatro personas de pelo oscuro o castaño"
+    },
+    "foco": {
+      "post": "50% 44%",
+      "vert": "50% 88%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugadoras-banco": {
+    "descripcion": "Dos jugadoras sentadas al costado de la cancha, riéndose, bolsos de paleta al lado",
+    "usar_para": "Comunidad femenina, after, contenido cálido",
+    "sujeto": "dos personas, derecha",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "dos personas",
+      "edad": "adultas",
+      "detalle": "dos jugadoras descansando entre partidos, gesto relajado",
+      "apariencia": "castañas, pelo recogido; buzos deportivos"
+    },
+    "foco": {
+      "post": "54% 38%",
+      "vert": "54% 76%",
+      "story": "54% 50%",
+      "reel": "54% 50%"
+    },
+    "calidad": "media"
+  },
+  "retrato-jugadora": {
+    "descripcion": "Retrato de una mujer apoyada en la mano, sonrisa contenida, fondo oscuro",
+    "usar_para": "Testimonios, perfil de socia, contenido humano",
+    "sujeto": "una persona, derecha",
+    "quien": {
+      "genero": "femenino",
+      "cantidad": "una persona",
+      "edad": "adulta",
+      "detalle": "retrato cercano, mirada fuera de cuadro",
+      "apariencia": "castaña, pelo oscuro recogido; campera negra"
+    },
+    "foco": {
+      "post": "58% 40%",
+      "vert": "58% 80%",
+      "story": "58% 50%",
+      "reel": "58% 50%"
+    },
+    "calidad": "alta"
+  },
+  "mate-tribuna": {
+    "descripcion": "Dos hombres sentados mirando un partido, uno con mate en la mano",
+    "usar_para": "After, comunidad, contenido bien uruguayo",
+    "sujeto": "dos personas, centro-derecha",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "dos personas",
+      "edad": "adultos",
+      "detalle": "dos socios mirando el partido con mate",
+      "apariencia": "los dos de pelo oscuro, uno con gorra y anteojos de sol"
+    },
+    "foco": {
+      "post": "56% 40%",
+      "vert": "56% 80%",
+      "story": "56% 50%",
+      "reel": "56% 50%"
+    },
+    "calidad": "alta"
+  },
+  "nene-pelota": {
+    "descripcion": "Nene sentado en el césped abrazado a una pelota, luz cálida",
+    "usar_para": "Escuelita, academia, contenido de familia",
+    "sujeto": "una persona, centro-izquierda",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "niño",
+      "detalle": "nene de unos ocho años, sentado, cara visible",
+      "apariencia": "nene de pelo oscuro; camiseta de fútbol"
+    },
+    "foco": {
+      "post": "42% 46%",
+      "vert": "42% 92%",
+      "story": "42% 50%",
+      "reel": "42% 50%"
+    },
+    "calidad": "alta"
+  },
+  "nene-paleta": {
+    "descripcion": "Nene chiquito de perfil sosteniendo una paleta más grande que él, luz cálida",
+    "usar_para": "Escuelita, próxima generación, contenido tierno",
+    "sujeto": "una persona, derecha",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "niño pequeño",
+      "detalle": "nene de dos o tres años con una paleta naranja",
+      "apariencia": "nene de pelo castaño claro y rulos"
+    },
+    "foco": {
+      "post": "58% 22%",
+      "vert": "58% 44%",
+      "story": "58% 50%",
+      "reel": "58% 50%"
+    },
+    "calidad": "media"
+  },
+  "jugador-golpe": {
+    "descripcion": "Jugador de remera roja golpeando de revés con la pelota en el aire",
+    "usar_para": "Acción, torneo masculino, piezas dinámicas",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "jugador golpeando, la pelota se ve en el encuadre",
+      "apariencia": "pelo claro, rubio ondulado; remera roja"
+    },
+    "foco": {
+      "post": "50% 32%",
+      "vert": "50% 64%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "jugador-retrato": {
+    "descripcion": "Jugador de remera azul con la paleta al hombro, mirada al frente, fondo oscuro",
+    "usar_para": "Retrato, perfil de jugador, resultados",
+    "sujeto": "una persona, centro",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "retrato de medio cuerpo, cara nítida",
+      "apariencia": "pelo oscuro con canas, barba; remera azul marino"
+    },
+    "foco": {
+      "post": "48% 30%",
+      "vert": "48% 60%",
+      "story": "48% 50%",
+      "reel": "48% 50%"
+    },
+    "calidad": "alta"
+  },
+  "paletas-bolso": {
+    "descripcion": "Paleta apoyada contra un bolso verde sobre el césped, primer plano",
+    "usar_para": "Fondo con textura real cuando el texto es protagonista. Reemplaza a ph-cesped",
+    "sujeto": "objetos, sin personas",
+    "quien": {
+      "genero": "ninguno",
+      "cantidad": "ninguna persona",
+      "edad": "-",
+      "detalle": "detalle de equipamiento, sin gente"
+    },
+    "foco": {
+      "post": "50% 50%",
+      "vert": "50% 100%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  },
+  "cancha-lejos": {
+    "descripcion": "Jugador chiquito en una cancha azul vacía, mucho negro alrededor",
+    "usar_para": "Fondo neutro con vida: el texto manda pero la foto no está muerta. Reemplaza a ph-noche",
+    "sujeto": "una persona, plano general",
+    "quien": {
+      "genero": "masculino",
+      "cantidad": "una persona",
+      "edad": "adulto",
+      "detalle": "figura lejana, no se distingue la cara",
+      "apariencia": "figura lejana, no se distingue nada del aspecto"
+    },
+    "foco": {
+      "post": "50% 46%",
+      "vert": "50% 92%",
+      "story": "50% 50%",
+      "reel": "50% 50%"
+    },
+    "calidad": "alta"
+  }
+}

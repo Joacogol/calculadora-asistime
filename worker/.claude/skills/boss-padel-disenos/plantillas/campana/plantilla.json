@@ -1,0 +1,87 @@
+{
+  "id": "campana",
+  "nombre": "Campaña",
+  "descripcion": "titular grande centrado, sobre foto o sobre video",
+  "cuando_usarla": "Un anuncio de UNA sola idea, sin datos duros: que arranca el torneo, que abre una sede, una novedad del club. Si la pieza lleva precio, horario o cupos, no es ésta — es `torneo`, `americano` o `promo`. Y es además la plantilla con la que se dibuja el RÓTULO de los reels: el texto que se monta encima del video sale de acá.",
+  "medidas": {
+    "post":  {"alto": 1080, "fs": 96,  "kicker": 28, "bajada": 32, "pie": 24, "pad_top": 76,  "pad_bot": 76},
+    "vert":  {"alto": 1350, "fs": 104, "kicker": 30, "bajada": 34, "pie": 25, "pad_top": 76,  "pad_bot": 76},
+    "story": {"alto": 1920, "fs": 116, "kicker": 32, "bajada": 36, "pie": 26, "pad_top": 200, "pad_bot": 260},
+    "reel":  {"alto": 1920, "fs": 116, "kicker": 32, "bajada": 36, "pie": 26, "pad_top": 200, "pad_bot": 260}
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto_largo",
+      "etiqueta": "Título",
+      "requerido": true,
+      "ejemplo": "Hoy arranca\nel torneo",
+      "nota": "La idea entera, en pocas palabras. Podés cortar la línea vos con un salto: el diseño respeta dónde lo pongas, y vos sabés mejor que el navegador dónde queda bien el corte."
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Volanta",
+      "default": "",
+      "nota": "La línea chica de arriba, en el color de acento. Para ubicar: «CARRASCO», «TORNEO ABIERTO», «ESTE SÁBADO»."
+    },
+    {
+      "id": "bajada",
+      "tipo": "texto",
+      "etiqueta": "Bajada",
+      "default": "",
+      "nota": "Una línea debajo del título. No repitas lo que ya dice el título."
+    },
+    {
+      "id": "pie",
+      "tipo": "texto",
+      "etiqueta": "Pie",
+      "default": "",
+      "nota": "Debajo del logo, chico. El teléfono va acá SÓLO si lo pidieron."
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "default": "",
+      "nota": "Opcional. Sin foto la pieza sale en negro con los aros, como `tipografica`."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "fondo",
+      "tipo": "color",
+      "etiqueta": "Fondo",
+      "default": "",
+      "nota": "Sólo cuando no hay foto ni video. Vacío es el negro de la marca."
+    },
+    {
+      "id": "sobre_video",
+      "tipo": "si_no",
+      "etiqueta": "¿Va encima de un video?",
+      "default": false,
+      "nota": "Prendelo cuando la pieza es el RÓTULO de un reel y el fondo es un clip. La pieza sale SIN fondo —transparente, para montarse encima— con un degradado suave nada más donde cae el texto: un velo entero taparía el video que se pagó."
+    },
+    {
+      "id": "posicion",
+      "tipo": "opcion",
+      "etiqueta": "Dónde va el texto",
+      "opciones": ["arriba", "centro", "abajo"],
+      "default": "centro",
+      "nota": "Encima de un video va «arriba» casi siempre: abajo está la interfaz de Instagram y ahí el texto no se lee."
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": ["lima", "naranja", "blanco"],
+      "default": "lima",
+      "nota": "Lima para todas las sedes, naranja para Hípico."
+    }
+  ],
+  "notas": "El título va SIEMPRE en blanco, también sobre foto y sobre video. El acento se queda para la volanta y la bajada: un lima de luminancia media sobre una cancha verde no llega a contraste y la pieza sale lavada.\n\nSobre foto y sobre video el texto lleva sombra además del degradado. El degradado está fijo y por eso no ve la mancha clara puntual —un reflejo, una remera blanca— que se come tres letras; la sombra es local y arregla justo ese punto sin ensuciar la imagen."
+}

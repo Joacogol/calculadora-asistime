@@ -1,0 +1,18 @@
+
+<div style="position:absolute;left:0;top:0;bottom:{{ m.alto_pie }}px;width:{{ m.ancho_foto }}%;overflow:hidden">
+  <img src="{{ d.foto }}" style="width:100%;height:100%;object-fit:cover;
+    object-position:{{ d.foco }}">
+</div>
+<div style="position:absolute;right:0;top:0;bottom:{{ m.alto_pie }}px;width:{{ m.ancho_panel }}%;
+  background:{{ c.blanco }};padding:58px 62px;display:flex;flex-direction:column">
+  {{ logo(1.0) }}
+  <div class="grow"></div>
+  {{ '<div style="margin-bottom:20px">' ~ pastilla(d.kicker) ~ '</div>' if d.kicker else '' }}
+  {{ titular(d.titulo, '', achicar_titular(d.titulo, m.cuerpo)) }}
+  {{ '<div style="margin-top:12px;display:inline-block;background:' ~ c.rojo ~ ';color:#fff;padding:10px 20px"><span class="disp" style="font-size:' ~ achicar_titular(d.destacado, m.cuerpo) ~ 'px">' ~ d.destacado ~ '</span></div>' if d.destacado else '' }}
+  <div class="body" style="font-size:27px;color:{{ c.tinta }};margin-top:22px">
+    {{ d.texto }}</div>
+  {{ '<div style="margin-top:22px">' ~ sello(d.sello) ~ '</div>' if d.sello else '' }}{{ '<div style="margin-top:26px;display:flex;align-items:baseline;gap:14px"><div class="precio" style="font-size:' ~ m.cuerpo_precio ~ 'px">' ~ d.precio ~ '</div><div class="body" style="font-size:23px;color:' ~ c.gris ~ '">' ~ d.precio_pie ~ '</div></div>' if d.precio else '' }}
+  <div class="grow"></div>
+</div>
+{{ pie(True, d.tel, d.web, m.alto_pie) }}

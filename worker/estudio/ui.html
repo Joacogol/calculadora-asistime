@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estudio de plantillas</title>
+<style>
+  :root {
+    --fondo:#0E1013; --panel:#16191E; --hundido:#0A0C0F; --linea:#262B33;
+    --tinta:#E8EBEF; --gris:#8A93A0; --acento:#E4FF02; --alerta:#FF6B4A;
+    --ok:#5FD39B;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--fondo);color:var(--tinta);font-family:var(--sans);font-size:14px;
+       display:grid;grid-template-columns:250px 1fr 1fr;grid-template-rows:52px 1fr;
+       grid-template-areas:"barra barra barra" "lista editor vista";overflow:hidden}
+
+  /* ── barra ── */
+  header{grid-area:barra;border-bottom:1px solid var(--linea);display:flex;
+         align-items:center;gap:16px;padding:0 18px;background:var(--panel)}
+  .marca{font-weight:700;letter-spacing:-.01em}
+  .marca span{color:var(--gris);font-weight:400;margin-left:8px}
+  .crece{flex:1}
+  button{font:inherit;font-size:13px;border:1px solid var(--linea);background:var(--hundido);
+         color:var(--tinta);padding:7px 14px;border-radius:5px;cursor:pointer}
+  button:hover{border-color:var(--gris)}
+  button:disabled{opacity:.45;cursor:default}
+  button.principal{background:var(--acento);color:#0A0A0A;border-color:var(--acento);font-weight:600}
+  button.principal:hover{filter:brightness(1.08)}
+  input[type=text]{font:inherit;font-size:13px;background:var(--hundido);color:var(--tinta);
+        border:1px solid var(--linea);border-radius:5px;padding:7px 10px;width:280px}
+  input::placeholder{color:var(--gris)}
+
+  /* ── lista ── */
+  nav{grid-area:lista;border-right:1px solid var(--linea);overflow-y:auto;background:var(--panel)}
+  .rotulo{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+          color:var(--gris);padding:16px 18px 8px}
+  .item{padding:9px 18px;cursor:pointer;border-left:2px solid transparent}
+  .item:hover{background:var(--hundido)}
+  .item.activo{background:var(--hundido);border-left-color:var(--acento)}
+  .item b{display:block;font-weight:600;font-size:13px}
+  .item small{color:var(--gris);font-size:11.5px;line-height:1.35;display:block;margin-top:2px}
+  .item.codigo{opacity:.5;cursor:default;border-left-color:transparent}
+  .item.codigo:hover{background:none}
+
+  /* ── editor ── */
+  main{grid-area:editor;border-right:1px solid var(--linea);display:flex;flex-direction:column;
+       min-width:0;background:var(--fondo)}
+  .pestanas{display:flex;border-bottom:1px solid var(--linea);background:var(--panel)}
+  .pestana{padding:11px 16px;font-size:12.5px;color:var(--gris);cursor:pointer;
+           border-bottom:2px solid transparent}
+  .pestana.activa{color:var(--tinta);border-bottom-color:var(--acento)}
+  textarea{flex:1;width:100%;background:var(--fondo);color:var(--tinta);border:0;outline:0;
+           font-family:var(--mono);font-size:12.5px;line-height:1.65;padding:16px;resize:none;
+           tab-size:2;white-space:pre}
+  .hoja{flex:1;display:none;flex-direction:column;min-height:0}
+  .hoja.activa{display:flex}
+  .ayuda{border-top:1px solid var(--linea);background:var(--panel);padding:10px 16px;
+         font-family:var(--mono);font-size:11px;color:var(--gris);line-height:1.7}
+  .ayuda code{color:var(--acento)}
+
+  /* ── vista ── */
+  aside{grid-area:vista;display:flex;flex-direction:column;min-width:0;background:var(--hundido)}
+  .formatos{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--linea);
+            align-items:center;background:var(--panel)}
+  .fmt{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+       padding:5px 10px;border-radius:4px;cursor:pointer;color:var(--gris);border:1px solid transparent}
+  .fmt.activo{color:#0A0A0A;background:var(--acento);border-color:var(--acento)}
+  .lienzo{flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:20px}
+  .lienzo img{max-width:100%;max-height:100%;object-fit:contain;
+              box-shadow:0 8px 40px rgba(0,0,0,.6);border-radius:2px}
+  .estado{font-family:var(--mono);font-size:11.5px;padding:9px 16px;border-top:1px solid var(--linea);
+          color:var(--gris);white-space:pre-wrap;line-height:1.6;max-height:170px;overflow:auto}
+  .estado.mal{color:var(--alerta)}
+  .estado.bien{color:var(--ok)}
+  .pensando{color:var(--gris);font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">Estudio<span id="nombreMarca">…</span></div>
+  <div class="crece"></div>
+  <input type="text" id="etiqueta" placeholder="qué cambiaste, en una línea">
+  <button id="btnPublicar" class="principal" disabled>Publicar</button>
+</header>
+
+<nav>
+  <div class="rotulo">Plantillas</div>
+  <div id="lista"></div>
+</nav>
+
+<main>
+  <div class="pestanas">
+    <div class="pestana activa" data-hoja="html">Diseño</div>
+    <div class="pestana" data-hoja="contrato">Campos</div>
+    <div class="pestana" data-hoja="datos">Datos de prueba</div>
+  </div>
+  <div class="hoja activa" id="hoja-html"><textarea id="html" spellcheck="false"></textarea></div>
+  <div class="hoja" id="hoja-contrato"><textarea id="contrato" spellcheck="false"></textarea></div>
+  <div class="hoja" id="hoja-datos"><textarea id="datos" spellcheck="false"></textarea></div>
+  <div class="ayuda" id="ayuda"></div>
+</main>
+
+<aside>
+  <div class="formatos" id="formatos"></div>
+  <div class="lienzo"><img id="vista" alt="Preview de la pieza"></div>
+  <div class="estado" id="estado">Elegí una plantilla de la izquierda.</div>
+</aside>
+
+<script>
+const $ = s => document.querySelector(s);
+let ESTADO = null, ACTUAL = null, FORMATO = "post", ultimoUrl = null, temporizador = null;
+
+function decir(texto, clase) {
+  const e = $("#estado");
+  e.className = "estado" + (clase ? " " + clase : "");
+  e.textContent = texto;
+}
+
+async function arrancar() {
+  ESTADO = await (await fetch("/api/estado")).json();
+  $("#nombreMarca").textContent = ESTADO.nombre;
+  document.title = "Estudio · " + ESTADO.nombre;
+
+  $("#lista").innerHTML = ESTADO.plantillas.map(p => `
+    <div class="item ${p.codigo ? "codigo" : ""}" data-id="${p.id}">
+      <b>${p.nombre}</b><small>${p.descripcion || ""}</small>
+    </div>`).join("");
+
+  $("#lista").querySelectorAll(".item:not(.codigo)").forEach(el =>
+    el.onclick = () => abrir(el.dataset.id));
+
+  $("#ayuda").innerHTML =
+    'Dentro del HTML: <code>{{ d.campo }}</code> los datos · ' +
+    '<code>{{ m.medida }}</code> las medidas del formato · ' +
+    '<code>{{ ac }}</code> el acento · <code>{{ c.lima }}</code> los colores de la marca · ' +
+    '<code>{{ logo() }}</code> <code>{{ aros() }}</code> <code>{{ blob() }}</code>';
+
+  const primera = ESTADO.plantillas.find(p => !p.codigo);
+  if (primera) abrir(primera.id);
+}
+
+async function abrir(id) {
+  const r = await fetch("/api/plantillas/" + id);
+  ACTUAL = await r.json();
+  $("#lista").querySelectorAll(".item").forEach(el =>
+    el.classList.toggle("activo", el.dataset.id === id));
+
+  $("#html").value = ACTUAL.html;
+  $("#contrato").value = JSON.stringify(ACTUAL.contrato, null, 2);
+  $("#datos").value = JSON.stringify(ACTUAL.datos, null, 2);
+  $("#etiqueta").value = "";
+
+  const formatos = Object.keys(ACTUAL.contrato.medidas || {});
+  if (!formatos.includes(FORMATO)) FORMATO = formatos[0];
+  $("#formatos").innerHTML = formatos.map(f =>
+    `<div class="fmt ${f === FORMATO ? "activo" : ""}" data-f="${f}">${f}</div>`).join("");
+  $("#formatos").querySelectorAll(".fmt").forEach(el =>
+    el.onclick = () => { FORMATO = el.dataset.f; abrir(id); });
+
+  $("#btnPublicar").disabled = false;
+  dibujar();
+}
+
+// El preview se pide cuando la persona deja de escribir, no en cada tecla:
+// cada uno abre una página en Chromium y encadenarlos hace que el editor
+// responda a destiempo, mostrando el estado de hace tres cambios.
+function alEscribir() {
+  clearTimeout(temporizador);
+  decir("…", "");
+  temporizador = setTimeout(dibujar, 420);
+}
+["#html", "#contrato", "#datos"].forEach(s => $(s).oninput = alEscribir);
+
+async function dibujar() {
+  if (!ACTUAL) return;
+  let contrato, datos;
+  try {
+    contrato = JSON.parse($("#contrato").value);
+  } catch (e) { return decir("Campos: el JSON no cierra.\n" + e.message, "mal"); }
+  try {
+    datos = JSON.parse($("#datos").value);
+  } catch (e) { return decir("Datos de prueba: el JSON no cierra.\n" + e.message, "mal"); }
+
+  decir("dibujando…", "");
+  const t0 = performance.now();
+  const r = await fetch("/api/previsualizar", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({html: $("#html").value, contrato, datos, formato: FORMATO}),
+  });
+
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({error: "no pude dibujar"}));
+    return decir(e.error, "mal");
+  }
+  const blob = await r.blob();
+  if (ultimoUrl) URL.revokeObjectURL(ultimoUrl);
+  ultimoUrl = URL.createObjectURL(blob);
+  $("#vista").src = ultimoUrl;
+  const ms = Math.round(performance.now() - t0);
+  decir(`${FORMATO} · ${(blob.size / 1024).toFixed(0)} KB · ${ms} ms · ` +
+        `renderizado con el motor de producción`, "");
+}
+
+$("#btnPublicar").onclick = async () => {
+  if (!ACTUAL) return;
+  const etiqueta = $("#etiqueta").value.trim();
+  if (!etiqueta) { $("#etiqueta").focus(); return decir(
+    "Antes de publicar, escribí qué cambiaste. Es lo que se va a leer dentro de " +
+    "seis meses cuando haya que entender por qué la pieza salió así.", "mal"); }
+  if (!confirm(`Publicar «${ACTUAL.id}»?\n\nTodas las piezas que se hagan de ` +
+               `ahora en más van a salir con este diseño.`)) return;
+
+  $("#btnPublicar").disabled = true;
+  decir("publicando…", "");
+  try {
+    const r = await fetch("/api/publicar", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        id: ACTUAL.id, html: $("#html").value,
+        contrato: JSON.parse($("#contrato").value), etiqueta, quien: "el estudio"}),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "no pude publicar");
+    decir(`Publicada como versión ${d.version}. La pieza siguiente ya sale con ` +
+          `el cambio.`, "bien");
+    $("#etiqueta").value = "";
+  } catch (e) {
+    decir(e.message, "mal");
+  } finally {
+    $("#btnPublicar").disabled = false;
+  }
+};
+
+document.querySelectorAll(".pestana").forEach(p => p.onclick = () => {
+  document.querySelectorAll(".pestana").forEach(x => x.classList.remove("activa"));
+  document.querySelectorAll(".hoja").forEach(x => x.classList.remove("activa"));
+  p.classList.add("activa");
+  $("#hoja-" + p.dataset.hoja).classList.add("activa");
+});
+
+arrancar().catch(e => decir("no pude arrancar: " + e.message, "mal"));
+</script>
+</body>
+</html>

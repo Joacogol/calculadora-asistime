@@ -1,0 +1,24 @@
+
+{%- set L = d.nombre|length -%}
+{%- set nom_fs = m.base if L <= 14 else ((m.base * 0.80)|int if L <= 22 else (m.base * 0.64)|int) %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(180deg,rgba(10,10,10,.62) 0%,
+  rgba(10,10,10,.10) 30%,rgba(10,10,10,.72) 62%,rgba(10,10,10,.96) 100%)"></div>
+<div class="pad" style="padding:{{ m.pad_top }}px 76px {{ m.pad_bot }}px">
+  <div class="row">
+    <div class="kicker" style="color:{{ ac }};font-size:29px;letter-spacing:.32em;line-height:1.5">
+      {{ d.rotulo }}</div>
+    {{ logo(1.15) }}
+  </div>
+  <div class="grow"></div>
+  <div>
+    <div class="kicker" style="color:#FAFAFA;opacity:.7;font-size:26px;letter-spacing:.26em;
+      margin-bottom:10px">{{ d.categoria }}{% if d.sede %} · {{ d.sede }}{% endif %}</div>
+    <div class="disp-b" style="color:#FAFAFA;font-size:{{ nom_fs }}px;line-height:.96;
+      letter-spacing:-.015em">{{ d.nombre }}</div>
+    {% if d.datos %}<div style="display:flex;gap:30px;margin-top:30px;padding-top:26px;border-top:1px solid rgba(250,250,250,.20)">{% for cifra, rot in d.datos[:3] %}<div style="flex:1">
+            <div class="disp-b" style="color:{{ ac }};font-size:66px;line-height:.94">{{ cifra }}</div>
+            <div class="kicker" style="color:#FAFAFA;opacity:.62;font-size:21px;
+              letter-spacing:.18em;margin-top:6px">{{ rot }}</div></div>{% endfor %}</div>{% endif %}{% if d.frase %}<div class="body" style="color:#FAFAFA;opacity:.9;font-size:33px;line-height:1.45;font-style:italic;margin-top:26px;border-left:3px solid {{ ac }};padding-left:24px">«{{ d.frase }}»</div>{% endif %}
+  </div>
+</div>

@@ -1,0 +1,26 @@
+{
+  "id": "torneo",
+  "nombre": "Torneo",
+  "descripcion": "Placa insignia del club: foto de fondo, fecha en acento, TORNEO en tres líneas, sede y las tres columnas del pie (categorías libres, femeninas y llamado a la acción).",
+  "cuando_usarla": "Anuncio de un torneo con fecha, sede y categorías. Si no hay categorías, usá 'titular'.",
+  "formatos": ["post", "vert", "story", "reel"],
+  "medidas": {
+    "post":  { "alto": 1080, "titular": 194, "pad_top": 76,  "pad_bot": 76  },
+    "vert":  { "alto": 1350, "titular": 232, "pad_top": 84,  "pad_bot": 84  },
+    "story": { "alto": 1920, "titular": 286, "pad_top": 190, "pad_bot": 250 },
+    "reel":  { "alto": 1920, "titular": 286, "pad_top": 190, "pad_bot": 250 }
+  },
+  "campos": [
+    { "id": "fecha_l1",    "tipo": "texto",   "etiqueta": "Fecha · primera línea",  "requerido": true,  "ejemplo": "28, 29 Y 30 DE" },
+    { "id": "fecha_l2",    "tipo": "texto",   "etiqueta": "Fecha · segunda línea",  "requerido": true,  "ejemplo": "AGOSTO" },
+    { "id": "sede",        "tipo": "texto",   "etiqueta": "Sede",                   "requerido": true,  "ejemplo": "CARRASCO" },
+    { "id": "cats_libres", "tipo": "texto",   "etiqueta": "Categorías libres",      "requerido": true,  "ejemplo": "2DA, 3RA, 4TA, 5TA, 6TA" },
+    { "id": "cats_fem",    "tipo": "texto",   "etiqueta": "Categorías femeninas",   "requerido": true,  "ejemplo": "3RA, 4TA, 5TA" },
+    { "id": "contacto",    "tipo": "texto",   "etiqueta": "Teléfono de contacto",   "requerido": true,  "ejemplo": "097 406 148" },
+    { "id": "foto",        "tipo": "imagen",  "etiqueta": "Foto de fondo",          "requerido": true },
+    { "id": "acento",      "tipo": "opcion",  "etiqueta": "Color de acento",        "opciones": ["lima", "naranja"], "default": "lima" },
+    { "id": "cta",         "tipo": "texto",   "etiqueta": "Llamado a la acción",    "default": "INSCRIPCIONES<br>ABIERTAS" },
+    { "id": "blob",        "tipo": "si_no",   "etiqueta": "Mostrar el salpicón",    "default": true },
+    { "id": "blob_color",  "tipo": "opcion",  "etiqueta": "Color del salpicón",     "opciones": ["naranja", "lima"], "default": "naranja" }
+  ]
+}

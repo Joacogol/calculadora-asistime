@@ -1,0 +1,214 @@
+{
+  "_nota": "Los datos que el worker le pasa al agente en el prompt. Es JSON y no un módulo Python a propósito: dos marcas tienen archivos con el mismo nombre (brand.py, templates.py) y no pueden convivir importadas en el mismo proceso. Un archivo de datos no tiene ese problema.",
+  "nombre": "Stadium",
+  "_sedes": "Stadium tiene 34 tiendas y NO se listan acá. Esta ficha entra al prompt de CADA pieza, y 34 direcciones con horarios son unos 3 KB que se pagan en todos los diseños para algo que casi ninguna pieza usa: una placa de retail dice «en todas nuestras tiendas», no una dirección. Cuando una pieza sea de una tienda puntual, quien la pide da la dirección. La lista completa vive en stadium.com.uy/sucursales.",
+  "tiendas": 34,
+  "sedes": {
+    "Todas": {
+      "contacto": "2308 0742",
+      "acento": "naranja"
+    }
+  },
+  "sede_por_defecto": "Todas",
+  "telefono": "2308 0742",
+  "whatsapp": "+598 93620020",
+  "email": "atencionalcliente@stadium.com.uy",
+  "web": "www.stadium.com.uy",
+  "atencion": "Lunes a viernes de 9:00 a 17:00",
+  "formato_por_defecto": "post",
+  "telefono_por_defecto": false,
+  "regla_telefono": "**En la pieza no va el teléfono: va la web.** Stadium vende en 34 tiendas y online, así que el llamado a la acción es siempre `stadium.com.uy` — ya está en la barra de pie de las plantillas y no hay que repetirlo. El teléfono y el WhatsApp son de atención al cliente, no de venta: van sólo si el pedido lo pide con todas las letras.",
+  "_precios": "Esta cuenta NO publica precios en la imagen. Se miraron 24 posts del feed y no hay un solo precio encima de una foto: el precio va en el epígrafe. La plantilla `precio` existe para las excepciones —una placa de Precios de Locos, un aviso— pero no es el camino normal.",
+  "regla_datos": "**No completes ningún precio, porcentaje ni fecha que no te hayan dado.** Ni el precio anterior, ni el descuento, ni hasta cuándo vale. Si falta, preguntalo. Y ojo con los precios que aparezcan en piezas anteriores: en retail cambian todas las semanas, así que una pieza vieja NO es fuente. Además: en Stadium el precio normalmente NO va en la imagen sino en el epígrafe — si te piden una pieza con precio, confirmá que la quieren así.",
+  "regla_letra_chica": "**Si el precio tiene una condición, la condición va en la pieza.** «Hasta agotar stock», «no acumulable», «válido hasta el…». Es lo primero que reclama un cliente en el mostrador y lo último que alguien se acuerda de pedir. Cuando el pedido no la traiga, preguntá si la hay antes de dar la pieza por terminada.",
+  "_marcas_de_terceros": "Stadium vende adidas, Nike, Umbro, Topper, Converse y otras. Sus logos son de ellas, no nuestros.",
+  "regla_marcas": "**El logo de una marca que no es Stadium sólo se usa si Stadium lo mandó para esta pieza.** No lo saques de internet ni lo redibujes: va en la plantilla `marca`, en el campo `logo_socio`, con el archivo que ellos den. Si el pedido nombra una marca pero no manda su logo, se puede escribir el nombre en texto —el campo `marca` de la plantilla `precio` es justamente para eso— pero no inventar el logo.",
+  "campanas": {
+    "Con papá siempre hay equipo": "Día del Padre. Celeste sobre papel kraft o sobre estudio blanco, con la condensada de póster y el subrayado a mano. Los protagonistas son EMPLEADOS de Stadium, cada uno con su nombre y su área: va con la plantilla `equipo`. Paleta `papa` o `papa_estudio`.",
+    "Para la N°1 de mi equipo": "Día de la Madre. Marrón sobre crema, con la serif. Producto aspiracional —botas, carteras— sobre puesta en escena. Paleta `madre`, plantilla `campana`.",
+    "Sorteo": "Acción con marcas socias. Naranja pleno, con la fila de logos de los que participan y la mecánica escrita. Plantilla `promo`.",
+    "Precios de Locos": "La campaña de descuentos recurrente. Plantilla `promo`.",
+    "SALE": "La liquidación de temporada. Plantilla `promo`."
+  },
+  "_asistime": "Dónde vive el manual que edita Stadium. No es secreto: es un dato de la marca. La clave de API va en la variable que nombra `clave_env`.",
+  "asistime": {
+    "tenant": 176,
+    "documento": 835,
+    "catalogo": 834,
+    "clave_env": "ASISTIME_CLAVE_STADIUM",
+    "clave_secreto": "asistime-api-stadium",
+    "_nota": "`documento` es el manual de marca que edita Stadium. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403."
+  },
+  "_campanas": "Stadium arma campañas con identidad propia —su color y su tipografía— que mientras duran mandan sobre el naranja de la marca. Las de acá abajo son las que se vieron en el feed. Cuando arranque una nueva, se suma acá y se le arma su paleta en brand.py.",
+  "regla_naranja": "**El naranja no es el color de todas las piezas.** Es el del logo y el de las promos. En el feed real aparece en 1 de cada 24 posts: la grilla es beige, tan, kraft, gris y blanco. Una pieza de producto o de campaña con fondo naranja no se parece a lo que publica Stadium.",
+  "_reels": "Qué se le pide a Magnific cuando alguien manda una foto de producto y pide un reel. Los precios están MEDIDOS con el estimador el 25/8/2026, no publicados: si Magnific los cambia, esto queda viejo sin avisar y lo que protege de verdad son los topes.",
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "_calidad": "Qué modelo de video se usa por defecto. `normal` es Seedance 2.0 Mini a 720p: 140 créditos por segundo. `borrador` es el mismo modelo a 480p (70) y `maxima` es Seedance 2.5 a 720p (440), tres veces más caro. La persona puede pedir otra en el chat —«esto es una prueba», «esto va a publicarse»— y el worker la lee del mensaje; esto es lo que se usa cuando no dice nada, o sea casi siempre. Acá es donde está la plata.",
+    "_costo": "Medido con simulate_cost el 26/8/2026, en 9:16 con sonido, y es lineal por segundo. Un reel de 10 segundos: 700 en borrador, 1.400 en normal, 4.400 en máxima. Seedance 2.0 Mini sólo hace 5 o 10 segundos exactos; 2.5 va de 4 en adelante. Si se pide una duración que el modelo no hace, el worker toma la más cercana que sí y lo deja escrito en `notas`.",
+    "_topes": "`creditos_maximos` es por pieza. En 4.500 entra hasta un reel de 10 segundos en calidad máxima (4.400). Si algo no entra, el worker NO rechaza de entrada: primero acorta la duración, después baja de calidad, y sólo si ni el más barato entra lo rechaza — siempre diciendo qué cambió. NO hay techo de mes: se sacó el 28/8/2026 por la misma razón que en `fotos`, y acá pesa más porque un reel sale miles. Lo que no puede pasar es que UN pedido se dispare; que el mes sume es del cliente. Se reactiva escribiendo `creditos_maximos_mes` acá.",
+    "_duracion": "El default, para cuando la persona no dice cuántos segundos quiere. Está en 10 y no en 6 porque con Seedance 2.0 Mini un reel de 10 segundos sale 1.400 créditos — menos que los 2.640 que costaba uno de 6 en 2.5. Más largo y más barato al mismo tiempo. Mini además sólo hace 5 o 10 exactos, así que pedir 6 daría 5. La persona puede pedir otra duración en el chat y el worker la lee del mensaje.",
+    "musica": [
+      {
+        "clave": "street",
+        "descripcion": "Comercial de calle: batería de hip-hop, bajo profundo, sintetizador brillante. Unos 100 BPM. Para producto urbano — championes, buzos, mochilas."
+      }
+    ],
+    "_musica": "El banco de pistas. Se generan UNA vez y se reusan en todos los reels: salen 80 créditos cada una, así que de una pista salen muchos reels. Y sobre todo, que la música se repita es lo que hace que una cuenta suene a una cuenta y no a veinte piezas sueltas. El worker busca el archivo PRIMERO en `musica/` de esta carpeta —así viaja con el despliegue y está el día uno, sin un paso manual que alguien tenga que acordarse de hacer— y si no está, en el bucket bajo `musica/`, que es por donde se agrega una pista nueva sin desplegar. Si el agente no nombra ninguna, va la primera de esta lista: un reel de Stadium siempre lleva música.",
+    "_regla": "El reel NO manipula el producto. Se midió: pidiéndole a un pie que se calce una zapatilla, el modelo no lo hace y encima deforma el producto en los planos de movimiento. Producto quieto, la persona entra después, y recién ahí la caminata."
+  },
+  "fotos": {
+    "creditos_maximos": 600,
+    "_que_hace": "Los cinco verbos que el agente le puede pedir a una foto ANTES de usarla en una pieza: `fondo` recorta el producto, `formato` la lleva a otra proporción inventando los bordes en vez de recortar, `tamano` la agranda, `retoque` saca o cambia algo puntual, y `escena` pone el producto en otro lugar.",
+    "_por_que": "Salen de problemas concretos del motor, no de la lista de lo que la API sabe hacer. La foto de catálogo viene sobre blanco y la plantilla `campana` tiene escrito que una foto así obliga a un velo tan grande que la pieza sale gris: `fondo` lo arregla. La que manda el cliente por WhatsApp viene de 800 píxeles y las piezas se dibujan a 2160: eso es `tamano`. Y la horizontal que sirve para un post no entra en un story sin comerse el producto: eso es `formato`.",
+    "_costo": "Los seis verbos están MEDIDOS, no estimados: se corrió uno de cada uno y se miró cuánto bajó el saldo de la cuenta. `fondo` 3, `formato` 40, `retoque` 100, `escena` 100, `crear` 100, y `tamano` 180 — este último es el único que depende del tamaño de la foto, y por eso el worker rechaza agrandar una que ya pase los 4 megapíxeles: no haría falta, y ahí el precio salta a 1080. Antes cuatro de los seis llevaban una cota de 300; tres salían bastante más baratos.",
+    "_topes": "`creditos_maximos` es por pieza: frena un pedido absurdo o un bucle del chat, que son errores. NO hay techo de mes — se sacó a propósito el 28/8/2026: cuánto gasta el cliente en un mes es decisión suya, no del motor. Si alguna vez hiciera falta, alcanza con volver a escribir `creditos_maximos_mes` acá y el corte vuelve solo; sin la clave no hay corte.",
+    "_regla_producto": "`retoque` y `escena` GENERAN imagen, así que pueden deformar el producto. Se midió con los reels: pidiéndole al modelo que manipule una zapatilla, la caña alta desapareció y la suela cambió de color. Por eso el worker le pega a cada prompt una regla de que el producto no se toca — misma forma, mismos colores, mismos logos. Aun así, una pieza que sale de `escena` conviene mirarla antes de publicarla."
+  },
+  "identidad": {
+    "colores": {
+      "naranja": "#FF6600",
+      "tinta": "#222222",
+      "blanco": "#FFFFFF",
+      "gris": "#999999",
+      "gris_claro": "#E1E3E4",
+      "negro": "#0E0E0E"
+    },
+    "roles": {
+      "acento": "naranja",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "tipografias": [
+      {
+        "familia": "Arch",
+        "archivo": "fonts/Archivo-var.ttf",
+        "pesos": "100 900"
+      },
+      {
+        "familia": "Play",
+        "archivo": "fonts/PlayfairDisplay-var.ttf",
+        "pesos": "400 900"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/stadium-logo.svg",
+      "ratio": 8.207317073170731,
+      "ancho": 300,
+      "color": "naranja",
+      "marcador": "CURRENT",
+      "_nota": "Ratio medido del vector oficial: 201.9/24.6. El ancho base son 300 px sobre 1080, a propósito chico: en retail grita el precio, no la tienda."
+    },
+    "iso": {
+      "archivo": "assets/stadium-iso.svg",
+      "ratio": 1.2356199403493822,
+      "alto": 96,
+      "color": "naranja",
+      "marcador": "CURRENT"
+    },
+    "componentes": {
+      "barra": {
+        "texto": "stadium.com.uy"
+      },
+      "paleta": {
+        "por_defecto": "stadium"
+      },
+      "pastilla": {
+        "radio": 0,
+        "_nota": "Sin radio: la marca no tiene una sola esquina redondeada."
+      }
+    },
+    "voces": {
+      "cond": "Condensada de póster (Archivo al ancho 64, peso 900, en mayúsculas). La de las campañas de volumen y precio: grita y ocupa poco ancho. Es la de «CON PAPÁ SIEMPRE HAY EQUIPO».",
+      "serif": "Serif de contraste alto (Playfair Display). Para lo aspiracional y lo femenino: Día de la Madre, botas, una cápsula. Es la de «PARA LA N°1 DE MI EQUIPO».",
+      "normal": "Archivo black de ancho normal. La voz neutra de la marca, la misma del logotipo. Cuando la campaña no tiene identidad propia."
+    },
+    "paletas": {
+      "stadium": {
+        "fondo": "$blanco",
+        "tinta": "$tinta",
+        "acento": "$naranja",
+        "voz": "normal",
+        "subrayado": false,
+        "cuando": "LA PALETA DE TODOS LOS DÍAS: blanco, tinta y el naranja de la marca. Es la que va cuando no hay una razón para usar otra — un producto, un horario, un aviso, una novedad. Ante la duda, ésta."
+      },
+      "papa": {
+        "fondo": "#D8C4A4",
+        "tinta": "#2E93D4",
+        "acento": "$blanco",
+        "voz": "cond",
+        "subrayado": true,
+        "cuando": "CAMPAÑA DEL DÍA DEL PADRE. Beige y celeste, tipografía condensada y subrayado. Se usa SÓLO en piezas de esa campaña — no porque el pedido mencione a un padre, sino porque la pieza es de la campaña del Día del Padre. Fuera de esa fecha, la paleta es `stadium`."
+      },
+      "papa_estudio": {
+        "fondo": "$blanco",
+        "tinta": "#2E93D4",
+        "acento": "$tinta",
+        "voz": "cond",
+        "subrayado": true,
+        "cuando": "La misma campaña del Día del Padre, en su versión clara: fondo blanco con el celeste de tinta. Para la pieza de la campaña que lleva foto de producto recortado sobre blanco, donde el beige competiría con la foto."
+      },
+      "madre": {
+        "fondo": "#F2EBE1",
+        "tinta": "#6E4B2E",
+        "acento": "#A8825C",
+        "voz": "serif",
+        "subrayado": false,
+        "cuando": "CAMPAÑA DEL DÍA DE LA MADRE. Crema y marrón, con voz serif. Mismo criterio que la del padre: se usa SÓLO en piezas de esa campaña, no cada vez que un pedido nombra a una madre. Fuera de esa fecha, la paleta es `stadium`."
+      },
+      "promo": {
+        "fondo": "$naranja",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "voz": "cond",
+        "subrayado": false,
+        "cuando": "El naranja pleno a sangre, con todo el texto en blanco. Para cuando la pieza ES la oferta y tiene que gritar desde el feed: un descuento, una liquidación, un 2x1, las últimas unidades. No la uses para una novedad que no tiene precio: sin número que mostrar, el naranja pleno queda vacío."
+      },
+      "oscura": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$naranja",
+        "voz": "normal",
+        "subrayado": false,
+        "cuando": "Fondo negro con el naranja de acento. Para producto premium, una presentación o un lanzamiento — lo que se mira antes de leerlo. Va salteada: es el contraste con el blanco lo que la hace funcionar."
+      }
+    },
+    "_paletas_nota": "Los colores de las campañas están SACADOS A OJO de capturas del feed. Los de `stadium` sí son exactos: salen del logo oficial.",
+    "acento_por_defecto": "naranja",
+    "reel": {
+      "tipografias": [
+        "Montserrat-Black.ttf",
+        "Montserrat-SemiBold.ttf"
+      ],
+      "animo_musica": "club",
+      "acento": "naranja"
+    },
+    "carrusel": {
+      "color_cromo": "tinta",
+      "fuente_cromo": "'Arch',Helvetica,sans-serif",
+      "fuente_texto": "'Arch',Helvetica,sans-serif"
+    },
+    "vocabulario": "Hablamos de Stadium, la tienda de deportes. ¿Buscás championes, camiseta, buzo o campera? Tenemos Nike, adidas, Puma y Vans."
+  }
+}

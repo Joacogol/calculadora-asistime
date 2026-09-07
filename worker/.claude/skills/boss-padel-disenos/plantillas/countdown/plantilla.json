@@ -1,0 +1,101 @@
+{
+  "id": "countdown",
+  "nombre": "Countdown",
+  "descripcion": "la cuenta regresiva al torneo",
+  "cuando_usarla": "Los días previos a un evento que ya se anunció. Sostiene la conversación entre el anuncio y la fecha.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "num": 400,
+      "num2": 96,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "num": 470,
+      "num2": 112,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "num": 540,
+      "num2": 129,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "num": 540,
+      "num2": 129,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "dias",
+      "tipo": "texto",
+      "etiqueta": "Días que faltan",
+      "requerido": true,
+      "ejemplo": "5"
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "requerido": true,
+      "ejemplo": "TORNEO BOSS"
+    },
+    {
+      "id": "fecha",
+      "tipo": "texto",
+      "etiqueta": "Fecha",
+      "requerido": true,
+      "ejemplo": "28, 29 Y 30 DE AGOSTO"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true,
+      "ejemplo": "CARRASCO"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "requerido": true
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "ÚLTIMOS CUPOS"
+    },
+    {
+      "id": "contacto",
+      "tipo": "texto",
+      "etiqueta": "Teléfono",
+      "default": "",
+      "nota": "Igual que en `torneo`: sin número no va el rótulo."
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ]
+}

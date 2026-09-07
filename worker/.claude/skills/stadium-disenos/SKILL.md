@@ -1,0 +1,252 @@
+---
+name: stadium-disenos
+description: Genera piezas de diseño para las redes de Stadium — la cadena uruguaya de 34 tiendas deportivas fundada en 1977 — con su identidad real, sacada de su feed y no del logo: producto sin texto encima, campañas con paleta y tipografía propias, gente del equipo con su nombre, y el naranja reservado para las promos. Cinco plantillas: producto, campana, equipo, promo y precio. Usar SIEMPRE que se pida una placa, story, reel o carrusel para Stadium o @stadium_uruguay.
+---
+
+# Stadium
+
+Cadena uruguaya de tiendas deportivas. **34 locales** y venta online desde
+2006. Vende marcas de terceros —adidas, Nike, Puma, New Balance, Converse,
+Umbro, Topper— para mujer, hombre y niños.
+
+## Lo primero, porque es lo que más se equivoca
+
+Este kit se armó dos veces. La primera, mirando el sitio y el logo. La
+segunda, mirando **24 posts reales del feed**. Las tres cosas que cambiaron son
+las tres que hay que tener presentes:
+
+| | |
+|---|---|
+| **El naranja casi no se usa** | Aparece en **1 de 24** posts. La grilla es beige, tan, kraft, gris, marrón y blanco. El naranja es del logo y de las promos, no de todas las piezas. |
+| **Más de la mitad no tiene texto** | Fotos de producto y punto. El mensaje va en el epígrafe. Por eso `producto` es la plantilla más usada y la que menos hace. |
+| **No hay precios en la imagen** | Cero en 24. El precio va en el epígrafe. `precio` existe para excepciones. |
+
+Y la cuarta, que es la estructural: **cada campaña trae su propia identidad y
+mientras dura, manda ella.**
+
+## La identidad, y de dónde salió cada parte
+
+| | |
+|---|---|
+| **Naranja** | `#FF6600` — escrito en el `logo.svg` oficial como `fill:#f60`. Es exacto. |
+| **Tinta** | `#222222` · **Grises** `#999999` y `#E1E3E4` |
+| **Tipografía** | **Archivo** variable. Tiene eje de ancho (62→125), así que la condensada de póster de las campañas sale del mismo archivo. |
+| **Serif** | **Playfair Display**, para las campañas aspiracionales. Es la voz de «Para la N°1 de mi equipo». |
+| **Logo** | el vectorial oficial. La **S** del isotipo se extrajo de su propio trazo. |
+
+**Ojo con el naranja.** El sitio usa `#EF6A00` para su interfaz. Se resolvió a
+favor del logo, que es la especificación de la marca.
+
+Stadium nombró Helvetica Neue y Gotham: las dos son licenciadas y no se pueden
+empaquetar. Archivo es la misma familia visual que el logotipo y viene libre.
+
+⚠️ **Los colores de las campañas (`papa`, `madre`) están sacados a ojo de
+capturas del feed, no de un manual.** Sirven para que una pieza salga parecida.
+Cuando Stadium mande la campaña con sus valores, se corrigen en `brand.py` y
+quedan bien para siempre.
+
+## Las tres voces tipográficas
+
+| | Cuándo | Ejemplo real |
+|---|---|---|
+| **`cond`** | campañas de volumen y precio | «CON PAPÁ SIEMPRE HAY EQUIPO» |
+| **`serif`** | aspiracional, femenino, Día de la Madre | «Para la N°1 de mi equipo» |
+| **`normal`** | cuando la campaña no tiene identidad propia | la voz neutra de la marca |
+
+## Las cinco plantillas
+
+| | Cuándo | El protagonista |
+|---|---|---|
+| **`producto`** | una foto de producto, sin más | la foto |
+| **`campana`** | una campaña con nombre | el título, en la paleta de la campaña |
+| **`equipo`** | alguien de la casa | la persona, con su nombre y su área |
+| **`promo`** | sorteo, descuento, acción con socios | la mecánica |
+| **`precio`** | excepción: una placa con precio | el precio |
+
+Las cinco son **datos**, no código: se corrigen desde el chat sin desplegar
+nada. No hay ninguna sobre la que haya que contestar «esa necesita código».
+
+### Lo que cada una resuelve, y por qué así
+
+**`producto`** — parece que no hace nada y es la más usada. Aporta el encuadre
+al formato y el foco, nada más. `nombre` y `firma` vienen vacíos/apagados **a
+propósito**: en el feed real estas piezas no llevan texto ni logo.
+
+**`campana`** — acá la campaña pisa a la marca. La paleta entra por `estilo` y
+se puede corregir campo por campo. Tres decisiones que vienen del feed:
+
+- **Sobre foto el título va BLANCO**, aunque la paleta diga otra cosa. Es lo
+  que hace la marca, y además es lo único que se lee: el celeste de Día del
+  Padre sobre una foto de catálogo en blanco no llega a contraste ni con el
+  velo al máximo, y la pieza sale gris.
+- **El salto de línea se respeta.** En las piezas reales el corte no cae donde
+  quiera el navegador: «CON PAPÁ / SIEMPRE HAY / EQUIPO».
+- **Sin foto la pieza se centra sola.** `arriba` existe para dejarle lugar al
+  producto o la persona; sin ninguno de los dos, deja media pieza vacía.
+
+**`equipo`** — el formato propio de Stadium: los protagonistas de la campaña de
+Día del Padre son sus empleados, cada uno con su nombre y su área. **La chapita
+es lo que hace la pieza**; sin ella es un retrato cualquiera. El título va en
+una esquina **que se elige**, porque la que sirve depende de dónde quedó la
+cabeza en esa foto.
+
+**`promo`** — la única donde el naranja es el fondo, y la única con la letra
+chica **obligatoria en el contrato**. Una promo sin condiciones escritas se
+discute en la caja de una tienda. Si lleva foto, tiene que ser un **recorte con
+fondo transparente**: una de catálogo con fondo blanco se ve como un rectángulo
+pegado encima del naranja.
+
+**`precio`** — se deja porque una placa de Precios de Locos la va a necesitar,
+pero no es el camino normal. Antes de usarla, confirmá que quieren el precio en
+la imagen.
+
+## Reglas que valen más que el diseño
+
+1. **Ningún precio, porcentaje ni fecha que no hayan dado.** Y una pieza vieja
+   **no es fuente**: en retail los precios cambian todas las semanas.
+2. **Si el precio tiene una condición, la condición va en la pieza.**
+3. **El logo de un tercero se usa sólo si Stadium lo mandó.** No se saca de
+   internet ni se redibuja, y nunca se deforma: va siempre encajado en una caja
+   con `contain`.
+4. **En la pieza va la web, no el teléfono.**
+5. **Los nombres de las personas son de personas reales.** Si no estás seguro
+   de cómo se escribe, preguntá antes de publicar.
+
+## Lo que todavía no tiene
+
+**Carruseles y PDFs** (`DIAPOS` y `PRESENTACION`). Para una cadena de retail el
+carrusel de varios productos es una pieza obvia y va a hacer falta. Se dejó
+afuera a propósito: el motor falla fuerte y con nombre y apellido si alguien
+pide un carrusel, que es mejor que un carrusel que sale mal.
+
+**Reels hablados con subtítulos.** Stadium los hace —hay varios en el feed, con
+los subtítulos quemados— y el motor hoy sólo arma reels de rótulos sobre
+imagen. Existe un pack de edición de reels hablados que resuelve justo eso.
+
+## Reels: las zonas que Instagram tapa
+
+Un reel no se ve entero: Instagram le dibuja su interfaz encima. Lo que caiga
+ahí queda **tapado** —no recortado: tapado, o sea que el archivo se ve perfecto
+y en el teléfono no se lee—, que es la forma más difícil de detectar un error.
+
+| | reel | story |
+|---|---|---|
+| arriba | 250 px | 250 px |
+| abajo | 420 px | 250 px |
+| derecha | 144 px | 60 px |
+| izquierda | 60 px | 60 px |
+
+Las cinco plantillas usaban entre 72 y 92 px de margen y **las cinco invadían,
+en los dos formatos**. Ahora el margen sale de `pad_seguro(fmt, m.pad)`, que
+nunca achica: si la plantilla pedía más, gana la plantilla.
+
+### El rótulo sobre un clip
+
+`campana` con `sobre_video: true` sale **sin fondo**, para montarse encima de
+un video: título en blanco, sombra, y un degradado suave arriba en vez de un
+velo entero. Y respeta `posicion` —sin foto la pieza se centra sola, pero acá
+el video ocupa el lugar de la foto y el título va arriba—.
+
+```bash
+ffmpeg -t 5 -i clip.mp4 -i rotulo.png \
+  -filter_complex "[0:v]scale=1080:1920:flags=lanczos,fade=t=out:st=4.5:d=0.5[v];[v][1:v]overlay=0:0[out]" \
+  -map "[out]" -map 0:a -af "afade=t=out:st=4.5:d=0.5" \
+  -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -r 24 \
+  -c:a aac -b:a 192k -movflags +faststart reel.mp4
+```
+
+## Video por IA: qué aguanta y qué no
+
+Se probó con Seedance 2.5 y la SK8-Hi negra del catálogo de Stadium: 8 s, 9:16,
+tres planos —el pie entra, se calza, camina—. Resultado medido mirando los
+cuadros:
+
+- **Los planos quietos (0–5 s) salieron fieles.** Silueta, suela, etiqueta roja
+  del talón: todo en su lugar. Sirven para publicar.
+- **Los planos de caminata (5–8 s) deformaron el producto.** La caña alta
+  desapareció —la zapatilla se lee como una baja— y la suela cambió a color
+  goma, que en la negra total no existe.
+- **La acción pedida no ocurrió.** El pie nunca se calza la zapatilla: está al
+  lado durante cinco segundos y después hay un corte donde ya la tiene puesta.
+  Estos modelos saltean la manipulación fina.
+
+De ahí, tres reglas para el próximo:
+
+1. **Movimiento del producto, no manipulación del producto.** Una cámara que
+   gira alrededor de una zapatilla quieta sale bien; una mano o un pie que la
+   agarra, la calza o la ata, no.
+2. **Mirar los cuadros, no el primer cuadro.** El primer cuadro salió perfecto
+   y el problema estaba en el segundo 6.
+3. **Cuanto más liso el producto, mejor aguanta.** El negro total sobrevivió
+   más que lo que habría sobrevivido una franja blanca sobre negro.
+
+Y un detalle de formato: **pedimos 1080p y el clip vino en 608×1080.** Para
+publicar hay que escalar. Magnific tiene `video_upscale`; el escalado por
+software alcanza para mirar, no para publicar.
+
+## Que el texto se lea: lo que se midió
+
+Sobre foto, el texto blanco «se perdía un poco». Medido con
+`herramientas/medir-contraste.py`, el problema quedó en un renglón: la
+**mediana** del contraste daba 8,85:1 y el **peor punto** 1,98:1. O sea, el 90%
+del texto estaba perfecto y se moría justo donde cruzaba la paleta blanca de la
+foto.
+
+La causa: el velo se calcula con el brillo **promedio** de una franja, y un
+promedio nunca ve una mancha. En esa pieza `plan_titular` devolvió velo **cero**
+—el bolso y el fondo eran oscuros— mientras la paleta blanca del medio se comía
+las letras.
+
+Tres cosas lo arreglaron, y las tres siguen puestas:
+
+| | |
+|---|---|
+| **Sombra en el texto** (`sombra_texto`) | Es local: viaja con cada letra, así que protege donde hace falta sin tocar el resto de la foto. Tres capas, todas con desenfoque. |
+| **Piso al velo** | Con foto siempre hay algo de velo aunque el cálculo diga que no. |
+| **El velo llega hasta el 78%** | Antes cortaba en 55% y la bajada quedaba afuera. |
+
+Resultado: peor punto **4,68:1** en post y **9,49:1** en story, con 4,5 de
+objetivo. Antes: 1,98:1.
+
+### Dos cosas que NO se arreglan con sombra, y hay que saberlas
+
+**Un color de tono medio sobre foto.** El celeste de campaña da 3,3:1 contra
+blanco y 6,4:1 contra negro, pero **1:1 contra un gris de su mismo brillo**.
+Oscurecer el fondo lo ACERCA a ese brillo antes de alejarlo: subir la sombra de
+0,55 a 1,6 movió el número de 1,20 a 1,30. Por eso `campana` cambia sola a
+blanco cuando hay foto, y por eso `equipo` exige **fondo plano** detrás del
+título.
+
+**Blanco sobre el naranja de la marca: 2,94:1.** No llega ni al 3 de texto
+grande. No se cambió porque es el par de la marca y está así en su sorteo real
+—pero si alguna vez hay que corregirlo, el camino es tinta oscura para el texto
+chico, que sobre ese naranja da 5,2:1.
+
+### Cómo medirlo de nuevo
+
+```bash
+python3 herramientas/medir-contraste.py pieza.html 1080 1920
+```
+
+Mira el **percentil 90** del fondo y no el promedio, y calcula el contraste
+entre los **dos colores reales** —no contra blanco—. Las dos decisiones salieron
+de errores: la primera versión promediaba y no veía nada; la segunda asumía
+texto blanco y reportaba «1,00:1» en una chapita de texto oscuro sobre fondo
+blanco, que en realidad da 15,9:1.
+
+## Una advertencia sobre la verificación
+
+Boss y Clínica tienen una red que Stadium no: sus plantillas ya existían, así
+que un cambio se prueba dibujando todo y comparando byte a byte contra antes.
+Acá no hay «antes» — esta versión se verificó **mirando** los previews en post
+y story, con el juego normal y con el límite, y corrigiendo lo que se veía mal.
+Así se encontraron cuatro cosas: el subrayado atado al cuerpo de letra en vez
+de al ancho del título, el vacío de media pieza sin foto, el `flex:1` que
+anulaba el centrado, y las cifras de estilo antiguo de la serif.
+
+Desde el despliegue siguiente sí aplica la regla dura:
+
+```bash
+python3 herramientas/verificar-motor.py stadium-disenos --grabar    # ANTES
+python3 herramientas/verificar-motor.py stadium-disenos --comparar  # DESPUÉS
+```

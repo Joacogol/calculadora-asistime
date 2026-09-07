@@ -1,0 +1,5 @@
+# La lista de clientes con sus claves, y cualquier .env: nunca al repo. Con el
+# registro en Secret Manager (app/registro.py) tampoco hacen falta.
+clientes.json
+.env
+.env.*

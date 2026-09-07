@@ -1,0 +1,139 @@
+{
+  "id": "americano",
+  "nombre": "Americano",
+  "descripcion": "el partido abierto de la semana",
+  "cuando_usarla": "Un americano, una social, una partida abierta. NO es `torneo` con otra fecha.",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "dia_fs": 128,
+      "hora_fs": 66,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "vert": {
+      "alto": 1350,
+      "dia_fs": 148,
+      "hora_fs": 76,
+      "pad_top": 76,
+      "pad_bot": 76
+    },
+    "story": {
+      "alto": 1920,
+      "dia_fs": 172,
+      "hora_fs": 89,
+      "pad_top": 190,
+      "pad_bot": 250
+    },
+    "reel": {
+      "alto": 1920,
+      "dia_fs": 172,
+      "hora_fs": 89,
+      "pad_top": 190,
+      "pad_bot": 250
+    }
+  },
+  "campos": [
+    {
+      "id": "dia",
+      "tipo": "texto",
+      "etiqueta": "Día",
+      "requerido": true,
+      "ejemplo": "JUEVES"
+    },
+    {
+      "id": "hora",
+      "tipo": "texto",
+      "etiqueta": "Hora",
+      "requerido": true,
+      "ejemplo": "20:00"
+    },
+    {
+      "id": "sede",
+      "tipo": "texto",
+      "etiqueta": "Sede",
+      "requerido": true,
+      "ejemplo": "CARRASCO"
+    },
+    {
+      "id": "fecha",
+      "tipo": "texto",
+      "etiqueta": "Fecha",
+      "default": ""
+    },
+    {
+      "id": "nivel",
+      "tipo": "texto",
+      "etiqueta": "Nivel",
+      "default": "",
+      "ejemplo": "Cuarta y quinta · mixto"
+    },
+    {
+      "id": "cupos",
+      "tipo": "texto",
+      "etiqueta": "Cupos",
+      "default": "",
+      "nota": "El recuadro entero desaparece si va vacío, rótulo incluido."
+    },
+    {
+      "id": "rotulo_cupos",
+      "tipo": "texto",
+      "etiqueta": "Rótulo de los cupos",
+      "default": "LUGARES LIBRES"
+    },
+    {
+      "id": "precio",
+      "tipo": "texto",
+      "etiqueta": "Precio",
+      "default": ""
+    },
+    {
+      "id": "incluye",
+      "tipo": "lista",
+      "etiqueta": "Lo que incluye",
+      "default": [],
+      "columnas": [
+        {
+          "id": "texto",
+          "etiqueta": "Ítem"
+        }
+      ]
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Kicker",
+      "default": "PARTIDO ABIERTO"
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "ANOTATE"
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto de fondo",
+      "default": "",
+      "nota": "Opcional a propósito: sin foto sale sobre el azul de marca, que es lo normal un lunes."
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Encuadre",
+      "default": "50% 50%"
+    },
+    {
+      "id": "acento",
+      "tipo": "opcion",
+      "etiqueta": "Acento",
+      "opciones": [
+        "lima",
+        "naranja"
+      ],
+      "default": "lima"
+    }
+  ],
+  "notas": "**No es `torneo` con otra fecha.** Un torneo es un evento de tres días y su placa es solemne; esto es un jueves a las 20 y tiene que sonar a plan, no a competencia. Por eso el peso está en el DÍA y la HORA, y los cupos son un número grande: la urgencia es el argumento.\n\nEs la plantilla que más plata deja: los formatos estructurados se venden entre 40 y 50% por encima de la reserva de cancha suelta."
+}
