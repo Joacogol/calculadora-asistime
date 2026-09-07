@@ -229,3 +229,4 @@ insert into public.clientes (marca, nombre, supabase_ref, cobra, notas) values
   ('stadium-disenos',            'Stadium',             'heajbidxysjxxegqemka', true,  'sin cobro.sql todavía: el worker no le corta por saldo'),
   ('asistime-disenos',           'Asistime',            'qxjvtxumkljsroukpkny', false, 'la casa: se anota el costo, no se cobra')
 on conflict (marca) do nothing;
+

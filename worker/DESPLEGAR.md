@@ -4932,3 +4932,89 @@ mano en el panel. Va una línea en el cuerpo del POST:
     if (input.corrige) cuerpo.corrige = String(input.corrige).trim();
 
 más el parámetro `corrige` (opcional, string) en la definición de la tool.
+
+---
+
+## El libro central y el tablero de administración (7/9/2026)
+
+Ver `TABLERO-ADMIN.md` para el porqué. Lo que cambia en el despliegue:
+
+**Ya hecho desde acá, no hay que correrlo:** `migraciones/tablero-admin.sql`
+está aplicada en el Supabase de Asistime (`qxjvtxumkljsroukpkny`): tablas
+`libro`, `clientes`, `cargas`, `infraestructura`, `cierres`, `latidos`,
+`administradores`, y las vistas. Los cuatro clientes ya están en `clientes`
+con margen 2,0; Asistime con `cobra = false`.
+
+### 1 · El worker, como siempre
+
+```bash
+rm -rf /tmp/nuevo
+git clone -b claude/asistime-auto-designs-agent-waais0 \
+  https://github.com/Joacogol/calculadora-asistime /tmp/nuevo
+cd ~/worker && cp -r /tmp/nuevo/worker/. . && chmod +x desplegar-chat.sh
+grep -c "def espejar_cargas" app/libro.py     # → 1
+./desplegar-chat.sh
+```
+
+`desplegar-chat.sh` corre `probar-libro.py` antes de subir nada. Desde este
+despliegue el worker: escribe cada pieza en el libro, cobra reels y fotos,
+lee el margen de la tabla `clientes` (y cae a `MARGEN` del entorno si no
+puede), copia a cada cliente las cargas anotadas desde el tablero y deja un
+latido por ciclo. **No hace falta ninguna variable nueva:** la casa es el
+cliente `asistime-disenos` del registro.
+
+### 2 · El historial al libro (una sola vez)
+
+```bash
+cd ~/worker
+python3 herramientas/cargar-libro.py --simular   # cuenta y no escribe
+python3 herramientas/cargar-libro.py             # escribe
+```
+
+Lo que pasó, pasó: las placas ya cobradas entran con su precio; reels,
+videos y fotos entran con precio 0 (costaron, no se cobran). Es idempotente.
+
+### 3 · El tablero (una sola vez el bucket; después sólo el `cp`)
+
+```bash
+gsutil mb -p boss-padel-disenos -l southamerica-east1 gs://boss-padel-disenos-tablero
+gsutil iam ch allUsers:objectViewer gs://boss-padel-disenos-tablero
+gsutil -m -h "Cache-Control:no-cache" cp /tmp/nuevo/tablero/index.html \
+  /tmp/nuevo/tablero/app.js /tmp/nuevo/tablero/estilo.css gs://boss-padel-disenos-tablero/
+```
+
+Queda en `https://storage.googleapis.com/boss-padel-disenos-tablero/index.html`.
+
+Si `iam ch allUsers` da error de política de la organización («public access
+prevention»), es el único caso en que hay que ir a la consola: Cloud Storage
+→ el bucket → Permisos → quitar la prevención de acceso público.
+
+### 4 · Que el enlace del email vuelva al tablero
+
+En el Supabase de Asistime → Authentication → URL Configuration:
+
+- **Site URL**: `https://storage.googleapis.com/boss-padel-disenos-tablero/index.html`
+- **Redirect URLs**: la misma.
+
+Sin esto el enlace del email lleva a `localhost:3000`. Después: abrir el
+tablero, poner `joaquin@asistime.ai`, abrir el enlace que llega **en el mismo
+navegador**.
+
+### Por qué no está en Vercel ni en una función de Supabase
+
+Se intentaron los dos. El conector de Vercel no tiene permiso para crear
+proyectos (403 «You don't have permission to create a project»). La función
+de borde se desplegó y sirvió los tres archivos idénticos al repo, pero la
+pasarela de Supabase devuelve todo `text/html` como `text/plain` con
+`Content-Security-Policy: default-src 'none'; sandbox`: está hecho para que
+nadie aloje páginas en `supabase.co`, y no hay cabecera que lo evite. La
+función `tablero` (v2) quedó desplegada y muerta; se borra desde el panel de
+Supabase o con `supabase functions delete tablero` cuando se pueda.
+
+### Qué verificar después
+
+- Cloud Run, log del primer ciclo: `consumo placa … · costo US$… · cobrado
+  US$…` y ningún `no pude anotar … en el libro`.
+- En el tablero, Salud del sistema: los cuatro con latido «hace N min».
+- Piezas: la primera placa nueva con costo y precio; el primer reel con
+  costo (fal) o créditos (Magnific).
