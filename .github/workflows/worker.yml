@@ -6,10 +6,13 @@
 # cada vez que main cambia algo adentro de worker/. En cualquier otra rama
 # sólo corren las pruebas: se ve si algo se rompió antes de mezclar.
 #
-# Lo único que vive en GitHub es la credencial de una cuenta de servicio de
-# despliegue (secreto GCP_SA_KEY). Las claves de los clientes, de Anthropic,
-# de Magnific, fal y Gemini siguen en Secret Manager, como siempre: el
-# despliegue sólo las MONTA en el job, nunca las lee.
+# No hay ninguna clave guardada en GitHub. La organización de Google prohíbe
+# crear claves de cuentas de servicio (iam.disableServiceAccountKeyCreation),
+# así que GitHub se identifica con su propio token OIDC ante un pool de
+# Workload Identity Federation del proyecto, que sólo acepta este repo, y
+# actúa como la cuenta de servicio `despliegue-github`. Las claves de los
+# clientes, de Anthropic, de Magnific, fal y Gemini siguen en Secret Manager:
+# el despliegue sólo las MONTA en el job, nunca las lee.
 name: worker
 
 on:
@@ -55,6 +58,9 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -66,7 +72,8 @@ jobs:
           pip install -q jinja2 requests Pillow numpy
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github
+          service_account: despliegue-github@boss-padel-disenos.iam.gserviceaccount.com
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: boss-padel-disenos
