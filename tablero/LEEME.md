@@ -1,46 +1,45 @@
 # El tablero de administración
 
-Una página estática (`index.html`, `app.js`, `estilo.css`) que lee el libro
-central del Supabase de Asistime. Sin build, sin dependencias: `supabase-js`
-viene del CDN. Entra con un enlace por email; la base sólo le contesta a los
-emails que están en la tabla `administradores`.
+Una app estática: `index.html`, `app.js`, `estilo.css`. Lee el libro central
+del Supabase de Asistime con la clave pública y una sesión de administrador
+(email y contraseña; sólo los emails de `administradores` ven algo).
 
 ## Dónde vive
 
-En un bucket público de Google Cloud Storage del proyecto `boss-padel-disenos`,
-que ya es donde corre el worker:
+https://joacogol.github.io/calculadora-asistime/ — GitHub Pages, sirviendo la
+raíz de la rama `main` de este repo. Los tres archivos de acá se copian tal
+cual a la raíz de `main`.
 
-    https://storage.googleapis.com/boss-padel-disenos-tablero/index.html
+**Por qué ahí y no en otro lado** (7/9/2026, medido, no supuesto):
 
-Se probaron dos lugares antes y los dos están descartados por razones que no
-van a cambiar: el conector de Vercel no puede crear proyectos (403), y una
-función de borde de Supabase **no puede servir HTML** — la pasarela reescribe
-`text/html` como `text/plain` y le pone `Content-Security-Policy: sandbox`,
-a propósito, para que nadie aloje páginas en `supabase.co`.
+- Vercel: el conector no tiene permiso para crear proyectos (403).
+- Una función de borde de Supabase: la pasarela convierte todo `text/html`
+  en `text/plain` con CSP de sandbox, a propósito.
+- Supabase Storage: igual, el HTML sale como texto plano (antiphishing).
+- Cloud Storage y Cloud Run: la organización de Google tiene «Domain
+  restricted sharing» (`iam.allowedPolicyMemberDomains`) y no acepta
+  `allUsers`; la excepción por proyecto no se pudo aplicar.
+- Firebase Hosting: no se pudo agregar Firebase al proyecto.
 
-## Publicarlo o actualizarlo
+GitHub Pages no pasa por ninguna de esas políticas. El repo es público; las
+claves que van en `app.js` ya son públicas por diseño y los datos siguen
+detrás del login.
 
-Desde Cloud Shell, parado en el clon del repo:
+## Cómo se actualiza
+
+Desde la rama de trabajo, con los cambios ya commiteados:
 
 ```bash
-gsutil -m -h "Cache-Control:no-cache" cp tablero/index.html tablero/app.js tablero/estilo.css \
-  gs://boss-padel-disenos-tablero/
+git fetch origin main
+git checkout main && git pull
+cp tablero/index.html tablero/app.js tablero/estilo.css .
+git add index.html app.js estilo.css && git commit -m "Tablero: …" && git push
+git checkout -
 ```
 
-La primera vez, antes de eso:
+Tarda un minuto en publicarse. `curl -sI https://joacogol.github.io/calculadora-asistime/app.js`
+tiene que dar 200.
 
-```bash
-gsutil mb -p boss-padel-disenos -l southamerica-east1 gs://boss-padel-disenos-tablero
-gsutil iam ch allUsers:objectViewer gs://boss-padel-disenos-tablero
-```
+## El diseño
 
-Y en Supabase (proyecto `qxjvtxumkljsroukpkny`, Authentication → URL
-Configuration) la URL de arriba tiene que estar como **Site URL** y en
-**Redirect URLs**: si no, el enlace del email manda a `localhost:3000`.
-
-## Probarlo sin base
-
-`herramientas/probar-tablero` no existe: la prueba es abrir `index.html` con
-un `supabase.createClient` de mentira, como se hizo el 7/9/2026 con Playwright
-(ocho pantallas, cero errores de JS). Si se toca `app.js`, repetir eso antes
-de subirlo.
+`worker/TABLERO-ADMIN.md`: qué mide, qué no, y las decisiones que quedaron.

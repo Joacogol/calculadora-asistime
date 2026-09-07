@@ -5018,3 +5018,32 @@ Supabase o con `supabase functions delete tablero` cuando se pueda.
 - En el tablero, Salud del sistema: los cuatro con latido «hace N min».
 - Piezas: la primera placa nueva con costo y precio; el primer reel con
   costo (fal) o créditos (Magnific).
+
+---
+
+## El libro central y el tablero (7/9/2026)
+
+Desplegado el 7/9. Lo que trae: el worker anota cada pieza (placa, reel,
+video, foto) en el `libro` del Supabase de Asistime, cobra reels y fotos
+además de placas, lee el margen de la tabla `clientes` y deja un latido por
+ciclo. Ver `app/libro.py` y `worker/TABLERO-ADMIN.md`.
+
+**Comprobar que anda:** en el tablero, Salud del sistema muestra los cuatro
+clientes con latido de hace minutos. Sin tablero:
+
+    curl -sS "https://qxjvtxumkljsroukpkny.supabase.co/rest/v1/latidos?select=marca,ultimo_ciclo" \
+      -H "apikey: <clave pública>" -H "authorization: Bearer <token de sesión>"
+
+**El historial** entra una sola vez con `python3 herramientas/cargar-libro.py`
+(primero con `--simular`). Lo que pasó antes del libro no se cobra: reels y
+fotos viejos entran con precio 0.
+
+**El tablero** vive en GitHub Pages; ver `tablero/LEEME.md` para dónde y por
+qué. La entrada es con email y contraseña: el usuario administrador se creó
+a mano en `auth.users` porque la configuración de Auth (Site URL) no se
+puede tocar desde acá. Contraseña nueva desde Configuración, «Tu contraseña».
+
+**Sobras que se pueden borrar**: la función de borde `tablero` y el bucket
+`tablero` en el Supabase de Asistime, y el bucket
+`gs://boss-padel-disenos-tablero` en Google. Ninguno sirve nada; quedaron de
+los intentos.
