@@ -58,12 +58,10 @@ select public.alta_desde_repo(
 -- 3. El cliente, en la tabla de la casa
 insert into public.clientes (marca, nombre, esquema, bucket, cobra) values
   ('club-x-disenos', 'Club X', 'club_x', 'disenos-club-x', true);
-```
 
-**4. Exponer el esquema.** En el panel del proyecto: Settings, API, «Exposed
-schemas», agregar `club_x` a la lista. Es lo único que no se puede hacer por
-SQL ni por API: PostgREST sólo sirve los esquemas que están en esa lista, y
-hasta que esté contesta 406 diciendo cuáles expone.
+-- 4. Exponer el esquema, para que PostgREST lo sirva
+select public.exponer_esquema('club_x');
+```
 
 **5. La clave de la API**, para que el cliente pueda pedir desde el chat:
 
@@ -130,3 +128,25 @@ escrita en claro en el código de la tool, así que cualquiera que la leyera pod
 fabricar uno. Ahora se hace con la `service_role`, que no sale del servidor,
 con la marca adentro para que un sello de un cliente no valga en la base de
 otro.
+
+
+## Exponer el esquema, sin el panel
+
+PostgREST sólo sirve los esquemas que están en su lista, y hasta que el del
+cliente esté ahí **todo lo suyo contesta 406**: un alta que quedó a medias sin
+que nada se vea roto. Era el único paso que había que hacer a mano en el panel
+—Settings, API, «Exposed schemas»— y por eso era el que se iba a olvidar.
+
+`public.exponer_esquema('club_x')` lo hace en SQL: PostgREST lee esa lista de
+la variable `pgrst.db_schemas` del rol `authenticator`, así que se puede
+escribir desde la base. Después avisa dos veces, y las dos hacen falta:
+`reload config` para que relea la lista y `reload schema` para que relea las
+tablas. Sin el segundo contesta 404 «no encuentro la tabla», que es la misma
+espera disfrazada de otro error.
+
+`public.esconder_esquema('club_x')` es la contraria, para dar de baja.
+
+Si alguien toca «Exposed schemas» en el panel, gana el panel: lo que se guarda
+ahí se escribe sobre esta lista. Vale la pena mirarla —`select rolconfig from
+pg_roles where rolname = 'authenticator'`— si un cliente que andaba empieza a
+contestar 406 de un día para el otro.
