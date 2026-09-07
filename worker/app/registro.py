@@ -23,7 +23,8 @@ un cliente nuevo exista. Sin tocar el despliegue.
        "url": "https://xxx.supabase.co",
        "service_role": "eyJ…",
        "asistime_clave": "…",          ← opcional: para leer su manual de marca
-       "bucket": "disenos"}            ← opcional, es el default
+       "bucket": "disenos",            ← opcional, es el default
+       "esquema": "club_x"}            ← opcional: sólo si comparte proyecto
     ]}
 
 Las claves van ADENTRO, y eso es a propósito: el registro entero es un secreto,
@@ -102,6 +103,10 @@ def _normalizar(c: dict, i: int) -> dict:
         # Enter de más da un 401 idéntico al de una clave equivocada.
         "key": c["service_role"].strip(),
         "bucket": (c.get("bucket") or "disenos").strip(),
+        # El esquema donde viven SUS tablas cuando comparte proyecto con otros
+        # clientes. Vacío es `public`, que es lo que tienen los que llegaron
+        # con su propio Supabase: no hay que tocarles la entrada.
+        "esquema": (c.get("esquema") or "").strip(),
         "asistime_clave": (c.get("asistime_clave") or "").strip(),
     }
 

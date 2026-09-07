@@ -307,7 +307,8 @@ async def ciclo():
         # Asistime, que la lee `manual.py` por su cuenta.
         cli = Cliente(marca=datos["marca"], url=datos["url"], key=datos["key"],
                       bucket=datos.get("bucket", "disenos"),
-                      nombre=datos.get("nombre", ""))
+                      nombre=datos.get("nombre", ""),
+                      esquema=datos.get("esquema", ""))
         if not cli.configurado:
             log.warning("[%s] sin URL o sin clave: lo salteo", cli.marca)
             continue
