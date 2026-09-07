@@ -199,8 +199,41 @@ def preparar(archivos: list[Path], carpeta: Path) -> list[dict]:
 MATERIAL_MINIMO = 8.0
 
 
+#: Cómo se dice «va todo». Cuando la instrucción lo dice, el modelo no elige
+#: ni limpia: ordena. Ver `elegir_tramos` y el reel del 7/9/2026.
+_TODO = re.compile(
+    r"todo el contenido|absolutamente todo|no cort|sin cortar|no (?:le |me )?saques|no sacar|"
+    r"sin sacar|no recort|sin recortar|\benteros?\b|\bcompletos?\b|de punta a punta|"
+    r"no (?:me )?dejes nada afuera|nada afuera", re.I)
+
+
+def quiere_todo(instruccion: str) -> bool:
+    """¿La instrucción pide que entre todo el material, sin cortar?"""
+    return bool(_TODO.search(instruccion or ""))
+
+
+def tramos_enteros(pedazos: list[dict], elegidos: list[dict]) -> list[dict]:
+    """Un tramo por archivo, entero, en el orden en que el modelo los puso.
+
+    Los archivos que el modelo no nombró van al final, en el orden en que
+    llegaron: «todo» quiere decir todo, también lo que no le gustó.
+    """
+    por_archivo: dict[str, float] = {}
+    for p in pedazos:
+        por_archivo.setdefault(p["archivo"], float(p["duracion"]))
+    orden: list[str] = []
+    for t in elegidos:
+        if t["archivo"] in por_archivo and t["archivo"] not in orden:
+            orden.append(t["archivo"])
+    for a in por_archivo:
+        if a not in orden:
+            orden.append(a)
+    return [{"archivo": a, "desde": 0.0, "hasta": round(por_archivo[a], 2),
+             "por_que": "va entero: se pidió todo el material"} for a in orden]
+
+
 def pregunta(instruccion: str, objetivo: float, pedazos: list[dict],
-             marca: str = "") -> str:
+             marca: str = "", modo: str = "") -> str:
     archivos: dict[int, tuple[str, float, int]] = {}
     for p in pedazos:
         n, d, c = archivos.get(p["indice"], (p["archivo"], p["duracion"], 0))
@@ -239,7 +272,13 @@ def pregunta(instruccion: str, objetivo: float, pedazos: list[dict],
         # sirven ES el valor de todo esto. Así que lo que decide el trabajo no
         # es sólo cuánto material hay, sino cuántas piezas: un video solo que
         # entra se limpia; varios videos sueltos se eligen, entren o no.
-        + ("El material ENTRA ENTERO en el reel. Tu trabajo no es elegir sino LIMPIAR: sacá "
+        + ("Quien pide el reel dice que va TODO el material, sin cortar nada. Tu trabajo NO es "
+           "elegir ni limpiar: es ORDENAR los videos, escribir el gancho y las palabras. "
+           "Devolvé UN tramo por video y ENTERO, desde 00:00.000 hasta su final, en el orden "
+           "en que deberían aparecer. Los silencios los saca el motor después. `descartados` "
+           "va vacío.\n\n"
+           if modo == "todo" else
+           "El material ENTRA ENTERO en el reel. Tu trabajo no es elegir sino LIMPIAR: sacá "
            "sólo lo que no aporta —arranques falsos, muletillas, errores, silencios largos, "
            "el «bueno, a ver» del principio, la despedida cortada del final— y dejá todo el "
            "contenido de fondo. Si está todo bien, devolvé un solo tramo con el video entero.\n\n"
@@ -473,8 +512,9 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
         pedazos = preparar(archivos, carpeta)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, RuntimeError, OSError) as e:
         raise NoPudeMirar(f"no pude preparar el material: {e}") from e
+    modo = "todo" if quiere_todo(instruccion) else ""
     entrada: list[dict] = [{"type": "text",
-                            "text": pregunta(instruccion, objetivo, pedazos, marca)}]
+                            "text": pregunta(instruccion, objetivo, pedazos, marca, modo)}]
     for p in pedazos:
         datos = p["ruta"].read_bytes()
         if len(datos) > MAX_INLINE * 1.4:
@@ -502,10 +542,33 @@ def elegir_tramos(archivos: list[Path], instruccion: str, objetivo: float,
     tramos, avisos = validar(j.get("tramos"), pedazos, objetivo)
     if not tramos:
         raise NoPudeMirar("no devolvió ningún tramo válido: " + "; ".join(avisos)[:200])
+    ajustes: list[str] = []
+    if modo == "todo":
+        # Lo que se pidió no se negocia con el modelo: un tramo por archivo y
+        # entero, con su orden. Lo que devolvió sólo sirve para el orden.
+        tramos = tramos_enteros(pedazos, tramos)
+    else:
+        # Un corte que cae en medio de una frase se corre a la pausa más
+        # cercana. El modelo ya tiene la regla escrita; esto la mide.
+        from . import analisis as _an
+        por_nombre = {a.name: a for a in archivos}
+        for n, t in enumerate(tramos, 1):
+            ruta = por_nombre.get(t["archivo"])
+            if not ruta:
+                continue
+            try:
+                desde2, hasta2, cambio = _an.acomodar_al_habla(ruta, t["desde"], t["hasta"])
+            except Exception as e:                           # noqa: BLE001
+                log.warning("no pude acomodar el tramo %d al habla: %s", n, e)
+                continue
+            if cambio:
+                ajustes.append(f"tramo {n} ({t['archivo']}): {cambio}")
+            t["desde"], t["hasta"] = desde2, hasta2
     uso = d.get("usage") or d.get("usage_metadata") or {}
     log.info("Gemini eligió %d tramos (%.0f s) en %.0f s, %s tokens", len(tramos),
              sum(t["hasta"] - t["desde"] for t in tramos), r["segundos"], uso.get("total_tokens", "?"))
     return {"tramos": tramos, "gancho": str(j.get("gancho") or "").strip(),
             "palabras": _palabras(j.get("palabras")),
             "descartados": _descartados(j.get("descartados"), pedazos, tramos),
-            "avisos": avisos, "uso": uso, "segundos": r["segundos"], "modelo": m}
+            "avisos": avisos, "ajustes": ajustes, "modo": modo,
+            "uso": uso, "segundos": r["segundos"], "modelo": m}

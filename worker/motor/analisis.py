@@ -462,6 +462,82 @@ def _juntar(intervalos, pegue: float = 0.0):
     return juntos
 
 
+#: Hasta dónde se corre un corte que cayó en medio de una frase. Más que
+#: esto ya no es «acomodar el corte», es cambiar la decisión de qué entra.
+TOPE_ACOMODO = 4.0
+
+
+def acomodar_al_habla(ruta, desde: float, hasta: float, aire: float = 0.12,
+                      minimo: float = 0.3, tope: float = TOPE_ACOMODO) -> tuple[float, float, str]:
+    """Corre un corte que cae en medio de una frase hasta la pausa más cercana.
+
+    Devuelve `(desde, hasta, qué cambió)`; el texto va vacío si no tocó nada.
+
+    ── Por qué existe ─────────────────────────────────────────────────────
+
+    El 7/9/2026 alguien mandó tres videos y pidió «no cortar ninguna frase
+    del final». Gemini devolvió un tramo que terminaba en 5,00 s de un clip
+    donde la última palabra —«Claude»— iba de 4,91 a 6,24: el reel salió con
+    la frase mordida y un subtítulo de 0,2 s que decía «Nuestro». La pregunta
+    ya le pedía «cada tramo termina donde el corte no deja una frase a la
+    mitad»; una regla escrita es una sugerencia. Esto la mide.
+
+    Dónde hay una frase y dónde una pausa lo dice la energía del audio, con la
+    misma vara que usa `tramos_hablados` para sacar tiempos muertos. Si el
+    corte cae donde hay sonido, se corre hasta la pausa siguiente (el final) o
+    la anterior (el arranque), más el `aire` que ya usa el recorte de
+    silencios. Y hay un tope: correr un corte cuatro segundos es acomodarlo;
+    correrlo veinte es decidir qué entra, y eso no le toca a esta función —
+    ahí se deja donde estaba y se avisa.
+
+    Se calla cuando no puede medir: sin audio, sin energía, un archivo que no
+    se puede leer. Un «está en medio de una frase» inventado movería cortes
+    que estaban bien.
+    """
+    try:
+        ficha = sondear(ruta)
+    except (RuntimeError, OSError, ValueError):
+        return desde, hasta, ""
+    dur = float(ficha.get("duracion") or 0)
+    if not ficha.get("tiene_audio") or dur <= 0:
+        return desde, hasta, ""
+    t, db = energia_audio(ruta)
+    if not db:
+        return desde, hasta, ""
+    mudos = silencios(t, db, minimo=minimo)
+    # Un archivo sin UNA pausa no es alguien hablando: es música, ambiente,
+    # un tono. Ahí no hay frase que proteger, y «la pausa más cercana» serían
+    # los extremos del archivo — correr el corte hasta ahí no es acomodarlo,
+    # es deshacer lo que el modelo decidió. Se deja como está.
+    if not mudos:
+        return desde, hasta, ""
+
+    def en_pausa(x: float) -> bool:
+        if x <= 0.05 or x >= dur - 0.05:
+            return True
+        return any(a - 0.01 <= x <= b + 0.01 for a, b in mudos)
+
+    cambios = []
+    nd, nh = float(desde), float(hasta)
+    if not en_pausa(nh):
+        siguientes = [a for a, _ in mudos if a > nh]
+        fin = min(siguientes) if siguientes else dur
+        if fin - nh <= tope:
+            nh = round(min(dur, fin + aire), 2)
+            cambios.append(f"el final caía en medio de una frase: lo llevé de {hasta:.1f} s a {nh:.1f} s")
+        else:
+            cambios.append(f"el final cae en medio de una frase que sigue {fin - nh:.0f} s más; lo dejé")
+    if not en_pausa(nd):
+        previas = [b for _, b in mudos if b < nd]
+        ini = max(previas) if previas else 0.0
+        if nd - ini <= tope:
+            nd = round(max(0.0, ini - aire), 2)
+            cambios.append(f"el arranque caía en medio de una frase: lo llevé de {desde:.1f} s a {nd:.1f} s")
+        else:
+            cambios.append(f"el arranque cae en medio de una frase que empezó {nd - ini:.0f} s antes; lo dejé")
+    return nd, nh, " · ".join(cambios)
+
+
 def tramos_hablados(ruta, umbral_db: float = -42.0, minimo: float = 0.45,
                     aire: float = 0.12, min_tramo: float = 0.8,
                     desde: float = 0.0, hasta: float | None = None,

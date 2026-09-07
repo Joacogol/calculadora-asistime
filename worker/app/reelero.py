@@ -1966,6 +1966,13 @@ def _mirar_si_hace_falta(guion: dict, fila: dict, clips: list, nombres: dict,
         nota += " · descartó " + str(len(d)) + ": " + "; ".join(
             f"{x['archivo']}" + (f" ({x['por_que']})" if x["por_que"] else "")
             for x in d)[:300]
+    if r.get("modo") == "todo":
+        nota += " · se usó todo el material, entero, como se pidió: Gemini sólo ordenó"
+    # Los cortes que se corrieron para no dejar una frase a la mitad. Van a
+    # la nota porque son una decisión sobre lo que se ve, y quien pidió el
+    # reel tiene que poder saber que el corte no es el que el modelo eligió.
+    if r.get("ajustes"):
+        nota += " · " + "; ".join(r["ajustes"])[:300]
     if r["avisos"]:
         nota += " · " + "; ".join(r["avisos"])[:200]
     return g, nota
