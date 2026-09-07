@@ -5047,3 +5047,59 @@ puede tocar desde acá. Contraseña nueva desde Configuración, «Tu contraseña
 `tablero` en el Supabase de Asistime, y el bucket
 `gs://boss-padel-disenos-tablero` en Google. Ninguno sirve nada; quedaron de
 los intentos.
+
+---
+
+## Desde el 7/9/2026: el worker se despliega solo
+
+Ya no hace falta Cloud Shell para desplegar. `.github/workflows/worker.yml`
+hace, en GitHub Actions, lo mismo que hacía la persona:
+
+1. En **cualquier rama y en cada pull request**, corre `probar-marcas.py` y
+   las cinco pruebas de `desplegar-chat.sh`. Si algo falla, se ve en la
+   pestaña Actions del repo antes de mezclar nada.
+2. En **`main`**, además, corre `./desplegar-chat.sh` tal cual, autenticado
+   con la cuenta de servicio `despliegue-github@boss-padel-disenos`. Las
+   claves de clientes y proveedores siguen en Secret Manager; el despliegue
+   sólo las monta en el job.
+
+**Lo que cambió para que esto fuera posible**: `~/worker` dejó de ser la
+fuente. Todo lo que vivía sólo ahí —los kits de código de Boss y Clínica
+(`brand.py`, `diapositivas.py`, `presentacion.py`, `templates.py`, sus
+tipografías y assets), `cobro.sql`, el disparador, varias herramientas— se
+subió al repo el 7/9 (commit `ba882b3`). Desde entonces **la fuente de verdad
+es el repo**, y desplegar es mezclar a `main`.
+
+**Lo único que vive en GitHub** es el secreto `GCP_SA_KEY`: la credencial
+JSON de la cuenta de servicio de despliegue. Se creó así, una vez, en Cloud
+Shell:
+
+    PROYECTO=boss-padel-disenos
+    gcloud iam service-accounts create despliegue-github \
+      --display-name "Despliegue desde GitHub Actions" --project $PROYECTO
+    SA=despliegue-github@$PROYECTO.iam.gserviceaccount.com
+    for R in roles/run.admin roles/cloudbuild.builds.editor roles/storage.admin \
+             roles/artifactregistry.admin roles/cloudscheduler.admin \
+             roles/secretmanager.admin roles/serviceusage.serviceUsageConsumer \
+             roles/iam.serviceAccountUser; do
+      gcloud projects add-iam-policy-binding $PROYECTO \
+        --member serviceAccount:$SA --role $R --quiet >/dev/null
+    done
+    gcloud iam service-accounts keys create ~/despliegue-github.json --iam-account $SA
+
+y el contenido de ese archivo se pegó en el repo: Settings → Secrets and
+variables → Actions → New repository secret → `GCP_SA_KEY`. Después se borró
+el archivo. Si hay que rotarla: borrar la clave vieja en IAM, crear otra,
+reemplazar el secreto.
+
+**Si `keys create` falla por política de la organización**
+(`iam.disableServiceAccountKeyCreation`), el camino es Workload Identity
+Federation: GitHub se autentica sin clave. Es un paso más largo y no se hizo
+todavía; pedirlo cuando pase.
+
+**Cómo se mira un despliegue**: github.com/Joacogol/calculadora-asistime →
+Actions → «worker». Un despliegue completo tarda unos 10 a 15 minutos, casi
+todo compilando la imagen.
+
+**Cloud Shell sigue sirviendo** para lo que no es desplegar: `registro.py`
+(sumar un cliente), `cargar-libro.py`, `alta.py`.
