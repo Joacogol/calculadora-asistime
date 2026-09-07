@@ -1,0 +1,10 @@
+{
+  "_nota": "Asistime todavía NO tiene banco de fotos propio. Las piezas de esta marca son tipográficas y de interfaz: no necesitan foto. Las tres que sí la necesitan (tony, clip, equipo) usan material que se pasa en el pedido.",
+  "fotos": {},
+  "_faltantes": [
+    "Tony en 6 u 8 situaciones distintas (atendiendo de noche, en una reunión, con el celular, festejando) — hoy se genera de cero en cada pieza",
+    "Retratos del equipo en horizontal y en vertical, con espacio libre a un lado para el titular",
+    "Capturas limpias de la plataforma: Tony, Agentes, Herramientas, Programadas, el grafo de agentes — para la plantilla `producto`",
+    "Fotos del estudio de podcast, para las tapas de `clip`"
+  ]
+}
