@@ -318,7 +318,7 @@ fi
 # dice nada sobre el código, y frenar por eso enseña a saltear las pruebas.
 PRUEBAS="probar-precios.py probar-video-solo.py probar-libro.py"
 if command -v ffmpeg >/dev/null 2>&1; then
-  PRUEBAS="$PRUEBAS probar-revisor.py"
+  PRUEBAS="$PRUEBAS probar-revisor.py probar-cortes.py"
 else
   echo "  · sin ffmpeg acá: no corro probar-revisor.py"
 fi
