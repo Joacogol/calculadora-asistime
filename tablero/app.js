@@ -90,13 +90,22 @@ async function cargar() {
 function vistaLogin(msg = '') {
   app.innerHTML = `<div class="login">
     <h1>Tablero Asistime</h1>
-    <p>Costos, márgenes y cobros por cliente. Entrás con tu email: te llega un enlace y con eso alcanza.</p>
+    <p>Costos, márgenes y cobros por cliente. Entrás con tu email y tu contraseña.</p>
     ${msg ? `<p class="${msg.startsWith('✓') ? 'ok-linea' : 'aviso-linea'}">${esc(msg)}</p>` : ''}
-    <form id="login"><input type="email" required placeholder="tu@email" autocomplete="email"><button class="boton">Mandarme el enlace</button></form>
+    <form id="login" style="flex-direction:column"><input type="email" name="email" required placeholder="tu@email" autocomplete="email">
+      <input type="password" name="clave" required placeholder="contraseña" autocomplete="current-password">
+      <button class="boton">Entrar</button></form>
+    <p class="nota" style="margin-top:14px"><button type="button" class="boton sec" id="enlace">Prefiero un enlace por email</button></p>
   </div>`;
   document.getElementById('login').onsubmit = async e => {
     e.preventDefault();
-    const email = e.target.querySelector('input').value.trim();
+    const d = datos(e.target);
+    const { error } = await sb.auth.signInWithPassword({ email: d.email.trim(), password: d.clave });
+    if (error) vistaLogin('No pude entrar: ' + error.message);
+  };
+  document.getElementById('enlace').onclick = async () => {
+    const email = document.querySelector('#login input[name=email]').value.trim();
+    if (!email) return vistaLogin('Escribí el email primero.');
     const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
     vistaLogin(error ? 'No pude mandar el enlace: ' + error.message : '✓ Enlace enviado. Revisá el correo y abrilo en este mismo navegador.');
   };
@@ -433,7 +442,10 @@ function vConfig() {
     <form id="alta" class="fila-form"><label>Marca (igual que en el registro)<input name="marca" required placeholder="club-x-disenos" pattern="[a-z0-9-]+"></label><label>Nombre<input name="nombre" required placeholder="Club X"></label><label>Supabase ref<input name="supabase_ref" placeholder="abcdefghijklmnopqrst"></label><button class="boton">Crear</button></form>
     <p class="nota">Hasta que la marca no esté acá, el worker no puede anotarle nada en el libro (y lo dice en el log). Las claves no van acá: van en el registro de Secret Manager, como siempre.</p>
   </div>
-  <div class="caja"><h3>Quién puede entrar</h3><div id="admins">Cargando…</div>
+  <div class="caja"><h3>Tu contraseña</h3>
+    <form id="clave" class="fila-form"><label>Nueva contraseña<input name="clave" type="password" minlength="10" required autocomplete="new-password"></label><label>Otra vez<input name="clave2" type="password" minlength="10" required autocomplete="new-password"></label><button class="boton">Cambiar</button></form>
+    <p class="nota">Diez caracteres como mínimo. Cambiá la inicial apenas entres.</p>
+    <h3 style="margin-top:14px">Quién puede entrar</h3><div id="admins">Cargando…</div>
     <form id="admin-nuevo" class="fila-form" style="margin-top:10px"><label>Email<input name="email" type="email" required></label><button class="boton sec">Sumar</button></form>
     <p class="nota">Cualquiera con el enlace puede pedir entrar; sólo los emails de esta lista ven algo.</p>
   </div></div>`;
@@ -470,6 +482,8 @@ function enganchar(vista, ruta) {
           saldo_usd: +(+s.saldo_usd || 0).toFixed(2), facturado: c.cobra ? +(enPesos ? t.cobrado * tc : t.cobrado).toFixed(2) : null, moneda: enPesos ? 'UYU' : 'USD', tipo_cambio: enPesos ? tc : null, notas: d.notas || null, cerrado_en: new Date().toISOString() }; });
       accion(() => q(sb.from('cierres').upsert(filas, { onConflict: 'marca,mes' }), 'cierres'), e.submitter); };
     f('csv-cierre').onclick = () => csv(`cierre-${mesSel.slice(0, 7)}.csv`, D.clientes.filter(c => c.activo).map(c => { const t = totales(mesSel, c.marca); return { cliente: c.nombre, mes: mesSel, costo_usd: t.costo.toFixed(2), infra_usd: t.infra.toFixed(2), cobrado_usd: t.cobrado.toFixed(2), margen_efectivo_usd: t.efectivo.toFixed(2), saldo_usd: saldoDe(c.marca).saldo_usd, piezas: t.piezas, creditos: t.creditos }; })); }
+  if (f('clave')) f('clave').onsubmit = e => { e.preventDefault(); const d = datos(e.target); if (d.clave !== d.clave2) return alert('Las dos contraseñas no coinciden.');
+    accion(async () => { await q(sb.auth.updateUser({ password: d.clave }), 'contraseña'); alert('Contraseña cambiada.'); }, e.submitter); };
   if (f('alta')) f('alta').onsubmit = e => { e.preventDefault(); const d = datos(e.target); accion(() => q(sb.from('clientes').insert({ marca: d.marca, nombre: d.nombre, supabase_ref: d.supabase_ref || null }), 'clientes'), e.submitter); };
   if (f('admins')) { q(sb.from('administradores').select('email').order('email'), 'administradores').then(a => { f('admins').innerHTML = a.map(x => `<div class="barra"><span class="n">${esc(x.email)}</span>${a.length > 1 ? `<button class="boton sec" data-quitar-admin="${esc(x.email)}" style="padding:2px 8px">quitar</button>` : ''}</div>`).join('');
       f('admins').querySelectorAll('[data-quitar-admin]').forEach(b => b.onclick = () => { if (confirm(`¿Quitar a ${b.dataset.quitarAdmin}?`)) accion(() => q(sb.from('administradores').delete().eq('email', b.dataset.quitarAdmin), 'administradores'), b); }); }).catch(e => f('admins').textContent = e.message);
