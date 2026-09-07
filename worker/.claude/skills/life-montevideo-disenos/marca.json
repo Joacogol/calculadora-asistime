@@ -13,7 +13,7 @@
   "web": "lifemontevideo.uy",
   "instagram": "@lifemvd",
   "atencion": "Lunes a viernes de 6:30 a 22:00, sábados de 8:00 a 13:00. Domingo cerrado.",
-  "formato_por_defecto": "post",
+  "formato_por_defecto": "story",
   "telefono_por_defecto": false,
   "regla_telefono": "**En la pieza no va el teléfono: va la web o el Instagram.** El club atiende por WhatsApp y por el sitio, y el llamado a la acción de todas sus piezas es «agendá tu día de prueba» o «escribinos». El pie de las plantillas ya dice `lifemontevideo.uy`. El teléfono va sólo si el pedido lo pide con todas las letras.",
   "_horarios": "Los horarios de ARRIBA son los del club, no los de las clases. La grilla de clases cambia por mes y NO está acá a propósito: una grilla vieja publicada es peor que no publicar nada.",
@@ -68,7 +68,7 @@
     "_musica": "Todavía sin banco propio. Cuando se genere la primera pista va en `musica/` de esta carpeta, para que viaje con el despliegue. Un club de gimnasia pide algo con pulso: house o pop electrónico de 120-128 BPM, sin voz."
   },
   "identidad": {
-    "_colores": "Salen del manual oficial («Guía de colores LIFE»), no de una pantalla. Life Montevideo es Pantone 7636 C. Los otros cuatro clubes están acá porque una pieza de la familia los nombra, no porque esta cuenta los use de acento.",
+    "_colores": "Del manual oficial («Guía de colores LIFE»), no de una pantalla. Life Montevideo es Pantone 7636 C. Los otros clubes están acá porque el feed los usa como señal de actividad —celeste para piscina, verde para hybrid— y porque una pieza de la familia los nombra. El `celeste` es el único muestreado de una pieza y no leído del manual: el 7466 C de Distrito M sale más apagado que el agua de la pieza de nado.",
     "colores": {
       "frambuesa": "#BE3455",
       "negro": "#000000",
@@ -79,7 +79,8 @@
       "aguada": "#D12421",
       "distrito": "#00B5BD",
       "zonamerica": "#00C996",
-      "outdoor": "#06F395"
+      "outdoor": "#06F395",
+      "celeste": "#37C6E8"
     },
     "roles": {
       "acento": "frambuesa",
@@ -87,17 +88,45 @@
       "tinta": "tinta"
     },
     "formatos": {
-      "post": [1080, 1080],
-      "vert": [1080, 1350],
-      "story": [1080, 1920],
-      "reel": [1080, 1920]
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
     },
-    "_tipografias": "El logotipo es una pincelada dibujada, no una tipografía, y no se imita con ninguna: el logo va como logo. Lo que se escribe usa Montserrat —geométrica, la familia más cercana a la Futura del manual— y Archivo en su ancho angosto para los titulares de póster, que es lo que hace la Futura Condensed Extra Bold de las portadas.",
+    "_tipografias": "El logotipo es una pincelada dibujada y no se imita con ninguna fuente. Lo que se escribe encima de las fotos, en el feed, son mayúsculas apretadas de un grotesco ANGOSTO, no de una geométrica: por eso la familia principal es Archivo —que tiene eje de ancho, así que las tres voces salen del mismo archivo— y Montserrat queda sólo para la voz baja y los rótulos espaciados. El manual usa Futura Condensed Extra Bold en sus portadas; es licenciada y no se puede empaquetar.",
     "tipografias": [
-      { "familia": "Mont", "archivo": "fonts/Montserrat-Black.ttf", "pesos": "900" },
-      { "familia": "MontM", "archivo": "fonts/Montserrat-Medium.ttf", "pesos": "500" },
-      { "familia": "MontS", "archivo": "fonts/Montserrat-SemiBold.ttf", "pesos": "600" },
-      { "familia": "Arch", "archivo": "fonts/Archivo-var.ttf", "pesos": "100 900" }
+      {
+        "familia": "Arch",
+        "archivo": "fonts/Archivo-var.ttf",
+        "pesos": "100 900"
+      },
+      {
+        "familia": "MontM",
+        "archivo": "fonts/Montserrat-Medium.ttf",
+        "pesos": "500"
+      },
+      {
+        "familia": "Mont",
+        "archivo": "fonts/Montserrat-Black.ttf",
+        "pesos": "900"
+      },
+      {
+        "familia": "MontS",
+        "archivo": "fonts/Montserrat-SemiBold.ttf",
+        "pesos": "600"
+      }
     ],
     "logo": {
       "archivo": "assets/life-montevideo.svg",
@@ -116,66 +145,83 @@
       "_nota": "«LIFE» solo, sin el nombre del club: es la marca que comparten los cinco. Sirve para firmar una pieza donde el lockup entero compite con la foto."
     },
     "componentes": {
-      "barra": { "texto": "lifemontevideo.uy" },
-      "paleta": { "por_defecto": "life" },
+      "barra": {
+        "texto": "lifemontevideo.uy"
+      },
+      "paleta": {
+        "por_defecto": "club"
+      },
       "pastilla": {
-        "radio": 999,
-        "_nota": "Redonda del todo. El único elemento blando de una identidad que por lo demás es de pincelada y mayúsculas."
+        "radio": 0,
+        "_nota": "Sin radio, y casi sin uso: en el feed no hay una sola pastilla. Lo que separa un dato del otro es el tamaño de la letra y el trazo a pincel."
       }
     },
     "voces": {
-      "poster": "Condensada de póster (Archivo al ancho 68, peso 900, en mayúsculas). La voz de los titulares fuertes, la que ocupa el lugar de la Futura Condensed Extra Bold del manual. Es la de «UNA COMUNIDAD QUE VIBRA».",
-      "normal": "Montserrat Black. Geométrica y ancha, la voz de todos los días: el nombre de una clase, un plan, un aviso.",
-      "seca": "Montserrat Medium en mayúsculas con mucho espaciado, como el «MONTEVIDEO» del logotipo. Para rótulos y sobretítulos, nunca para un titular."
+      "titulo": "Archivo angosta (ancho 86, peso 800), mayúsculas, interlínea corta. La voz de casi todas las piezas: «VIBRAR FUERTE / TAMBIÉN / ES / CONECTAR», «LIFE HYBRID SESSION». Las palabras se apilan como bloques.",
+      "poster": "La misma, más angosta todavía (ancho 70, peso 900). Para una frase larga que igual tiene que gritar.",
+      "numero": "Archivo ancha y negra, con cifras de ancho fijo. Los números gigantes del feed: el «60» del nado, el «12.09» del hybrid.",
+      "susurro": "Montserrat Medium, minúsculas, chica: «sos mucho más que eso». Es la única pieza del feed que no grita y funciona por eso. NUNCA en mayúsculas ni a cuerpo grande: deja de ser lo que es.",
+      "seca": "Montserrat Medium en mayúsculas muy espaciadas, como el «MONTEVIDEO» del logotipo. Rótulos y sobretítulos: «2DA. EDICIÓN», «SAB.». Nunca un titular."
     },
     "paletas": {
-      "life": {
-        "fondo": "$blanco",
-        "tinta": "$tinta",
-        "acento": "$frambuesa",
-        "voz": "normal",
-        "cuando": "LA DE TODOS LOS DÍAS: blanco, tinta y el frambuesa del club. Va cuando no hay una razón para usar otra — una clase, un horario, una novedad, un aviso. Ante la duda, ésta."
-      },
-      "oscura": {
+      "club": {
         "fondo": "$negro",
         "tinta": "$blanco",
         "acento": "$frambuesa",
-        "voz": "poster",
-        "cuando": "Negro pleno con el frambuesa de acento: es la página de negativos del manual hecha pieza. Para lo que se mira antes de leerse — un titular de comunidad, un lanzamiento, una foto de sala con poca luz. Va salteada: es el contraste con el blanco lo que la hace funcionar."
+        "voz": "titulo",
+        "cuando": "LA DE TODOS LOS DÍAS. Foto tratada, texto blanco y el frambuesa del club en la palabra que importa. Ante la duda, ésta."
       },
-      "frambuesa": {
-        "fondo": "$frambuesa",
+      "piscina": {
+        "fondo": "$negro",
         "tinta": "$blanco",
-        "acento": "$blanco",
-        "voz": "poster",
-        "cuando": "El color del club a sangre, con todo el texto en blanco. Para cuando la pieza ES la oferta y tiene que gritar desde el feed: una promo, un descuento, una inscripción que cierra. No la uses para una novedad sin número: sin nada que mostrar, el pleno queda vacío."
+        "acento": "$celeste",
+        "voz": "titulo",
+        "cuando": "Para lo que pasa en el agua: nado, hidrogimnasia, aqua. El feed usa celeste ahí y no frambuesa."
       },
-      "humo": {
-        "fondo": "$humo",
+      "hybrid": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$outdoor",
+        "voz": "titulo",
+        "cuando": "Sesiones hybrid, outdoor y entrenamientos especiales, que es donde el feed usa el verde. También las piezas con sponsor deportivo."
+      },
+      "blanca": {
+        "fondo": "$blanco",
         "tinta": "$tinta",
         "acento": "$frambuesa",
-        "voz": "normal",
-        "cuando": "El blanco roto del manual, un punto más suave que el blanco puro. Para piezas con mucho texto —una grilla de clases, lo que incluye un plan— donde el blanco pleno cansa."
+        "voz": "titulo",
+        "cuando": "Sin foto, sobre blanco. Para un aviso o un cambio de horario que tiene que leerse y nada más. Va salteada: el feed es oscuro."
       },
       "familia": {
         "fondo": "$negro",
         "tinta": "$blanco",
         "acento": "$outdoor",
         "voz": "poster",
-        "cuando": "SÓLO para piezas de los cinco clubes: una promo que vale en todos, un evento común. El verde no es de Life Montevideo — es el del Outdoor Club — y acá se usa como señal de que la pieza habla de la familia, no de la sede. En una pieza de este club, nunca."
+        "cuando": "SÓLO para piezas de los cinco clubes: una promo o un evento común."
       }
     },
     "acento_por_defecto": "frambuesa",
     "reel": {
-      "tipografias": ["Montserrat-Black.ttf", "Montserrat-SemiBold.ttf"],
+      "tipografias": [
+        "Montserrat-Black.ttf",
+        "Montserrat-SemiBold.ttf"
+      ],
       "animo_musica": "club",
       "acento": "frambuesa"
     },
     "carrusel": {
-      "color_cromo": "tinta",
-      "fuente_cromo": "'MontS',Helvetica,sans-serif",
+      "color_cromo": "blanco",
+      "fuente_cromo": "'MontM',Helvetica,sans-serif",
       "fuente_texto": "'MontM',Helvetica,sans-serif"
     },
     "vocabulario": "Hablamos de Life Montevideo, el club de Buceo. Clases de funcional, híbrido, HIIT, CrossFit, GAP, pilates reformer, pilates mat, yoga, stretching, hidrogimnasia, aqua funcional, natación y tenis. Planes BASIC y ALL IN. Viví Life."
+  },
+  "_formato": "El feed de @lifemvd es vertical de punta a punta: las cinco piezas que se miraron son 9:16. Por eso el formato por defecto es `story` y no `post`. Un cuadrado acá no se parece a lo que publican.",
+  "_feed": "El kit se corrigió el 7/9/2026 mirando cinco piezas reales del feed, después de haberlo armado sólo con el manual. Lo que cambió es todo lo que sigue, y es mucho: el manual dice cómo es el logo, el feed dice cómo es la marca.",
+  "regla_foto": "**Ninguna foto sale cruda.** En el feed no hay una sola: están en blanco y negro con grano, barridas de movimiento, o bajadas de luz. Ese tratamiento no es un filtro de gusto, es lo que hace posible todo lo demás — sobre una foto sin color, el frambuesa escrito encima queda como lo único vivo de la pieza; sobre una foto en color compite con todo y la pieza se ensucia. El campo `tratamiento` de las plantillas es lo primero que hay que elegir.",
+  "regla_color": "**El acento cambia según de qué habla la pieza, y eso es de la marca.** Frambuesa es el color del club y el que va cuando no hay razón para otro. Pero el feed usa celeste para la piscina y verde para las sesiones hybrid y outdoor: son colores de la familia Life, usados acá como señal de actividad. No es un error de marca, es cómo comunican. Lo que sí sería un error es un rojo Aguada en una pieza de Montevideo sin que la pieza hable de Aguada.",
+  "regla_firma": "**Una pieza se firma UNA vez.** O el #VIVÍLIFE grande cruzando la foto, o el logotipo LIFE MONTEVIDEO, o nada — nunca dos. En el feed, la marca de agua es la firma de las piezas de clima y de comunidad; el logotipo grande es de las piezas que presentan el club; y las de evento no llevan ninguno de los dos porque ya llevan la co-marca del sponsor.",
+  "sponsors": {
+    "_nota": "El feed tiene piezas co-marcadas: «PUMA × #VIVÍLIFE». El logo del sponsor NO se saca de internet ni se redibuja: va el archivo que manden. Si no lo mandaron, se escribe el nombre en texto, que es lo que la plantilla `evento` permite."
   }
 }

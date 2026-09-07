@@ -1,0 +1,109 @@
+{#- La frase apilada sobre la foto en blanco y negro. La pieza firma de la
+    cuenta.
+
+    La real dice, alineada a la derecha y en cuatro líneas:
+
+        VIBRAR FUERTE      ← frambuesa
+        TAMBIÉN            ← frambuesa
+        ES                 ← blanco, chica
+        CONECTAR           ← blanco
+
+    Tres cosas la hacen funcionar, y ninguna es la tipografía:
+
+    1. **La foto está en blanco y negro.** Por eso el frambuesa se puede
+       escribir encima: no compite con ningún otro color de la imagen. Sobre
+       una foto en color la misma pieza se ensucia.
+    2. **Sólo algunas líneas van en color.** El corte entre las que van y las
+       que no es lo que arma el sentido: «VIBRAR FUERTE TAMBIÉN» es una idea,
+       «ES CONECTAR» es la otra.
+    3. **La palabra corta va más chica.** El «ES» no es un descuido: una
+       conjunción al mismo cuerpo que el titular rompe el ritmo de la pila.
+       Acá se resuelve solo — tres letras o menos bajan al 52%.
+
+    ── Cómo se marca el color ──────────────────────────────────────────
+
+    Con un asterisco al principio de la línea. Un marcador de un carácter es
+    lo único que sobrevive a que la frase se escriba en un chat; una lista de
+    «qué líneas van en color» se desincroniza a la primera corrección. -#}
+
+{%- set trat = d.tratamiento or 'bn' -%}
+{%- set pal = paleta(d.estilo) -%}
+{%- set lineas = d.frase.split('\n') | map('trim') | reject('equalto', '') | list -%}
+{#- El cuerpo se calcula por DOS lados y gana el más chico, porque una frase
+    puede no entrar por alto o por ancho y son problemas distintos.
+
+    Por alto: cuatro líneas entran a cuerpo pleno en una story, siete no.
+
+    Por ancho: «VIBRAR FUERTE» en una sola línea a 132 px no entra en 1080, y
+    el navegador la parte solo — que es exactamente lo que NO tiene que pasar
+    acá. En esta pieza el corte de línea es del que escribe la frase: si el
+    motor mete uno más, cambia el sentido. Así que se achica hasta que la
+    línea más larga entre entera. El 0,55 es el ancho medio de una mayúscula
+    de Archivo al ancho 86; sobra un poco a propósito. -#}
+{%- set mas_larga = (lineas | map('length') | list | max) or 1 -%}
+{%- set por_alto = m.frase if lineas|length <= 4 else (m.frase * 0.80 if lineas|length <= 6 else m.frase * 0.64) -%}
+{%- set por_ancho = (1080 - 2 * m.pad) / (0.55 * mas_larga) -%}
+{%- set cuerpo = [por_alto, por_ancho] | min -%}
+{%- set derecha = d.alineacion == 'derecha' -%}
+
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+
+{% if trat != 'natural' %}
+<div class="grano"><svg width="100%" height="100%" preserveAspectRatio="none"
+  viewBox="0 0 1080 1080"><filter id="gr-man"><feTurbulence type="fractalNoise"
+  baseFrequency="0.85" numOctaves="3" seed="9"/></filter>
+  <rect width="1080" height="1080" filter="url(#gr-man)"/></svg></div>
+{% endif %}
+
+{#- El velo se MIDE contra esta foto. Una en blanco y negro con contraste
+    subido tiene blancos puros donde el texto desaparece, y el promedio no los
+    ve: por eso además hay un piso. -#}
+{%- set plan = plan_titular(d.foto, pal.acento, c.negro, (0.20, 0.85), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.28]|max, 0.72) }};
+  transform:rotate(180deg)"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  align-items:{{ 'flex-end' if derecha else 'flex-start' }};
+  text-align:{{ 'right' if derecha else 'left' }}">
+
+  {% if d.posicion != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div>
+    {% for linea in lineas %}
+    {%- set cruda = linea.strip() -%}
+    {%- set en_color = cruda.startswith('*') -%}
+    {%- set texto = cruda[1:].strip() if en_color else cruda -%}
+    {#- Una palabra de tres letras o menos es una bisagra —ES, Y, DE, CON— y
+        va más chica. Es lo que separa una pila diseñada de cuatro renglones
+        del mismo tamaño. -#}
+    {%- set chica = texto|length <= 3 -%}
+    <div class="v-{{ pal.voz }}" style="
+      color:{{ pal.acento if en_color else pal.tinta }};
+      font-size:{{ ((cuerpo * 0.52) if chica else cuerpo)|round|int }}px;
+      white-space:nowrap;
+      {{ sombra_texto() }}">{{ texto }}</div>
+    {% endfor %}
+
+    {% if d.remate %}
+    <div style="display:inline-block;margin-top:{{ cuerpo * 0.30 }}px">
+      <div class="v-seca" style="color:{{ pal.tinta }};opacity:.88;
+        font-size:{{ m.remate }}px;{{ sombra_texto(1.6) }}">{{ d.remate }}</div>
+      {#- El trazo a pincel debajo del remate. Se estira al ancho del bloque,
+          así que mide lo que mide el texto. -#}
+      <div class="trazo" style="height:{{ m.remate * 0.42 }}px;width:100%;
+        margin-top:{{ m.remate * 0.30 }}px;background:{{ pal.acento }}"></div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if d.posicion != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  {#- Firma al pie sólo si la piden. En el feed, una pieza de manifiesto no
+      lleva logo: la cuenta ya dice de quién es y el logo le sacaría fuerza a
+      la frase, que es todo lo que la pieza tiene. -#}
+  {% if d.firma != 'ninguna' %}
+  <div style="width:100%;text-align:{{ 'right' if derecha else 'left' }}">
+    {{ firma(d.firma, m.iso, pal.tinta, m.logo, 'right' if derecha else 'left') }}
+  </div>
+  {% endif %}
+</div>

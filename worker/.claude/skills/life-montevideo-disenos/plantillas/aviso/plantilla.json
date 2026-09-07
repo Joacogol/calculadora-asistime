@@ -1,0 +1,43 @@
+{
+ "id": "aviso",
+ "nombre": "Aviso",
+ "descripcion": "un plan, una promo o un cambio: titular, lista y letra chica",
+ "cuando_usarla": "La plantilla de los datos. Un plan de socio con lo que incluye, una promoción, un cambio de horario del club, un feriado, algo que hay que decir con todas las letras. Si el dato es un número o una fecha grande, es `evento`. Si lo que se publica es una idea y no un dato, es `manifiesto`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 64, "titulo": 84,  "rotulo": 20, "lema": 26, "item": 25, "legal": 18, "ancho_lista": 800, "logo": 0.50, "iso": 0.78},
+  "vert":  {"alto": 1350, "pad": 68, "titulo": 96,  "rotulo": 21, "lema": 28, "item": 27, "legal": 19, "ancho_lista": 840, "logo": 0.54, "iso": 0.83},
+  "story": {"alto": 1920, "pad": 86, "titulo": 122, "rotulo": 25, "lema": 34, "item": 32, "legal": 22, "ancho_lista": 880, "logo": 0.66, "iso": 0.98},
+  "reel":  {"alto": 1920, "pad": 86, "titulo": 122, "rotulo": 25, "lema": 34, "item": 32, "legal": 22, "ancho_lista": 880, "logo": 0.66, "iso": 0.98}
+ },
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "Título", "requerido": true,
+   "ejemplo": "ALL IN",
+   "nota": "En mayúsculas. Un plan («ALL IN», «BASIC»), una promo («25% OFF EN TU PRIMER MES»), un aviso («CERRADO EL LUNES»)."},
+  {"id": "rotulo", "tipo": "texto", "etiqueta": "Rótulo", "default": "", "ejemplo": "PLANES",
+   "nota": "La línea chica de arriba de todo, espaciada."},
+  {"id": "lema", "tipo": "texto", "etiqueta": "Lema", "default": "", "ejemplo": "Viví Life sin límites",
+   "nota": "En minúsculas y en el color del club, debajo del título. El de los planes: BASIC es «Viví tu club» y ALL IN es «Viví Life sin límites»."},
+  {"id": "incluye", "tipo": "texto_largo", "etiqueta": "La lista", "default": "",
+   "ejemplo": "Acceso ilimitado a todos los clubes Life\nPilates Reformer\nServicio de toallas\nNutrición\nBotas recovery",
+   "nota": "Un ítem por línea, tal como se escribe en un chat. Se separan con una línea fina, sin viñetas ni iconos: esta marca no tiene ninguno. Si son más de seis la pieza se llena — elegí los que importan."},
+  {"id": "pie", "tipo": "texto_largo", "etiqueta": "Letra chica", "default": "",
+   "ejemplo": "Precio para socios nuevos. No incluye matrícula. Válido hasta el 31 de marzo.",
+   "nota": "**Si la pieza promete algo, esto no es opcional.** Hasta cuándo vale, para quién, si pide permanencia, con qué tarjeta. Si el pedido no lo trae, preguntalo antes de dar la pieza por terminada. Y los precios no se inventan: cambian y los da el club."},
+  {"id": "subrayado", "tipo": "opcion", "etiqueta": "Trazo bajo el título",
+   "opciones": [true, false], "default": true,
+   "nota": "El trazo a pincel del logotipo debajo del título. Mide lo que mide el texto."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de fondo", "default": "",
+   "nota": "Opcional. Con lista larga conviene sin foto o con `barrido`: mucho texto chico sobre una foto pide tanto velo que la foto deja de verse, y ahí la pieza quería ir sin foto."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["barrido", "oscuro", "bn", "natural"], "default": "barrido",
+   "nota": "`barrido` desenfoca: acá la foto es textura, no protagonista."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["club", "blanca", "piscina", "hybrid"], "default": "club",
+   "nota": "`club` es negro con frambuesa. `blanca` es sobre blanco con tinta negra: para un aviso puramente informativo que tiene que leerse y nada más. Va salteada — el feed es oscuro."},
+  {"id": "firma", "tipo": "opcion", "etiqueta": "Firma",
+   "opciones": ["lockup", "iso", "ninguna"], "default": "lockup",
+   "nota": "En una pieza que promete algo, el logotipo entero: es lo que la hace del club y no un cartel."}
+ ]
+}

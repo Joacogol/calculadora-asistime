@@ -1,70 +1,81 @@
 {#- Una clase: qué es, cuándo y con quién.
 
-    Es el pan de todos los días de un club. Y es la plantilla donde más fácil
-    se publica un error, así que está armada para que el dato se lea antes que
-    el diseño: el nombre de la clase grande, el día y la hora en un bloque
-    aparte que no depende de la foto, y el profesor abajo.
+    Es el pan de todos los días de un club, y es la plantilla que más fácil
+    publica un error. Está armada para que el dato se lea antes que el diseño.
 
-    ── Por qué el horario va en un bloque sólido ─────────────────────────
+    ── Por qué acá no hay pastillas ────────────────────────────────────
 
-    Porque es el dato por el que alguien guarda la pieza. Sobre una foto de
-    sala —espejos, ventanas, paredes blancas— un texto suelto se pierde en la
-    peor mancha justo cuando es el que más contraste necesita. Adentro de un
-    bloque del color de acento, el blanco da 4,16:1 pase lo que pase debajo,
-    porque ya no depende de la foto. Es la misma salida que usa el motor
-    cuando un acento no llega como texto: la palabra deja de ser tinta y pasa
-    a ser fondo. -#}
+    La primera versión ponía el día y la hora en pastillas redondeadas del
+    color del club. Se veía prolijo y no se parecía en nada a la cuenta: en el
+    feed de @lifemvd no hay una sola pastilla, ni un solo recuadro, ni un
+    icono. Lo que separa un dato del otro es el TAMAÑO de la letra y, cuando
+    hace falta subrayar algo, el trazo a pincel — que es el único elemento
+    decorativo que tiene la marca, y sale de su propio logotipo.
+
+    Una pastilla redondeada en una identidad de pinceladas y mayúsculas se ve
+    prestada de otra marca. Que era exactamente lo que era. -#}
 
 {%- set pal = paleta(d.estilo) -%}
-{%- set sobre_foto = d.foto|length > 0 -%}
-{%- set tinta = c.blanco if sobre_foto else pal.tinta -%}
-{%- set sombra = sombra_texto() if sobre_foto else '' -%}
-{%- set sombra_chica = sombra_texto(1.6) if sobre_foto else '' -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set trat = d.tratamiento or 'oscuro' -%}
+{%- set tinta = c.blanco if hay_foto else pal.tinta -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if hay_foto else '' -%}
+{%- set largo = d.clase|length -%}
+{%- set cuerpo = m.clase if largo <= 18 else (m.clase * 0.78 if largo <= 34 else m.clase * 0.62) -%}
 
-{% if sobre_foto %}
-<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
-{%- set plan = plan_titular(d.foto, tinta, c.negro, (0.35, 1.0), 4.5, 4.5) -%}
-<div class="scrim" style="background:{{ degrade([plan.velo, 0.36]|max, 0.80) }}"></div>
+{% if hay_foto %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{% if trat != 'natural' %}
+<div class="grano"><svg width="100%" height="100%" preserveAspectRatio="none"
+  viewBox="0 0 1080 1080"><filter id="gr-cl"><feTurbulence type="fractalNoise"
+  baseFrequency="0.85" numOctaves="3" seed="21"/></filter>
+  <rect width="1080" height="1080" filter="url(#gr-cl)"/></svg></div>
+{% endif %}
+{%- set plan = plan_titular(d.foto, pal.acento, c.negro, (0.35, 1.0), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.80) }}"></div>
 {% else %}
 <div class="scrim" style="background:{{ pal.fondo }}"></div>
 {% endif %}
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
-  <div>
-    {% if d.categoria %}
-    <div class="v-seca" style="color:{{ c[d.acento] if not sobre_foto else c.blanco }};
-      font-size:{{ m.rotulo }}px;{{ sombra_chica }}">{{ d.categoria }}</div>
-    {% endif %}
-  </div>
+  {% if d.categoria %}
+  <div class="v-seca" style="color:{{ tinta if hay_foto else pal.acento }};
+    opacity:{{ 0.82 if hay_foto else 1 }};font-size:{{ m.rotulo }}px;
+    {{ sombra_chica }}">{{ d.categoria }}</div>
+  {% endif %}
 
   <div class="grow"></div>
 
   <div>
-    <div class="v-normal" style="color:{{ tinta }};font-size:{{ m.nombre }}px;
+    <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
       max-width:94%;white-space:pre-line;{{ sombra }}">{{ d.clase }}</div>
 
-    {#- El bloque del horario. Va pegado al nombre de la clase y no al pie:
-        son un solo dato leído junto, y separarlos obliga a barrer la pieza. -#}
-    <div style="display:flex;flex-wrap:wrap;gap:{{ m.chip * 0.4 }}px;
-      margin-top:{{ m.nombre * 0.34 }}px">
-      {% if d.dias %}{{ pastilla(d.dias, c[d.acento], c.blanco, m.chip) }}{% endif %}
-      {% if d.hora %}{{ pastilla(d.hora, c[d.acento], c.blanco, m.chip) }}{% endif %}
-      {% if d.sala %}{{ pastilla(d.sala, c[d.acento], c.blanco, m.chip) }}{% endif %}
+    {#- El cuándo, en el color del club y con el trazo debajo. Va en un bloque
+        que se encoge al ancho del texto, así el trazo mide lo que mide el
+        dato y no el ancho de la pieza. -#}
+    {% if d.cuando %}
+    <div style="display:inline-block;margin-top:{{ cuerpo * 0.26 }}px">
+      <div class="v-titulo" style="color:{{ pal.acento }};font-size:{{ m.cuando }}px;
+        {{ sombra }}">{{ d.cuando }}</div>
+      <div class="trazo" style="height:{{ m.cuando * 0.16 }}px;width:100%;
+        margin-top:{{ m.cuando * 0.14 }}px;background:{{ pal.acento }}"></div>
     </div>
+    {% endif %}
 
     {% if d.profesor %}
-    <div class="body-s" style="color:{{ tinta }};opacity:.9;font-size:{{ m.profesor }}px;
-      margin-top:{{ m.profesor * 1.1 }}px;{{ sombra_chica }}">Con {{ d.profesor }}</div>
+    <div class="v-susurro" style="color:{{ tinta }};opacity:.9;font-size:{{ m.profesor }}px;
+      margin-top:{{ m.profesor * 1.1 }}px;{{ sombra_chica }}">con {{ d.profesor }}</div>
     {% endif %}
 
     {% if d.bajada %}
     <div class="body" style="color:{{ tinta }};opacity:.88;font-size:{{ m.bajada }}px;
-      margin-top:{{ m.bajada * 0.9 }}px;max-width:720px;{{ sombra_chica }}">{{ d.bajada }}</div>
+      margin-top:{{ m.bajada * 0.9 }}px;max-width:78%;{{ sombra_chica }}">{{ d.bajada }}</div>
     {% endif %}
   </div>
 
   <div class="row" style="width:100%;align-items:flex-end;
-    margin-top:{{ m.pad * 0.7 }}px">
+    margin-top:{{ m.pad * 0.8 }}px">
     {{ firma(d.firma, m.iso, tinta, m.logo) }}
     {% if d.cupo %}
     <div class="legal" style="color:{{ tinta }};opacity:.72;font-size:{{ m.legal }}px;

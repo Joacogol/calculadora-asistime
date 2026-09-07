@@ -1,37 +1,65 @@
-{#- La foto sola. La más usada y la que menos hace.
+{#- La foto, tratada, con la marca encima. La pieza más común del feed.
 
-    Un club de gimnasia publica sobre todo gente entrenando, y esas fotos no
-    llevan texto encima: el mensaje va en el epígrafe. La tentación de
-    "aprovechar" la pieza y meterle un rótulo es exactamente lo que haría que
-    el feed se vea armado con una plantilla.
+    Cubre las dos que se vieron: la cancha de noche con «sos mucho más que
+    eso» arriba y el #VIVÍLIFE cruzando la foto, y la aérea del club con el
+    logotipo LIFE MONTEVIDEO gigante y nada más.
 
-    Por eso `titulo` viene vacío y `firma` viene apagada. Lo que aporta esta
-    plantilla es el encuadre al formato y el foco, y con eso alcanza. -#}
+    ── Lo que hace y lo que no ──────────────────────────────────────────
 
-<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+    NO lleva titular. Si hay algo que decir a los gritos, la plantilla es
+    `manifiesto`; si hay una fecha o un número, es `evento`. Acá el texto —si
+    va— es una línea baja en minúsculas, que es la única voz callada que tiene
+    esta marca y funciona justamente por ser la excepción.
 
-{% if d.titulo or d.firma not in ('', 'ninguna') %}
-{#- El velo se MIDE contra esta foto, no se fija. En la sala hay paredes
-    blancas y espejos: un velo fijo que alcanza sobre la piscina desaparece
-    sobre un espejo y se lleva puesto el título. -#}
-{%- set plan = plan_titular(d.foto, c.blanco, c.negro, (0.55, 1.0), 4.5, 3.0) -%}
-<div class="scrim" style="background:{{ degrade([plan.velo, 0.30]|max, 0.76) }}"></div>
+    La firma es UNA: o la marca de agua, o el logotipo. Nunca las dos. -#}
+
+{%- set trat = d.tratamiento or 'bn' -%}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+
+{#- El grano. Es ruido de Perlin dibujado por el mismo Chromium, así que cada
+    pieza tiene su patrón y ninguna se repite. Sobre una foto sin tratar no va:
+    ahí el grano se ve como suciedad y no como película. -#}
+{% if trat != 'natural' %}
+<div class="grano"><svg width="100%" height="100%" preserveAspectRatio="none"
+  viewBox="0 0 1080 1080"><filter id="gr-foto"><feTurbulence type="fractalNoise"
+  baseFrequency="0.85" numOctaves="3" seed="4"/></filter>
+  <rect width="1080" height="1080" filter="url(#gr-foto)"/></svg></div>
+{% endif %}
+
+{#- Una sombra suave arriba y abajo, no un velo entero. La foto tiene que
+    seguir siendo la pieza: lo que hay que defender es la línea de texto, que
+    es chica, no la imagen. -#}
+{% if d.linea or d.marca != 'ninguna' %}
+<div class="scrim" style="background:linear-gradient(180deg,
+  rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,0) 62%, rgba(0,0,0,.42) 100%)"></div>
+{% endif %}
+
+{#- La marca de agua NO va en el flujo: cruza la foto, y si estuviera en la
+    columna del texto empujaría todo lo demás. Va posicionada, a lo ancho y
+    centrada en el alto que le toque. -#}
+{% if d.marca == 'agua' %}
+<div class="agua" style="left:{{ m.agua_x }}%;right:{{ m.agua_x }}%;
+  top:{{ d.donde_cruza }}%;height:{{ m.agua_alto }}px;
+  background:{{ c[d.acento] if d.agua_color == 'acento' else c.blanco }};
+  opacity:{{ d.agua_opacidad }}"></div>
+{% endif %}
 
 <div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
+  {% if d.marca == 'lockup' %}
+  {#- El logotipo grande y arriba, como en la pieza de la aérea del club. No
+      es una firma al pie: ES la pieza. Por eso el tamaño sale de `m.lockup` y
+      no del tamaño de firma de las demás plantillas. -#}
+  <div>{{ logo(m.lockup, c.blanco) }}</div>
+  {% endif %}
+
+  {#- La línea va ARRIBA, como en la pieza real: entra antes que la foto y
+      deja el resto del cuadro limpio. Abajo competiría con la marca de agua,
+      que es lo que cruza la parte baja. -#}
+  {% if d.linea %}
+  <div class="v-susurro" style="color:{{ c.blanco }};font-size:{{ m.linea }}px;
+    max-width:74%;{{ 'margin-top:' ~ (m.linea * 1.4) ~ 'px' if d.marca == 'lockup' else '' }};
+    {{ sombra_texto(1.6) }}">{{ d.linea }}</div>
+  {% endif %}
+
   <div class="grow"></div>
-  <div>
-    {% if d.rotulo %}
-    <div class="v-seca" style="color:{{ c[d.acento] }};font-size:{{ m.rotulo }}px;
-      margin-bottom:{{ m.rotulo * 1.1 }}px;{{ sombra_texto(1.6) }}">{{ d.rotulo }}</div>
-    {% endif %}
-    {% if d.titulo %}
-    <div class="v-normal" style="color:{{ c.blanco }};font-size:{{ m.titulo }}px;
-      max-width:88%;white-space:pre-line;{{ sombra_texto() }}">{{ d.titulo }}</div>
-    {% endif %}
-    {% if d.firma and d.firma != 'ninguna' %}
-    <div style="margin-top:{{ m.titulo * 0.6 if d.titulo else 0 }}px">
-      {{ firma(d.firma, m.iso, c.blanco, m.logo) }}</div>
-    {% endif %}
-  </div>
 </div>
-{% endif %}

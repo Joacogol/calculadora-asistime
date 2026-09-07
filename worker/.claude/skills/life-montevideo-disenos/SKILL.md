@@ -1,105 +1,168 @@
 ---
 name: life-montevideo-disenos
-description: Genera piezas de diseño para las redes de Life Montevideo (@lifemvd) — el club de Buceo de la familia Viví Life — con su identidad oficial: la pincelada LIFE, el frambuesa Pantone 7636 C (#BE3455) que es SUYO y no de los otros cuatro clubes, negro, blanco y una geométrica. Cinco plantillas: foto, titular, clase, plan y promo. Usar SIEMPRE que se pida una placa, story, reel o carrusel para Life Montevideo.
+description: Genera piezas de diseño para @lifemvd, Life Montevideo — el club de Buceo de la familia Viví Life — copiando la estética real de su feed: fotos tratadas en blanco y negro o barridas, frases apiladas en mayúsculas con palabras en el color del club, el #VIVÍLIFE cruzando la foto, números gigantes para los eventos. Todo vertical, nada de fondos planos. Cinco plantillas: foto, manifiesto, evento, clase y aviso. Usar SIEMPRE que se pida una placa, story, reel o carrusel para Life Montevideo.
 ---
 
 # Life Montevideo
 
-Club de gimnasia, piscina y tenis en Buceo, Montevideo — Prof. Juan Carlos
-Sabat Pebet 1240. Es **uno de los cinco clubes de Viví Life**: los otros son
-Distrito M, Aguada, Zonamerica y el Outdoor Club. Su frase madre es «Una
-comunidad que vibra».
+Club de gimnasia, piscina y tenis en Buceo — Prof. Juan Carlos Sabat Pebet
+1240. Uno de los cinco de Viví Life: los otros son Distrito M, Aguada,
+Zonamerica y el Outdoor Club. Su frase madre es «Una comunidad que vibra».
 
-## Lo primero, porque es lo que más se va a equivocar
+## Este kit se armó dos veces, y la segunda cambió casi todo
 
-| | |
-|---|---|
-| **El frambuesa es de ESTE club** | La familia comparte la pincelada LIFE, no el color: Montevideo es `#BE3455`, Aguada es rojo, Distrito M turquesa, Zonamerica verde y Outdoor lima. Usar el color de otro club en una pieza de éste es el error más visible que se puede cometer acá. |
-| **El logo no se escribe, se pone** | «LIFE» es una pincelada dibujada, no una tipografía. No hay fuente que la imite y no hay que intentarlo: el logo va como logo, desde `assets/`. |
-| **La grilla de clases no está en el manual** | Cambia todos los meses. Ningún día, hora, profesor ni cupo se completa sin que lo hayan dado. Una pieza vieja no es fuente. |
-| **Los precios tampoco** | Ni de planes ni de promos. Si el pedido no los trae, la pieza sale sin precio, que es correcto. |
+La primera vez, con el manual de colores oficial y el sitio. La segunda,
+mirando **cinco piezas reales del feed**. Lo que cambió no fue un detalle:
 
-## La identidad, y de dónde salió cada parte
-
-| | |
-|---|---|
-| **Frambuesa** | `#BE3455` — Pantone 7636 C, escrito en la «Guía de colores LIFE» oficial. Es exacto, no muestreado. |
-| **Negro / tinta** | `#000000` y `#111111`. El manual usa Negro 6 C. |
-| **Humo** | `#F4F4F4`, el blanco roto del propio manual. |
-| **Los otros cuatro clubes** | Aguada `#D12421`, Distrito M `#00B5BD`, Zonamerica `#00C996`, Outdoor `#06F395`. Están en la paleta **para poder nombrarlos**, no para usarlos de acento. |
-| **Logo** | Vectorizado del PNG oficial de `lifemontevideo.uy`. El PNG original quedó en `assets/` con el sufijo `-oficial` como testigo del trazado. |
-| **Tipografía** | **Montserrat** (geométrica) y **Archivo** variable para la voz de póster. |
-
-⚠️ **La tipografía es una aproximación, y conviene saberlo.** El manual usa
-**Futura Condensed Extra Bold** en sus portadas. Futura es licenciada y no se
-puede empaquetar; Montserrat es la geométrica libre más cercana, y Archivo en
-su ancho angosto hace el papel de la condensada. En mayúsculas y a cuerpo
-grande la diferencia no se lee. Si el club manda su Futura licenciada, se
-cambian los archivos de `fonts/` y las tres voces siguen funcionando igual.
-
-## Las tres voces tipográficas
-
-| | Cuándo | Ejemplo |
+| | Lo que decía el manual | Lo que hace el feed |
 |---|---|---|
-| **`poster`** | titulares que gritan: promos, comunidad, campaña | «UNA COMUNIDAD QUE VIBRA» |
-| **`normal`** | la voz de todos los días: una clase, un plan, un aviso | «PILATES REFORMER» |
-| **`seca`** | rótulos y sobretítulos, mayúsculas muy espaciadas | «BODY & MIND», y el propio «MONTEVIDEO» del logotipo |
+| **Las fotos** | nada | **ninguna sale cruda**: blanco y negro con grano, barridas, oscurecidas |
+| **El color como texto** | nada | **sí va**, encima de esas fotos, y funciona por el tratamiento |
+| **El `#VIVÍLIFE`** | un lockup en una página | **cruza la foto** como marca de agua: es la firma de la cuenta |
+| **Los otros colores** | uno por club | **celeste para la piscina, verde para hybrid**: el acento es la actividad |
+| **El formato** | nada | **todo vertical**, 9:16 |
+| **Fondos planos** | el color a sangre parecía obvio | **cero**. Ni una pieza |
+| **Sponsors** | nada | co-marca «PUMA × #VIVÍLIFE» |
 
-`seca` **nunca** es un titular. A cuerpo grande se desarma: está pensada para
-la línea chica de arriba, que es exactamente el papel que cumple en el logo.
+**La regla que resume todo: acá la pieza es una foto tratada con texto encima.**
+Un fondo de color liso con un titular es una pieza de otra marca.
+
+## Por qué el tratamiento de la foto es lo primero que se elige
+
+No es un filtro de gusto. Es lo que hace posible el resto: sobre una foto **sin
+color propio**, el frambuesa escrito encima queda como lo único vivo de la
+pieza; sobre una foto en color compite con todo y la pieza se ensucia. Por eso
+el campo `tratamiento` viene primero en todas las plantillas.
+
+| | |
+|---|---|
+| `bn` | blanco y negro, contraste subido, grano. El de la pieza de la corredora |
+| `oscuro` | baja la luz y deja el color. El de la cancha de noche |
+| `barrido` | desenfoca y oscurece: la foto es textura debajo de un número |
+| `natural` | existe para una excepción, no para el día a día |
+
+## El acento aguanta como texto GRANDE, no como rótulo chico
+
+Se midió acá mismo. «VIBRAR FUERTE» en frambuesa a 132 px sobre una foto
+tratada se lee perfecto. «BODY & MIND» en el mismo frambuesa a 25 px y con
+mucho interletrado, sobre la misma foto, **no se lee**: un trazo finito de un
+color de luminancia media sobre negro desaparece.
+
+Por eso las plantillas ponen los rótulos en blanco cuando hay foto, y dejan el
+acento para lo que ocupa media pieza. No es «el acento no va sobre foto» —eso
+sería falso y contradiría el feed—: es que el acento necesita cuerpo.
 
 ## Las cinco plantillas
 
 | | Cuándo |
 |---|---|
-| **`foto`** | La que más se usa y la que menos hace. Gente entrenando, la sala, la piscina. **Sin texto encima**: el mensaje va en el epígrafe. |
-| **`titular`** | Cuando el mensaje ES la pieza. Sobre foto o sobre color pleno. |
-| **`clase`** | Una actividad con su día, su hora y su profesor. El pan de todos los días de un club. |
-| **`plan`** | BASIC o ALL IN, con la lista de lo que incluye. |
-| **`promo`** | Un descuento o una acción. La **única** donde el frambuesa es el fondo. |
+| **`foto`** | La foto tratada con la marca encima: el `#VIVÍLIFE` cruzándola, o el logotipo gigante. A lo sumo una línea baja en minúsculas. Sin titular |
+| **`manifiesto`** | La pieza firma de la cuenta: una frase apilada sobre blanco y negro, con algunas líneas en el color del club |
+| **`evento`** | Un número o una fecha gigante: «60 min NADO», «SAB. 12.09». También la que lleva sponsor |
+| **`clase`** | Una actividad con su horario y su profesor |
+| **`aviso`** | Un plan, una promo, un cambio: titular, lista y letra chica |
 
-## Las reglas que ya se sabían antes de la primera pieza
+`aviso` reemplaza a las dos que había antes —una de planes y una de promos—
+porque las dos estaban armadas sobre un fondo de color a sangre, y de eso no
+hay nada en esta cuenta. Un plan y una promo son la misma pieza: un titular,
+una lista y la letra chica.
 
-**El frambuesa no se lee como texto sobre una foto.** Es de luminancia media,
-igual que el rojo de Clínica Preventiva, y ahí está medido: sobre una cara da
-1,43:1 contra 3,0 de mínimo. Por eso `titular` y `clase` pasan el texto a
-blanco solos cuando hay foto, y el color se queda para los fondos planos y para
-los bloques sólidos, que es donde luce. **No lo fuerces con más velo:** si hay
-que tapar la foto entera, no tenía sentido poner la foto.
+## Cómo se marcan las palabras en color
 
-**El día y la hora van en bloques, no en texto suelto.** Es el dato por el que
-alguien guarda la pieza, y sobre una foto de sala —espejos, ventanas, paredes
-blancas— un texto suelto se pierde en la peor mancha. Adentro de un bloque del
-color del club, el blanco da 4,16:1 pase lo que pase debajo.
+En `manifiesto`, con un **asterisco al principio de la línea**:
 
-**La firma sobre el color del club va con el isotipo.** El lockup tiene
+```
+*VIBRAR FUERTE
+*TAMBIÉN
+ES
+CONECTAR
+```
+
+Un marcador de un carácter es lo único que sobrevive a que la frase se escriba
+en un chat. Una lista aparte de «qué líneas van en color» se desincroniza a la
+primera corrección.
+
+Y una palabra de tres letras o menos —ES, Y, DE— **sale más chica sola**. El
+«ES» de la pieza real no es un descuido: una conjunción al mismo cuerpo que el
+titular rompe el ritmo de la pila.
+
+## Las voces
+
+| | Cuándo |
+|---|---|
+| **`titulo`** | Archivo angosta, mayúsculas, líneas casi pegadas. Casi todas las piezas |
+| **`poster`** | La misma pero más angosta, para una frase larga que igual tiene que gritar |
+| **`numero`** | Los números gigantes: el «60» del nado, el «12.09» del hybrid |
+| **`susurro`** | Minúsculas, chica: «sos mucho más que eso». **Nunca en mayúsculas ni grande** |
+| **`seca`** | Mayúsculas muy espaciadas, como el «MONTEVIDEO» del logo. Rótulos, nunca un titular |
+
+⚠️ **La tipografía es una aproximación.** El manual usa **Futura Condensed
+Extra Bold**, que es licenciada y no se puede empaquetar. Archivo es un
+grotesco con eje de ancho, así que las tres voces de display salen del mismo
+archivo y en mayúsculas a cuerpo grande la diferencia no se lee. Si el club
+manda su Futura, se cambian los archivos de `fonts/` y todo sigue igual.
+
+## Los colores
+
+| | |
+|---|---|
+| **Frambuesa** `#BE3455` | Pantone 7636 C. El del club. Va cuando no hay razón para otro |
+| **Celeste** `#37C6E8` | Piscina: nado, hidro, aqua. Muestreado de una pieza, no del manual |
+| **Verde** `#06F395` | Hybrid, outdoor y lo que lleve sponsor deportivo |
+| **Negro / blanco** | Negro 6 C. El feed es oscuro |
+
+Los otros clubes —Aguada `#D12421`, Distrito M `#00B5BD`, Zonamerica
+`#00C996`— están en la paleta para poder nombrarlos en una pieza de la familia.
+Un rojo Aguada en una pieza de Montevideo que no habla de Aguada es un error.
+
+## Lo demás que ya se sabía
+
+**El logo no se escribe, se pone.** «LIFE» es una pincelada dibujada. No hay
+fuente que la imite y no hay que intentarlo.
+
+**Una pieza se firma UNA vez.** O el `#VIVÍLIFE` grande, o el logotipo, o nada.
+Nunca dos. En el feed, la marca de agua firma las piezas de clima y de
+comunidad; el logotipo grande, las que presentan el club; las de evento no
+llevan ninguno porque ya llevan la co-marca del sponsor.
+
+**Sobre el color del club, la firma va con el isotipo.** El lockup lleva
 «MONTEVIDEO» en frambuesa escrito adentro del vector: sobre un fondo frambuesa
 esa palabra desaparece y la pieza queda firmada a medias sin que nada falle.
-Las plantillas lo cambian solas, pero si escribís una nueva, tenelo presente.
 
-**Una cara generada no se publica.** Si el pedido manda una foto de un socio o
-de un profesor, se usa. Inventar gente del club con `crear` no se hace: es un
-problema distinto al de una pieza fea. `crear` sirve para lo que no tiene cara.
+**No hay pastillas ni iconos.** En el feed no hay uno solo. Lo que separa un
+dato del otro es el tamaño de la letra y, cuando hace falta subrayar, el trazo
+a pincel del propio logotipo. Una pastilla redondeada en una identidad de
+pinceladas y mayúsculas se ve prestada de otra marca.
+
+**La grilla de clases y los precios no están en el manual.** Cambian. Ningún
+día, hora, profesor, cupo ni precio se completa sin que lo hayan dado. Una
+pieza vieja no es fuente.
+
+**Una cara generada no se publica.** Si mandan la foto de un socio o un
+profesor, se usa. Inventar gente del club con `crear` no se hace.
+
+**El logo de un sponsor va sólo si lo mandaron.** No se saca de internet ni se
+redibuja. Si no lo mandaron, va el nombre en texto, que es lo que `evento`
+permite.
 
 ## Lo que todavía falta
 
-- **El banco de fotos.** El club no mandó material, así que `referencias/` está
-  vacío y la plantilla `foto` no se pudo previsualizar. Es el paso que más
-  rinde de un alta —ver `motor/ALTA-DE-MARCA.md`, punto 3— y hay que hacerlo
-  con las fotos reales, mirándolas, no leyendo los nombres de archivo.
+- **El banco de fotos.** El club no mandó material. Las piezas se probaron con
+  **dos fotos sintéticas hechas con código** —manchas de color, no fotos— que
+  sirvieron para ver estructura, tratamiento y grano, y no están en el
+  repositorio. Catalogar el banco real es el paso que más rinde de un alta: ver
+  `motor/ALTA-DE-MARCA.md`, punto 3.
 - **La huella del motor.** `herramientas/verificar-motor.py --grabar` necesita
-  al menos una foto en `assets/` para dibujar `foto`. Se graba cuando lleguen.
-- **La música de los reels.** Sin banco propio todavía. Un club de gimnasia
-  pide algo con pulso: house o pop electrónico de 120-128 BPM, sin voz.
-- **El feed real.** El kit se armó con el manual de colores oficial y con
-  `lifemontevideo.uy`. **Instagram no se pudo mirar** desde donde se armó esto.
-  Igual que pasó con Stadium, es probable que mirar 24 posts reales corrija
-  algo — cuánto se usa el color, cuánto texto lleva una pieza, si publican
-  precios. Cuando se pueda ver, revisar este archivo.
+  al menos una foto en `assets/`. Se graba cuando lleguen las reales.
+- **La música de los reels.** Sin banco propio. Un club así pide algo con
+  pulso: house o pop electrónico de 120-128 BPM, sin voz.
+- **Más feed.** Se miraron cinco piezas. Con Stadium hicieron falta 24 para que
+  aparecieran los patrones que no se ven en una muestra chica.
 
 ## Dónde vive
 
 Primer cliente **sin proyecto de Supabase propio**: sus tablas están en el
 esquema `life_montevideo` del proyecto de la casa y sus archivos en el bucket
 `disenos-life-montevideo`. Ver `alta/ESQUEMA-COMPARTIDO.md`. En Asistime es el
-tenant **48**.
+tenant **48**, que ya existe con dos agentes de atención en producción — el
+diseñador va como un agente aparte.
