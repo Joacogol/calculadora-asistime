@@ -73,7 +73,22 @@ Devuelve la clave UNA vez —después queda sólo su SHA-256— y va escrita en 
 código de las tools del agente, igual que hasta ahora. Ver «Una clave por
 cliente» más abajo.
 
-**6. El registro**, para que el worker lo atienda:
+**6. Las plantillas**, para que la base arranque con lo que trae el despliegue:
+
+```sql
+with base as (select
+  'https://raw.githubusercontent.com/Joacogol/calculadora-asistime/<hash>/worker/.claude/skills/club-x-disenos/plantillas/' as u)
+select public.sembrar_plantilla_desde_repo('club_x', p, (select u from base) || p)
+  from unnest(array['foto','titular']) as p;   -- los slugs del cliente
+```
+
+Es lo mismo que hace `herramientas/sembrar-plantillas.py`, pero sin necesitar la
+`service_role` ni un `.env`: lee el HTML y el contrato del repositorio y llama a
+la misma `guardar_plantilla` del esquema del cliente, así la versión, el
+historial y la publicación quedan igual que si los hubiera subido el worker.
+Sólo lee de este repositorio.
+
+**7. El registro**, para que el worker lo atienda:
 
 ```bash
 python3 herramientas/registro.py agregar   # pide marca, URL, clave y esquema
