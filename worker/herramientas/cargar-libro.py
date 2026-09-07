@@ -88,6 +88,11 @@ class Base:
         return filas
 
     def escribir(self, tabla: str, filas: list[dict], on_conflict: str | None = None):
+        # PostgREST exige que todas las filas de una tanda tengan las MISMAS
+        # claves («All object keys must match»): una placa trae tokens y un
+        # reel no. Se completa con null lo que falte en cada una.
+        claves = sorted({k for f in filas for k in f})
+        filas = [{k: f.get(k) for k in claves} for f in filas]
         for i in range(0, len(filas), TANDA):
             r = requests.post(
                 f"{self.url}/rest/v1/{tabla}",
