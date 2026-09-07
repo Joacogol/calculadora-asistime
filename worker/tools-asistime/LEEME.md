@@ -68,6 +68,33 @@ están:
 | `retocar_reel` | 2144 | 2151 | 2155 |
 | `estado_reel` | ya existía | 2076 | 2152 |
 
+## `corregir_diseno` (7/9/2026)
+
+Cambiar UNA cosa de una pieza que ya salió, sin rehacerla. Es a `crear_diseno`
+lo que `retocar_reel` es a `montar_reel`.
+
+**Por qué es una tool y no un campo.** `crear_diseno` de Asistime acepta
+`corrige` desde el 5/9/2026, pero las de Boss, Stadium y Clínica nunca lo
+mandaban: en tres de los cuatro clientes un pedido de cambio entraba como
+pedido nuevo y volvía otra pieza. Un campo opcional se saltea; un verbo con
+nombre propio se elige. Agregarle el campo a las tres tools habría significado
+reescribir a mano tres archivos de producción de 5 KB cada uno — la clase de
+transcripción que ya salió mal antes.
+
+| Tenant | Tool | Estado |
+|---|---|---|
+| Boss 119 | `corregir_diseno` **2234** | falta tildarla en el agente |
+| Stadium 176 | `corregir_diseno` **2235** | falta tildarla en el agente |
+| Clínica 73 | `corregir_diseno` **2236** | falta tildarla en el agente |
+| Asistime 1 | — | lo hace `crear_diseno` (2166) con su campo `corrige` |
+
+El código es `corregir_diseno.js`, con la URL y la clave como marcadores: cada
+cliente tiene la suya, y son las mismas que ya usa su `crear_diseno`.
+
+Se probó contra las tres APIs con un id inválido —que no crea ninguna fila—: las
+tres contestan 400 diciendo que `corrige` tiene que ser el id de un diseño que
+ya se hizo.
+
 Asistime (tenant 1, agente 594) las tiene desde el 2/9/2026: `montar_reel`
 **2189** (la versión nueva, con `instruccion` y `duracion`: ver
 `montar_reel-asistime.js`), `ver_reel` 2187, `retocar_reel` 2188 y

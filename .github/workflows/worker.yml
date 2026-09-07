@@ -18,9 +18,9 @@ name: worker
 on:
   push:
     branches: [main]
-    paths: ["worker/**", ".github/workflows/worker.yml"]
+    paths: ["worker/**", "!worker/**/*.md", ".github/workflows/worker.yml"]
   pull_request:
-    paths: ["worker/**", ".github/workflows/worker.yml"]
+    paths: ["worker/**", "!worker/**/*.md", ".github/workflows/worker.yml"]
   workflow_dispatch:
 
 concurrency:

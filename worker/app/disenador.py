@@ -534,6 +534,12 @@ rompe algo que ya estaba bien.
 Si el cambio pedido no se puede hacer con este spec, NO inventes otra pieza:
 hacé lo más cercano posible y decí en notas.txt qué no se pudo y por qué.
 
+**Los formatos los manda ESTE spec, no la lista de «Formatos pedidos» de
+arriba.** Sacá de acá abajo las medidas y los formatos y devolvé exactamente
+los mismos, salvo que el cambio pedido diga otra cosa. La lista de arriba trae
+el valor por defecto de la API cuando quien pidió la corrección no los repitió:
+obedecerla convertiría la story que hay que corregir en un post.
+
 SPEC DE LA PIEZA ANTERIOR
 -------------------------
 {spec}
