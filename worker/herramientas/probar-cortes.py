@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory() as tmp:
     d, h, c = analisis.acomodar_al_habla(largo, 0.0, 10.0)
     ok(12.9 <= h <= 13.5, "final en 10,0 con la pausa a 3 s: se corre", (h, c))
 
-        print("\n■ Sin una sola pausa no hay frase que proteger")
+    print("\n■ Sin una sola pausa no hay frase que proteger")
     seguido = fabricar(t / "seguido.mp4", 6, "1")
     d, h, c = analisis.acomodar_al_habla(seguido, 1.0, 4.0)
     ok((d, h) == (1.0, 4.0) and not c, "un tono continuo deja el corte donde estaba", (d, h, c))
