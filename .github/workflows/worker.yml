@@ -72,7 +72,7 @@ jobs:
           pip install -q jinja2 requests Pillow numpy
       - uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github
+          workload_identity_provider: projects/1038198143215/locations/global/workloadIdentityPools/github/providers/github
           service_account: despliegue-github@boss-padel-disenos.iam.gserviceaccount.com
       - uses: google-github-actions/setup-gcloud@v2
         with:
