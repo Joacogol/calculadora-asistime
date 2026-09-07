@@ -945,6 +945,59 @@ def _tomar(cli, rid: str, de: str, a: str) -> bool:
     return bool(r.json())
 
 
+def _cobrar(cli, fila: dict, *, url: str | None = None,
+            creditos: int | None = None, notas: str | None = None):
+    """Lo que costó este reel, a la cuenta del cliente y al libro de la casa.
+
+    Va después de marcarlo `listo` y en su propio try: el video ya está hecho
+    y pagado, y un problema de contabilidad no puede convertirlo en error.
+
+    Tres caminos, tres costos. Un video generado con fal cuesta dólares
+    (`metricas.costo` con moneda `usd`); uno generado con Magnific cuesta
+    créditos (`creditos_gastados`, o el monto si viene en créditos); un
+    montaje de clips propios no compra nada y se anota con costo cero, para
+    que el libro tenga igual los segundos de worker que se llevó.
+    """
+    from . import cobro
+    met = fila.get("metricas") or {}
+    costo = met.get("costo") or {}
+    try:
+        monto = float(costo.get("monto") or 0)
+    except (TypeError, ValueError):
+        monto = 0.0
+    moneda = costo.get("moneda")
+    usd = monto if moneda == "usd" else 0.0
+    cred = creditos if creditos is not None else fila.get("creditos_gastados")
+    cred = int(cred or 0)
+    if moneda == "creditos" and not cred:
+        cred = int(monto)
+    modelo = fila.get("modelo") or None
+    if met.get("proveedor"):
+        prov = met["proveedor"]
+    elif modelo:
+        try:
+            prov = proveedor_de(modelo)
+        except Exception:                                    # noqa: BLE001
+            prov = "magnific"
+    else:
+        prov = "motor"
+    tipo = "video" if _solo_video(fila) else "reel"
+    try:
+        cobro.registrar(
+            cli, fila["id"], usd,
+            detalle=" · ".join(x for x in (modelo, fila.get("resolucion"),
+                                           f"{fila['duracion']}s" if fila.get("duracion") else None)
+                               if x),
+            tipo=tipo, creditos=cred, proveedor=prov, modelo=modelo,
+            titulo=fila.get("titulo") or (fila.get("mensaje") or "")[:120] or None,
+            url=url, avisos=[notas] if notas else None,
+            extra={k: fila.get(k) for k in ("duracion", "resolucion", "origen")
+                   if fila.get(k) is not None})
+    except Exception:                                        # noqa: BLE001
+        log.exception("[%s] el reel %s salió pero no pude anotar su costo",
+                      getattr(cli, "marca", "?"), fila["id"])
+
+
 def _marcar(cli, rid: str, estado: str, **campos):
     requests.patch(
         cli._url("reels"), headers=cli._cab(), params={"id": f"eq.{rid}"},
@@ -1397,10 +1450,13 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                     # hasta hoy se entregaba sin que nadie lo dijera.
                     visto = en_una_linea(revisar_video(
                         clip, ancho=None, alto=None, con_audio=False))
+                    crudo_url = subir(clip, f"reels/{fila['id']}-crudo.mp4")
                     _marcar(cli, fila["id"], "listo",
-                            clip_url=subir(clip, f"reels/{fila['id']}-crudo.mp4"),
+                            clip_url=crudo_url,
                             creditos_gastados=fila.get("creditos_estimados"),
                             **({"notas": visto} if visto else {}))
+                    _cobrar(cli, fila, url=crudo_url,
+                            creditos=fila.get("creditos_estimados"), notas=visto)
                     movidas += 1
                     continue
 
@@ -1474,11 +1530,14 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                 aviso = " · ".join(
                     x for x in (falta_rotulo, falta_musica,
                                 en_una_linea(revisar_video(final))) if x)
+                final_url = subir(final, f"reels/{fila['id']}.mp4")
                 _marcar(cli, fila["id"], "listo",
-                        url=subir(final, f"reels/{fila['id']}.mp4"),
+                        url=final_url,
                         creditos_gastados=fila.get("creditos_estimados"),
                         **({"clip_url": crudo} if crudo else {}),
                         **({"notas": aviso} if aviso else {}))
+                _cobrar(cli, fila, url=final_url,
+                        creditos=fila.get("creditos_estimados"), notas=aviso)
             except Exception as e:                       # noqa: BLE001
                 _marcar(cli, fila["id"], "error", notas=f"al montar: {e}")
         movidas += 1
@@ -1757,11 +1816,14 @@ def atender_montajes(cli, ficha: dict, subir, marca_mod=None) -> int:
                 # retocar el reel después —corregir una frase, sacar un tramo—
                 # sin volver a escuchar el audio, que daría los mismos errores
                 # de transcripción otra vez. Ver `motor.video.desde_guion`.
+                final_url = subir(final, f"reels/{fila['id']}.mp4")
                 _marcar(cli, fila["id"], "listo",
-                        url=subir(final, f"reels/{fila['id']}.mp4"),
+                        url=final_url,
                         armado=armado,
                         creditos_estimados=0, creditos_gastados=0,
                         **({"notas": " · ".join(dichos)} if dichos else {}))
+                _cobrar(cli, fila, url=final_url, creditos=0,
+                        notas=" · ".join(dichos) if dichos else None)
             except Exception as e:                           # noqa: BLE001
                 from motor.retoque import CambioImposible
                 if isinstance(e, CambioImposible):

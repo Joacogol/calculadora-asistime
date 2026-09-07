@@ -316,7 +316,7 @@ fi
 # La del revisor necesita ffmpeg para fabricar sus casos. Si no está, se
 # saltea con un aviso en vez de frenar el despliegue: no tener ffmpeg acá no
 # dice nada sobre el código, y frenar por eso enseña a saltear las pruebas.
-PRUEBAS="probar-precios.py probar-video-solo.py"
+PRUEBAS="probar-precios.py probar-video-solo.py probar-libro.py"
 if command -v ffmpeg >/dev/null 2>&1; then
   PRUEBAS="$PRUEBAS probar-revisor.py"
 else

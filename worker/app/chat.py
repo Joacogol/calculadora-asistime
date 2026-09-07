@@ -24,7 +24,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import (banco, cobro, config, fotero, manual, motorista, plantillas,
+from . import (banco, cobro, config, fotero, libro, manual, motorista, plantillas,
                plantillero, publicador, reelero)
 from motor.revisar import en_una_linea, revisar_imagen
 from .supa import Cliente
@@ -225,14 +225,30 @@ async def procesar(cli: Cliente, pedido: dict):
         # El cobro va DESPUÉS de entregar. Si registrarlo falla, el cliente ya
         # tiene su pieza: preferimos perder el cobro de un diseño antes que
         # perder el diseño. Queda en el log para corregirlo a mano.
-        cobro.registrar(cli, pid, (metricas or {}).get("costo_usd", 0.0),
-                        detalle=" · ".join(pedido.get("formatos") or []))
+        cobro.registrar(
+            cli, pid, (metricas or {}).get("costo_usd", 0.0),
+            detalle=" · ".join(pedido.get("formatos") or []),
+            tipo="placa", proveedor="anthropic", metricas=metricas,
+            titulo=titulo, url=(archivos[0] if archivos else None),
+            plantilla=_plantilla_de(spec),
+            avisos=revisadas or None)
 
     except Exception as e:
         log.exception("[%s] falló el diseño %s", cli.marca, pid)
         cli.marcar(pid, "error", mensaje_agente=str(e)[:500])
     finally:
         shutil.rmtree(salida, ignore_errors=True)
+
+
+def _plantilla_de(spec) -> str | None:
+    """Qué plantilla usó la pieza, para el libro. Un spec puede ser un dict
+    (una placa) o una lista (un carrusel): se toma la primera."""
+    if isinstance(spec, list) and spec:
+        spec = spec[0]
+    if isinstance(spec, dict):
+        p = spec.get("plantilla")
+        return str(p)[:80] if p else None
+    return None
 
 
 async def atender(cli: Cliente) -> int:
@@ -284,6 +300,7 @@ async def ciclo():
     # texto viejo cacheado para la siguiente.
     manual.limpiar()
     plantillas.limpiar()
+    libro.olvidar()
     hechos = subidos = plantillas_nuevas = propuestas = reels = fotos = 0
     for datos in config.clientes():
         # Sólo lo que `Cliente` entiende. El registro trae además la clave de
@@ -303,6 +320,15 @@ async def ciclo():
                         "está en esta imagen: lo salteo hasta el próximo "
                         "despliegue", cli.marca)
             continue
+        # Las recargas anotadas desde el tablero se copian a la cuenta del
+        # cliente ANTES de mirar su saldo: si no, una recarga de hace un
+        # minuto no le alcanza para la pieza que pidió hace dos.
+        try:
+            await asyncio.to_thread(libro.espejar_cargas, cli)
+        except Exception:
+            log.exception("[%s] no pude copiar sus cargas", cli.marca)
+
+        antes = (hechos, subidos, reels, fotos)
         try:
             hechos += await atender(cli)
         except Exception:
@@ -363,6 +389,16 @@ async def ciclo():
                 subidos += publicador.atender(cli)
             except Exception:
                 log.exception("[%s] falló la cola de publicación", cli.marca)
+
+        # El latido va último y en su propio try: es para la pantalla de
+        # salud del tablero, y una pantalla no puede tirar abajo una corrida.
+        try:
+            await asyncio.to_thread(
+                libro.latir, cli,
+                disenos=hechos - antes[0], publicaciones=subidos - antes[1],
+                reels=reels - antes[2], fotos=fotos - antes[3])
+        except Exception:
+            log.exception("[%s] no pude dejar el latido", cli.marca)
 
     if not (hechos or subidos or plantillas_nuevas or propuestas or reels
             or fotos):

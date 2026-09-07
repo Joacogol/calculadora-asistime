@@ -459,6 +459,26 @@ def _tomar(cli, rid: str, de: str, a: str) -> bool:
     return bool(r.json())
 
 
+def _cobrar(cli, fila: dict, url: str | None):
+    """Los créditos que se llevó esta foto, a la cuenta del cliente y al libro.
+
+    En su propio try y después del `listo`: la foto ya está hecha y pagada.
+    """
+    from . import cobro
+    try:
+        cobro.registrar(
+            cli, fila["id"], 0.0,
+            detalle=fila.get("verbo") or "",
+            tipo="foto", creditos=int(fila.get("creditos_estimados") or 0),
+            proveedor="magnific", modelo=fila.get("modelo"),
+            titulo=(fila.get("instruccion") or fila.get("verbo") or "")[:120] or None,
+            url=url,
+            extra={"verbo": fila.get("verbo"), "formato": fila.get("formato")})
+    except Exception:                                            # noqa: BLE001
+        log.exception("[%s] la foto %s salió pero no pude anotar su costo",
+                      getattr(cli, "marca", "?"), fila["id"])
+
+
 def _marcar(cli, rid: str, est: str, **campos):
     requests.patch(
         cli._url("fotos_editadas"), headers=cli._cab(),
@@ -614,9 +634,10 @@ def atender_todos(cli, ficha: dict, subir) -> int:
 
         if est in ("COMPLETED", "SUCCESS", "SUCCEEDED", "DONE") and url:
             try:
-                _marcar(cli, fila["id"], "listo",
-                        url=_guardar(cli, fila, url, subir),
+                guardada = _guardar(cli, fila, url, subir)
+                _marcar(cli, fila["id"], "listo", url=guardada,
                         creditos_gastados=fila.get("creditos_estimados"))
+                _cobrar(cli, fila, guardada)
             except Exception as e:                               # noqa: BLE001
                 log.exception("[%s] no pude guardar la foto %s",
                               getattr(cli, "marca", "?"), fila["id"])
