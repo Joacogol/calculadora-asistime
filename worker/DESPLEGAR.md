@@ -5103,3 +5103,46 @@ todo compilando la imagen.
 
 **Cloud Shell sigue sirviendo** para lo que no es desplegar: `registro.py`
 (sumar un cliente), `cargar-libro.py`, `alta.py`.
+
+---
+
+## El worker se despliega solo (7/9/2026)
+
+Desde hoy **no hace falta Cloud Shell para desplegar**. Cada push a `main` que
+toque algo de `worker/` (salvo documentación) corre en GitHub Actions
+(`.github/workflows/worker.yml`):
+
+1. Las mismas pruebas de siempre: que las cuatro marcas carguen, precios,
+   separación video/pieza, libro, revisor y cortes.
+2. `./desplegar-chat.sh`, el mismo script de siempre, con las mismas claves
+   de Secret Manager. Compila la imagen, despliega el job, reprograma el
+   reloj y republica los catálogos.
+
+En cualquier otra rama y en los pull requests corren sólo las pruebas.
+
+**Cómo se ve.** https://github.com/Joacogol/calculadora-asistime/actions.
+Verde: desplegado. Rojo: no se desplegó nada y el job anterior sigue
+corriendo; el log dice qué prueba falló o qué comando de gcloud.
+
+**Cómo se autentica, y por qué así.** La organización de Google prohíbe crear
+claves de cuentas de servicio (`iam.disableServiceAccountKeyCreation`), así
+que no hay ningún secreto guardado en GitHub. GitHub se identifica con su
+token OIDC ante un pool de Workload Identity Federation del proyecto
+(`github`, proveedor `github`), que sólo acepta tokens de este repo, y actúa
+como la cuenta de servicio `despliegue-github`. Roles de esa cuenta: run.admin,
+cloudbuild.builds.editor, storage.admin, artifactregistry.admin,
+cloudscheduler.admin, secretmanager.admin, serviceusage.serviceUsageConsumer
+e iam.serviceAccountUser.
+
+**Lo que cambió en el repo para que esto sea posible.** Hasta hoy Boss y
+Clínica tenían su kit de código (`brand.py`, `diapositivas.py`,
+`presentacion.py`, tipografías) sólo en `~/worker`, y `probar-marcas.py`
+fallaba en el clon. El 7/9 se trajo todo al repo (140 archivos), así que el
+repo ES el worker: `~/worker` ya no es la fuente de nada.
+
+**Si algún día hay que desplegar a mano**, el camino viejo sigue andando:
+clonar `main`, `cd worker`, `./desplegar-chat.sh`. Ya no hay que copiar nada
+sobre otra carpeta.
+
+**Para desplegar sin cambiar código** (por ejemplo, para que tome un secreto
+nuevo): pestaña Actions, workflow «worker», «Run workflow».
