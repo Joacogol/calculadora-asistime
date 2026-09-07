@@ -80,23 +80,112 @@ function fotoValida(u: string): boolean {
 
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  const esperada = Deno.env.get("API_CLAVE");
-  if (!esperada) return json({ error: "falta configurar API_CLAVE" }, 500);
-  if ((req.headers.get("x-api-clave") || "") !== esperada) {
-    return json({ error: "clave inválida", codigo: "clave_invalida" }, 401);
+// ── Quién está llamando ──────────────────────────────────────────────────
+//
+// Hasta el 7/9/2026 esto era una comparación contra `API_CLAVE`: la función
+// vivía en el proyecto de UN cliente, así que saber que la clave era la buena
+// alcanzaba para saber en qué base escribir. Con todos los clientes en el
+// mismo Supabase eso ya no cierra: la clave además tiene que decir DE QUIÉN
+// es, porque de eso dependen el esquema donde vive su base y el bucket donde
+// van sus archivos.
+//
+// Por eso `identificar` devuelve un cliente, no un sí o un no. Y por eso la
+// tabla guarda el SHA-256 de la clave y no la clave: si alguien llega a leer
+// `public.claves_api` no se lleva las llaves de nadie. La comparación la hace
+// Postgres sobre un hash completo, así que no hay tiempo que mirar para
+// adivinar la original.
+//
+// El cliente de la casa —Asistime, que vive en `public`— sigue entrando por
+// `API_CLAVE`: no depende de la base para autenticarse, y así una migración
+// a medias nunca lo deja afuera.
+
+type Quien = {
+  marca: string;
+  esquema: string;
+  bucket: string;
+  usuario: string | null;
+};
+
+/** Comparación de largo constante. Con `===` el tiempo de respuesta varía
+ *  según cuántos caracteres coinciden, y eso alcanza para adivinar la clave a
+ *  fuerza de intentos. */
+function misma_clave(dada: string, esperada: string): boolean {
+  if (dada.length !== esperada.length) return false;
+  let distinto = 0;
+  for (let i = 0; i < esperada.length; i++) {
+    distinto |= dada.charCodeAt(i) ^ esperada.charCodeAt(i);
+  }
+  return distinto === 0;
+}
+
+async function huella(texto: string): Promise<string> {
+  const bytes = await crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode(texto));
+  return Array.from(new Uint8Array(bytes))
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function identificar(
+  dada: string, base: string, llave: string,
+): Promise<Quien | null> {
+  if (!dada) return null;
+
+  const propia = Deno.env.get("API_CLAVE") || "";
+  if (propia && misma_clave(dada, propia)) {
+    return {
+      marca: Deno.env.get("MARCA") || "",
+      esquema: Deno.env.get("ESQUEMA") || "",
+      bucket: Deno.env.get("BUCKET") || "disenos",
+      usuario: Deno.env.get("USUARIO_ID") || null,
+    };
   }
 
-  const base = Deno.env.get("SUPABASE_URL")!;
-  const llave = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const usuario = Deno.env.get("USUARIO_ID") || null;
-  const cab = {
+  const r = await fetch(
+    `${base}/rest/v1/claves_resueltas?clave_sha=eq.${await huella(dada)}` +
+    `&activa=is.true&select=marca,esquema,bucket,usuario_id&limit=1`,
+    { headers: { apikey: llave, Authorization: `Bearer ${llave}` } },
+  );
+  if (!r.ok) return null;
+  let filas: unknown;
+  try { filas = await r.json(); } catch { return null; }
+  if (!Array.isArray(filas) || !filas.length) return null;
+  const f = filas[0] as Record<string, string | null>;
+  return {
+    marca: f.marca || "",
+    esquema: f.esquema || "",
+    bucket: f.bucket || "disenos",
+    usuario: f.usuario_id || null,
+  };
+}
+
+/** Las cabeceras con las que se habla con PostgREST. `Accept-Profile` elige el
+ *  esquema al leer y `Content-Profile` al escribir; sin ellas se habla con
+ *  `public`, que es lo que corresponde para quien tiene proyecto propio. */
+function cabeceras(llave: string, esquema: string): Record<string, string> {
+  const cab: Record<string, string> = {
     apikey: llave,
     Authorization: `Bearer ${llave}`,
     "Content-Type": "application/json",
   };
+  if (esquema) {
+    cab["Accept-Profile"] = esquema;
+    cab["Content-Profile"] = esquema;
+  }
+  return cab;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  const base = Deno.env.get("SUPABASE_URL")!;
+  const llave = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  const quien = await identificar(
+    req.headers.get("x-api-clave") || "", base, llave);
+  if (!quien) return json({ error: "clave inválida", codigo: "clave_invalida" }, 401);
+  const { esquema, bucket, usuario } = quien;
+  const cab = cabeceras(llave, esquema);
   const tabla = `${base}/rest/v1/fotos_editadas`;
 
   const leer = async (id: string) => {

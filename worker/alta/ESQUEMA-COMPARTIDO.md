@@ -56,8 +56,8 @@ select public.alta_desde_repo(
   'https://raw.githubusercontent.com/Joacogol/calculadora-asistime/<hash>/worker/alta/esquemas/club-x-disenos.sql');
 
 -- 3. El cliente, en la tabla de la casa
-insert into public.clientes (marca, nombre, esquema, cobra) values
-  ('club-x-disenos', 'Club X', 'club_x', true);
+insert into public.clientes (marca, nombre, esquema, bucket, cobra) values
+  ('club-x-disenos', 'Club X', 'club_x', 'disenos-club-x', true);
 ```
 
 **4. Exponer el esquema.** En el panel del proyecto: Settings, API, «Exposed
@@ -65,7 +65,17 @@ schemas», agregar `club_x` a la lista. Es lo único que no se puede hacer por
 SQL ni por API: PostgREST sólo sirve los esquemas que están en esa lista, y
 hasta que esté contesta 406 diciendo cuáles expone.
 
-**5. El registro**, para que el worker lo atienda:
+**5. La clave de la API**, para que el cliente pueda pedir desde el chat:
+
+```sql
+select public.alta_clave('club-x-disenos', null, 'tools de Asistime');
+```
+
+Devuelve la clave UNA vez —después queda sólo su SHA-256— y va escrita en el
+código de las tools del agente, igual que hasta ahora. Ver «Una clave por
+cliente» más abajo.
+
+**6. El registro**, para que el worker lo atienda:
 
 ```bash
 python3 herramientas/registro.py agregar   # pide marca, URL, clave y esquema
@@ -80,3 +90,43 @@ Corre el SQL que el repositorio ya tiene commiteado, en vez de que alguien
 copie 38 KB a una consola. Sólo acepta URLs de este repositorio, y la ejecución
 está limitada a `service_role`. Conviene pasarle siempre el hash de un commit y
 no `main`: así lo que se aplicó queda registrado y es inmutable.
+
+
+## Una clave por cliente
+
+Las funciones de borde —`api-disenos`, `api-plantillas`, `api-fotos`,
+`api-reels`, `api-publicar` y `api-subir`— vivían en el proyecto de UN cliente.
+Ahí, verificar que la clave era la buena alcanzaba para saber en qué base
+escribir: no había otra.
+
+Compartiendo proyecto eso ya no cierra. La misma función atiende a todos, así
+que la clave además tiene que decir **de quién es**: de eso salen el esquema
+donde están sus tablas y el bucket donde van sus archivos. Por eso
+`identificar()` devuelve un cliente y no un sí o un no, y por eso hay una tabla:
+
+| | |
+|---|---|
+| `public.claves_api` | el SHA-256 de cada clave, con su marca y su usuario |
+| `public.claves_resueltas` | la vista que junta eso con el esquema y el bucket de `public.clientes` |
+| `public.alta_clave(marca)` | acuña una clave nueva y devuelve la original una sola vez |
+
+**Se guarda el hash, nunca la clave.** La clave viaja escrita en el código de
+una tool de Asistime —eso no cambió y está explicado en `DESPLEGAR.md`—, pero
+del lado de la base no queda nada que sirva para entrar: quien lea la tabla se
+lleva hashes. La comparación la hace Postgres sobre un hash completo, así que
+tampoco hay tiempos que medir para adivinar la original.
+
+**El cliente de la casa sigue entrando por `API_CLAVE`.** Asistime vive en
+`public` y se autentica contra el secreto del proyecto, sin tocar la base. Es a
+propósito: una migración a medias —o una tabla vacía— nunca lo deja afuera. Sus
+valores salen de las variables `ESQUEMA` (vacía), `BUCKET` (`disenos`) y
+`USUARIO_ID`, que ya estaban.
+
+### Lo que se arregló de paso
+
+`api-reels` sella la elección de proveedor para que el agente no pueda elegir
+sin haber preguntado. El sello se hacía con la propia `API_CLAVE` — que está
+escrita en claro en el código de la tool, así que cualquiera que la leyera podía
+fabricar uno. Ahora se hace con la `service_role`, que no sale del servidor,
+con la marca adentro para que un sello de un cliente no valga en la base de
+otro.
