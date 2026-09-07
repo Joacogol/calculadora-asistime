@@ -1,0 +1,37 @@
+{#- La foto sola. La más usada y la que menos hace.
+
+    Un club de gimnasia publica sobre todo gente entrenando, y esas fotos no
+    llevan texto encima: el mensaje va en el epígrafe. La tentación de
+    "aprovechar" la pieza y meterle un rótulo es exactamente lo que haría que
+    el feed se vea armado con una plantilla.
+
+    Por eso `titulo` viene vacío y `firma` viene apagada. Lo que aporta esta
+    plantilla es el encuadre al formato y el foco, y con eso alcanza. -#}
+
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+
+{% if d.titulo or d.firma not in ('', 'ninguna') %}
+{#- El velo se MIDE contra esta foto, no se fija. En la sala hay paredes
+    blancas y espejos: un velo fijo que alcanza sobre la piscina desaparece
+    sobre un espejo y se lleva puesto el título. -#}
+{%- set plan = plan_titular(d.foto, c.blanco, c.negro, (0.55, 1.0), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.30]|max, 0.76) }}"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
+  <div class="grow"></div>
+  <div>
+    {% if d.rotulo %}
+    <div class="v-seca" style="color:{{ c[d.acento] }};font-size:{{ m.rotulo }}px;
+      margin-bottom:{{ m.rotulo * 1.1 }}px;{{ sombra_texto(1.6) }}">{{ d.rotulo }}</div>
+    {% endif %}
+    {% if d.titulo %}
+    <div class="v-normal" style="color:{{ c.blanco }};font-size:{{ m.titulo }}px;
+      max-width:88%;white-space:pre-line;{{ sombra_texto() }}">{{ d.titulo }}</div>
+    {% endif %}
+    {% if d.firma and d.firma != 'ninguna' %}
+    <div style="margin-top:{{ m.titulo * 0.6 if d.titulo else 0 }}px">
+      {{ firma(d.firma, m.iso, c.blanco, m.logo) }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

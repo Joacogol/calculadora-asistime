@@ -1,0 +1,76 @@
+{#- Un plan y lo que incluye.
+
+    El club vende dos: BASIC —«Viví tu club»— y ALL IN —«Viví Life sin
+    límites»—. La pieza es una lista, y una lista es lo más fácil de arruinar:
+    con viñetas inventadas, con iconos que la marca no tiene, con un fondo que
+    compite. Acá los ítems se separan con una línea fina del propio color del
+    texto y nada más. El manual de Life no tiene un solo elemento decorativo.
+
+    ── El precio no está en ningún default ──────────────────────────────
+
+    A propósito. Los precios de los planes cambian y no viven en el manual de
+    marca: si el pedido no los trae, el campo queda vacío y la pieza sale sin
+    precio, que es correcto. Lo que NO puede pasar es que salga un precio que
+    nadie dio. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+
+{#- LA FIRMA SOBRE EL COLOR DEL CLUB VA CON EL ISO, no con el lockup.
+
+    El lockup es de dos colores y sólo uno se pinta: «MONTEVIDEO» tiene el
+    frambuesa escrito adentro del vector. Sobre un fondo frambuesa esa palabra
+    desaparece —queda el color sobre el mismo color— y la pieza sale firmada a
+    medias, sin que nada falle. El isotipo es de un solo color y no tiene ese
+    problema. -#}
+{%- set sello = 'iso' if (d.firma == 'lockup' and pal.fondo|lower == c.frambuesa|lower) else d.firma -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
+  <div>
+    <div class="v-seca" style="color:{{ pal.acento }};font-size:{{ m.rotulo }}px">
+      {{ d.rotulo }}</div>
+    <div class="v-poster" style="color:{{ pal.tinta }};font-size:{{ m.plan }}px;
+      margin-top:{{ m.rotulo * 0.9 }}px">{{ d.plan }}</div>
+    {% if d.lema %}
+    <div class="body" style="color:{{ pal.acento }};font-size:{{ m.lema }}px;
+      margin-top:{{ m.lema * 0.5 }}px">{{ d.lema }}</div>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+
+  {#- La lista. Viene como texto con un ítem por línea: es la forma en la que
+      alguien la escribe en un chat, y convertirla acá evita pedirle a quien
+      encarga la pieza que arme una estructura. Las líneas vacías se caen. -#}
+  {% if d.incluye %}
+  <div class="items" style="color:{{ pal.tinta }};font-size:{{ m.item }}px;
+    max-width:{{ m.ancho_lista }}px">
+    {% for linea in d.incluye.split('\n') %}{% if linea.strip() %}
+    <div class="item"><b>{{ linea.strip() }}</b></div>
+    {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  {% if d.precio %}
+  <div style="margin-bottom:{{ m.pad * 0.5 }}px">
+    <div class="num" style="color:{{ pal.acento }};font-size:{{ m.precio }}px">{{ d.precio }}</div>
+    {% if d.periodo %}
+    <div class="v-seca" style="color:{{ pal.tinta }};opacity:.7;font-size:{{ m.rotulo }}px;
+      margin-top:{{ m.rotulo * 0.6 }}px">{{ d.periodo }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="row" style="width:100%;align-items:flex-end">
+    <div>
+      {{ firma(sello, m.iso, pal.tinta, m.logo) }}
+      {% if d.pie %}
+      <div class="legal" style="color:{{ pal.tinta }};opacity:.7;font-size:{{ m.legal }}px;
+        margin-top:{{ m.legal * 0.8 }}px;max-width:620px">{{ d.pie }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

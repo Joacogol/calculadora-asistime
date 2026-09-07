@@ -1,0 +1,142 @@
+{
+ "id": "plan",
+ "nombre": "Plan",
+ "descripcion": "un plan de socio con la lista de lo que incluye",
+ "cuando_usarla": "Cuando la pieza vende una membresía: BASIC o ALL IN, o una promoción de alta. Es una lista, y sale como lista. Si sólo hay un descuento y una fecha, sin lo que incluye, no es ésta: es `promo`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 64,
+   "plan": 104,
+   "rotulo": 20,
+   "lema": 28,
+   "item": 27,
+   "precio": 96,
+   "legal": 18,
+   "ancho_lista": 820,
+   "logo": 0.58,
+   "iso": 0.85
+  },
+  "vert": {
+   "alto": 1350,
+   "pad": 68,
+   "plan": 120,
+   "rotulo": 21,
+   "lema": 30,
+   "item": 29,
+   "precio": 110,
+   "legal": 19,
+   "ancho_lista": 860,
+   "logo": 0.62,
+   "iso": 0.9
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 84,
+   "plan": 150,
+   "rotulo": 25,
+   "lema": 36,
+   "item": 35,
+   "precio": 138,
+   "legal": 22,
+   "ancho_lista": 880,
+   "logo": 0.76,
+   "iso": 1.05
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 84,
+   "plan": 150,
+   "rotulo": 25,
+   "lema": 36,
+   "item": 35,
+   "precio": 138,
+   "legal": 22,
+   "ancho_lista": 880,
+   "logo": 0.76,
+   "iso": 1.05
+  }
+ },
+ "campos": [
+  {
+   "id": "plan",
+   "tipo": "texto",
+   "etiqueta": "El plan",
+   "requerido": true,
+   "ejemplo": "ALL IN",
+   "nota": "Los dos que existen son BASIC y ALL IN. En mayúsculas, que es como los escribe el club."
+  },
+  {
+   "id": "rotulo",
+   "tipo": "texto",
+   "etiqueta": "Rótulo",
+   "default": "PLANES",
+   "nota": "La línea chica de arriba. Espaciada y en mayúsculas."
+  },
+  {
+   "id": "lema",
+   "tipo": "texto",
+   "etiqueta": "Lema del plan",
+   "default": "",
+   "ejemplo": "Viví Life sin límites",
+   "nota": "El del club: BASIC es «Viví tu club» y ALL IN es «Viví Life sin límites»."
+  },
+  {
+   "id": "incluye",
+   "tipo": "texto_largo",
+   "etiqueta": "Qué incluye",
+   "default": "",
+   "ejemplo": "Acceso ilimitado a todos los clubes Life\nPilates Reformer\nServicio de toallas\nNutrición\nBotas recovery",
+   "nota": "Un ítem por línea, tal como se escribe en un chat. Las líneas vacías se caen solas. Si son más de siete la pieza se llena: elegí los que importan."
+  },
+  {
+   "id": "precio",
+   "tipo": "texto",
+   "etiqueta": "Precio",
+   "default": "",
+   "ejemplo": "$ 4.900",
+   "nota": "**Vacío por defecto y no se inventa.** Los precios de los planes no están en el manual porque cambian. Si el pedido no lo trae, la pieza sale sin precio, que es correcto; un precio que nadie dio es un problema en el mostrador."
+  },
+  {
+   "id": "periodo",
+   "tipo": "texto",
+   "etiqueta": "Cada cuánto",
+   "default": "",
+   "ejemplo": "POR MES",
+   "nota": "Sólo si hay precio. Sin esto un número suelto no dice nada."
+  },
+  {
+   "id": "pie",
+   "tipo": "texto_largo",
+   "etiqueta": "Letra chica",
+   "default": "",
+   "ejemplo": "Precio para socios nuevos. No incluye matrícula. Válido hasta el 31 de marzo.",
+   "nota": "Si hay precio o promoción, las condiciones van acá. Ver la regla de letra chica del manual."
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta",
+   "opciones": [
+    "life",
+    "humo",
+    "oscura",
+    "frambuesa"
+   ],
+   "default": "humo",
+   "nota": "`humo` por defecto: es una pieza con mucho texto y el blanco pleno cansa. `oscura` para el plan de arriba, cuando se publican los dos juntos y hay que distinguirlos."
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup"
+  }
+ ]
+}

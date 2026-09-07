@@ -1,0 +1,168 @@
+{
+ "id": "clase",
+ "nombre": "Clase",
+ "descripcion": "una actividad con su día, su hora y su profesor",
+ "cuando_usarla": "Cuando la pieza anuncia UNA clase o actividad: un horario nuevo, una clase especial, un cambio de sala, una que abre inscripción. El día y la hora salen en bloques del color del club, no como texto suelto, porque son el dato por el que alguien guarda la pieza. Si son varias clases a la vez —la grilla del mes— no es ésta: pedí una grilla.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 60,
+   "nombre": 84,
+   "rotulo": 20,
+   "chip": 24,
+   "profesor": 26,
+   "bajada": 26,
+   "legal": 18,
+   "logo": 0.58,
+   "iso": 0.85
+  },
+  "vert": {
+   "alto": 1350,
+   "pad": 64,
+   "nombre": 96,
+   "rotulo": 21,
+   "chip": 26,
+   "profesor": 28,
+   "bajada": 28,
+   "legal": 19,
+   "logo": 0.62,
+   "iso": 0.9
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 80,
+   "nombre": 118,
+   "rotulo": 25,
+   "chip": 31,
+   "profesor": 34,
+   "bajada": 33,
+   "legal": 22,
+   "logo": 0.76,
+   "iso": 1.05
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 80,
+   "nombre": 118,
+   "rotulo": 25,
+   "chip": 31,
+   "profesor": 34,
+   "bajada": 33,
+   "legal": 22,
+   "logo": 0.76,
+   "iso": 1.05
+  }
+ },
+ "campos": [
+  {
+   "id": "clase",
+   "tipo": "texto_largo",
+   "etiqueta": "La clase",
+   "requerido": true,
+   "ejemplo": "PILATES\nREFORMER",
+   "nota": "El nombre tal como lo llama el club. El salto de línea se respeta."
+  },
+  {
+   "id": "categoria",
+   "tipo": "texto",
+   "etiqueta": "Familia",
+   "default": "",
+   "ejemplo": "BODY & MIND",
+   "nota": "La familia de actividad: RENDIMIENTO, FITNESS, BODY & MIND, PISCINA, TENIS, NUTRICIÓN u OPEN GYM. Sale arriba, chica y espaciada. Si el pedido nombra una familia que no está en el manual, preguntá antes de dibujarla."
+  },
+  {
+   "id": "dias",
+   "tipo": "texto",
+   "etiqueta": "Días",
+   "default": "",
+   "ejemplo": "Lunes y miércoles",
+   "nota": "**No lo completes si no te lo dieron.** La grilla cambia todos los meses y una pieza vieja no es fuente."
+  },
+  {
+   "id": "hora",
+   "tipo": "texto",
+   "etiqueta": "Hora",
+   "default": "",
+   "ejemplo": "19:00",
+   "nota": "Misma regla que los días: si no te la dieron, preguntala."
+  },
+  {
+   "id": "sala",
+   "tipo": "texto",
+   "etiqueta": "Dónde",
+   "default": "",
+   "ejemplo": "Sala 2",
+   "nota": "Opcional. Sólo si la clase no es donde siempre."
+  },
+  {
+   "id": "profesor",
+   "tipo": "texto",
+   "etiqueta": "Profesor",
+   "default": "",
+   "ejemplo": "Martina",
+   "nota": "Sale como «Con Martina». Nombre de pila, que es como los nombra el club."
+  },
+  {
+   "id": "bajada",
+   "tipo": "texto_largo",
+   "etiqueta": "Bajada",
+   "default": "",
+   "ejemplo": "Incluida en el plan ALL IN. Reservá tu lugar por la app."
+  },
+  {
+   "id": "cupo",
+   "tipo": "texto",
+   "etiqueta": "Letra chica",
+   "default": "",
+   "ejemplo": "Cupos limitados",
+   "nota": "Va abajo a la derecha. «Cupos limitados», «Sólo ALL IN», «Con reserva previa»."
+  },
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "Foto de fondo",
+   "default": "",
+   "nota": "Opcional. Con foto, todo el texto pasa a blanco y se calcula el velo. Los bloques de día y hora no dependen de la foto: van siempre sobre el color del club."
+  },
+  {
+   "id": "foco",
+   "tipo": "texto",
+   "etiqueta": "Foco de la foto",
+   "default": "50% 50%"
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta",
+   "opciones": [
+    "life",
+    "humo",
+    "oscura"
+   ],
+   "default": "life",
+   "nota": "Sólo se usa cuando NO hay foto. `humo` para una pieza con mucho texto."
+  },
+  {
+   "id": "acento",
+   "tipo": "opcion",
+   "etiqueta": "Color de los bloques",
+   "opciones": [
+    "frambuesa",
+    "negro"
+   ],
+   "default": "frambuesa"
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup"
+  }
+ ]
+}

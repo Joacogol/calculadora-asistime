@@ -1,0 +1,67 @@
+{#- La promo: un número grande, qué hay que hacer y hasta cuándo vale.
+
+    Es la única plantilla donde el frambuesa del club es el FONDO. El resto de
+    las piezas lo usan de acento, y ésa es la razón por la que acá funciona:
+    si el color a sangre estuviera en todas, dejaría de significar «esto es una
+    oferta».
+
+    ── La letra chica es obligatoria ────────────────────────────────────
+
+    No es un capricho de diseño. Una promo sin condiciones escritas es un
+    reclamo en el mostrador: hasta cuándo vale, si es para socios nuevos, si
+    pide permanencia, con qué tarjeta. Si el pedido no la trae, hay que
+    preguntarla antes de dar la pieza por terminada — por eso el campo está
+    marcado como requerido y la plantilla no dibuja sin él. -#}
+
+{%- set pal = paleta(d.estilo, fondo=d.fondo, tinta=d.tinta) -%}
+
+{#- LA FIRMA SOBRE EL COLOR DEL CLUB VA CON EL ISO, no con el lockup.
+
+    El lockup es de dos colores y sólo uno se pinta: «MONTEVIDEO» tiene el
+    frambuesa escrito adentro del vector. Sobre un fondo frambuesa esa palabra
+    desaparece —queda el color sobre el mismo color— y la pieza sale firmada a
+    medias, sin que nada falle. El isotipo es de un solo color y no tiene ese
+    problema. -#}
+{%- set sello = 'iso' if (d.firma == 'lockup' and pal.fondo|lower == c.frambuesa|lower) else d.firma -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};text-align:center;
+  align-items:center">
+  <div class="grow"></div>
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ pal.tinta }};opacity:.85;font-size:{{ m.rotulo }}px;
+    margin-bottom:{{ m.rotulo * 1.4 }}px">{{ d.rotulo }}</div>
+  {% endif %}
+
+  {#- El descuento es el elemento más grande de todo el sistema, y va solo:
+      el número, el signo y la palabra OFF pegados, sin nada más en la línea.
+      Cuando no hay descuento —una promo que es «traé un amigo»— el titular
+      ocupa su lugar y la pieza sigue funcionando. -#}
+  {% if d.descuento %}
+  <div class="num" style="color:{{ pal.tinta }};font-size:{{ m.descuento }}px">
+    {{ d.descuento }}<span style="font-size:{{ m.descuento * 0.40 }}px;
+      letter-spacing:normal;margin-left:{{ m.descuento * 0.05 }}px">% OFF</span></div>
+  {% endif %}
+
+  <div class="v-poster" style="color:{{ pal.tinta }};font-size:{{ m.titulo }}px;
+    margin-top:{{ m.titulo * 0.3 if d.descuento else 0 }}px;
+    max-width:94%;white-space:pre-line">{{ d.titulo }}</div>
+
+  {% if d.bajada %}
+  <div class="body" style="color:{{ pal.tinta }};opacity:.92;font-size:{{ m.bajada }}px;
+    margin-top:{{ m.bajada * 1.3 }}px;max-width:760px">{{ d.bajada }}</div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  <div style="width:100%">
+    {{ firma(sello, m.iso, pal.tinta, m.logo, 'center') }}
+    {#- La letra chica al 72% de opacidad y no más abajo: tiene que leerse en
+        un teléfono, no desaparecer con elegancia. -#}
+    <div class="legal" style="color:{{ pal.tinta }};opacity:.72;font-size:{{ m.legal }}px;
+      margin-top:{{ m.legal * 0.9 }}px;max-width:820px;margin-left:auto;margin-right:auto">
+      {{ d.pie }}</div>
+  </div>
+</div>

@@ -1,0 +1,96 @@
+{
+ "id": "foto",
+ "nombre": "Foto",
+ "descripcion": "la foto sola, con o sin una línea encima",
+ "cuando_usarla": "La que más se usa. Gente entrenando, la sala, la piscina, un detalle: el mensaje va en el epígrafe y la imagen va limpia. Usala siempre que la pieza sea «mostrá esto». Si hay que decir algo ARRIBA de la foto y ese algo es el mensaje —no un rótulo—, no es ésta: es `titular`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 56,
+   "titulo": 52,
+   "rotulo": 20,
+   "logo": 0.6,
+   "iso": 0.85
+  },
+  "vert": {
+   "alto": 1350,
+   "pad": 60,
+   "titulo": 58,
+   "rotulo": 21,
+   "logo": 0.64,
+   "iso": 0.9
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 76,
+   "titulo": 70,
+   "rotulo": 25,
+   "logo": 0.78,
+   "iso": 1.05
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 76,
+   "titulo": 70,
+   "rotulo": 25,
+   "logo": 0.78,
+   "iso": 1.05
+  }
+ },
+ "campos": [
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "La foto",
+   "requerido": true,
+   "nota": "Ocupa toda la pieza. Si no lleva texto sale tal cual: sin velo, sin marco, sin filtro. Si la foto no se banca sola, la pieza tampoco."
+  },
+  {
+   "id": "foco",
+   "tipo": "texto",
+   "etiqueta": "Foco de la foto",
+   "default": "50% 50%",
+   "nota": "Qué parte se conserva al recortar al formato. `50% 50%` es el centro; `50% 35%` sube el encuadre, que es lo que suele hacer falta cuando hay caras."
+  },
+  {
+   "id": "rotulo",
+   "tipo": "texto",
+   "etiqueta": "Rótulo",
+   "default": "",
+   "ejemplo": "PILATES REFORMER",
+   "nota": "La línea chica en mayúsculas espaciadas, arriba del título. Es la voz del «MONTEVIDEO» del logo. Opcional y corta: dos o tres palabras."
+  },
+  {
+   "id": "titulo",
+   "tipo": "texto_largo",
+   "etiqueta": "Título",
+   "default": "",
+   "ejemplo": "Nuevos horarios\nde piscina",
+   "nota": "OPCIONAL y vacío por defecto, a propósito: estas fotos normalmente no llevan texto. El salto de línea se respeta tal cual venga."
+  },
+  {
+   "id": "acento",
+   "tipo": "opcion",
+   "etiqueta": "Acento",
+   "opciones": [
+    "frambuesa",
+    "blanco"
+   ],
+   "default": "frambuesa",
+   "nota": "El color del rótulo. Sobre una foto oscura el frambuesa se lee; sobre una clara conviene blanco."
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "ninguna",
+   "nota": "`lockup` es LIFE con MONTEVIDEO debajo. `iso` es la pincelada LIFE sola, la marca que comparten los cinco clubes: para una pieza donde el lockup entero compite con la foto. `ninguna` cuando la foto es la protagonista y la cuenta ya dice de quién es — que es el caso normal acá."
+  }
+ ]
+}

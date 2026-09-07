@@ -1,0 +1,101 @@
+{#- La pieza que dice algo. Sobre foto o sobre color pleno.
+
+    Es la de «UNA COMUNIDAD QUE VIBRA»: el titular ES la pieza. La paleta
+    entra por `estilo` y se puede pisar campo por campo, porque el caso real
+    es mixto — «la oscura pero sobre foto».
+
+    El salto de línea del título se RESPETA. En una pieza así el corte no cae
+    donde quiera el navegador: quien la pide sabe mejor dónde quiere que
+    corte. -#}
+
+{%- set pal = paleta(d.estilo, fondo=d.fondo, tinta=d.tinta) -%}
+
+{#- SOBRE FOTO EL TÍTULO VA BLANCO, salvo que pidan otra cosa. El frambuesa
+    del club es de luminancia media: medido, no llega a contraste de texto
+    sobre una foto de sala ni con el velo alto, y la pieza sale lavada. El
+    color se queda para los fondos planos, que es donde luce. -#}
+{%- if d.foto and not d.tinta -%}
+  {%- set pal = dict(pal, tinta=c.blanco) -%}
+{%- endif -%}
+
+{#- LA FIRMA SOBRE EL COLOR DEL CLUB VA CON EL ISO, no con el lockup.
+
+    El lockup es de dos colores y sólo uno se pinta: «MONTEVIDEO» tiene el
+    frambuesa escrito adentro del vector. Sobre un fondo frambuesa esa palabra
+    desaparece —queda el color sobre el mismo color— y la pieza sale firmada a
+    medias, sin que nada falle. El isotipo es de un solo color y no tiene ese
+    problema. -#}
+{%- set sello = 'iso' if (d.firma == 'lockup' and pal.fondo|lower == c.frambuesa|lower) else d.firma -%}
+
+{%- set sombra = sombra_texto() if d.foto else '' -%}
+{#- El texto chico lleva MÁS sombra, no menos: la sombra se dibuja alrededor
+    del trazo, así que al mismo valor un titular de 120 px queda envuelto en un
+    halo ancho y una bajada de 32 px casi sin nada, justo cuando es la que más
+    contraste necesita. -#}
+{%- set sombra_chica = sombra_texto(1.6) if d.foto else '' -%}
+
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 24 else (m.titulo * 0.74 if largo <= 46 else m.titulo * 0.56) -%}
+{%- set centrado = d.alineacion == 'centro' -%}
+
+{% if d.foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{#- Piso al velo. `plan_titular` mide el promedio de la franja, y el promedio
+    no ve la mancha clara puntual —un espejo, una ventana, una toalla blanca—
+    que se come tres letras. Con foto siempre hay algo de velo, aunque el
+    cálculo diga que no. -#}
+{%- set plan = plan_titular(d.foto, pal.tinta, c.negro, (0.0, 0.62), 4.5, 4.5) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.78) }};
+  transform:rotate(180deg)"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+{#- Sin foto la pieza se centra, y punto. `abajo` tiene sentido sobre una foto
+    —deja ver la escena— pero sobre un fondo plano deja dos tercios vacíos y el
+    titular pegado al pie: eso no es una pieza, es una pieza sin terminar. -#}
+{%- set pos = d.posicion if d.foto else 'centro' -%}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  align-items:{{ 'center' if centrado else 'flex-start' }};
+  text-align:{{ 'center' if centrado else 'left' }}">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div style="max-width:{{ '100%' if centrado else '94%' }}">
+    {% if d.rotulo %}
+    <div class="v-seca" style="color:{{ pal.acento }};font-size:{{ m.rotulo }}px;
+      margin-bottom:{{ m.rotulo * 1.4 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+    {% endif %}
+
+    {#- Título y barrita van juntos en un bloque que se encoge hasta el ancho
+        del texto, así el trazo mide LO QUE MIDE EL TÍTULO. Atado al cuerpo de
+        letra, un título largo —que baja de cuerpo y ocupa más ancho— dejaba la
+        barrita corta y descolgada, como si sobrara. -#}
+    <div style="display:inline-block;max-width:100%">
+      <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};font-size:{{ cuerpo }}px;
+        white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+      {% if d.barra_acento %}
+      <div style="margin-top:{{ cuerpo * 0.13 }}px;width:100%;
+        height:{{ cuerpo * 0.11 }}px;background:{{ pal.acento }}"></div>
+      {% endif %}
+    </div>
+
+    {% if d.bajada %}
+    <div class="body" style="color:{{ pal.tinta }};opacity:.92;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 1.2 }}px;max-width:740px;{{ sombra_chica }}
+      {{ 'margin-left:auto;margin-right:auto' if centrado else '' }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  <div style="width:100%;text-align:{{ 'center' if centrado else 'left' }}">
+    {{ firma(sello, m.iso, pal.tinta, m.logo, 'center' if centrado else 'left') }}
+    {% if d.pie %}
+    <div class="legal" style="color:{{ pal.tinta }};opacity:.7;font-size:{{ m.legal }}px;
+      margin-top:{{ m.legal * 0.8 }}px;max-width:640px;{{ sombra_chica }}
+      {{ 'margin-left:auto;margin-right:auto' if centrado else '' }}">{{ d.pie }}</div>
+    {% endif %}
+  </div>
+</div>

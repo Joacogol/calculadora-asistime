@@ -1,0 +1,132 @@
+{
+ "id": "promo",
+ "nombre": "Promo",
+ "descripcion": "descuento o acción: fondo pleno, el número grande y la letra chica",
+ "cuando_usarla": "Cuando la pieza ES la oferta y tiene que gritar desde el feed: un descuento de alta, una promo de tarjeta, un «traé un amigo», una inscripción que cierra. Es la ÚNICA plantilla donde el frambuesa del club es el fondo — en el resto es acento, y por eso acá significa algo. Si la pieza vende una membresía con lo que incluye, no es ésta: es `plan`.",
+ "acento_por_defecto": "blanco",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 72,
+   "descuento": 250,
+   "titulo": 76,
+   "rotulo": 21,
+   "bajada": 28,
+   "legal": 19,
+   "logo": 0.62,
+   "iso": 0.85
+  },
+  "vert": {
+   "alto": 1350,
+   "pad": 76,
+   "descuento": 290,
+   "titulo": 88,
+   "rotulo": 22,
+   "bajada": 30,
+   "legal": 20,
+   "logo": 0.66,
+   "iso": 0.9
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 92,
+   "descuento": 360,
+   "titulo": 110,
+   "rotulo": 26,
+   "bajada": 36,
+   "legal": 24,
+   "logo": 0.82,
+   "iso": 1.05
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 92,
+   "descuento": 360,
+   "titulo": 110,
+   "rotulo": 26,
+   "bajada": 36,
+   "legal": 24,
+   "logo": 0.82,
+   "iso": 1.05
+  }
+ },
+ "campos": [
+  {
+   "id": "titulo",
+   "tipo": "texto_largo",
+   "etiqueta": "Título",
+   "requerido": true,
+   "ejemplo": "EN TU PRIMER MES",
+   "nota": "Corto. Cuando hay descuento, el título lo acompaña; cuando no lo hay, el título es lo único grande de la pieza y tiene que bancarlo solo."
+  },
+  {
+   "id": "descuento",
+   "tipo": "texto",
+   "etiqueta": "Descuento",
+   "default": "",
+   "ejemplo": "25",
+   "nota": "Sólo el número: el `% OFF` lo pone la plantilla. Si la promo no es un descuento, dejalo vacío y el título ocupa su lugar."
+  },
+  {
+   "id": "rotulo",
+   "tipo": "texto",
+   "etiqueta": "Rótulo",
+   "default": "",
+   "ejemplo": "SOCIOS NUEVOS",
+   "nota": "La línea chica de arriba, espaciada."
+  },
+  {
+   "id": "bajada",
+   "tipo": "texto_largo",
+   "etiqueta": "La mecánica",
+   "default": "",
+   "ejemplo": "Asociate en marzo con tarjeta Itaú y llevate el primer mes con descuento.",
+   "nota": "Qué hay que hacer, en una o dos frases. Si la promo tiene una mecánica —traer a alguien, usar una tarjeta, inscribirse antes de una fecha— esto NO es opcional: sin ella la pieza no sirve."
+  },
+  {
+   "id": "pie",
+   "tipo": "texto_largo",
+   "etiqueta": "Letra chica",
+   "requerido": true,
+   "ejemplo": "Válido del 1 al 31 de marzo para socios nuevos. No acumulable con otras promociones.",
+   "nota": "OBLIGATORIA en esta plantilla. Hasta cuándo vale, para quién, si es acumulable, si pide permanencia. Si el pedido no la trae, preguntala antes de dar la pieza por terminada."
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta",
+   "opciones": [
+    "frambuesa",
+    "oscura",
+    "life",
+    "familia"
+   ],
+   "default": "frambuesa",
+   "nota": "`frambuesa` es el color del club a sangre con todo en blanco: la de siempre acá. `familia` SÓLO si la promo vale en los cinco clubes."
+  },
+  {
+   "id": "fondo",
+   "tipo": "color",
+   "etiqueta": "Fondo (pisa la paleta)",
+   "default": ""
+  },
+  {
+   "id": "tinta",
+   "tipo": "color",
+   "etiqueta": "Color del texto (pisa la paleta)",
+   "default": ""
+  },
+  {
+   "id": "firma",
+   "tipo": "opcion",
+   "etiqueta": "Firma",
+   "opciones": [
+    "lockup",
+    "iso",
+    "ninguna"
+   ],
+   "default": "lockup",
+   "nota": "Sobre el color pleno el lockup sale en blanco: es la negativa oficial del manual, con MONTEVIDEO en su color."
+  }
+ ]
+}

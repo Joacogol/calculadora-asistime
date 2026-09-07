@@ -1,0 +1,181 @@
+{
+  "_nota": "Los datos que el worker le pasa al agente en el prompt. Es JSON y no un módulo Python a propósito: dos marcas tienen archivos con el mismo nombre y no pueden convivir importadas en el mismo proceso. Un archivo de datos no tiene ese problema.",
+  "nombre": "Life Montevideo",
+  "_familia": "Life Montevideo es UNO de los cinco clubes de Viví Life. Los otros cuatro —Distrito M, Aguada, Zonamerica y Outdoor Club— tienen sus propias cuentas. Esta cuenta habla de ESTE club: la sede de Buceo. Cuando una pieza sea de la familia entera —una promo que vale en todos, un evento común— se dice «todos los clubes Life», y ahí es cuando entra la paleta `familia`.",
+  "sedes": {
+    "Buceo": {
+      "direccion": "Prof. Juan Carlos Sabat Pebet 1240, Buceo, Montevideo",
+      "horario": "L-V 6:30-22:00 · Sáb 8:00-13:00 · Dom cerrado",
+      "acento": "frambuesa"
+    }
+  },
+  "sede_por_defecto": "Buceo",
+  "web": "lifemontevideo.uy",
+  "instagram": "@lifemvd",
+  "atencion": "Lunes a viernes de 6:30 a 22:00, sábados de 8:00 a 13:00. Domingo cerrado.",
+  "formato_por_defecto": "post",
+  "telefono_por_defecto": false,
+  "regla_telefono": "**En la pieza no va el teléfono: va la web o el Instagram.** El club atiende por WhatsApp y por el sitio, y el llamado a la acción de todas sus piezas es «agendá tu día de prueba» o «escribinos». El pie de las plantillas ya dice `lifemontevideo.uy`. El teléfono va sólo si el pedido lo pide con todas las letras.",
+  "_horarios": "Los horarios de ARRIBA son los del club, no los de las clases. La grilla de clases cambia por mes y NO está acá a propósito: una grilla vieja publicada es peor que no publicar nada.",
+  "regla_datos": "**No completes ningún horario, precio, cupo ni fecha que no te hayan dado.** Ni a qué hora es la clase, ni quién la da, ni cuánto sale el plan, ni hasta cuándo vale una promo. Si falta, preguntalo. Y ojo con lo que aparezca en piezas anteriores: la grilla de clases cambia todos los meses, así que una pieza vieja NO es fuente.",
+  "regla_letra_chica": "**Si la pieza tiene una promo, la condición va en la pieza.** Hasta cuándo vale, si es para socios nuevos, si pide permanencia, con qué tarjeta. Es lo primero que se reclama en el mostrador y lo último que alguien se acuerda de pedir.",
+  "_personas": "Esta cuenta muestra gente entrenando: caras reconocibles de socios y de profesores.",
+  "regla_personas": "**Una persona identificable en una pieza es una decisión del club, no del diseño.** Si el pedido manda una foto de alguien, se usa; si te piden inventar una foto de gente del club con `crear`, no se hace: una cara generada publicada como si fuera un socio es un problema distinto al de una pieza fea. Para eso están las fotos que ellos mandan.",
+  "actividades": {
+    "Rendimiento": "Funcional · Híbrido · HIIT · CrossFit · Unity",
+    "Fitness": "GAP · Gimnasia Integral",
+    "Body & Mind": "Pilates Reformer · Pilates MAT · Yoga · Stretching",
+    "Piscina": "Hidrogimnasia · Aqua Funcional · Aqua HIIT · Natación · Piscina libre",
+    "Tenis": "Clases de tenis · Tenis libre",
+    "Nutrición": "Consultas · Planes nutricionales",
+    "Open Gym": "Sala de musculación"
+  },
+  "_actividades": "Las siete familias de actividad tal como las agrupa el club en su sitio. Son las que puede nombrar una pieza: si un pedido nombra una que no está acá, preguntá antes de dibujarla.",
+  "planes": {
+    "BASIC": "«Viví tu club». Acceso al club donde te asociaste, clases grupales, Open Gym, piscina y tenis, y acceso semanal a los otros clubes Life.",
+    "ALL IN": "«Viví Life sin límites». Acceso ilimitado a todos los clubes, Pilates Reformer, servicio de toallas, nutrición, botas recovery, prioridad en actividades especiales y 50% OFF."
+  },
+  "_planes": "Qué incluye cada plan, tal como lo dice el sitio. **Los precios NO están acá y no se inventan**: cambian y los da el club.",
+  "frases": {
+    "Una comunidad que vibra": "La frase madre de Life Montevideo. La del sitio es «Una comunidad que vibra, ahora más fuerte». Es de marca, no de campaña: sirve de cierre de casi cualquier pieza.",
+    "#VIVÍLIFE": "El hashtag de la familia, y también un lockup dibujado —«VIVÍ» en tinta y «LIFE» en pincelada subrayada—. Como texto va siempre en mayúsculas y con la tilde en la í.",
+    "Cuatro clubes, un mismo estilo de vida": "Para las piezas que hablan de la familia entera, no de este club."
+  },
+  "_asistime": "Dónde vive el manual que edita el club. No es secreto: es un dato de la marca. La clave de la API de diseños NO va acá: vive hasheada en `public.claves_api` del Supabase de la casa.",
+  "asistime": {
+    "tenant": 48,
+    "clave_env": "ASISTIME_CLAVE_LIFE",
+    "clave_secreto": "asistime-api-life",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403.",
+    "_documentos": "`documento` y `catalogo` se completan cuando se creen en el tenant 48. El catálogo NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue."
+  },
+  "_supabase": "Primer cliente sin proyecto propio: sus tablas viven en el esquema `life_montevideo` del Supabase de la casa y sus archivos en el bucket `disenos-life-montevideo`. Ver `alta/ESQUEMA-COMPARTIDO.md`.",
+  "fotos": {
+    "creditos_maximos": 600,
+    "_que_hace": "Los seis verbos que el agente le puede pedir a una foto ANTES de usarla en una pieza: `fondo` recorta, `formato` la lleva a otra proporción inventando los bordes en vez de recortar, `tamano` la agranda, `retoque` cambia algo puntual, `escena` la lleva a otro lugar y `crear` inventa una foto entera desde una descripción.",
+    "_por_que": "Un club de gimnasia tiene mucha foto de celular tomada en la sala: llegan chicas, con poca luz y en horizontal. `tamano` y `formato` son los que más se van a usar acá — llevar una foto de 900 píxeles a una story de 1080×1920 sin recortar la cabeza de nadie.",
+    "_regla_imagen": "`crear` NO se usa para gente del club: ver `regla_personas`. Sirve para lo que no tiene cara —una toalla doblada, un detalle de la piscina, una textura— y aun así lleva pegada la instrucción de no dibujar ningún texto, cartel ni logo: una fachada generada con un cartel inventado es lo peor que puede salir de acá.",
+    "_topes": "`creditos_maximos` es por pieza: frena un pedido absurdo o un bucle del chat. NO hay techo de mes; si hiciera falta, se escribe `creditos_maximos_mes` acá y el corte vuelve solo."
+  },
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "_material": "Este club FILMA: clases, la piscina, la sala. Lo normal acá es `montar_reel` —editar lo que grabaron— y no `crear_video`, que inventa. Un reel de gente entrenando generado por IA no es este club.",
+    "_calidad": "`normal` es Seedance 2.0 Mini a 720p: 140 créditos por segundo. `borrador` es el mismo a 480p (70) y `maxima` es Seedance 2.5 a 720p (440). La persona puede pedir otra en el chat; esto es lo que se usa cuando no dice nada.",
+    "_topes": "`creditos_maximos` es por pieza. Si algo no entra, el worker NO rechaza de entrada: primero acorta la duración, después baja de calidad, y sólo si ni el más barato entra lo rechaza — siempre diciendo qué cambió.",
+    "musica": [],
+    "_musica": "Todavía sin banco propio. Cuando se genere la primera pista va en `musica/` de esta carpeta, para que viaje con el despliegue. Un club de gimnasia pide algo con pulso: house o pop electrónico de 120-128 BPM, sin voz."
+  },
+  "identidad": {
+    "_colores": "Salen del manual oficial («Guía de colores LIFE»), no de una pantalla. Life Montevideo es Pantone 7636 C. Los otros cuatro clubes están acá porque una pieza de la familia los nombra, no porque esta cuenta los use de acento.",
+    "colores": {
+      "frambuesa": "#BE3455",
+      "negro": "#000000",
+      "tinta": "#111111",
+      "blanco": "#FFFFFF",
+      "humo": "#F4F4F4",
+      "gris": "#8A8A8A",
+      "aguada": "#D12421",
+      "distrito": "#00B5BD",
+      "zonamerica": "#00C996",
+      "outdoor": "#06F395"
+    },
+    "roles": {
+      "acento": "frambuesa",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [1080, 1080],
+      "vert": [1080, 1350],
+      "story": [1080, 1920],
+      "reel": [1080, 1920]
+    },
+    "_tipografias": "El logotipo es una pincelada dibujada, no una tipografía, y no se imita con ninguna: el logo va como logo. Lo que se escribe usa Montserrat —geométrica, la familia más cercana a la Futura del manual— y Archivo en su ancho angosto para los titulares de póster, que es lo que hace la Futura Condensed Extra Bold de las portadas.",
+    "tipografias": [
+      { "familia": "Mont", "archivo": "fonts/Montserrat-Black.ttf", "pesos": "900" },
+      { "familia": "MontM", "archivo": "fonts/Montserrat-Medium.ttf", "pesos": "500" },
+      { "familia": "MontS", "archivo": "fonts/Montserrat-SemiBold.ttf", "pesos": "600" },
+      { "familia": "Arch", "archivo": "fonts/Archivo-var.ttf", "pesos": "100 900" }
+    ],
+    "logo": {
+      "archivo": "assets/life-montevideo.svg",
+      "ratio": 1.710526,
+      "ancho": 260,
+      "color": "tinta",
+      "marcador": "CURRENT",
+      "_nota": "El lockup es de DOS colores y sólo uno se pinta: «LIFE» lleva el marcador y «MONTEVIDEO» tiene el frambuesa escrito adentro. Así las dos versiones oficiales salen solas — sin color es negro con el nombre en frambuesa, y `logo(color=blanco)` da la negativa de la guía: LIFE en blanco y MONTEVIDEO en su color. Ratio y proporciones medidos del PNG oficial de lifemontevideo.uy, que también quedó en `assets/` con el sufijo `-oficial` como testigo del trazado."
+    },
+    "iso": {
+      "archivo": "assets/life-iso.svg",
+      "ratio": 2.20339,
+      "alto": 64,
+      "color": "tinta",
+      "marcador": "CURRENT",
+      "_nota": "«LIFE» solo, sin el nombre del club: es la marca que comparten los cinco. Sirve para firmar una pieza donde el lockup entero compite con la foto."
+    },
+    "componentes": {
+      "barra": { "texto": "lifemontevideo.uy" },
+      "paleta": { "por_defecto": "life" },
+      "pastilla": {
+        "radio": 999,
+        "_nota": "Redonda del todo. El único elemento blando de una identidad que por lo demás es de pincelada y mayúsculas."
+      }
+    },
+    "voces": {
+      "poster": "Condensada de póster (Archivo al ancho 68, peso 900, en mayúsculas). La voz de los titulares fuertes, la que ocupa el lugar de la Futura Condensed Extra Bold del manual. Es la de «UNA COMUNIDAD QUE VIBRA».",
+      "normal": "Montserrat Black. Geométrica y ancha, la voz de todos los días: el nombre de una clase, un plan, un aviso.",
+      "seca": "Montserrat Medium en mayúsculas con mucho espaciado, como el «MONTEVIDEO» del logotipo. Para rótulos y sobretítulos, nunca para un titular."
+    },
+    "paletas": {
+      "life": {
+        "fondo": "$blanco",
+        "tinta": "$tinta",
+        "acento": "$frambuesa",
+        "voz": "normal",
+        "cuando": "LA DE TODOS LOS DÍAS: blanco, tinta y el frambuesa del club. Va cuando no hay una razón para usar otra — una clase, un horario, una novedad, un aviso. Ante la duda, ésta."
+      },
+      "oscura": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$frambuesa",
+        "voz": "poster",
+        "cuando": "Negro pleno con el frambuesa de acento: es la página de negativos del manual hecha pieza. Para lo que se mira antes de leerse — un titular de comunidad, un lanzamiento, una foto de sala con poca luz. Va salteada: es el contraste con el blanco lo que la hace funcionar."
+      },
+      "frambuesa": {
+        "fondo": "$frambuesa",
+        "tinta": "$blanco",
+        "acento": "$blanco",
+        "voz": "poster",
+        "cuando": "El color del club a sangre, con todo el texto en blanco. Para cuando la pieza ES la oferta y tiene que gritar desde el feed: una promo, un descuento, una inscripción que cierra. No la uses para una novedad sin número: sin nada que mostrar, el pleno queda vacío."
+      },
+      "humo": {
+        "fondo": "$humo",
+        "tinta": "$tinta",
+        "acento": "$frambuesa",
+        "voz": "normal",
+        "cuando": "El blanco roto del manual, un punto más suave que el blanco puro. Para piezas con mucho texto —una grilla de clases, lo que incluye un plan— donde el blanco pleno cansa."
+      },
+      "familia": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$outdoor",
+        "voz": "poster",
+        "cuando": "SÓLO para piezas de los cinco clubes: una promo que vale en todos, un evento común. El verde no es de Life Montevideo — es el del Outdoor Club — y acá se usa como señal de que la pieza habla de la familia, no de la sede. En una pieza de este club, nunca."
+      }
+    },
+    "acento_por_defecto": "frambuesa",
+    "reel": {
+      "tipografias": ["Montserrat-Black.ttf", "Montserrat-SemiBold.ttf"],
+      "animo_musica": "club",
+      "acento": "frambuesa"
+    },
+    "carrusel": {
+      "color_cromo": "tinta",
+      "fuente_cromo": "'MontS',Helvetica,sans-serif",
+      "fuente_texto": "'MontM',Helvetica,sans-serif"
+    },
+    "vocabulario": "Hablamos de Life Montevideo, el club de Buceo. Clases de funcional, híbrido, HIIT, CrossFit, GAP, pilates reformer, pilates mat, yoga, stretching, hidrogimnasia, aqua funcional, natación y tenis. Planes BASIC y ALL IN. Viví Life."
+  }
+}

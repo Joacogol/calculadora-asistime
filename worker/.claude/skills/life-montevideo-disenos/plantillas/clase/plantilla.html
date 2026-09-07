@@ -1,0 +1,74 @@
+{#- Una clase: qué es, cuándo y con quién.
+
+    Es el pan de todos los días de un club. Y es la plantilla donde más fácil
+    se publica un error, así que está armada para que el dato se lea antes que
+    el diseño: el nombre de la clase grande, el día y la hora en un bloque
+    aparte que no depende de la foto, y el profesor abajo.
+
+    ── Por qué el horario va en un bloque sólido ─────────────────────────
+
+    Porque es el dato por el que alguien guarda la pieza. Sobre una foto de
+    sala —espejos, ventanas, paredes blancas— un texto suelto se pierde en la
+    peor mancha justo cuando es el que más contraste necesita. Adentro de un
+    bloque del color de acento, el blanco da 4,16:1 pase lo que pase debajo,
+    porque ya no depende de la foto. Es la misma salida que usa el motor
+    cuando un acento no llega como texto: la palabra deja de ser tinta y pasa
+    a ser fondo. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set sobre_foto = d.foto|length > 0 -%}
+{%- set tinta = c.blanco if sobre_foto else pal.tinta -%}
+{%- set sombra = sombra_texto() if sobre_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if sobre_foto else '' -%}
+
+{% if sobre_foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{%- set plan = plan_titular(d.foto, tinta, c.negro, (0.35, 1.0), 4.5, 4.5) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.36]|max, 0.80) }}"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
+  <div>
+    {% if d.categoria %}
+    <div class="v-seca" style="color:{{ c[d.acento] if not sobre_foto else c.blanco }};
+      font-size:{{ m.rotulo }}px;{{ sombra_chica }}">{{ d.categoria }}</div>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+
+  <div>
+    <div class="v-normal" style="color:{{ tinta }};font-size:{{ m.nombre }}px;
+      max-width:94%;white-space:pre-line;{{ sombra }}">{{ d.clase }}</div>
+
+    {#- El bloque del horario. Va pegado al nombre de la clase y no al pie:
+        son un solo dato leído junto, y separarlos obliga a barrer la pieza. -#}
+    <div style="display:flex;flex-wrap:wrap;gap:{{ m.chip * 0.4 }}px;
+      margin-top:{{ m.nombre * 0.34 }}px">
+      {% if d.dias %}{{ pastilla(d.dias, c[d.acento], c.blanco, m.chip) }}{% endif %}
+      {% if d.hora %}{{ pastilla(d.hora, c[d.acento], c.blanco, m.chip) }}{% endif %}
+      {% if d.sala %}{{ pastilla(d.sala, c[d.acento], c.blanco, m.chip) }}{% endif %}
+    </div>
+
+    {% if d.profesor %}
+    <div class="body-s" style="color:{{ tinta }};opacity:.9;font-size:{{ m.profesor }}px;
+      margin-top:{{ m.profesor * 1.1 }}px;{{ sombra_chica }}">Con {{ d.profesor }}</div>
+    {% endif %}
+
+    {% if d.bajada %}
+    <div class="body" style="color:{{ tinta }};opacity:.88;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 0.9 }}px;max-width:720px;{{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  <div class="row" style="width:100%;align-items:flex-end;
+    margin-top:{{ m.pad * 0.7 }}px">
+    {{ firma(d.firma, m.iso, tinta, m.logo) }}
+    {% if d.cupo %}
+    <div class="legal" style="color:{{ tinta }};opacity:.72;font-size:{{ m.legal }}px;
+      text-align:right;{{ sombra_chica }}">{{ d.cupo }}</div>
+    {% endif %}
+  </div>
+</div>

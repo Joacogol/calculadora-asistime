@@ -1,0 +1,47 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'MontM',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.canvas{width:1080px;position:relative;overflow:hidden;background:#FFFFFF}
+.pad{position:absolute;inset:0;display:flex;flex-direction:column}
+.row{display:flex;align-items:center;justify-content:space-between}
+.grow{flex:1}
+
+/* Las tres VOCES. No son tres gustos: el manual de Life tiene una pincelada
+   dibujada para el logo y una geométrica para todo lo demás, y lo demás se
+   parte en dos por cuánto tiene que gritar la pieza. */
+
+/* La de póster, la que ocupa el lugar de la Futura Condensed Extra Bold de las
+   portadas del manual. Archivo angosta al 68: no es Futura —es un grotesco—
+   pero es lo que hay en el repositorio con un ancho variable, y en mayúsculas
+   a cuerpo grande la diferencia no se lee. */
+.v-poster{font-family:'Arch';font-weight:900;font-variation-settings:'wdth' 68,'wght' 900;
+  letter-spacing:-.005em;line-height:.86;text-transform:uppercase}
+.v-normal{font-family:'Mont';font-weight:900;letter-spacing:-.03em;line-height:.98}
+/* El «MONTEVIDEO» del logotipo: mayúsculas, peso medio y mucho aire entre
+   letras. Es un rótulo, nunca un titular — a cuerpo grande se desarma. */
+.v-seca{font-family:'MontM';font-weight:500;letter-spacing:.28em;line-height:1.2;
+  text-transform:uppercase}
+
+.disp{font-family:'Mont';font-weight:900;letter-spacing:-.03em;line-height:.98}
+.body{font-family:'MontM';font-weight:500;letter-spacing:-.005em;line-height:1.4}
+.body-s{font-family:'MontS';font-weight:600;letter-spacing:-.005em;line-height:1.35}
+.kicker{font-family:'MontM';font-weight:500;letter-spacing:.28em;text-transform:uppercase}
+.legal{font-family:'MontM';font-weight:500;letter-spacing:.01em;line-height:1.32}
+.num{font-family:'Mont';font-weight:900;letter-spacing:-.05em;line-height:.82;
+  font-variant-numeric:tabular-nums}
+
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scrim{position:absolute;inset:0}
+
+/* La lista de lo que incluye un plan. El separador es una línea fina y no un
+   punto: el manual no tiene ni un solo elemento decorativo, y una viñeta
+   inventada es lo primero que hace que una pieza no se parezca a la marca. */
+.items{display:flex;flex-direction:column}
+.item{display:flex;align-items:baseline;gap:.5em;padding:.42em 0;
+  border-bottom:1px solid currentColor}
+.item:last-child{border-bottom:0}
+.item b{font-family:'MontS';font-weight:600}
+
+/* La barrita de acento debajo de una palabra, como el subrayado a mano del
+   «#VIVÍLIFE». Va en el color de acento y con la punta recta. */
+.marca-linea{display:inline-block;height:.09em;background:currentColor;
+  border-radius:0}
