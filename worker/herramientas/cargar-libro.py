@@ -43,6 +43,7 @@ sys.path.insert(0, str(RAIZ))
 TIEMPO = 60
 MARCA_CASA = os.environ.get("LIBRO_MARCA", "asistime-disenos")
 TANDA = 100
+RELLENO = {"creditos": 0, "costo_usd": 0.0, "precio_usd": 0.0, "extra": {}}
 
 
 def _registro() -> list[dict]:
@@ -91,8 +92,11 @@ class Base:
         # PostgREST exige que todas las filas de una tanda tengan las MISMAS
         # claves («All object keys must match»): una placa trae tokens y un
         # reel no. Se completa con null lo que falte en cada una.
+        # Y lo que falta no puede ser null en las columnas obligatorias
+        # (`creditos`, `costo_usd`, `precio_usd`, `extra`): un null explícito
+        # NO usa el default de la tabla, lo rechaza con 23502.
         claves = sorted({k for f in filas for k in f})
-        filas = [{k: f.get(k) for k in claves} for f in filas]
+        filas = [{k: f.get(k, RELLENO.get(k)) for k in claves} for f in filas]
         for i in range(0, len(filas), TANDA):
             r = requests.post(
                 f"{self.url}/rest/v1/{tabla}",
