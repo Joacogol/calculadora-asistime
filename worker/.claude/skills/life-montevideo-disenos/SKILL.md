@@ -163,6 +163,13 @@ permite.
 
 Primer cliente **sin proyecto de Supabase propio**: sus tablas están en el
 esquema `life_montevideo` del proyecto de la casa y sus archivos en el bucket
-`disenos-life-montevideo`. Ver `alta/ESQUEMA-COMPARTIDO.md`. En Asistime es el
-tenant **48**, que ya existe con dos agentes de atención en producción — el
-diseñador va como un agente aparte.
+`disenos-life-montevideo`. Ver `alta/ESQUEMA-COMPARTIDO.md`.
+
+No está en el secreto `clientes-registro` y no hace falta que esté: el worker
+lo lee de `public.clientes` en cada corrida y le presta la URL y la clave de la
+casa, que son las suyas. Un cliente de esquema compartido no tiene ninguna
+clave propia.
+
+En Asistime es el tenant **48**, que ya existía con dos agentes de atención en
+producción; el diseñador es el agente **604**, aparte, con doce herramientas
+escritas para este club. Ver `tools-asistime/LEEME.md`.

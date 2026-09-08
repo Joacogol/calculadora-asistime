@@ -88,14 +88,33 @@ la misma `guardar_plantilla` del esquema del cliente, así la versión, el
 historial y la publicación quedan igual que si los hubiera subido el worker.
 Sólo lee de este repositorio.
 
-**7. El registro**, para que el worker lo atienda:
+**Y nada más.** El worker se entera solo: en cada corrida —o sea cada minuto—
+lee `public.clientes` del proyecto de la casa y suma los que tienen `esquema`.
+No hay que escribir ninguna versión nueva del secreto `clientes-registro`.
 
-```bash
-python3 herramientas/registro.py agregar   # pide marca, URL, clave y esquema
-```
+## Por qué el registro ya no hace falta acá
 
-La URL y la `service_role` son las de la casa, iguales para todos; lo que
-cambia por cliente es el `esquema` y el `bucket`.
+El registro es un secreto por una sola razón: guarda la `service_role` de cada
+cliente, y ésas no pueden vivir en ninguna base. Eso era cierto cuando cada
+cliente tenía su propio Supabase.
+
+**Un cliente de esquema compartido no tiene ninguna clave propia.** Su
+`service_role` es la de la casa, la misma que ya está en el secreto para la
+marca casa. Lo suyo son cinco datos que no son secretos —marca, nombre, URL
+pública, esquema y bucket— y los cinco están en `public.clientes`, que es donde
+se lo dio de alta en el paso 3.
+
+Así que `app/registro.compartidos()` los lee de ahí y les presta la URL y la
+clave de la casa. Con eso, el último paso del alta que exigía `gcloud` y una
+persona desapareció: **dar de alta un cliente es SQL y nada más.**
+
+Tres cosas de cómo se comporta, que son las que importan:
+
+| | |
+|---|---|
+| **Lo explícito manda** | si una marca está en el secreto Y en la tabla, gana el secreto. Los cuatro con proyecto propio no cambian en nada |
+| **Si la casa no contesta, el worker igual atiende** | se anota en el log y la corrida sigue con los del secreto. Un problema de red no puede dejar a cuatro clientes sin trabajar |
+| **La clave de Asistime sigue siendo un secreto** | ésa sí lo es. Va por variable de entorno desde Secret Manager, que es donde la busca `manual.py`. Y es opcional: sin ella el worker anota un aviso y sigue con el skill |
 
 ## `alta_desde_repo`
 
