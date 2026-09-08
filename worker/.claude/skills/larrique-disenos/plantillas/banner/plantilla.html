@@ -1,0 +1,113 @@
+{#- El banner horizontal: la web y Mercado Libre.
+
+    Es la única plantilla apaisada del kit, y existe porque el manual es
+    taxativo: «diseñar primero en una plantilla maestra y adaptar manteniendo
+    jerarquía, NO simplemente estirando la pieza» y «rediseñar cuando el
+    formato cambia de proporción». Un `producto` de 1080x1350 llevado a
+    1920x704 no es un banner, es una pieza cortada.
+
+    Dos proporciones, muy distintas entre sí:
+
+      `wide`  1920x704 — el banner principal del home. Entra un titular de dos
+              líneas, una bajada, los chips y el botón. Es el que se parece a
+              una pieza de feed acostada.
+      `tira`  1500x250 — el banner secundario de Mercado Libre. NO entra nada
+              de eso: es una sola línea con el logo, una frase y el botón. Se
+              resuelve con `fmt` acá adentro y no con otra plantilla, porque
+              es la misma pieza con menos aire.
+
+    ── Acá el pie de contacto no va ────────────────────────────────────
+
+    En una pieza de Instagram el WhatsApp es la acción. En un banner de la
+    web, la acción es hacer clic: el que lo ve ya está en el sitio y el
+    teléfono lo distrae del botón. Por eso esta es la única plantilla del kit
+    sin la barra de contacto abajo — y el manual lo dice a su manera: «un
+    mensaje principal por banner», «CTA o destino claro». -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set tira = fmt == 'tira' -%}
+{%- set tinta = pal.tinta -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if hay_foto else '' -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 18 else (m.titulo * 0.78 if largo <= 32 else m.titulo * 0.6) -%}
+{%- set chips = d.chips.split('\n') | map('trim') | reject('equalto', '') | list -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if hay_foto %}
+{#- La foto ocupa la derecha y se funde hacia la izquierda, para que el texto
+    caiga siempre sobre color pleno. En apaisado no sirve el velo parejo de
+    las piezas verticales: el titular y la foto conviven de costado, no
+    apilados. -#}
+<img src="{{ d.foto }}" class="t-{{ d.tratamiento or 'natural' }}"
+  style="position:absolute;top:0;bottom:0;right:0;width:{{ m.ancho_foto }}%;
+    height:100%;object-fit:cover;object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(to right,
+  {{ pal.fondo }} 0%,{{ pal.fondo }} {{ 100 - m.ancho_foto }}%,
+  {{ pal.fondo }}00 {{ 100 - m.ancho_foto * 0.35 }}%)"></div>
+{% else %}
+<div class="trama"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ m.pad }}px {{ m.pad * 1.2 }}px;
+  {{ 'flex-direction:row;align-items:center;gap:%dpx' % (m.pad * 1.4) if tira else '' }}">
+
+  {#- En `wide` el logo abre arriba a la izquierda; en `tira` es el primer
+      elemento de la fila. En los dos casos va en blanco: el fondo es oscuro. -#}
+  <div style="{{ 'flex:none' if tira else 'margin-bottom:%dpx' % (m.pad * 0.7) }}">
+    {{ firma('lockup', 1.0, c.blanco, m.logo / 300.0) }}
+  </div>
+
+  <div style="{{ 'flex:1;min-width:0' if tira else '' }}">
+    {% if d.rotulo and not tira %}
+    <div class="v-seca" style="color:{{ acento }};font-size:{{ m.rotulo }}px;
+      margin-bottom:{{ m.rotulo * 0.8 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+    {% endif %}
+
+    <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
+      max-width:{{ m.ancho_texto }}%;white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+    {% if d.marca %}
+    <div class="v-marca" style="color:{{ acento }};font-size:{{ cuerpo }}px;
+      {{ sombra }}">{{ d.marca }}</div>
+    {% endif %}
+
+    {% if d.bajada and not tira %}
+    <div class="v-bajada" style="color:{{ tinta }};opacity:.9;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 0.9 }}px;max-width:{{ m.ancho_texto }}%;
+      {{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if not tira %}<div class="grow"></div>{% endif %}
+
+  {% if chips and not tira %}
+  <div class="chips" style="gap:{{ m.chip * 1.8 }}px">
+    {% for ch in chips %}
+    <div class="chip" style="gap:{{ m.aro * 0.34 }}px">
+      <div class="chip-aro" style="width:{{ m.aro }}px;height:{{ m.aro }}px">
+        {{ iso(m.aro / 92.0, acento) }}
+      </div>
+      <div class="chip-texto" style="color:{{ tinta }};font-size:{{ m.chip }}px;
+        {{ sombra_chica }}">{{ ch }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {#- El botón. Es un rectángulo con borde del acento y la flecha adentro: en
+      el banner real de Larrique el CTA es un contorno, no un bloque lleno —
+      un botón pleno del color del acento compite con el titular, que es del
+      mismo color. -#}
+  {% if d.boton %}
+  <div style="{{ 'flex:none' if tira else 'position:absolute;right:%dpx;bottom:%dpx' % (m.pad * 1.2, m.pad) }};
+    display:flex;align-items:center;gap:{{ m.boton * 0.9 }}px;
+    border:{{ m.boton * 0.09 }}px solid {{ acento }};
+    padding:{{ m.boton * 0.62 }}px {{ m.boton * 1.0 }}px">
+    <span class="v-seca" style="color:{{ tinta }};font-size:{{ m.boton }}px">{{ d.boton }}</span>
+    <span class="v-seca" style="color:{{ acento }};font-size:{{ m.boton * 1.2 }}px;
+      line-height:1">&rsaquo;</span>
+  </div>
+  {% endif %}
+</div>

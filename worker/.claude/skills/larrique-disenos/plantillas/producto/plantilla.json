@@ -1,0 +1,220 @@
+{
+ "id": "producto",
+ "nombre": "Producto",
+ "descripcion": "una categoría o un producto con su marca, la foto, los beneficios y el contacto",
+ "cuando_usarla": "La pieza de todos los días: el 60% del feed. Va cuando lo que se publica es QUÉ vende Larrique — una familia de repuestos («RODAMIENTOS NTN», «MAZAS DE RUEDA»), un producto puntual, un reingreso de stock. Si lo que manda es la MARCA proveedora y no el producto, es `marca`. Si es un consejo o una explicación, es `dato`. Si es envíos, locales o cómo comprar, es `servicio`.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "post": {
+   "alto": 1080,
+   "pad": 58,
+   "cinta": 100,
+   "logo": 250,
+   "badge": 20,
+   "rotulo": 21,
+   "titulo": 122,
+   "bajada": 31,
+   "chip": 20,
+   "aro": 42,
+   "logos_alto": 44,
+   "pie": 86,
+   "corte_arriba": 66,
+   "corte_abajo": 38,
+   "corte_producto": 44,
+   "filo": 13,
+   "ancho_texto": 42
+  },
+  "vert": {
+   "alto": 1350,
+   "pad": 62,
+   "cinta": 108,
+   "logo": 264,
+   "badge": 21,
+   "rotulo": 22,
+   "titulo": 138,
+   "bajada": 33,
+   "chip": 21,
+   "aro": 44,
+   "logos_alto": 46,
+   "pie": 92,
+   "corte_arriba": 66,
+   "corte_abajo": 38,
+   "corte_producto": 44,
+   "filo": 13,
+   "ancho_texto": 42
+  },
+  "story": {
+   "alto": 1920,
+   "pad": 74,
+   "cinta": 128,
+   "logo": 300,
+   "badge": 24,
+   "rotulo": 25,
+   "titulo": 168,
+   "bajada": 38,
+   "chip": 24,
+   "aro": 52,
+   "logos_alto": 54,
+   "pie": 110,
+   "corte_arriba": 70,
+   "corte_abajo": 34,
+   "corte_producto": 42,
+   "filo": 15,
+   "ancho_texto": 40
+  },
+  "reel": {
+   "alto": 1920,
+   "pad": 74,
+   "cinta": 128,
+   "logo": 300,
+   "badge": 24,
+   "rotulo": 25,
+   "titulo": 168,
+   "bajada": 38,
+   "chip": 24,
+   "aro": 52,
+   "logos_alto": 54,
+   "pie": 110,
+   "corte_arriba": 70,
+   "corte_abajo": 34,
+   "corte_producto": 42,
+   "filo": 15,
+   "ancho_texto": 40
+  }
+ },
+ "campos": [
+  {
+   "id": "titulo",
+   "tipo": "texto_largo",
+   "etiqueta": "El titular",
+   "requerido": true,
+   "ejemplo": "RODAMIENTOS",
+   "nota": "La categoría o el producto, en mayúsculas. El salto de línea se respeta: «MAZAS\\nDE RUEDA» sale en dos renglones. Una idea por pieza — si tenés que explicar, va en la bajada."
+  },
+  {
+   "id": "marca",
+   "tipo": "texto",
+   "etiqueta": "La marca",
+   "default": "",
+   "ejemplo": "NTN",
+   "nota": "Sale como SEGUNDA LÍNEA, al mismo cuerpo que el titular y en el color del acento. Es «RODAMIENTOS / NTN». **Sólo marcas que Larrique representa** — la lista está en las reglas de marca. Si no es una de ésas, preguntá antes de escribirla."
+  },
+  {
+   "id": "composicion",
+   "tipo": "opcion",
+   "etiqueta": "Cómo se arma",
+   "opciones": [
+    "sobre_foto",
+    "diagonal"
+   ],
+   "default": "sobre_foto",
+   "nota": "`sobre_foto`: la foto ocupa toda la pieza y el texto va encima. Para fotos con fondo oscuro y ordenado — producto sobre chapa, sobre el mostrador, en el depósito. `diagonal`: la pieza se corta en dos, texto sobre el bloque oscuro y producto sobre el gris claro. **Para las fotos de catálogo de proveedor, que vienen con fondo blanco.** Si intentás poner una foto de fondo blanco en `sobre_foto`, el texto blanco desaparece."
+  },
+  {
+   "id": "bajada",
+   "tipo": "texto_largo",
+   "etiqueta": "La bajada",
+   "default": "",
+   "ejemplo": "Precisión que impulsa tu máquina.",
+   "nota": "Dos o tres líneas como mucho, en caja baja. Qué es, para qué sirve o qué resuelve. Nada de superlativos: el manual pide «claro, profesional y directo», no «el mejor del mercado»."
+  },
+  {
+   "id": "rotulo",
+   "tipo": "texto",
+   "etiqueta": "Sobretítulo",
+   "default": "",
+   "ejemplo": "NUEVO INGRESO",
+   "nota": "La línea chica de arriba, en mayúsculas espaciadas: «NUEVO INGRESO», «YA EN STOCK», «LÍNEA INDUSTRIAL»."
+  },
+  {
+   "id": "categoria",
+   "tipo": "texto",
+   "etiqueta": "Badge de categoría",
+   "default": "PRODUCTO",
+   "nota": "El rectangulito de arriba a la derecha. En las piezas del manual son tres: «PRODUCTO», «MARCA DESTACADA» y «SERVICIO». Vacío para que no salga."
+  },
+  {
+   "id": "chips",
+   "tipo": "texto_largo",
+   "etiqueta": "Beneficios",
+   "default": "",
+   "ejemplo": "ALTA CALIDAD Y DURABILIDAD\nRENDIMIENTO CONFIABLE\nAPLICACIONES INDUSTRIALES",
+   "nota": "Uno por línea, dos o tres. Cortos y en mayúsculas. Cada uno sale con el anillo de la marca al lado. **Un beneficio es lo que la pieza promete: si no lo podés sostener, no va.**"
+  },
+  {
+   "id": "logos",
+   "tipo": "texto_largo",
+   "etiqueta": "Logos de marcas",
+   "default": "",
+   "ejemplo": "assets/marcas/ntn.png\nassets/marcas/fag.png\nassets/marcas/timken.png",
+   "nota": "La fila de logos de proveedor, una ruta por línea. **Sólo desde `assets/marcas/`**, que tiene las 26 marcas destacadas con su logotipo oficial bajado del sitio de Larrique. Un logo que no está ahí no se saca de internet ni se redibuja: va el nombre en texto."
+  },
+  {
+   "id": "foto",
+   "tipo": "imagen",
+   "etiqueta": "Foto",
+   "default": "",
+   "nota": "El producto o la escena. Sin foto la pieza sale sobre el azul noche con su trama, que también es del sistema."
+  },
+  {
+   "id": "foco",
+   "tipo": "texto",
+   "etiqueta": "Foco de la foto de fondo",
+   "default": "50% 50%",
+   "nota": "Sólo para `sobre_foto`."
+  },
+  {
+   "id": "foco_producto",
+   "tipo": "texto",
+   "etiqueta": "Foco del producto",
+   "default": "50% 50%",
+   "nota": "Sólo para `diagonal`: dónde se apoya el producto dentro del lado claro. `50% 100%` lo baja al piso de la pieza."
+  },
+  {
+   "id": "tratamiento",
+   "tipo": "opcion",
+   "etiqueta": "Tratamiento de la foto",
+   "opciones": [
+    "tecnico",
+    "oscuro",
+    "natural",
+    "fondo"
+   ],
+   "default": "tecnico",
+   "nota": "**Una foto de PRODUCTO va `natural`**: el manual exige que la forma, la marca y el empaque coincidan con el producto real, y un filtro los cambia. `tecnico` y `oscuro` son para la foto de CONTEXTO que hace de fondo — depósito, taller, campo — y ahí no decoran, dejan leer el texto. `fondo` desenfoca, para cuando la foto es sólo textura."
+  },
+  {
+   "id": "estilo",
+   "tipo": "opcion",
+   "etiqueta": "Paleta",
+   "opciones": [
+    "noche",
+    "industrial",
+    "agro",
+    "clara",
+    "socia"
+   ],
+   "default": "noche",
+   "nota": "**Se elige por la unidad de negocio, no por gusto.** `noche` (azul Larrique) para automotriz y para todo lo que no sea claramente otra cosa. `industrial` para la División Industrial. `agro` para el campo. `socia` sólo cuando la pieza es de una marca proveedora con color propio — ahí además conviene fijar `acento`."
+  },
+  {
+   "id": "acento",
+   "tipo": "texto",
+   "etiqueta": "Acento a mano",
+   "default": "",
+   "ejemplo": "",
+   "nota": "El nombre de un color de la marca para pisar el de la paleta. Sirve para el co-branding: `naranja` es Continental, `amarillo` es Enerpac. **El color de una marca proveedora se usa SÓLO en una pieza de esa marca.**"
+  },
+  {
+   "id": "pie_en_acento",
+   "tipo": "opcion",
+   "etiqueta": "El pie del color del acento",
+   "opciones": [
+    true,
+    false
+   ],
+   "default": false,
+   "nota": "Por defecto el pie va azul Larrique aunque el acento sea otro, y eso es a propósito: el checklist del manual pregunta si el azul institucional está presente. Ponelo en `true` sólo en una pieza de marca donde el pie del color del proveedor sea claramente mejor."
+  }
+ ]
+}

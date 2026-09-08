@@ -1,0 +1,108 @@
+{#- Servicio: envíos, cómo comprar, locales, horarios, medios de pago.
+
+    Es la única pieza CLARA del sistema, y eso es a propósito. Todo lo demás
+    va sobre azul noche porque es producto, y el producto se ve mejor sobre
+    oscuro. Una pieza de servicio no tiene producto que mostrar: tiene datos
+    que hay que leer sin esfuerzo —a qué hora abre, cuánto demora un envío,
+    dónde queda cada local— y para eso el gris claro del manual con el texto
+    en tinta gana por lejos. La pieza real de «ENVÍOS A TODO EL PAÍS» es
+    exactamente eso.
+
+    El titular sigue yendo en el azul Larrique y no en negro: es lo que hace
+    que una pieza clara siga siendo de esta marca y no de cualquiera.
+
+    ── La lista con anillos ────────────────────────────────────────────
+
+    «Cobertura nacional · Embalaje seguro · Seguimiento de tu pedido». Cada
+    ítem con el anillo del símbolo al lado, apilados. En una pieza de servicio
+    la lista ES la pieza: el titular sólo dice de qué se trata.
+
+    El campo se llama `lista` y NO `items`, que era el nombre natural: los
+    datos llegan a la plantilla como un diccionario y `d.items` le pega al
+    método `items()` de Python antes que al campo. Jinja no avisa nada útil
+    —«'builtin_function_or_method object' has no attribute 'split'»— y se
+    tarda más en entender el error que en escribir la plantilla. Lo mismo
+    pasaría con `keys`, `values`, `get`, `copy` y `update`. -#}
+
+{%- set pal = paleta(d.estilo or 'clara') -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set tinta = pal.tinta -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 16 else (m.titulo * 0.8 if largo <= 26 else m.titulo * 0.62) -%}
+{%- set items = d.lista.split('\n') | map('trim') | reject('equalto', '') | list -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+
+{#- La foto, si la hay, ocupa la mitad de abajo y se funde con el fondo. Es el
+    camión de la pieza real: no es el protagonista, es la prueba de que el
+    servicio existe. -#}
+{% if hay_foto %}
+<img src="{{ d.foto }}" class="t-{{ d.tratamiento or 'natural' }}"
+  style="position:absolute;left:0;right:0;bottom:{{ m.pie_alto }}px;
+    height:{{ m.alto_foto }}%;width:100%;object-fit:cover;
+    object-position:{{ d.foco }}">
+<div class="scrim" style="bottom:{{ m.pie_alto }}px;height:{{ m.alto_foto + 6 }}%;top:auto;
+  background:linear-gradient(to bottom,{{ pal.fondo }} 0%,
+    {{ pal.fondo }}00 46%)"></div>
+{% endif %}
+
+<div class="cinta" style="height:{{ m.cinta }}px;background:transparent;
+  padding:0 0 0 {{ pad_seguro(fmt, m.pad) }}">
+  {{ firma('lockup', 1.0, none, m.logo / 300.0) }}
+</div>
+
+{% if d.categoria %}
+<div style="position:absolute;top:{{ m.cinta * 0.3 }}px;right:{{ m.pad }}px">
+  {{ pastilla(d.categoria, acento, c.blanco, m.badge) }}
+</div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  padding-top:{{ m.cinta + m.pad * 0.9 }}px;
+  padding-bottom:{{ m.pie_alto + m.pad * 0.55 }}px">
+
+  <div style="max-width:{{ m.ancho_texto }}%">
+    <div class="v-titulo" style="color:{{ acento }};font-size:{{ cuerpo }}px;
+      white-space:pre-line">{{ d.titulo }}</div>
+
+    {% if d.bajada %}
+    <div class="v-bajada" style="color:{{ tinta }};opacity:.88;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 1.0 }}px">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if items %}
+  <div style="margin-top:{{ m.item * 1.7 }}px;display:flex;flex-direction:column;
+    gap:{{ m.item * 1.15 }}px;max-width:{{ m.ancho_texto }}%">
+    {% for it in items %}
+    <div class="chip" style="gap:{{ m.aro * 0.36 }}px">
+      <div class="chip-aro" style="width:{{ m.aro }}px;height:{{ m.aro }}px">
+        {{ iso(m.aro / 92.0, acento) }}
+      </div>
+      <div class="chip-texto" style="color:{{ tinta }};font-size:{{ m.item }}px">{{ it }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {#- Los datos duros. Van pegados a la lista y NO empujados al fondo con un
+      `grow`, que fue el primer intento: la foto ocupa la mitad de abajo, así
+      que el bloque terminaba escrito en tinta oscura encima del camión y no
+      se leía nada. Se midió en el preview. Arriba, sobre el gris claro, se
+      leen; y la foto se queda con el espacio que sobra, que es justo lo que
+      hace la pieza real.
+
+      Y no se inventan: si el pedido no los trae, salen los de las reglas de
+      marca o no salen. -#}
+  {% if d.datos %}
+  <div class="body" style="color:{{ tinta }};opacity:.86;font-size:{{ m.dato }}px;
+    margin-top:{{ m.dato * 1.7 }}px;white-space:pre-line;line-height:1.45">{{ d.datos }}</div>
+  {% endif %}
+
+  <div class="grow"></div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0">
+  {{ barra(m.pie_alto, acento) }}
+</div>

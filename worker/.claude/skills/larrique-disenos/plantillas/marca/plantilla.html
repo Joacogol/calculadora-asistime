@@ -1,0 +1,117 @@
+{#- La marca destacada de la semana, y toda pieza donde el protagonista es el
+    proveedor y no el producto.
+
+    El manual la tiene como pilar propio —una marca por semana, los viernes— y
+    le pone una regla que es la que ordena esta plantilla entera:
+
+        «Larrique debe seguir siendo el anfitrión.»
+
+    O sea: el logo del proveedor identifica el PRODUCTO, no la pieza. Por eso
+    acá el lockup de Larrique sigue arriba, en su cinta blanca, igual que en
+    todas las demás; lo que cambia es que el nombre del proveedor ocupa el
+    lugar del titular y su color pasa a ser el acento.
+
+    ── El logo del proveedor va sobre una placa blanca ─────────────────
+
+    Los 26 archivos de `assets/marcas/` son logotipos de imprenta: tinta
+    oscura sobre transparente, tal como los publica el sitio de Larrique.
+    Sobre el azul noche, la mitad desaparece. La placa blanca es lo que se
+    puede hacer sin inventarle a nadie una versión en negativo que no mandó
+    — y además es lo que hace la pieza real de Continental, que mete el logo
+    en un recuadro claro arriba a la derecha. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set trat = d.tratamiento or 'tecnico' -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if hay_foto else '' -%}
+{%- set tinta = pal.tinta -%}
+{%- set largo = d.marca|length -%}
+{%- set cuerpo = m.marca if largo <= 11 else (m.marca * 0.78 if largo <= 15 else m.marca * 0.62) -%}
+{%- set chips = d.chips.split('\n') | map('trim') | reject('equalto', '') | list -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if hay_foto %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{%- set plan = plan_titular(d.foto, acento, c.noche, (0.18, 0.66), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.34]|max, 0.80) }}"></div>
+{% else %}
+<div class="trama"></div>
+{% endif %}
+
+<div class="cinta" style="height:{{ m.cinta }}px;
+  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_seguro(fmt, m.pad) }};
+  clip-path:polygon(0 0,100% 0,calc(100% - {{ m.cinta * 0.44 }}px) 100%,0 100%)">
+  {{ firma('lockup', 1.0, none, m.logo / 300.0) }}
+</div>
+
+{#- La placa con el logo del proveedor, arriba a la derecha: el lugar donde la
+    pieza real de Continental lo pone. -#}
+{% if d.logo_marca %}
+<div style="position:absolute;top:0;right:0;background:{{ c.blanco }};
+  padding:{{ m.placa * 0.30 }}px {{ m.placa * 0.42 }}px;
+  clip-path:polygon({{ m.placa * 0.5 }}px 0,100% 0,100% 100%,0 100%)">
+  <img src="{{ d.logo_marca }}" style="height:{{ m.placa }}px;
+    max-width:{{ m.placa * 4.4 }}px;object-fit:contain;display:block">
+</div>
+{% elif d.categoria %}
+<div style="position:absolute;top:{{ m.cinta * 0.3 }}px;right:{{ m.pad }}px">
+  {{ pastilla(d.categoria, acento, c.blanco, m.badge) }}
+</div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  padding-top:{{ m.cinta + m.pad * 1.1 }}px;
+  padding-bottom:{{ m.pie_alto + m.pad * 0.55 }}px">
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ tinta }};opacity:.86;font-size:{{ m.rotulo }}px;
+    margin-bottom:{{ m.rotulo * 0.9 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  {#- El titular en dos líneas: la categoría en blanco, el nombre del
+      proveedor debajo y en su color. Es exactamente «CORREAS / CONTINENTAL».
+      La categoría sale más chica que el nombre porque acá manda la marca —al
+      revés que en `producto`, donde los dos van al mismo cuerpo. -#}
+  {% if d.categoria_texto %}
+  <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo * 0.66 }}px;
+    white-space:pre-line;{{ sombra }}">{{ d.categoria_texto }}</div>
+  {% endif %}
+  <div class="v-marca" style="color:{{ acento }};font-size:{{ cuerpo }}px;
+    margin-top:{{ cuerpo * 0.02 }}px;{{ sombra }}">{{ d.marca }}</div>
+
+  {% if d.bajada %}
+  <div class="v-bajada" style="color:{{ tinta }};opacity:.92;font-size:{{ m.bajada }}px;
+    margin-top:{{ m.bajada * 1.05 }}px;max-width:{{ m.ancho_texto }}%;
+    {{ sombra_chica }}">{{ d.bajada }}</div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  {% if chips %}
+  <div class="chips" style="gap:{{ m.chip * 1.6 }}px;margin-bottom:{{ m.pad * 0.7 }}px">
+    {% for ch in chips %}
+    <div class="chip" style="gap:{{ m.aro * 0.34 }}px">
+      <div class="chip-aro" style="width:{{ m.aro }}px;height:{{ m.aro }}px">
+        {{ iso(m.aro / 92.0, acento) }}
+      </div>
+      <div class="chip-texto" style="color:{{ tinta }};font-size:{{ m.chip }}px;
+        {{ sombra_chica }}">{{ ch }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {#- La letra chica. En una pieza de marca es donde va lo que la marca
+      promete y Larrique tiene que poder sostener: garantía, origen, para qué
+      líneas sirve. -#}
+  {% if d.pie %}
+  <div class="legal" style="color:{{ tinta }};opacity:.74;font-size:{{ m.legal }}px;
+    max-width:{{ m.ancho_texto }}%;{{ sombra_chica }}">{{ d.pie }}</div>
+  {% endif %}
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0">
+  {{ barra(m.pie_alto, acento if d.pie_en_acento else c.azul) }}
+</div>

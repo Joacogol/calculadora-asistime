@@ -1,0 +1,94 @@
+{#- La pieza que habla de la empresa: trayectoria, depósito, equipo, locales.
+
+    Es el 25% del feed según el manual, y el pilar que más aguanta una foto
+    grande: acá la foto no ilustra un producto, ES el contenido. El depósito
+    lleno, el mostrador, la gente trabajando. Por eso esta plantilla es la
+    única donde la foto ocupa toda la pieza sin excusas y el texto se apoya
+    abajo.
+
+    ── El número gigante ───────────────────────────────────────────────
+
+    «+50 AÑOS». El manual insiste en que la trayectoria se cuente «con un dato
+    concreto, no un número genérico», así que el número va en su propia voz,
+    enorme, con la unidad chica al lado. Sin número la pieza sigue
+    funcionando: queda la frase sola sobre la foto, que es la otra mitad de
+    este pilar.
+
+    ── Una cara reconocible es una decisión de la empresa ───────────────
+
+    Si mandan la foto de alguien del equipo, se usa. Inventar una con `crear`
+    no se hace: una cara generada publicada como si fuera del depósito es un
+    problema distinto al de una pieza fea. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set tinta = pal.tinta -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if hay_foto else '' -%}
+{%- set largo = d.frase|length -%}
+{%- set cuerpo = m.frase if largo <= 30 else (m.frase * 0.8 if largo <= 54 else m.frase * 0.62) -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if hay_foto %}
+<img class="bg t-{{ d.tratamiento or 'oscuro' }}" src="{{ d.foto }}"
+  style="object-position:{{ d.foco }}">
+{#- El velo se mide contra la mitad de abajo, que es donde va todo el texto.
+    Medir contra la pieza entera daría un promedio de un cielo claro y un piso
+    oscuro, y el texto se apoya en el piso. -#}
+{%- set plan = plan_titular(d.foto, acento, c.noche, (0.45, 1.0), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.40]|max, 0.86) }}"></div>
+{% else %}
+<div class="trama"></div>
+{% endif %}
+
+<div class="cinta" style="height:{{ m.cinta }}px;background:transparent;
+  padding:0 0 0 {{ pad_seguro(fmt, m.pad) }}">
+  {{ firma('lockup', 1.0, c.blanco, m.logo / 300.0) }}
+</div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  padding-top:{{ m.cinta + m.pad * 0.9 }}px;
+  padding-bottom:{{ m.pie_alto + m.pad * 0.55 }}px">
+
+  <div class="grow"></div>
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ acento }};font-size:{{ m.rotulo }}px;
+    margin-bottom:{{ m.rotulo * 0.9 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  {% if d.numero %}
+  <div style="display:flex;align-items:flex-start;gap:{{ m.numero * 0.06 }}px;
+    margin-bottom:{{ m.numero * 0.10 }}px">
+    <div class="v-numero" style="color:{{ acento }};font-size:{{ m.numero }}px;
+      {{ sombra }}">{{ d.numero }}</div>
+    {% if d.unidad %}
+    <div class="v-titulo" style="color:{{ tinta }};font-size:{{ m.numero * 0.30 }}px;
+      padding-top:{{ m.numero * 0.10 }}px;{{ sombra }}">{{ d.unidad }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
+    max-width:{{ m.ancho_texto }}%;white-space:pre-line;{{ sombra }}">{{ d.frase }}</div>
+
+  {% if d.bajada %}
+  <div class="v-bajada" style="color:{{ tinta }};opacity:.9;font-size:{{ m.bajada }}px;
+    margin-top:{{ m.bajada * 1.05 }}px;max-width:{{ m.ancho_texto }}%;
+    {{ sombra_chica }}">{{ d.bajada }}</div>
+  {% endif %}
+
+  {#- La chapita con el nombre de quien sale en la foto. Va sólo si la persona
+      lo autorizó — el manual nombra a César Díaz del depósito, y aun así el
+      nombre lo pone el pedido, nunca la plantilla. -#}
+  {% if d.persona %}
+  <div style="margin-top:{{ m.bajada * 1.2 }}px">
+    {{ etiqueta_persona(d.persona, d.area, c.blanco, c.tinta, m.bajada * 0.92) }}
+  </div>
+  {% endif %}
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0">
+  {{ barra(m.pie_alto, c.azul) }}
+</div>

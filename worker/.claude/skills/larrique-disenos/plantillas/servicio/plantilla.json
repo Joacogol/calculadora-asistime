@@ -1,0 +1,39 @@
+{
+ "id": "servicio",
+ "nombre": "Servicio",
+ "descripcion": "envíos, cómo comprar, locales y horarios, sobre el fondo claro de la marca",
+ "cuando_usarla": "Cuando la pieza no vende un producto sino que saca una fricción: envíos a todo el país, cómo comprar en la web o en Mercado Libre, dónde quedan los dos locales, horarios, medios de pago, el buscador por vehículo. Es la única pieza clara del sistema. Si hay un producto que mostrar, es `producto`.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 58, "cinta": 96,  "logo": 250, "badge": 20, "titulo": 108, "bajada": 31, "item": 27, "aro": 42, "dato": 24, "pie_alto": 86,  "ancho_texto": 74, "alto_foto": 46},
+  "vert":  {"alto": 1350, "pad": 62, "cinta": 102, "logo": 264, "badge": 21, "titulo": 122, "bajada": 33, "item": 29, "aro": 44, "dato": 25, "pie_alto": 92,  "ancho_texto": 74, "alto_foto": 46},
+  "story": {"alto": 1920, "pad": 74, "cinta": 120, "logo": 300, "badge": 24, "titulo": 148, "bajada": 38, "item": 33, "aro": 52, "dato": 28, "pie_alto": 110, "ancho_texto": 80, "alto_foto": 40},
+  "reel":  {"alto": 1920, "pad": 74, "cinta": 120, "logo": 300, "badge": 24, "titulo": 148, "bajada": 38, "item": 33, "aro": 52, "dato": 28, "pie_alto": 110, "ancho_texto": 80, "alto_foto": 40}
+ },
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "El titular", "requerido": true,
+   "ejemplo": "ENVÍOS A\nTODO EL PAÍS",
+   "nota": "En mayúsculas y en el azul Larrique. El salto de línea se respeta."},
+  {"id": "bajada", "tipo": "texto_largo", "etiqueta": "La bajada", "default": "",
+   "ejemplo": "Llegamos donde estés, rápido y seguro.",
+   "nota": "Una línea o dos."},
+  {"id": "lista", "tipo": "texto_largo", "etiqueta": "La lista", "default": "",
+   "ejemplo": "COBERTURA NACIONAL\nEMBALAJE SEGURO Y PROFESIONAL\nSEGUIMIENTO DE TU PEDIDO",
+   "nota": "Uno por línea, tres o cuatro. **En una pieza de servicio la lista ES la pieza**: el titular sólo dice de qué se trata. Cortos: si un ítem no entra en una línea, se acorta, no se achica la letra."},
+  {"id": "datos", "tipo": "texto_largo", "etiqueta": "Los datos duros", "default": "",
+   "ejemplo": "Casa Central · Galicia 1204 esq. Cuareim\nDivisión Industrial · Paraguay 2200 esq. César Díaz\nLunes a viernes de 8:30 a 18:30 · Sábados de 8:30 a 12:30",
+   "nota": "Direcciones, horarios, plazos. **No los inventes ni los saques de una pieza vieja**: si el pedido no los trae, usá los de las reglas de marca, y si tampoco están, preguntá. Un horario equivocado en una pieza de servicio es alguien que va al local cerrado."},
+  {"id": "categoria", "tipo": "texto", "etiqueta": "Badge", "default": "SERVICIO"},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto", "default": "",
+   "nota": "El camión, el mostrador, el depósito despachando. Ocupa la mitad de abajo y se funde con el fondo. Es la prueba de que el servicio existe, no el protagonista."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["natural", "oscuro", "tecnico"], "default": "natural",
+   "nota": "Acá la foto va casi siempre `natural`: el fondo es claro, así que no hay que oscurecer nada para que el texto se lea."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["clara", "noche", "industrial", "agro"], "default": "clara",
+   "nota": "`clara` es la de esta plantilla. Las oscuras existen por si una pieza de servicio tiene que ir en una tanda de piezas oscuras y quedar pareja, pero la clara es la que se parece a la pieza real."},
+  {"id": "acento", "tipo": "texto", "etiqueta": "Acento a mano", "default": "",
+   "nota": "`industrial` o `agricola` si la pieza es de una unidad concreta — por ejemplo un horario sólo de la División Industrial."}
+ ]
+}

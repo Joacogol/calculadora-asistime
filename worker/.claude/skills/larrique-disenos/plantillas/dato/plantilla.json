@@ -1,0 +1,42 @@
+{
+ "id": "dato",
+ "nombre": "Dato",
+ "descripcion": "la pieza que enseña: señales de cambio, diagnóstico y compatibilidad, con lista",
+ "cuando_usarla": "Cuando la pieza explica algo en vez de mostrar un producto: «3 señales de que tu suspensión pide cambio», «¿Ruido, vibración o juego? Puede ser el rulemán», «Compatible con: Corolla · Hilux · Gol · Onix», «Correa de distribución: cuándo el kilometraje no alcanza como señal». También sirve de portada y de lámina interna de un carrusel.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 58, "cinta": 96,  "logo": 230, "rotulo": 21, "titulo": 82,  "bajada": 30, "item": 28, "cierre": 24, "pie_alto": 86,  "ancho_texto": 88, "ancho_lista": 84},
+  "vert":  {"alto": 1350, "pad": 62, "cinta": 102, "logo": 240, "rotulo": 22, "titulo": 92,  "bajada": 32, "item": 30, "cierre": 25, "pie_alto": 92,  "ancho_texto": 88, "ancho_lista": 84},
+  "story": {"alto": 1920, "pad": 74, "cinta": 118, "logo": 270, "rotulo": 25, "titulo": 112, "bajada": 37, "item": 34, "cierre": 28, "pie_alto": 110, "ancho_texto": 92, "ancho_lista": 88},
+  "reel":  {"alto": 1920, "pad": 74, "cinta": 118, "logo": 270, "rotulo": 25, "titulo": 112, "bajada": 37, "item": 34, "cierre": 28, "pie_alto": 110, "ancho_texto": 92, "ancho_lista": 88}
+ },
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "El titular", "requerido": true,
+   "ejemplo": "3 SEÑALES DE QUE\nTU SUSPENSIÓN\nPIDE CAMBIO",
+   "nota": "La pregunta o la afirmación, en mayúsculas. **Si dice un número y la lista está numerada, tienen que coincidir**: «3 señales» con cuatro ítems se ve desde el feed."},
+  {"id": "lista", "tipo": "texto_largo", "etiqueta": "La lista", "requerido": true,
+   "ejemplo": "El auto rebota más de una vez después de un pozo\nSe desgastan los neumáticos de forma despareja\nRuido seco al pasar por un badén",
+   "nota": "Uno por línea, tres o cuatro. En caja normal, no en mayúsculas: acá se lee, no se grita. **Ningún dato técnico que no te hayan dado**: una señal de diagnóstico mal escrita manda a alguien a cambiar lo que no era."},
+  {"id": "numerada", "tipo": "opcion", "etiqueta": "Lista numerada",
+   "opciones": [true, false], "default": true,
+   "nota": "`true` numera del 1 en adelante, en el color del acento. `false` pone el anillo de la marca como viñeta, que es lo que va en un listado abierto: modelos compatibles, síntomas sueltos."},
+  {"id": "bajada", "tipo": "texto_largo", "etiqueta": "La bajada", "default": "",
+   "nota": "Opcional, una línea entre el titular y la lista."},
+  {"id": "rotulo", "tipo": "texto", "etiqueta": "Sobretítulo", "default": "",
+   "ejemplo": "DIAGNÓSTICO",
+   "nota": "«DIAGNÓSTICO», «COMPATIBILIDAD», «¿SABÍAS QUE…?»."},
+  {"id": "cierre", "tipo": "texto", "etiqueta": "El cierre", "default": "",
+   "ejemplo": "CONSULTANOS POR WHATSAPP",
+   "nota": "Lo único comercial de una pieza educativa, abajo y en el color del acento. Una sola acción."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de fondo", "default": "",
+   "nota": "Acá la foto es TEXTURA: va desenfocada y oscura detrás del texto. Un taller, un tren delantero, una ruta. Sin foto la pieza sale sobre azul noche con su trama, que para esta plantilla está bien."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["fondo", "oscuro", "tecnico", "natural"], "default": "fondo",
+   "nota": "`fondo` desenfoca y baja la luz, que es lo que corresponde cuando el texto es el protagonista. `oscuro` si la foto se tiene que reconocer."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["noche", "industrial", "agro", "clara"], "default": "noche",
+   "nota": "Por la unidad de negocio: un diagnóstico de suspensión de auto es `noche`; uno de un rodamiento de planta, `industrial`; uno de zafra, `agro`."},
+  {"id": "acento", "tipo": "texto", "etiqueta": "Acento a mano", "default": ""}
+ ]
+}
