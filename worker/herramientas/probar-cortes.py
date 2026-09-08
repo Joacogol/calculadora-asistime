@@ -105,6 +105,38 @@ ok("ORDENAR" in p and "ELEGIR" not in p.split("ORDENAR")[0], "con «todo» se le
 p = mirar.pregunta("elegí lo mejor", 60, pedazos, "Asistime")
 ok("ELEGIR" in p and "ORDENAR" not in p, "sin «todo», tres videos se eligen")
 
+print("\n■ Las fotos son material de reel, igual que los clips")
+from motor import analisis as _an
+from motor import guion as _gui
+
+ok(_an.es_foto("rodamiento.jpg") and _an.es_foto("caja.PNG") and _an.es_foto("x.webp"),
+   "reconoce una imagen por su extensión, en cualquier caja")
+ok(not _an.es_foto("clip1.mp4") and not _an.es_foto("toma.MOV"),
+   "y no confunde un video con una foto")
+
+# Del guion al spec: una foto es otro tipo de tramo. `desde` y `velocidad` no
+# significan nada sobre una imagen quieta y por eso NO viajan — si viajaran,
+# el día que alguien los lea van a mentir.
+spec = _gui.a_spec(
+    {"tramos": [{"archivo": "rodamiento.jpg", "desde": 0.0, "hasta": 2.5,
+                 "texto": "RODAMIENTOS NTN", "zoom": 1.2, "foco_y": 0.6},
+                {"archivo": "clip1.mp4", "desde": 1.0, "hasta": 4.0}]},
+    "prueba")
+foto, video_ = spec["tramos"][0], spec["tramos"][1]
+ok(foto["tipo"] == "foto" and video_["tipo"] == "video", "cada archivo, su tipo", 
+   [foto["tipo"], video_["tipo"]])
+ok(foto["dura"] == 2.5 and "desde" not in foto and "velocidad" not in foto,
+   "la foto viaja con `dura` y sin `desde` ni `velocidad`", foto)
+ok(foto.get("zoom") == 1.2 and foto.get("foco_y") == 0.6 and foto.get("texto"),
+   "el acercamiento, el foco y el texto sí viajan", foto)
+ok(video_.get("desde") == 1.0 and video_.get("dura") == 3.0,
+   "y el video sigue igual que siempre", video_)
+
+# Una foto no tiene final al que llegar: la duración por defecto es una
+# decisión, no una medición.
+ok(_an.FOTO_DURA > 0 and _an.FOTO_TOPE > _an.FOTO_DURA,
+   "la duración por defecto de una foto es menor que su tope nominal")
+
 print()
 if fallos:
     print(f"✗ {fallos} falla(s)")
