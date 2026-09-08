@@ -88,7 +88,7 @@ revisar("una textura",
 # Copiándola primero, Magnific siempre baja de un bucket público nuestro. Lo
 # que se fija acá es que se copie la ajena y NO la que ya es nuestra: copiar la
 # propia sería pagar dos veces el mismo archivo por nada.
-print("\n■ La foto de entrada se copia antes de mandarla a Magnific")
+print("\n■ La foto de entrada se copia y se convierte antes de ir a Magnific")
 
 NUESTRA = ("https://qxjvtxumkljsroukpkny.supabase.co/storage/v1/object/public/"
            "disenos-larrique/editadas/abc.jpg")
@@ -100,27 +100,53 @@ def _subir_falso(local, nombre):
     return f"https://ejemplo.test/storage/v1/object/public/bucket/{nombre}"
 
 
-def _bajar_falso(url, destino):
-    destino.write_bytes(b"\xff\xd8\xff" + b"\x00" * 20)   # cabecera de JPEG
-    return destino
+def _falso(formato, modo="RGB"):
+    """Un `bajar` que deja una imagen DE VERDAD en ese formato.
+
+    Tiene que ser real y no unos bytes con la cabecera correcta: lo que se está
+    probando es justamente la conversión, y para convertir hay que poder abrir.
+    """
+    def _bajar(url, destino):
+        from PIL import Image
+        Image.new(modo, (40, 30), (200, 30, 30) if modo == "RGB" else
+                  (200, 30, 30, 128)).save(destino, formato)
+        return destino
+    return _bajar
 
 
 real_bajar = fotero.bajar
-fotero.bajar = _bajar_falso
 try:
-    salida = fotero.copiar_entrante({"id": "f1", "foto": "https://ajena.test/p.jpg"},
+    # Una foto de WhatsApp llega como webp, y quitar fondo NO lee webp: contesta
+    # «The URL does not point to an image», que suena a URL rota y en realidad
+    # es un formato que no entiende. Tiene que salir convertida.
+    fotero.bajar = _falso("WEBP")
+    salida = fotero.copiar_entrante({"id": "f1", "foto": "https://ajena.test/p.webp"},
                                     _subir_falso)
-    ok("una foto ajena se copia", subidas == ["entrantes/f1.jpg"], subidas)
+    ok("un webp de chat se convierte a jpg", subidas == ["entrantes/f1.jpg"], subidas)
     ok("y lo que se manda es NUESTRA copia",
        salida.startswith("https://ejemplo.test/"), salida)
 
     subidas.clear()
-    igual = fotero.copiar_entrante({"id": "f2", "foto": NUESTRA}, _subir_falso)
+    fotero.bajar = _falso("WEBP", "RGBA")
+    fotero.copiar_entrante({"id": "f2", "foto": "https://ajena.test/t.webp"},
+                           _subir_falso)
+    ok("uno con transparencia va a png, no a jpg",
+       subidas == ["entrantes/f2.png"], subidas)
+
+    subidas.clear()
+    fotero.bajar = _falso("JPEG")
+    fotero.copiar_entrante({"id": "f3", "foto": "https://ajena.test/p.jpg"},
+                           _subir_falso)
+    ok("un jpg que ya venía bien sigue siendo jpg",
+       subidas == ["entrantes/f3.jpg"], subidas)
+
+    subidas.clear()
+    igual = fotero.copiar_entrante({"id": "f4", "foto": NUESTRA}, _subir_falso)
     ok("una que ya es nuestra no se copia", subidas == [], subidas)
     ok("y se manda tal cual", igual == NUESTRA, igual)
 
     subidas.clear()
-    vacio = fotero.copiar_entrante({"id": "f3", "foto": ""}, _subir_falso)
+    vacio = fotero.copiar_entrante({"id": "f5", "foto": ""}, _subir_falso)
     ok("sin foto no revienta (es el caso de `crear`)",
        vacio == "" and subidas == [], (vacio, subidas))
 finally:

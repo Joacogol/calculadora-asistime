@@ -476,14 +476,49 @@ def copiar_entrante(fila: dict, subir) -> str:
         return foto
     with tempfile.TemporaryDirectory() as tmp:
         local = bajar(foto, pathlib.Path(tmp) / "entrante")
-        with open(local, "rb") as f:
-            cabeza = f.read(12)
-        ext = (".png" if cabeza[:4] == b"\x89PNG" else
-               ".webp" if cabeza[:4] == b"RIFF" and cabeza[8:12] == b"WEBP" else
-               ".jpg")
-        final = local.with_suffix(ext)
-        local.rename(final)
-        return subir(final, f"entrantes/{fila['id']}{ext}")
+        final = _normalizar(local)
+        return subir(final, f"entrantes/{fila['id']}{final.suffix}")
+
+
+def _normalizar(local: pathlib.Path) -> pathlib.Path:
+    """Deja la foto en JPEG o PNG, que es lo único que Magnific acepta.
+
+    **WebP no le sirve, y ése es el formato en el que llegan casi todas las
+    fotos de un chat.** El 8/9/2026 una foto mandada por WhatsApp llegó como
+    `.webp` desde el CDN de Asistime y quitar fondo contestó «The URL does not
+    point to an image» — que suena a que la URL está rota y en realidad
+    significa «este formato no lo leo». Copiarla sin convertirla no alcanzaba:
+    el archivo era válido, el formato no.
+
+    Con alfa va a PNG y sin alfa a JPEG, que pesa bastante menos. Un JPEG o un
+    PNG que ya vienen bien NO se vuelven a codificar: recomprimir una foto por
+    las dudas le saca calidad a cambio de nada.
+
+    Si PIL no sabe abrirlo —un HEIC de iPhone, por ejemplo, que necesita un
+    complemento— se sube tal cual y que falle del otro lado con su mensaje: es
+    mejor que romper acá una foto que quizá servía.
+    """
+    from PIL import Image
+    try:
+        with Image.open(local) as im:
+            formato = (im.format or "").upper()
+            if formato in ("JPEG", "PNG"):
+                final = local.with_suffix(".jpg" if formato == "JPEG" else ".png")
+                local.rename(final)
+                return final
+            # `info` trae la transparencia de un GIF o un PNG en paleta, que no
+            # se ve mirando sólo el modo.
+            con_alfa = im.mode in ("RGBA", "LA", "PA") or "transparency" in im.info
+            if con_alfa:
+                final = local.with_suffix(".png")
+                im.convert("RGBA").save(final, "PNG")
+            else:
+                final = local.with_suffix(".jpg")
+                im.convert("RGB").save(final, "JPEG", quality=95)
+        return final
+    except Exception as e:                                       # noqa: BLE001
+        log.warning("no pude convertir la foto entrante (%s); la subo tal cual", e)
+        return local
 
 
 def bajar(url: str, destino: pathlib.Path) -> pathlib.Path:

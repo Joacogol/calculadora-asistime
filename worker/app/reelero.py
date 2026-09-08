@@ -1283,6 +1283,24 @@ def atender_todos(cli, ficha: dict, armar_rotulo, subir, musica_de_fila) -> int:
                 continue
 
             con_foto = {**fila, "foto_texto": fila.get("titulo") or "the product"}
+
+            # La foto de la que parte el video se COPIA a nuestro bucket y se
+            # convierte a JPEG o PNG antes de nombrársela al proveedor. Los dos
+            # —fal en `image_url`, Magnific en `reference_images`— la bajan por
+            # su cuenta, así que heredan los dos problemas que ya se pagaron del
+            # lado de las fotos: un CDN ajeno que contesta 403, y el webp en el
+            # que llega casi toda foto de un chat, que quitar fondo rechaza con
+            # «The URL does not point to an image». Acá el precio de enterarse
+            # tarde es mucho peor: son cientos de créditos por intento.
+            # Ver `fotero.copiar_entrante`.
+            if con_foto.get("foto"):
+                try:
+                    from . import fotero as _fotero
+                    con_foto["foto"] = _fotero.copiar_entrante(con_foto, subir)
+                except Exception as e:                           # noqa: BLE001
+                    log.warning("[%s] no pude copiar la foto de %s (%s); la "
+                                "mando tal cual", getattr(cli, "marca", "?"),
+                                fila["id"], e)
             dur_pedida = duracion_pedida(fila.get("mensaje")) or dur
 
             # El guión sale ANTES de elegir modelo, porque de ahí sale también
