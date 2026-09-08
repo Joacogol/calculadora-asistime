@@ -77,6 +77,12 @@ VOCABULARIO = (
 # Montserrat variable de Google Fonts.
 TIPO_REEL = ("Montserrat-Black.ttf", "Montserrat-SemiBold.ttf")
 ANIMO_MUSICA = "calmo"   # ver ANIMOS en motor/sonido.py
+# Con qué plantilla se dibuja el TEXTO que va encima del video de un reel.
+# Sin esto el motor busca una llamada `campana` —el nombre que tienen Boss y
+# Stadium—, no la encuentra, y `reelero.puede_rotular` frena el pedido antes de
+# generar. Frenar está bien, porque el rótulo se dibuja DESPUÉS de pagar el
+# clip; lo que estaba mal era no tener la propia.
+PLANTILLA_ROTULO = "rotulo"
 ACENTO_REEL = C["rojo"]
 
 # El índice y las flechas del carrusel. Esta marca tiene fondos claros: en

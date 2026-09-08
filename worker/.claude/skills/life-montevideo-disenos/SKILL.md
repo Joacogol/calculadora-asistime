@@ -52,7 +52,7 @@ Por eso las plantillas ponen los rótulos en blanco cuando hay foto, y dejan el
 acento para lo que ocupa media pieza. No es «el acento no va sobre foto» —eso
 sería falso y contradiría el feed—: es que el acento necesita cuerpo.
 
-## Las cinco plantillas
+## Las plantillas
 
 | | Cuándo |
 |---|---|
@@ -61,6 +61,7 @@ sería falso y contradiría el feed—: es que el acento necesita cuerpo.
 | **`evento`** | Un número o una fecha gigante: «60 min NADO», «SAB. 12.09». También la que lleva sponsor |
 | **`clase`** | Una actividad con su horario y su profesor |
 | **`aviso`** | Un plan, una promo, un cambio: titular, lista y letra chica |
+| **`rotulo`** | Casi nunca a mano: es el texto que el motor monta ENCIMA del video de un reel |
 
 `aviso` reemplaza a las dos que había antes —una de planes y una de promos—
 porque las dos estaban armadas sobre un fondo de color a sangre, y de eso no

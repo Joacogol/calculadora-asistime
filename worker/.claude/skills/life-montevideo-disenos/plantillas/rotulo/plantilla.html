@@ -1,0 +1,94 @@
+{#- RÓTULO — el texto que va ENCIMA del video de un reel.
+
+    Existe porque el motor dibuja el rótulo de un reel con una plantilla de la
+    marca, y cuando la marca no declara cuál busca una llamada `campana` —el
+    nombre que tienen Boss y Stadium—. Life no tiene ninguna así, y el
+    guardián de `reelero.puede_rotular` frenaba el pedido ANTES de generar.
+    Bien frenado —el rótulo se dibuja después de pagar el clip— pero dejaba a
+    Life sin reels y sin videos, y nadie se había enterado porque todavía no
+    los había pedido.
+
+    El arreglo no es copiarle una plantilla con el nombre de otra marca: es
+    escribir la suya y declararla en `identidad.reel.plantilla`.
+
+    ── Acá la frase va en BLANCO, no en frambuesa ──────────────────────
+
+    Es la diferencia con `manifiesto`, y no es un descuido. Aquella pieza
+    escribe algunas líneas en el color del club porque su foto está en blanco
+    y negro: el frambuesa no compite con nada. Un clip está en color, y la
+    misma frase encima se lava. El color se queda para la volanta, que es
+    chica y cae sobre el pedazo más oscuro del degradado.
+
+    ── Con `sobre_video` la pieza NO tiene fondo ───────────────────────
+
+    Sale transparente para montarse encima del clip, con un degradado suave
+    nada más donde cae el texto. Un velo entero taparía el video que se pagó
+    —le pasó a Boss el 1/9/2026: ocho de diez segundos en negro—. El fondo
+    transparente lo termina de forzar `reelero.rotulo`, que pisa `html`,
+    `body` y `.canvas` desde afuera. -#}
+
+{%- set sobre = d.sobre_video -%}
+{%- set pal = paleta(d.estilo or 'club') -%}
+{%- set pos = d.posicion if d.posicion in ('arriba', 'centro', 'abajo') else 'arriba' -%}
+{%- set hay_foto = d.foto|length > 0 and not sobre -%}
+
+{#- La frase baja de cuerpo por los dos lados, como en `manifiesto`: una frase
+    puede no entrar por alto o por ancho y son problemas distintos. El corte
+    de línea es del que la escribe, así que se achica hasta que la línea más
+    larga entre entera en vez de dejar que el navegador la parta. -#}
+{%- set lineas = d.titulo.split('\n') | map('trim') | reject('equalto', '') | list -%}
+{%- set mas_larga = (lineas | map('length') | list | max) or 1 -%}
+{%- set por_alto = m.titulo if lineas|length <= 2 else (m.titulo * 0.78 if lineas|length <= 4 else m.titulo * 0.6) -%}
+{%- set por_ancho = (1080 - 2 * m.pad) / (0.55 * mas_larga) -%}
+{%- set cuerpo = [por_alto, por_ancho] | min -%}
+
+{% if sobre %}
+{#- El degradado sigue a la posición del texto: si la frase va arriba, se
+    oscurece arriba. Al revés taparía el video justo donde no hace falta. -#}
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(0,0,0,.62),rgba(0,0,0,.10) 44%,rgba(0,0,0,0) 60%)"></div>
+{#- Y una pizca abajo, sólo para que el isotipo no se pierda contra un fondo
+    claro. Va aparte para que los dos no se sumen al medio. -#}
+<div class="scrim" style="background:linear-gradient(0deg,
+  rgba(0,0,0,.46),rgba(0,0,0,0) 22%)"></div>
+{% elif hay_foto %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+<img class="bg t-{{ d.tratamiento or 'natural' }}" src="{{ d.foto }}"
+  style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(0,0,0,.76),rgba(0,0,0,.08) 52%,rgba(0,0,0,.40))"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ m.pad_top }}px {{ m.pad }}px {{ m.pad_bot }}px">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div>
+    {% if d.kicker %}
+    <div class="v-seca" style="color:{{ pal.acento }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 1.2 }}px;{{ sombra_texto(1.6) }}">{{ d.kicker }}</div>
+    {% endif %}
+
+    {% for linea in lineas %}
+    <div class="v-{{ pal.voz }}" style="color:{{ pal.tinta }};
+      font-size:{{ cuerpo|round|int }}px;white-space:nowrap;
+      {{ sombra_texto() }}">{{ linea }}</div>
+    {% endfor %}
+
+    {% if d.bajada %}
+    <div class="v-susurro" style="color:{{ pal.tinta }};opacity:.92;
+      font-size:{{ m.bajada }}px;margin-top:{{ m.bajada * 1.1 }}px;max-width:86%;
+      {{ sombra_texto(1.6) }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  {% if d.firma != 'ninguna' %}
+  <div>{{ firma(d.firma or 'iso', m.iso, pal.tinta, m.logo) }}</div>
+  {% endif %}
+</div>

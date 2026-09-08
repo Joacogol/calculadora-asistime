@@ -60,7 +60,7 @@ WhatsApp no es un dato de más, es la conversión. La barra de pie con
 **092 566 967** y **www.clinicapreventiva.com** se dibuja sola en `lateral` y
 `tipografica`, y va en tira blanca en `sangre`.
 
-## Las 5 plantillas
+## Las plantillas
 
 ### `lateral` — la de servicio
 Foto a la izquierda, panel blanco a la derecha. Es la que usa la marca cuando
@@ -143,6 +143,24 @@ negro sólido.**
 Sólo texto sobre blanco, con trama de puntos y barra roja al costado. Para
 avisos, cambios de horario y datos de salud pública, donde una foto de banco no
 aporta y encima ensucia.
+
+### `rotulo` — el texto que va encima de un reel
+Casi nunca se pide a mano: es la plantilla con la que el motor dibuja el
+**rótulo de los reels**, y la declara `marca.py` en `PLANTILLA_ROTULO`. Sin
+ella el motor busca una llamada `campana` —el nombre que tienen Boss y
+Stadium—, no la encuentra, y frena el pedido antes de generar. Frenar está
+bien, porque el rótulo se dibuja DESPUÉS de pagar el clip; lo que faltaba era
+tener la propia.
+
+Dos diferencias con `sangre`, y las dos salen de que abajo hay un video:
+
+- **El destacado va en bloque rojo, no en texto rojo.** `sangre` mide la foto
+  con `plan_titular` y recién ahí elige entre las dos versiones. Acá no hay
+  nada que medir: el fondo cambia en cada cuadro.
+- **No lleva la barra de contacto.** Es la única plantilla de esta marca sin
+  ella. En una pieza fija el teléfono es la conversión —esta clínica no tiene
+  agenda previa—, pero encima de un reel esa franja cae donde Instagram pone
+  su propia interfaz. El número va en la placa de cierre.
 
 ## Carruseles y secuencias
 
