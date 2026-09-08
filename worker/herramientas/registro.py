@@ -124,7 +124,7 @@ def _de_worker(c: dict) -> dict:
     """Del formato que usa el worker (`key`) al que se guarda (`service_role`)."""
     return {"marca": c["marca"], "nombre": c["nombre"], "url": c["url"],
             "service_role": c["key"], "asistime_clave": c.get("asistime_clave", ""),
-            "bucket": c.get("bucket", "disenos")}
+            "bucket": c.get("bucket", "disenos"), "esquema": c.get("esquema", "")}
 
 
 def subir(clientes: list[dict]) -> None:
@@ -167,8 +167,13 @@ def preguntar_nuevo() -> dict:
     url = input("  URL de su Supabase (https://….supabase.co): ").strip()
     service_role = getpass.getpass("  service_role key de su Supabase: ").strip()
     asistime = getpass.getpass("  clave de Asistime de su tenant (Enter si no hay): ").strip()
+    print("  Si comparte el Supabase de la casa, en qué esquema viven sus tablas.")
+    print("  Enter si tiene proyecto propio: ahí sus tablas están en `public`.")
+    esquema = input("  esquema (ej. club_x): ").strip()
+    bucket = input(f"  bucket [{'disenos-' + esquema.replace('_', '-') if esquema else 'disenos'}]: ").strip()
     return {"marca": marca, "nombre": nombre, "url": url, "service_role": service_role,
-            "asistime_clave": asistime, "bucket": "disenos"}
+            "asistime_clave": asistime, "esquema": esquema,
+            "bucket": bucket or (f"disenos-{esquema.replace('_', '-')}" if esquema else "disenos")}
 
 
 if __name__ == "__main__":

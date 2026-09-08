@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import (banco, cobro, config, fotero, libro, manual, motorista, plantillas,
-               plantillero, publicador, reelero)
+               plantillero, publicador, reelero, registro)
 from motor.revisar import en_una_linea, revisar_imagen
 from .supa import Cliente
 from .disenador import disenar
@@ -301,13 +301,17 @@ async def ciclo():
     manual.limpiar()
     plantillas.limpiar()
     libro.olvidar()
+    # Y la lista de clientes de la casa, por lo mismo: un cliente dado de alta
+    # hace un minuto tiene que existir en esta corrida, no en la de mañana.
+    registro.olvidar()
     hechos = subidos = plantillas_nuevas = propuestas = reels = fotos = 0
     for datos in config.clientes():
         # Sólo lo que `Cliente` entiende. El registro trae además la clave de
         # Asistime, que la lee `manual.py` por su cuenta.
         cli = Cliente(marca=datos["marca"], url=datos["url"], key=datos["key"],
                       bucket=datos.get("bucket", "disenos"),
-                      nombre=datos.get("nombre", ""))
+                      nombre=datos.get("nombre", ""),
+                      esquema=datos.get("esquema", ""))
         if not cli.configurado:
             log.warning("[%s] sin URL o sin clave: lo salteo", cli.marca)
             continue

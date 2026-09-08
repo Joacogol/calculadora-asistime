@@ -1,0 +1,41 @@
+{
+ "id": "clase",
+ "nombre": "Clase",
+ "descripcion": "una actividad con su horario y su profesor, sobre foto tratada",
+ "cuando_usarla": "Cuando la pieza anuncia UNA clase o actividad: un horario nuevo, una clase especial, un cambio de sala, una que abre inscripción. Si son varias a la vez —la grilla del mes— no es ésta. Si es un evento con fecha y número grande, es `evento`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 62, "clase": 88,  "cuando": 40, "rotulo": 20, "profesor": 26, "bajada": 25, "legal": 18, "logo": 0.50, "iso": 0.78},
+  "vert":  {"alto": 1350, "pad": 66, "clase": 100, "cuando": 45, "rotulo": 21, "profesor": 28, "bajada": 27, "legal": 19, "logo": 0.54, "iso": 0.83},
+  "story": {"alto": 1920, "pad": 84, "clase": 128, "cuando": 57, "rotulo": 25, "profesor": 34, "bajada": 32, "legal": 22, "logo": 0.66, "iso": 0.98},
+  "reel":  {"alto": 1920, "pad": 84, "clase": 128, "cuando": 57, "rotulo": 25, "profesor": 34, "bajada": 32, "legal": 22, "logo": 0.66, "iso": 0.98}
+ },
+ "campos": [
+  {"id": "clase", "tipo": "texto_largo", "etiqueta": "La clase", "requerido": true,
+   "ejemplo": "PILATES\nREFORMER",
+   "nota": "El nombre tal como lo llama el club, en mayúsculas. El salto de línea se respeta."},
+  {"id": "cuando", "tipo": "texto", "etiqueta": "Cuándo", "default": "",
+   "ejemplo": "LUNES Y MIÉRCOLES · 19:00",
+   "nota": "Día y hora en una sola línea, en mayúsculas. Sale en el color del club con el trazo a pincel debajo: es el dato por el que alguien guarda la pieza. **No lo completes si no te lo dieron** — la grilla cambia todos los meses y una pieza vieja no es fuente."},
+  {"id": "categoria", "tipo": "texto", "etiqueta": "Familia", "default": "", "ejemplo": "BODY & MIND",
+   "nota": "RENDIMIENTO, FITNESS, BODY & MIND, PISCINA, TENIS, NUTRICIÓN u OPEN GYM. Sale arriba de todo, chica y espaciada."},
+  {"id": "profesor", "tipo": "texto", "etiqueta": "Profesor", "default": "", "ejemplo": "Martina",
+   "nota": "Sale como «con Martina», en minúsculas: es la voz baja de la marca. Nombre de pila, que es como los nombra el club."},
+  {"id": "bajada", "tipo": "texto_largo", "etiqueta": "Bajada", "default": "",
+   "ejemplo": "Incluida en el plan ALL IN. Reservá tu lugar por la app."},
+  {"id": "cupo", "tipo": "texto", "etiqueta": "Letra chica", "default": "", "ejemplo": "Cupos limitados",
+   "nota": "Abajo a la derecha: «Cupos limitados», «Sólo ALL IN», «Con reserva previa»."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de fondo", "default": "",
+   "nota": "La sala, la clase, el equipo. Sin foto la pieza sale sobre negro."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 40%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["oscuro", "bn", "barrido", "natural"], "default": "oscuro",
+   "nota": "`oscuro` deja reconocer la sala y baja la luz para que el texto entre. `bn` cuando la foto tiene colores que pelean con el del club."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["club", "piscina", "hybrid", "blanca"], "default": "club",
+   "nota": "`piscina` para natación, hidro y aqua; `hybrid` para funcional, híbrido y outdoor. `blanca` sólo sin foto, para un aviso que tiene que leerse y nada más."},
+  {"id": "firma", "tipo": "opcion", "etiqueta": "Firma",
+   "opciones": ["iso", "lockup", "ninguna"], "default": "iso",
+   "nota": "El isotipo —la pincelada LIFE sola— es lo que menos compite con la foto. El lockup entero cuando la pieza vaya a verla gente de afuera."}
+ ]
+}

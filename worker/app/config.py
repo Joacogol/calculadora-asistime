@@ -59,6 +59,13 @@ def clientes() -> list[dict]:
       1. `CLIENTES_REGISTRO` — un solo secreto con todos, leído en cada corrida.
          Es el camino nuevo (2/9/2026) y el único que permite sumar un cliente
          sin redesplegar. Ver `app/registro.py`.
+
+         A esa lista se le suman los clientes de esquema compartido, que se
+         leen de `public.clientes` del Supabase de la casa. Ésos no tienen
+         ninguna clave propia —usan la de la casa— así que no hay razón para
+         que estén en un secreto, y sacarlos de ahí es lo que hace que un alta
+         sea un `insert` y no un paso con `gcloud`. Si están en los dos lados,
+         manda el secreto.
       2. `CLIENTES` + un secreto por cliente — el camino anterior. Sigue
          andando tal cual para el despliegue que ya está.
       3. `SUPABASE_URL` + `SUPABASE_KEY` — un solo cliente, el más viejo.
@@ -66,7 +73,7 @@ def clientes() -> list[dict]:
     from . import registro
     del_registro = registro.leer()          # levanta si está y está mal
     if del_registro is not None:
-        return del_registro
+        return del_registro + registro.compartidos(del_registro)
 
     crudo = os.environ.get("CLIENTES", "").strip()
     if not crudo:

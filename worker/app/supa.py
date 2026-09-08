@@ -64,15 +64,20 @@ class Cliente:
     """La base de un cliente, con su marca."""
 
     def __init__(self, marca: str, url: str, key: str,
-                 bucket: str = "disenos", nombre: str = ""):
+                 bucket: str = "disenos", nombre: str = "", esquema: str = ""):
         self.marca = marca
         self.url = (url or "").rstrip("/")
         self.key = key or ""
         self.bucket = bucket or "disenos"
         self.nombre = nombre or marca
+        # El esquema de Postgres donde viven SUS tablas, cuando comparte
+        # proyecto con otros clientes. Vacío es `public`: así siguen andando
+        # los clientes que tienen su propio Supabase, sin tocar nada.
+        self.esquema = (esquema or "").strip()
 
     def __repr__(self):
-        return f"<Cliente {self.marca} {self.url}>"
+        donde = f"{self.url}" + (f" · esquema {self.esquema}" if self.esquema else "")
+        return f"<Cliente {self.marca} {donde}>"
 
     @property
     def configurado(self) -> bool:
@@ -87,6 +92,17 @@ class Cliente:
             "Authorization": f"Bearer {self.key}",
             "Content-Type": "application/json",
         }
+        # Con varios clientes en un mismo proyecto, cada uno vive en su
+        # esquema y PostgREST elige por cabecera: `Accept-Profile` al leer,
+        # `Content-Profile` al escribir. Van las dos porque el mismo
+        # diccionario se usa para las dos cosas.
+        #
+        # El esquema tiene que estar en «Exposed schemas» del proyecto. Si no
+        # está, PostgREST contesta 406 diciendo cuáles expone — un error que
+        # se lee y se arregla, no uno que devuelve la tabla de otro.
+        if self.esquema:
+            c["Accept-Profile"] = self.esquema
+            c["Content-Profile"] = self.esquema
         if extra:
             c.update(extra)
         return c

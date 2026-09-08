@@ -1,0 +1,39 @@
+{
+ "id": "manifiesto",
+ "nombre": "Manifiesto",
+ "descripcion": "una frase apilada sobre foto en blanco y negro, con algunas líneas en el color del club",
+ "cuando_usarla": "La pieza más característica de esta cuenta. Cuando lo que se publica es una IDEA y no un dato: «VIBRAR FUERTE / TAMBIÉN / ES / CONECTAR». Va sobre una foto tratada, la frase se apila en líneas y algunas van en el color del club. Si hay un dato —una fecha, un horario, un precio— no es ésta.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 62, "frase": 92,  "remate": 20, "logo": 0.52, "iso": 0.80},
+  "vert":  {"alto": 1350, "pad": 66, "frase": 104, "remate": 21, "logo": 0.56, "iso": 0.85},
+  "story": {"alto": 1920, "pad": 84, "frase": 132, "remate": 25, "logo": 0.70, "iso": 1.00},
+  "reel":  {"alto": 1920, "pad": 84, "frase": 132, "remate": 25, "logo": 0.70, "iso": 1.00}
+ },
+ "campos": [
+  {"id": "frase", "tipo": "texto_largo", "etiqueta": "La frase, una línea por renglón",
+   "requerido": true,
+   "ejemplo": "*VIBRAR FUERTE\n*TAMBIÉN\nES\nCONECTAR",
+   "nota": "Un renglón por línea de la pieza, en MAYÚSCULAS. **Poné un asterisco al principio de las líneas que van en el color del club.** El corte entre las que llevan color y las que no es lo que arma el sentido: en la pieza real «VIBRAR FUERTE TAMBIÉN» va en frambuesa y «ES CONECTAR» en blanco. Una palabra de tres letras o menos —ES, Y, DE— sale más chica sola: es lo que le da ritmo a la pila."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "La foto", "requerido": true,
+   "nota": "Gente entrenando, movimiento, un cuerpo. Cuanto más sucia y más movida, mejor: esta pieza no quiere una foto de catálogo."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 40%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["bn", "barrido", "oscuro", "natural"], "default": "bn",
+   "nota": "**`bn` no es un gusto, es lo que hace funcionar la pieza.** El color de la marca escrito encima sólo se sostiene si la foto no tiene color propio con qué pelear. En `natural` la misma frase sale sucia."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["club", "piscina", "hybrid", "familia"], "default": "club",
+   "nota": "`club` es el frambuesa. `piscina` cambia el acento a celeste y `hybrid` a verde, que es lo que hace el feed según de qué habla la pieza."},
+  {"id": "alineacion", "tipo": "opcion", "etiqueta": "Alineación",
+   "opciones": ["derecha", "izquierda"], "default": "derecha",
+   "nota": "La pieza real va alineada a la derecha. Izquierda cuando el sujeto de la foto está de ese lado y el texto lo taparía."},
+  {"id": "posicion", "tipo": "opcion", "etiqueta": "Dónde va la frase",
+   "opciones": ["centro", "abajo", "arriba"], "default": "centro"},
+  {"id": "remate", "tipo": "texto", "etiqueta": "Remate", "default": "",
+   "ejemplo": "VIVÍ LIFE",
+   "nota": "Una línea chica en mayúsculas espaciadas debajo de la frase, con el trazo a pincel abajo. Opcional y salteada: si va en todas las piezas, deja de significar algo."},
+  {"id": "firma", "tipo": "opcion", "etiqueta": "Firma",
+   "opciones": ["ninguna", "iso", "lockup"], "default": "ninguna",
+   "nota": "**Vacía por defecto, a propósito.** En el feed esta pieza no lleva logo: la cuenta ya dice de quién es, y el logo le sacaría fuerza a la frase, que es todo lo que la pieza tiene."}
+ ]
+}

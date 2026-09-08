@@ -1,0 +1,231 @@
+{
+  "_nota": "Los datos que el worker le pasa al agente en el prompt. Es JSON y no un módulo Python a propósito: dos marcas tienen archivos con el mismo nombre y no pueden convivir importadas en el mismo proceso. Un archivo de datos no tiene ese problema.",
+  "nombre": "Life Montevideo",
+  "_familia": "Life Montevideo es UNO de los cinco clubes de Viví Life. Los otros cuatro —Distrito M, Aguada, Zonamerica y Outdoor Club— tienen sus propias cuentas. Esta cuenta habla de ESTE club: la sede de Buceo. Cuando una pieza sea de la familia entera —una promo que vale en todos, un evento común— se dice «todos los clubes Life», y ahí es cuando entra la paleta `familia`.",
+  "sedes": {
+    "Buceo": {
+      "direccion": "Prof. Juan Carlos Sabat Pebet 1240, Buceo, Montevideo",
+      "horario": "L-V 6:30-22:00 · Sáb 8:00-13:00 · Dom cerrado",
+      "acento": "frambuesa"
+    }
+  },
+  "sede_por_defecto": "Buceo",
+  "web": "lifemontevideo.uy",
+  "instagram": "@lifemvd",
+  "atencion": "Lunes a viernes de 6:30 a 22:00, sábados de 8:00 a 13:00. Domingo cerrado.",
+  "formato_por_defecto": "story",
+  "telefono_por_defecto": false,
+  "regla_telefono": "**En la pieza no va el teléfono: va la web o el Instagram.** El club atiende por WhatsApp y por el sitio, y el llamado a la acción de todas sus piezas es «agendá tu día de prueba» o «escribinos». El pie de las plantillas ya dice `lifemontevideo.uy`. El teléfono va sólo si el pedido lo pide con todas las letras.",
+  "_horarios": "Los horarios de ARRIBA son los del club, no los de las clases. La grilla de clases cambia por mes y NO está acá a propósito: una grilla vieja publicada es peor que no publicar nada.",
+  "regla_datos": "**No completes ningún horario, precio, cupo ni fecha que no te hayan dado.** Ni a qué hora es la clase, ni quién la da, ni cuánto sale el plan, ni hasta cuándo vale una promo. Si falta, preguntalo. Y ojo con lo que aparezca en piezas anteriores: la grilla de clases cambia todos los meses, así que una pieza vieja NO es fuente.",
+  "regla_letra_chica": "**Si la pieza tiene una promo, la condición va en la pieza.** Hasta cuándo vale, si es para socios nuevos, si pide permanencia, con qué tarjeta. Es lo primero que se reclama en el mostrador y lo último que alguien se acuerda de pedir.",
+  "_personas": "Esta cuenta muestra gente entrenando: caras reconocibles de socios y de profesores.",
+  "regla_personas": "**Una persona identificable en una pieza es una decisión del club, no del diseño.** Si el pedido manda una foto de alguien, se usa; si te piden inventar una foto de gente del club con `crear`, no se hace: una cara generada publicada como si fuera un socio es un problema distinto al de una pieza fea. Para eso están las fotos que ellos mandan.",
+  "actividades": {
+    "Rendimiento": "Funcional · Híbrido · HIIT · CrossFit · Unity",
+    "Fitness": "GAP · Gimnasia Integral",
+    "Body & Mind": "Pilates Reformer · Pilates MAT · Yoga · Stretching",
+    "Piscina": "Hidrogimnasia · Aqua Funcional · Aqua HIIT · Natación · Piscina libre",
+    "Tenis": "Clases de tenis · Tenis libre",
+    "Nutrición": "Consultas · Planes nutricionales",
+    "Open Gym": "Sala de musculación"
+  },
+  "_actividades": "Las siete familias de actividad tal como las agrupa el club en su sitio. Son las que puede nombrar una pieza: si un pedido nombra una que no está acá, preguntá antes de dibujarla.",
+  "planes": {
+    "BASIC": "«Viví tu club». Acceso al club donde te asociaste, clases grupales, Open Gym, piscina y tenis, y acceso semanal a los otros clubes Life.",
+    "ALL IN": "«Viví Life sin límites». Acceso ilimitado a todos los clubes, Pilates Reformer, servicio de toallas, nutrición, botas recovery, prioridad en actividades especiales y 50% OFF."
+  },
+  "_planes": "Qué incluye cada plan, tal como lo dice el sitio. **Los precios NO están acá y no se inventan**: cambian y los da el club.",
+  "frases": {
+    "Una comunidad que vibra": "La frase madre de Life Montevideo. La del sitio es «Una comunidad que vibra, ahora más fuerte». Es de marca, no de campaña: sirve de cierre de casi cualquier pieza.",
+    "#VIVÍLIFE": "El hashtag de la familia, y también un lockup dibujado —«VIVÍ» en tinta y «LIFE» en pincelada subrayada—. Como texto va siempre en mayúsculas y con la tilde en la í.",
+    "Cuatro clubes, un mismo estilo de vida": "Para las piezas que hablan de la familia entera, no de este club."
+  },
+  "_asistime": "Dónde vive el manual que edita el club. No es secreto: es un dato de la marca. La clave de la API de diseños NO va acá: vive hasheada en `public.claves_api` del Supabase de la casa.",
+  "asistime": {
+    "tenant": 48,
+    "documento": 883,
+    "catalogo": 884,
+    "aplicacion": 48,
+    "clave_env": "ASISTIME_CLAVE_LIFE",
+    "clave_secreto": "asistime-api-life",
+    "_nota": "`documento` son las Reglas de marca, que edita el club. `catalogo` es el catálogo de plantillas, que NO se edita a mano: lo republica herramientas/publicar-catalogo.py después de cada despliegue.",
+    "_clave": "`clave_env` es la variable de entorno donde el worker busca la clave; `clave_secreto` es el secreto de Secret Manager de donde sale. La clave de Asistime está atada a un tenant, así que cada marca tiene la suya: la de otra contesta 403. La aplicación es «Estudio de diseño», la 48.",
+    "_sin_agente": "Falta `agente` a PROPÓSITO, y es lo que hace que `publicar-prompt.py` no lo toque. El prompt del 604 está escrito a mano para este cliente: dice qué herramientas tiene de verdad —no publica en Instagram, no genera video con IA— y el prompt genérico las prometería todas. Si algún día pasa a usar el generado, se le agrega `agente: 604` acá, y antes se mira con `--probar` qué pierde."
+  },
+  "_supabase": "Primer cliente sin proyecto propio: sus tablas viven en el esquema `life_montevideo` del Supabase de la casa y sus archivos en el bucket `disenos-life-montevideo`. Ver `alta/ESQUEMA-COMPARTIDO.md`.",
+  "fotos": {
+    "creditos_maximos": 600,
+    "_que_hace": "Los seis verbos que el agente le puede pedir a una foto ANTES de usarla en una pieza: `fondo` recorta, `formato` la lleva a otra proporción inventando los bordes en vez de recortar, `tamano` la agranda, `retoque` cambia algo puntual, `escena` la lleva a otro lugar y `crear` inventa una foto entera desde una descripción.",
+    "_por_que": "Un club de gimnasia tiene mucha foto de celular tomada en la sala: llegan chicas, con poca luz y en horizontal. `tamano` y `formato` son los que más se van a usar acá — llevar una foto de 900 píxeles a una story de 1080×1920 sin recortar la cabeza de nadie.",
+    "_regla_imagen": "`crear` NO se usa para gente del club: ver `regla_personas`. Sirve para lo que no tiene cara —una toalla doblada, un detalle de la piscina, una textura— y aun así lleva pegada la instrucción de no dibujar ningún texto, cartel ni logo: una fachada generada con un cartel inventado es lo peor que puede salir de acá.",
+    "_topes": "`creditos_maximos` es por pieza: frena un pedido absurdo o un bucle del chat. NO hay techo de mes; si hiciera falta, se escribe `creditos_maximos_mes` acá y el corte vuelve solo."
+  },
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "_material": "Este club FILMA: clases, la piscina, la sala. Lo normal acá es `montar_reel` —editar lo que grabaron— y no `crear_video`, que inventa. Un reel de gente entrenando generado por IA no es este club.",
+    "_calidad": "`normal` es Seedance 2.0 Mini a 720p: 140 créditos por segundo. `borrador` es el mismo a 480p (70) y `maxima` es Seedance 2.5 a 720p (440). La persona puede pedir otra en el chat; esto es lo que se usa cuando no dice nada.",
+    "_topes": "`creditos_maximos` es por pieza. Si algo no entra, el worker NO rechaza de entrada: primero acorta la duración, después baja de calidad, y sólo si ni el más barato entra lo rechaza — siempre diciendo qué cambió.",
+    "musica": [],
+    "_musica": "Todavía sin banco propio. Cuando se genere la primera pista va en `musica/` de esta carpeta, para que viaje con el despliegue. Un club de gimnasia pide algo con pulso: house o pop electrónico de 120-128 BPM, sin voz."
+  },
+  "identidad": {
+    "_colores": "Del manual oficial («Guía de colores LIFE»), no de una pantalla. Life Montevideo es Pantone 7636 C. Los otros clubes están acá porque el feed los usa como señal de actividad —celeste para piscina, verde para hybrid— y porque una pieza de la familia los nombra. El `celeste` es el único muestreado de una pieza y no leído del manual: el 7466 C de Distrito M sale más apagado que el agua de la pieza de nado.",
+    "colores": {
+      "frambuesa": "#BE3455",
+      "negro": "#000000",
+      "tinta": "#111111",
+      "blanco": "#FFFFFF",
+      "humo": "#F4F4F4",
+      "gris": "#8A8A8A",
+      "aguada": "#D12421",
+      "distrito": "#00B5BD",
+      "zonamerica": "#00C996",
+      "outdoor": "#06F395",
+      "celeste": "#37C6E8"
+    },
+    "roles": {
+      "acento": "frambuesa",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "_tipografias": "El logotipo es una pincelada dibujada y no se imita con ninguna fuente. Lo que se escribe encima de las fotos, en el feed, son mayúsculas apretadas de un grotesco ANGOSTO, no de una geométrica: por eso la familia principal es Archivo —que tiene eje de ancho, así que las tres voces salen del mismo archivo— y Montserrat queda sólo para la voz baja y los rótulos espaciados. El manual usa Futura Condensed Extra Bold en sus portadas; es licenciada y no se puede empaquetar.",
+    "tipografias": [
+      {
+        "familia": "Arch",
+        "archivo": "fonts/Archivo-var.ttf",
+        "pesos": "100 900"
+      },
+      {
+        "familia": "MontM",
+        "archivo": "fonts/Montserrat-Medium.ttf",
+        "pesos": "500"
+      },
+      {
+        "familia": "Mont",
+        "archivo": "fonts/Montserrat-Black.ttf",
+        "pesos": "900"
+      },
+      {
+        "familia": "MontS",
+        "archivo": "fonts/Montserrat-SemiBold.ttf",
+        "pesos": "600"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/life-montevideo.svg",
+      "ratio": 1.710526,
+      "ancho": 260,
+      "color": "tinta",
+      "marcador": "CURRENT",
+      "_nota": "El lockup es de DOS colores y sólo uno se pinta: «LIFE» lleva el marcador y «MONTEVIDEO» tiene el frambuesa escrito adentro. Así las dos versiones oficiales salen solas — sin color es negro con el nombre en frambuesa, y `logo(color=blanco)` da la negativa de la guía: LIFE en blanco y MONTEVIDEO en su color. Ratio y proporciones medidos del PNG oficial de lifemontevideo.uy, que también quedó en `assets/` con el sufijo `-oficial` como testigo del trazado."
+    },
+    "iso": {
+      "archivo": "assets/life-iso.svg",
+      "ratio": 2.20339,
+      "alto": 64,
+      "color": "tinta",
+      "marcador": "CURRENT",
+      "_nota": "«LIFE» solo, sin el nombre del club: es la marca que comparten los cinco. Sirve para firmar una pieza donde el lockup entero compite con la foto."
+    },
+    "componentes": {
+      "barra": {
+        "texto": "lifemontevideo.uy"
+      },
+      "paleta": {
+        "por_defecto": "club"
+      },
+      "pastilla": {
+        "radio": 0,
+        "_nota": "Sin radio, y casi sin uso: en el feed no hay una sola pastilla. Lo que separa un dato del otro es el tamaño de la letra y el trazo a pincel."
+      }
+    },
+    "voces": {
+      "titulo": "Archivo angosta (ancho 86, peso 800), mayúsculas, interlínea corta. La voz de casi todas las piezas: «VIBRAR FUERTE / TAMBIÉN / ES / CONECTAR», «LIFE HYBRID SESSION». Las palabras se apilan como bloques.",
+      "poster": "La misma, más angosta todavía (ancho 70, peso 900). Para una frase larga que igual tiene que gritar.",
+      "numero": "Archivo ancha y negra, con cifras de ancho fijo. Los números gigantes del feed: el «60» del nado, el «12.09» del hybrid.",
+      "susurro": "Montserrat Medium, minúsculas, chica: «sos mucho más que eso». Es la única pieza del feed que no grita y funciona por eso. NUNCA en mayúsculas ni a cuerpo grande: deja de ser lo que es.",
+      "seca": "Montserrat Medium en mayúsculas muy espaciadas, como el «MONTEVIDEO» del logotipo. Rótulos y sobretítulos: «2DA. EDICIÓN», «SAB.». Nunca un titular."
+    },
+    "paletas": {
+      "club": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$frambuesa",
+        "voz": "titulo",
+        "cuando": "LA DE TODOS LOS DÍAS. Foto tratada, texto blanco y el frambuesa del club en la palabra que importa. Ante la duda, ésta."
+      },
+      "piscina": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$celeste",
+        "voz": "titulo",
+        "cuando": "Para lo que pasa en el agua: nado, hidrogimnasia, aqua. El feed usa celeste ahí y no frambuesa."
+      },
+      "hybrid": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$outdoor",
+        "voz": "titulo",
+        "cuando": "Sesiones hybrid, outdoor y entrenamientos especiales, que es donde el feed usa el verde. También las piezas con sponsor deportivo."
+      },
+      "blanca": {
+        "fondo": "$blanco",
+        "tinta": "$tinta",
+        "acento": "$frambuesa",
+        "voz": "titulo",
+        "cuando": "Sin foto, sobre blanco. Para un aviso o un cambio de horario que tiene que leerse y nada más. Va salteada: el feed es oscuro."
+      },
+      "familia": {
+        "fondo": "$negro",
+        "tinta": "$blanco",
+        "acento": "$outdoor",
+        "voz": "poster",
+        "cuando": "SÓLO para piezas de los cinco clubes: una promo o un evento común."
+      }
+    },
+    "acento_por_defecto": "frambuesa",
+    "reel": {
+      "tipografias": [
+        "Montserrat-Black.ttf",
+        "Montserrat-SemiBold.ttf"
+      ],
+      "animo_musica": "club",
+      "acento": "frambuesa"
+    },
+    "carrusel": {
+      "color_cromo": "blanco",
+      "fuente_cromo": "'MontM',Helvetica,sans-serif",
+      "fuente_texto": "'MontM',Helvetica,sans-serif"
+    },
+    "vocabulario": "Hablamos de Life Montevideo, el club de Buceo. Clases de funcional, híbrido, HIIT, CrossFit, GAP, pilates reformer, pilates mat, yoga, stretching, hidrogimnasia, aqua funcional, natación y tenis. Planes BASIC y ALL IN. Viví Life."
+  },
+  "_formato": "El feed de @lifemvd es vertical de punta a punta: las cinco piezas que se miraron son 9:16. Por eso el formato por defecto es `story` y no `post`. Un cuadrado acá no se parece a lo que publican.",
+  "_feed": "El kit se corrigió el 7/9/2026 mirando cinco piezas reales del feed, después de haberlo armado sólo con el manual. Lo que cambió es todo lo que sigue, y es mucho: el manual dice cómo es el logo, el feed dice cómo es la marca.",
+  "regla_foto": "**Ninguna foto sale cruda.** En el feed no hay una sola: están en blanco y negro con grano, barridas de movimiento, o bajadas de luz. Ese tratamiento no es un filtro de gusto, es lo que hace posible todo lo demás — sobre una foto sin color, el frambuesa escrito encima queda como lo único vivo de la pieza; sobre una foto en color compite con todo y la pieza se ensucia. El campo `tratamiento` de las plantillas es lo primero que hay que elegir.",
+  "regla_color": "**El acento cambia según de qué habla la pieza, y eso es de la marca.** Frambuesa es el color del club y el que va cuando no hay razón para otro. Pero el feed usa celeste para la piscina y verde para las sesiones hybrid y outdoor: son colores de la familia Life, usados acá como señal de actividad. No es un error de marca, es cómo comunican. Lo que sí sería un error es un rojo Aguada en una pieza de Montevideo sin que la pieza hable de Aguada.",
+  "regla_firma": "**Una pieza se firma UNA vez.** O el #VIVÍLIFE grande cruzando la foto, o el logotipo LIFE MONTEVIDEO, o nada — nunca dos. En el feed, la marca de agua es la firma de las piezas de clima y de comunidad; el logotipo grande es de las piezas que presentan el club; y las de evento no llevan ninguno de los dos porque ya llevan la co-marca del sponsor.",
+  "sponsors": {
+    "_nota": "El feed tiene piezas co-marcadas: «PUMA × #VIVÍLIFE». El logo del sponsor NO se saca de internet ni se redibuja: va el archivo que manden. Si no lo mandaron, se escribe el nombre en texto, que es lo que la plantilla `evento` permite."
+  }
+}

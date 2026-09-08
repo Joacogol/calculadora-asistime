@@ -1,0 +1,97 @@
+{#- Lo que hay que decir con todas las letras: un plan, una promo, un cambio.
+
+    Es la plantilla de los datos. Reemplaza a las dos que había antes —una de
+    planes y una de promos— y las reemplaza por una sola razón: las dos
+    estaban armadas sobre un fondo de color a sangre, y en el feed de esta
+    cuenta **no hay una sola pieza de fondo pleno**. Ni una. Todo es foto
+    tratada con texto encima.
+
+    Así que un plan y una promo son la misma pieza: un titular, una lista de
+    lo que incluye o de qué hay que hacer, y la letra chica. Lo que cambia es
+    el contenido, no la estructura.
+
+    ── La letra chica no es opcional cuando hay una promesa ────────────
+
+    Hasta cuándo vale, para quién, si pide permanencia, con qué tarjeta. Es lo
+    primero que se reclama en el mostrador y lo último que alguien se acuerda
+    de pedir. Si el pedido no la trae, se pregunta antes de dar la pieza por
+    terminada. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set trat = d.tratamiento or 'barrido' -%}
+{%- set tinta = c.blanco if hay_foto else pal.tinta -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if hay_foto else '' -%}
+{%- set items = d.incluye.split('\n') | map('trim') | reject('equalto', '') | list -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 22 else (m.titulo * 0.76 if largo <= 44 else m.titulo * 0.58) -%}
+
+{% if hay_foto %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{% if trat != 'natural' %}
+<div class="grano"><svg width="100%" height="100%" preserveAspectRatio="none"
+  viewBox="0 0 1080 1080"><filter id="gr-av"><feTurbulence type="fractalNoise"
+  baseFrequency="0.85" numOctaves="3" seed="27"/></filter>
+  <rect width="1080" height="1080" filter="url(#gr-av)"/></svg></div>
+{% endif %}
+{#- Acá el velo es más alto que en las demás y a propósito: esta pieza tiene
+    una lista, o sea mucho texto chico, que es lo que peor se defiende sobre
+    una foto. Si eso deja la foto casi tapada, es la señal de que la pieza
+    quería ir sin foto. -#}
+{%- set plan = plan_titular(d.foto, pal.acento, c.negro, (0.0, 1.0), 4.5, 4.5) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.44]|max, 0.84) }}"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }}">
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ tinta if hay_foto else pal.acento }};
+    opacity:{{ 0.82 if hay_foto else 1 }};font-size:{{ m.rotulo }}px;
+    {{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  <div style="display:inline-block;max-width:100%">
+    <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
+      white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+    {% if d.subrayado %}
+    <div class="trazo" style="height:{{ cuerpo * 0.11 }}px;width:100%;
+      margin-top:{{ cuerpo * 0.10 }}px;background:{{ pal.acento }}"></div>
+    {% endif %}
+  </div>
+
+  {% if d.lema %}
+  <div class="v-susurro" style="color:{{ pal.acento }};font-size:{{ m.lema }}px;
+    margin-top:{{ m.lema * 0.6 }}px;{{ sombra_chica }}">{{ d.lema }}</div>
+  {% endif %}
+
+  {#- La lista. Sin viñetas ni iconos: una línea fina entre ítem e ítem, del
+      propio color del texto. Es lo único que la marca podría tener como
+      separador sin que se le note prestado de otra. -#}
+  {% if items %}
+  <div style="margin-top:{{ m.item * 1.6 }}px;max-width:{{ m.ancho_lista }}px;
+    color:{{ tinta }};font-size:{{ m.item }}px">
+    {% for it in items %}
+    <div class="body" style="padding:{{ m.item * 0.42 }}px 0;
+      {{ 'border-bottom:1px solid currentColor' if not loop.last else '' }};
+      opacity:.94;{{ sombra_chica }}">{{ it.strip() }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  <div class="row" style="width:100%;align-items:flex-end">
+    <div>
+      {{ firma(d.firma, m.iso, tinta, m.logo) }}
+      {% if d.pie %}
+      <div class="legal" style="color:{{ tinta }};opacity:.72;font-size:{{ m.legal }}px;
+        margin-top:{{ m.legal * 0.9 }}px;max-width:{{ m.ancho_lista }}px;
+        {{ sombra_chica }}">{{ d.pie }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

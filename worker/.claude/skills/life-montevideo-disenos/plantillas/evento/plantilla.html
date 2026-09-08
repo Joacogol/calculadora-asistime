@@ -1,0 +1,112 @@
+{#- El evento: un número gigante, un nombre y una fecha. Con sponsor, si hay.
+
+    Cubre las dos piezas de evento del feed, que son la misma estructura en
+    dos órdenes distintos:
+
+        60 ᵐⁱⁿ  ~trazo~        LIFE
+        NADO                   HYBRID
+        2DA. EDICIÓN           SESSION
+                               PUMA × #VIVÍLIFE
+                               SAB.
+                               12.09
+
+    En la primera el número abre y en la segunda cierra. No son dos plantillas:
+    es un campo, `orden`.
+
+    ── El número no es un texto ────────────────────────────────────────
+
+    Va en su propia voz, con cifras de ancho fijo y muy apretado, y la unidad
+    —«min»— sube como exponente en vez de ir al lado. Escrito «60 min» al mismo
+    cuerpo, el número deja de ser el que manda y la pieza se vuelve un rótulo.
+
+    ── El acento acá NO es el frambuesa por defecto ────────────────────
+
+    El nado va celeste y el hybrid verde, y eso sale de la paleta que se elija.
+    Es la regla de la marca, no una excepción de esta plantilla: el feed usa
+    el color de la actividad. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set trat = d.tratamiento or 'barrido' -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+
+{% if hay_foto %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{% if trat != 'natural' %}
+<div class="grano"><svg width="100%" height="100%" preserveAspectRatio="none"
+  viewBox="0 0 1080 1080"><filter id="gr-ev"><feTurbulence type="fractalNoise"
+  baseFrequency="0.85" numOctaves="3" seed="15"/></filter>
+  <rect width="1080" height="1080" filter="url(#gr-ev)"/></svg></div>
+{% endif %}
+{%- set plan = plan_titular(d.foto, pal.acento, c.negro, (0.10, 0.90), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.30]|max, 0.74) }}"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% endif %}
+
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.6) if hay_foto else '' -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo_t = m.titulo if largo <= 22 else (m.titulo * 0.76 if largo <= 40 else m.titulo * 0.60) -%}
+
+{#- El bloque del número, con su unidad de exponente y el trazo debajo. Se
+    define una vez y se usa arriba o abajo según `orden`: repetirlo en las dos
+    ramas es la forma segura de que un día queden distintos. -#}
+{% macro numero() %}
+{% if d.numero %}
+<div style="display:inline-block">
+  <div class="v-numero" style="color:{{ pal.acento }};font-size:{{ m.numero }}px;{{ sombra }}">
+    {{- d.numero -}}
+    {%- if d.unidad %}<span style="font-family:'MontM';font-weight:500;
+      text-transform:none;font-size:{{ m.numero * 0.145 }}px;vertical-align:super;
+      letter-spacing:0;margin-left:{{ m.numero * 0.02 }}px
+      ">{{ d.unidad }}</span>{% endif -%}
+  </div>
+  <div class="trazo" style="height:{{ m.numero * 0.048 }}px;width:100%;
+    margin-top:{{ m.numero * 0.05 }}px;background:{{ pal.acento }}"></div>
+</div>
+{% endif %}
+{% endmacro %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};align-items:center;
+  text-align:center">
+  <div class="grow"></div>
+
+  {% if d.orden == 'numero_primero' %}{{ numero() }}{% endif %}
+
+  <div class="v-{{ pal.voz }}" style="color:{{ pal.acento if d.titulo_en_color else pal.tinta }};
+    font-size:{{ cuerpo_t }}px;max-width:92%;white-space:pre-line;
+    margin-top:{{ m.titulo * 0.24 if d.orden == 'numero_primero' and d.numero else 0 }}px;
+    {{ sombra }}">{{ d.titulo }}</div>
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ pal.tinta }};opacity:.9;font-size:{{ m.rotulo }}px;
+    margin-top:{{ m.rotulo * 1.1 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  {#- La co-marca. En el feed es «PUMA × #VIVÍLIFE»: el nombre del sponsor, un
+      aspa, y el lockup de la marca dibujado. El aspa NO es una equis
+      tipográfica cualquiera — va más chica y con aire a los lados, que es lo
+      que la hace leer como «con» y no como una letra más. -#}
+  {% if d.sponsor %}
+  <div style="display:flex;align-items:center;justify-content:center;
+    gap:{{ m.sponsor * 0.55 }}px;margin-top:{{ m.sponsor * 1.6 }}px">
+    <div class="v-titulo" style="color:{{ pal.tinta }};font-size:{{ m.sponsor }}px;
+      {{ sombra_chica }}">{{ d.sponsor }}</div>
+    <div class="v-susurro" style="color:{{ pal.tinta }};opacity:.75;
+      font-size:{{ m.sponsor * 0.62 }}px;{{ sombra_chica }}">×</div>
+    <div class="agua" style="position:relative;width:{{ m.sponsor * 4.4 }}px;
+      height:{{ m.sponsor * 1.23 }}px;background:{{ pal.tinta }}"></div>
+  </div>
+  {% endif %}
+
+  {% if d.orden != 'numero_primero' %}
+  <div style="margin-top:{{ m.numero * 0.16 }}px">{{ numero() }}</div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  {% if d.pie %}
+  <div class="legal" style="color:{{ pal.tinta }};opacity:.72;font-size:{{ m.legal }}px;
+    max-width:82%;{{ sombra_chica }}">{{ d.pie }}</div>
+  {% endif %}
+</div>

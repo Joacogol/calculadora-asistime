@@ -1,0 +1,38 @@
+{
+ "id": "foto",
+ "nombre": "Foto",
+ "descripcion": "la foto tratada con la marca encima: el #VIVÍLIFE grande o el logotipo",
+ "cuando_usarla": "La pieza más común del feed. Una foto del club —la cancha de noche, la aérea, la sala— tratada, con la marca cruzándola y a lo sumo una línea baja en minúsculas. Sin titular: si hay algo que decir a los gritos es `manifiesto`, y si hay una fecha o un número es `evento`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 60, "linea": 30, "lockup": 1.9, "agua_x": 9,  "agua_alto": 132},
+  "vert":  {"alto": 1350, "pad": 64, "linea": 32, "lockup": 2.1, "agua_x": 8,  "agua_alto": 150},
+  "story": {"alto": 1920, "pad": 82, "linea": 36, "lockup": 2.6, "agua_x": 7,  "agua_alto": 190},
+  "reel":  {"alto": 1920, "pad": 82, "linea": 36, "lockup": 2.6, "agua_x": 7,  "agua_alto": 190}
+ },
+ "campos": [
+  {"id": "foto", "tipo": "imagen", "etiqueta": "La foto", "requerido": true,
+   "nota": "Ocupa toda la pieza. Del club: la sala, la piscina, las canchas, la fachada, gente entrenando."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%",
+   "nota": "Qué parte se conserva al recortar al formato. `50% 35%` sube el encuadre, que es lo que suele hacer falta cuando hay caras."},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["bn", "oscuro", "barrido", "natural"], "default": "oscuro",
+   "nota": "**Ninguna foto del feed sale cruda.** `bn` es blanco y negro con grano, el de la pieza de la corredora. `oscuro` baja la luz y deja el color, el de la cancha de noche. `barrido` desenfoca y oscurece, para cuando la foto es sólo textura debajo de un texto. `natural` existe para una excepción, no para el día a día."},
+  {"id": "linea", "tipo": "texto_largo", "etiqueta": "La línea baja", "default": "",
+   "ejemplo": "sos mucho más que eso",
+   "nota": "En MINÚSCULAS y corta. Es la única voz callada que tiene esta marca y funciona por ser la excepción: en mayúsculas o a cuerpo grande deja de ser lo que es. Va arriba."},
+  {"id": "marca", "tipo": "opcion", "etiqueta": "Con qué se firma",
+   "opciones": ["agua", "lockup", "ninguna"], "default": "agua",
+   "nota": "`agua` es el #VIVÍLIFE grande y translúcido cruzando la foto. `lockup` es LIFE MONTEVIDEO gigante arriba, como la pieza de la aérea: ahí el logo ES la pieza. **Nunca las dos**: una pieza se firma una vez."},
+  {"id": "donde_cruza", "tipo": "texto", "etiqueta": "Dónde cruza la marca de agua", "default": "58",
+   "nota": "Dónde cruza, en porcentaje desde arriba. 58 la deja en el tercio bajo, que es donde está en el feed. Subila si abajo pasa algo que no hay que tapar."},
+  {"id": "agua_color", "tipo": "opcion", "etiqueta": "Color de la marca de agua",
+   "opciones": ["blanco", "acento"], "default": "blanco",
+   "nota": "Blanco es lo normal. En acento sólo si la foto es en blanco y negro: sobre una foto en color, dos colores fuertes se pelean."},
+  {"id": "agua_opacidad", "tipo": "texto", "etiqueta": "Opacidad de la marca de agua", "default": "0.62",
+   "nota": "Entre 0 y 1. En el feed está translúcida: se lee la foto a través del trazo. Subila a 0.9 si la foto es muy movida y el trazo se pierde."},
+  {"id": "acento", "tipo": "opcion", "etiqueta": "Acento",
+   "opciones": ["frambuesa", "celeste", "outdoor", "blanco"], "default": "frambuesa",
+   "nota": "Frambuesa es el del club. Celeste para lo de la piscina y verde para hybrid y outdoor: el feed cambia el acento según de qué habla la pieza."}
+ ]
+}
