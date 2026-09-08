@@ -86,21 +86,33 @@
   </div>
   {% endif %}
 
-  {#- Los datos duros. Van pegados a la lista y NO empujados al fondo con un
-      `grow`, que fue el primer intento: la foto ocupa la mitad de abajo, así
-      que el bloque terminaba escrito en tinta oscura encima del camión y no
-      se leía nada. Se midió en el preview. Arriba, sobre el gris claro, se
-      leen; y la foto se queda con el espacio que sobra, que es justo lo que
-      hace la pieza real.
+  {#- Los datos duros, y DÓNDE van depende de si hay foto. Las dos posiciones
+      salieron de mirar una pieza real que estaba mal:
+
+      CON foto van pegados a la lista. Empujados al fondo con un `grow` —que
+      fue el primer intento— el bloque terminaba escrito en tinta oscura
+      encima del camión y no se leía nada.
+
+      SIN foto van abajo. La primera pieza que salió en producción fue un
+      «MAÑANA CERRADO» en story: sin foto, todo el contenido se apelotonó en
+      el tercio de arriba y quedaron 1.200 píxeles de gris vacío hasta el pie.
+      Se veía sin terminar. Un aviso de servicio es justamente el caso que más
+      va a salir sin foto, así que no es un borde raro: es el caso normal.
 
       Y no se inventan: si el pedido no los trae, salen los de las reglas de
       marca o no salen. -#}
+  {% if not hay_foto %}<div class="grow"></div>{% endif %}
   {% if d.datos %}
   <div class="body" style="color:{{ tinta }};opacity:.86;font-size:{{ m.dato }}px;
     margin-top:{{ m.dato * 1.7 }}px;white-space:pre-line;line-height:1.45">{{ d.datos }}</div>
   {% endif %}
 
-  <div class="grow"></div>
+  {#- El `grow` de abajo va SÓLO cuando hay foto. Con dos `grow` —uno arriba de
+      los datos y otro acá— el espacio sobrante se reparte en dos mitades y el
+      bloque queda flotando a media altura, que se ve peor que arriba del todo.
+      Con uno solo, los datos se apoyan sobre el pie y la pieza se lee como un
+      cartel: titular arriba, dato abajo. -#}
+  {% if hay_foto %}<div class="grow"></div>{% endif %}
 </div>
 
 <div style="position:absolute;left:0;right:0;bottom:0">
