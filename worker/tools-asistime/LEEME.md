@@ -172,7 +172,7 @@ El agente **605** tiene seis herramientas y ninguna se copió tal cual:
 | `corregir_diseno` | 2252 | la de Life, sin cambios más que la clave |
 | `montar_reel` | 2258 | **escrita para este cliente** — ver `montar_reel-larrique.js` |
 | `estado_reel` | 2259 | la de Boss, sin la rama de `crear_reel` |
-| `crear_video` | 2260 | **escrita para este cliente** — ver `crear_video-larrique.js` |
+| `crear_video` | 2278 | **escrita para este cliente** — ver `crear_video-larrique.js` |
 
 `montar_reel` es uno de los dos archivos que se guardan, y va contra la regla de
 arriba de no duplicar a propósito: **no es la misma tool con otra URL**. Acá el

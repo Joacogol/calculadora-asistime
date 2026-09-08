@@ -29,7 +29,7 @@
 //  opciones y devolverlas para que la persona elija. Antes que la foto, a
 //  propósito — la plata se decide primero y el material después.
 //
-//  Es la tool 2260 del tenant 80. Sus compañeras son `montar_reel` (2258) y
+//  Es la tool 2278 del tenant 80. Sus compañeras son `montar_reel` (2258) y
 //  `estado_reel` (2259).
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-reels";
