@@ -1,0 +1,41 @@
+{
+ "id": "banner",
+ "nombre": "Banner",
+ "descripcion": "el banner horizontal de la web y de Mercado Libre, con un solo mensaje y un botón",
+ "cuando_usarla": "Para la web y Mercado Libre, nunca para el feed. `wide` (1920×704) es el banner principal del home; `tira` (1500×250) es el secundario de Mercado Libre y sale como una sola línea. Un banner tiene UN mensaje y UN destino: si el pedido trae tres cosas, son tres banners. **Y no se hace estirando una pieza de feed** — el manual pide rediseñar cuando cambia la proporción.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "wide":  {"alto": 704, "pad": 62, "logo": 250, "rotulo": 21, "titulo": 96, "bajada": 30, "chip": 20, "aro": 40, "boton": 22, "ancho_texto": 60, "ancho_foto": 46},
+  "tira":  {"alto": 250, "pad": 40, "logo": 190, "rotulo": 16, "titulo": 46, "bajada": 22, "chip": 16, "aro": 30, "boton": 17, "ancho_texto": 96, "ancho_foto": 26},
+  "post":  {"alto": 1080, "pad": 58, "logo": 250, "rotulo": 21, "titulo": 96, "bajada": 30, "chip": 20, "aro": 40, "boton": 22, "ancho_texto": 78, "ancho_foto": 46},
+  "vert":  {"alto": 1350, "pad": 62, "logo": 250, "rotulo": 22, "titulo": 104, "bajada": 32, "chip": 21, "aro": 42, "boton": 23, "ancho_texto": 82, "ancho_foto": 46}
+ },
+ "_medidas": "`post` y `vert` están para el caso de que pidan «el banner también para el feed», pero la pieza de feed es `producto`: acá quedan sin el pie de contacto, que en Instagram sí hace falta.",
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "El titular", "requerido": true,
+   "ejemplo": "INGRESO",
+   "nota": "Un mensaje por banner. En `tira` tiene que entrar en UNA línea corta: «REPUESTOS EN STOCK, LISTOS PARA TU MÁQUINA»."},
+  {"id": "marca", "tipo": "texto", "etiqueta": "La marca o el complemento", "default": "",
+   "ejemplo": "CORREAS CONTINENTAL",
+   "nota": "La segunda línea, en el color del acento."},
+  {"id": "bajada", "tipo": "texto_largo", "etiqueta": "La bajada", "default": "",
+   "ejemplo": "Máxima tracción, mayor vida útil y rendimiento constante.",
+   "nota": "Sólo en `wide`. En `tira` no entra y la plantilla la ignora — no la achica hasta que no se lea, que es lo que el manual llama «texto pequeño imposible de leer»."},
+  {"id": "rotulo", "tipo": "texto", "etiqueta": "Sobretítulo", "default": "",
+   "nota": "Sólo en `wide`."},
+  {"id": "chips", "tipo": "texto_largo", "etiqueta": "Beneficios", "default": "",
+   "ejemplo": "TECNOLOGÍA ALEMANA\nMÁXIMA VIDA ÚTIL\nDESEMPEÑO SUPERIOR",
+   "nota": "Sólo en `wide`, en una fila abajo a la izquierda."},
+  {"id": "boton", "tipo": "texto", "etiqueta": "El botón", "default": "VER PRODUCTOS",
+   "nota": "El destino, en dos o tres palabras: «VER PRODUCTOS», «VER TIENDA», «BUSCAR POR VEHÍCULO». Un banner sin botón deja al que lo ve sin nada que hacer."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto", "default": "",
+   "nota": "Ocupa la derecha y se funde hacia el texto. Producto o depósito."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["natural", "tecnico", "oscuro", "fondo"], "default": "natural",
+   "nota": "En un banner la foto casi siempre es de producto y va `natural`: el degradado ya se encarga de que el texto caiga sobre color pleno."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["noche", "industrial", "agro", "socia", "clara"], "default": "noche"},
+  {"id": "acento", "tipo": "texto", "etiqueta": "Acento a mano", "default": ""}
+ ]
+}

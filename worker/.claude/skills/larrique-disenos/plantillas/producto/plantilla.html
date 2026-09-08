@@ -1,0 +1,163 @@
+{#- La pieza de todos los días: una categoría o un producto, con su marca.
+
+    Es el 60% del feed según el propio manual, y la que hay que mirar primero
+    si algo del sistema no cierra.
+
+    ── Dos composiciones, una sola plantilla ───────────────────────────
+
+    Las piezas reales de Larrique están armadas de dos maneras y las dos son
+    la misma pieza:
+
+      `sobre_foto`  la foto ocupa todo y el texto va encima, arriba a la
+                    izquierda. Es «RODAMIENTOS NTN» y «CORREAS CONTINENTAL».
+                    Va cuando la foto ya tiene fondo oscuro y ordenado.
+
+      `diagonal`    la pieza se corta en dos: bloque oscuro con el texto a la
+                    izquierda, gris claro con el producto recortado a la
+                    derecha, y el filo del color de la marca sobre el corte.
+                    Es «BOMBA DE COMBUSTIBLE» y «CRUCETAS». Va cuando la foto
+                    del producto viene con fondo blanco de catálogo — que es
+                    como llegan casi todas las de proveedor.
+
+    No son dos plantillas porque no cambia la jerarquía, cambia dónde entra la
+    foto. Dos plantillas serían dos lugares donde corregir el mismo pie.
+
+    ── El titular y la marca son DOS líneas, no una ────────────────────
+
+    «RODAMIENTOS» en blanco y «NTN» en azul debajo, al mismo cuerpo. Escrito
+    en un solo renglón —«Rodamientos NTN»— el nombre del proveedor deja de ser
+    el que manda y la pieza se vuelve un rótulo de góndola. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set diag = d.composicion == 'diagonal' -%}
+{%- set trat = d.tratamiento or ('natural' if diag else 'tecnico') -%}
+{%- set sombra = sombra_texto() if (hay_foto and not diag) else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if (hay_foto and not diag) else '' -%}
+{%- set tinta = pal.tinta -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 12 else (m.titulo * 0.78 if largo <= 20 else m.titulo * 0.6) -%}
+{#- En `diagonal` el texto vive en una columna angosta que ADEMÁS se angosta
+    hacia abajo, así que el mismo titular que entra sobre foto se sale del
+    bloque y termina en blanco sobre gris claro: ilegible. El ancho útil no es
+    el del corte de arriba, es el del corte de ABAJO más un poco — por eso hay
+    una medida propia y el cuerpo baja. Medido: sin esto, «COMBUSTIBLE» y la
+    bajada se cruzaban al lado claro. -#}
+{%- if diag %}{% set cuerpo = cuerpo * 0.66 %}{% endif -%}
+{%- set chips = d.chips.split('\n') | map('trim') | reject('equalto', '') | list -%}
+
+{#- El fondo. En `diagonal` la foto vive del lado claro y el fondo de la pieza
+    es el color pleno; en `sobre_foto` la foto es el fondo. -#}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if hay_foto and not diag %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+{%- set plan = plan_titular(d.foto, acento, c.noche, (0.10, 0.62), 4.5, 3.0) -%}
+<div class="scrim" style="background:{{ degrade([plan.velo, 0.30]|max, 0.78) }}"></div>
+{% else %}
+<div class="trama"></div>
+{% endif %}
+
+{% if diag %}
+{#- El lado claro con el producto. Va PRIMERO y a lienzo completo, y el bloque
+    oscuro se recorta encima: así el producto puede pasarse del corte —como en
+    las piezas reales, donde la cruceta invade el bloque— sin que haya que
+    calcular nada. -#}
+<div class="diag" style="background:{{ c.humo }}"></div>
+{% if hay_foto %}
+<img class="bg t-{{ trat }}" src="{{ d.foto }}"
+  style="object-fit:contain;object-position:{{ d.foco_producto }};
+    padding:{{ m.pad * 0.5 }}px;left:{{ m.corte_producto }}%;width:{{ 100 - m.corte_producto }}%">
+{% endif %}
+<div class="diag diag-bloque" style="background:{{ pal.fondo }};
+  --corte-arriba:{{ m.corte_arriba }}%;--corte-abajo:{{ m.corte_abajo }}%"></div>
+<div class="diag diag-filo" style="background:{{ acento }};
+  --corte-arriba:{{ m.corte_arriba }}%;--corte-abajo:{{ m.corte_abajo }}%;
+  --filo:{{ m.filo }}px"></div>
+{% endif %}
+
+{#- La cinta blanca del encabezado con el logo en color. La diagonal del borde
+    derecho es la misma inclinación que la del resto del sistema. -#}
+<div class="cinta" style="height:{{ m.cinta }}px;
+  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_seguro(fmt, m.pad) }};
+  clip-path:polygon(0 0,100% 0,calc(100% - {{ m.cinta * 0.44 }}px) 100%,0 100%)">
+  {{ firma('lockup', 1.0, none, m.logo / 300.0) }}
+</div>
+
+{% if d.categoria %}
+<div style="position:absolute;top:{{ m.cinta * 0.3 }}px;right:{{ m.pad }}px">
+  {{ pastilla(d.categoria, acento, c.blanco, m.badge) }}
+</div>
+{% endif %}
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  padding-top:{{ m.cinta + m.pad * 0.9 }}px;
+  padding-bottom:{{ m.pie + m.pad * 0.55 }}px">
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ acento }};font-size:{{ m.rotulo }}px;
+    margin-bottom:{{ m.rotulo * 0.9 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  <div style="max-width:{{ m.ancho_texto if diag else 92 }}%">
+    <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
+      white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+    {% if d.marca %}
+    <div class="v-marca" style="color:{{ acento }};font-size:{{ cuerpo }}px;
+      margin-top:{{ cuerpo * 0.03 }}px;{{ sombra }}">{{ d.marca }}</div>
+    {% endif %}
+
+    {% if d.bajada %}
+    <div class="v-bajada" style="color:{{ tinta }};opacity:.92;
+      font-size:{{ m.bajada }}px;margin-top:{{ m.bajada * 0.95 }}px;
+      max-width:100%;{{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  <div class="grow"></div>
+
+  {#- Los chips. En una pieza `diagonal` se quedan del lado oscuro, así que se
+      apilan en columna; sobre foto van en fila. -#}
+  {% if chips %}
+  <div class="chips" style="gap:{{ m.chip * 1.5 }}px;
+    {{ 'flex-direction:column;align-items:flex-start;max-width:%d%%' % m.ancho_texto if diag else '' }};
+    margin-bottom:{{ m.pad * 0.8 }}px">
+    {% for ch in chips %}
+    <div class="chip" style="gap:{{ m.aro * 0.34 }}px">
+      <div class="chip-aro" style="width:{{ m.aro }}px;height:{{ m.aro }}px">
+        {{ iso(m.aro / 92.0, acento) }}
+      </div>
+      <div class="chip-texto" style="color:{{ tinta }};font-size:{{ m.chip }}px;
+        {{ sombra_chica }}">{{ ch }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {#- La fila de logos de las marcas. Sólo la dibuja el motor si el pedido
+      trae rutas: el agente las arma con `assets/marcas/<marca>.png` y sólo
+      para las 26 que están en el kit.
+
+      Va sobre una PLACA BLANCA cuando el fondo es oscuro, y eso no es una
+      decisión de gusto: los 26 archivos son el logotipo de imprenta de cada
+      proveedor —tinta oscura sobre transparente, tal como los publica el
+      propio sitio de Larrique—, así que sobre el azul noche desaparecen. Se
+      midió: el de Continental, negro y rojo, era ilegible. La alternativa
+      sería pedirle a cada proveedor su versión en negativo; la placa es lo
+      que se puede hacer hoy sin inventar el logo de nadie. -#}
+  {% if d.logos %}
+  {%- set claro = pal.fondo|lower == c.humo|lower -%}
+  <div style="margin-bottom:{{ m.pad * 0.8 }}px;
+    {% if not claro %}background:{{ c.blanco }};padding:{{ m.logos_alto * 0.34 }}px
+    {{ m.logos_alto * 0.42 }}px;align-self:flex-start{% endif %}">
+    {{ fila_logos(d.logos.split('\n') | map('trim') | reject('equalto', '') | list,
+                  m.logos_alto, c.gris, false) }}
+  </div>
+  {% endif %}
+</div>
+
+{#- El pie de contacto, pegado abajo y a todo el ancho. Es lo que tienen en
+    común TODAS las piezas reales de esta marca, sin una sola excepción. -#}
+<div style="position:absolute;left:0;right:0;bottom:0">
+  {{ barra(m.pie, acento if d.pie_en_acento else c.azul) }}
+</div>

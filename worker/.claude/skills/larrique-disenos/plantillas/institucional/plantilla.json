@@ -1,0 +1,39 @@
+{
+ "id": "institucional",
+ "nombre": "Institucional",
+ "descripcion": "la empresa: trayectoria, depósito, equipo y locales, con la foto como protagonista",
+ "cuando_usarla": "Cuando la pieza habla de Larrique y no de lo que vende: los +50 años, un día en el depósito, el equipo, las instalaciones de los dos locales, una visita de proveedor, una capacitación, un «¿sabías que…?» de la empresa. Es el pilar donde la foto real manda. Si lo que se cuenta es un servicio concreto —envíos, cómo comprar—, es `servicio`.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "post":  {"alto": 1080, "pad": 58, "cinta": 96,  "logo": 240, "rotulo": 21, "numero": 168, "frase": 78, "bajada": 30, "pie_alto": 86,  "ancho_texto": 82},
+  "vert":  {"alto": 1350, "pad": 62, "cinta": 102, "logo": 250, "rotulo": 22, "numero": 190, "frase": 88, "bajada": 32, "pie_alto": 92,  "ancho_texto": 82},
+  "story": {"alto": 1920, "pad": 74, "cinta": 118, "logo": 280, "rotulo": 25, "numero": 240, "frase": 108, "bajada": 37, "pie_alto": 110, "ancho_texto": 88},
+  "reel":  {"alto": 1920, "pad": 74, "cinta": 118, "logo": 280, "rotulo": 25, "numero": 240, "frase": 108, "bajada": 37, "pie_alto": 110, "ancho_texto": 88}
+ },
+ "campos": [
+  {"id": "frase", "tipo": "texto_largo", "etiqueta": "La frase", "requerido": true,
+   "ejemplo": "EN EL RUBRO,\nMOVIENDO AL PAÍS",
+   "nota": "En mayúsculas. Si hay número, la frase lo completa: «+50 / AÑOS» arriba y «EN EL RUBRO, MOVIENDO AL PAÍS» debajo. Sin número, la frase sola sobre la foto."},
+  {"id": "numero", "tipo": "texto", "etiqueta": "El número", "default": "", "ejemplo": "+50",
+   "nota": "Lo más grande de la pieza. **El manual pide un dato concreto y no un número genérico**: si el pedido no lo trae verificado, preguntalo o dejalo vacío. Un «+1000 clientes» inventado es exactamente lo que la lista de errores del manual llama «inventar beneficios o datos técnicos»."},
+  {"id": "unidad", "tipo": "texto", "etiqueta": "La unidad", "default": "", "ejemplo": "AÑOS",
+   "nota": "«AÑOS», «MARCAS», «M²». Va al lado del número, chica y arriba."},
+  {"id": "bajada", "tipo": "texto_largo", "etiqueta": "La bajada", "default": "",
+   "nota": "Una o dos líneas: qué hay detrás del número o de la frase."},
+  {"id": "rotulo", "tipo": "texto", "etiqueta": "Sobretítulo", "default": "",
+   "ejemplo": "DETRÁS DE ESCENA"},
+  {"id": "persona", "tipo": "texto", "etiqueta": "Quién sale en la foto", "default": "",
+   "nota": "El nombre de quien aparece, en una chapita blanca. **Sólo si la persona lo autorizó** — el pedido lo trae, la plantilla no lo inventa."},
+  {"id": "area", "tipo": "texto", "etiqueta": "Su área", "default": "", "ejemplo": "Depósito"},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto", "default": "",
+   "nota": "**Acá la foto ES el contenido**: el depósito lleno, el mostrador, la fachada de un local, el equipo trabajando. Real y nítida. Una escena genérica de banco de imágenes en una pieza institucional se nota y hace exactamente lo contrario de lo que la pieza busca."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "tratamiento", "tipo": "opcion", "etiqueta": "Tratamiento de la foto",
+   "opciones": ["oscuro", "tecnico", "natural", "fondo"], "default": "oscuro",
+   "nota": "`oscuro` es lo normal: la foto se reconoce y el texto de abajo se lee. `tecnico` sube el contraste, para una foto de galpón plana."},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["noche", "industrial", "agro"], "default": "noche"},
+  {"id": "acento", "tipo": "texto", "etiqueta": "Acento a mano", "default": "",
+   "nota": "`industrial` si la pieza es de la División Industrial: es la forma de que el local se reconozca sin escribirlo dos veces."}
+ ]
+}

@@ -1,0 +1,16 @@
+<!-- El símbolo de Larrique: dos anillos concéntricos.
+
+     No está trazado de un mapa de bits: está DIBUJADO con las medidas del
+     logotipo oficial, porque son dos circunferencias perfectas y un trazado
+     automático sólo les agregaría temblor. Medido sobre el PNG del manual
+     2026 (símbolo de 703 px de lado): anillo exterior con radio medio 324 y
+     trazo 55; anillo interior con radio medio 196 y trazo 56.
+
+     El color va en el marcador CURRENT, así que el símbolo sale del color que
+     le pidan. El manual lo permite: el símbolo aislado es recurso gráfico,
+     avatar y favicon. El LOCKUP es el que tiene sólo dos versiones y por eso
+     es un par de PNG y no un vector pintable. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 702" fill="none">
+  <circle cx="351" cy="351" r="324" stroke="CURRENT" stroke-width="55"/>
+  <circle cx="351" cy="351" r="196" stroke="CURRENT" stroke-width="56"/>
+</svg>

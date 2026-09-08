@@ -1,0 +1,98 @@
+{#- La pieza que enseña: señales de cambio, diagnóstico, compatibilidad.
+
+    Cubre dos pilares del manual que son el mismo tipo de pieza:
+
+      · «Señales de cambio / diagnóstico» — «3 señales de que tu suspensión
+        pide cambio», «¿Ruido, vibración o juego? Puede ser el rulemán».
+      · «Compatibilidad» — «Compatible con: Corolla · Hilux · Gol · Onix».
+
+    Los dos son un titular y una lista. Es el contenido de más guardado del
+    feed y el que trae búsquedas, así que es la única plantilla pensada para
+    que el texto sea lo más grande de la pieza y la foto quede de fondo.
+
+    ── La lista se numera o no, y cambia lo que la pieza promete ───────
+
+    Numerada, el titular tiene que decir cuántas son y la cantidad tiene que
+    coincidir: «3 señales» con cuatro ítems es un error que se ve desde el
+    feed. Sin numerar, es un listado abierto —modelos compatibles, síntomas—
+    y ahí el anillo de la marca hace de viñeta. -#}
+
+{%- set pal = paleta(d.estilo) -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set hay_foto = d.foto|length > 0 -%}
+{%- set tinta = pal.tinta -%}
+{%- set sombra = sombra_texto() if hay_foto else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if hay_foto else '' -%}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 26 else (m.titulo * 0.8 if largo <= 46 else m.titulo * 0.62) -%}
+{%- set puntos = d.lista.split('\n') | map('trim') | reject('equalto', '') | list -%}
+
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+{% if hay_foto %}
+<img class="bg t-{{ d.tratamiento or 'fondo' }}" src="{{ d.foto }}"
+  style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:{{ degrade(0.52, 0.84) }}"></div>
+{% else %}
+<div class="trama"></div>
+{% endif %}
+
+<div class="cinta" style="height:{{ m.cinta }}px;background:transparent;
+  padding:0 0 0 {{ pad_seguro(fmt, m.pad) }}">
+  {{ firma('lockup', 1.0, c.blanco, m.logo / 300.0) }}
+</div>
+
+<div class="pad" style="padding:{{ pad_seguro(fmt, m.pad) }};
+  padding-top:{{ m.cinta + m.pad * 0.9 }}px;
+  padding-bottom:{{ m.pie_alto + m.pad * 0.55 }}px">
+
+  {% if d.rotulo %}
+  <div class="v-seca" style="color:{{ acento }};font-size:{{ m.rotulo }}px;
+    margin-bottom:{{ m.rotulo * 0.9 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
+  {% endif %}
+
+  <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
+    max-width:{{ m.ancho_texto }}%;white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+
+  {% if d.bajada %}
+  <div class="v-bajada" style="color:{{ tinta }};opacity:.9;font-size:{{ m.bajada }}px;
+    margin-top:{{ m.bajada * 1.0 }}px;max-width:{{ m.ancho_texto }}%;
+    {{ sombra_chica }}">{{ d.bajada }}</div>
+  {% endif %}
+
+  {#- La lista. Sin viñetas de icono: o el número en el color del acento, o el
+      anillo del símbolo. Entre ítem e ítem una línea fina del propio color
+      del texto, que es lo único que esta identidad puede usar como separador
+      sin que se le note prestado. -#}
+  {% if puntos %}
+  <div style="margin-top:{{ m.item * 1.7 }}px;max-width:{{ m.ancho_lista }}%">
+    {% for pt in puntos %}
+    <div style="display:flex;align-items:baseline;gap:{{ m.item * 0.72 }}px;
+      padding:{{ m.item * 0.56 }}px 0;
+      {{ 'border-bottom:1px solid currentColor' if not loop.last else '' }};
+      color:{{ tinta }};opacity:.94">
+      {% if d.numerada %}
+      <div class="v-numero" style="color:{{ acento }};font-size:{{ m.item * 1.24 }}px;
+        min-width:{{ m.item * 1.1 }}px;{{ sombra_chica }}">{{ loop.index }}</div>
+      {% else %}
+      <div class="chip-aro" style="width:{{ m.item * 1.05 }}px;height:{{ m.item * 1.05 }}px;
+        align-self:center">{{ iso(m.item * 1.05 / 92.0, acento) }}</div>
+      {% endif %}
+      <div class="v-bajada" style="font-size:{{ m.item }}px;{{ sombra_chica }}">{{ pt }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="grow"></div>
+
+  {#- El cierre: qué tiene que hacer quien lee. En una pieza educativa es lo
+      único comercial que hay, y por eso va solo y abajo. -#}
+  {% if d.cierre %}
+  <div class="v-seca" style="color:{{ acento }};font-size:{{ m.cierre }}px;
+    max-width:{{ m.ancho_texto }}%;{{ sombra_chica }}">{{ d.cierre }}</div>
+  {% endif %}
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0">
+  {{ barra(m.pie_alto, c.azul) }}
+</div>

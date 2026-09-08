@@ -1,0 +1,134 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Arch',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* El ancho lo pone la ventana y no un número fijo. Todas las otras marcas
+   escriben `width:1080px` acá, y con eso el motor sólo puede hacer piezas
+   verticales o cuadradas. Larrique necesita además los banners de la web
+   (1920x704) y de Mercado Libre (1500x250), y el motor ya abre la ventana con
+   las medidas del formato — `w, h = marca.FORMATOS[fmt]` en render.py — así
+   que basta con dejar que el lienzo la ocupe. En vertical no cambia nada: la
+   ventana mide 1080 y el lienzo también. */
+.canvas{width:100%;position:relative;overflow:hidden;background:#071426}
+.pad{position:absolute;inset:0;display:flex;flex-direction:column}
+.row{display:flex;align-items:center;justify-content:space-between}
+.grow{flex:1}
+
+/* ── LAS VOCES ──────────────────────────────────────────────────────────
+   El manual declara Dongle como tipografía secundaria y «una sans operativa»
+   para lo digital, y eso es cierto para un documento. Pero ninguna de las
+   piezas reales usa Dongle en un titular: los titulares son mayúsculas de un
+   grotesco ANGOSTO, PESADO e ITÁLICO — «MAZAS DE RUEDA», «INGRESÓ»,
+   «EXTRACTORES», «BOMBA DE COMBUSTIBLE». Esa inclinación no es un adorno: es
+   lo que el manual llama «diagonales / movimiento», el mismo recurso que
+   corta las piezas en dos. Un titular derecho acá se ve de otra marca.
+
+   Archivo tiene eje de ancho y una itálica dibujada de verdad (no una
+   inclinación sintética, que en un peso 900 abre los contrapunzones y ensucia
+   la palabra), así que las cinco voces salen de dos archivos. */
+
+/* La de todos los titulares. Angosta, negra, itálica, mayúsculas y con las
+   líneas casi pegadas: las palabras se apilan como bloques. */
+.v-titulo{font-family:'ArchIt';font-variation-settings:'wdth' 76,'wght' 800;
+  letter-spacing:-.015em;line-height:.88;text-transform:uppercase}
+/* El nombre del proveedor cuando va en su color, debajo del titular: la
+   segunda línea de «CORREAS / CONTINENTAL». Un punto más ancha que el
+   titular, porque un nombre propio angosto se lee peor que una palabra
+   común: el ojo no puede completarlo. */
+.v-marca{font-family:'ArchIt';font-variation-settings:'wdth' 84,'wght' 900;
+  letter-spacing:-.02em;line-height:.88;text-transform:uppercase}
+/* Los números: «+50» años, un «25%», una cantidad. Anchos y con cifras de
+   ancho fijo para que no bailen, y SIN itálica — un número inclinado a cuerpo
+   grande se lee como un precio de liquidación. */
+.v-numero{font-family:'Arch';font-variation-settings:'wdth' 104,'wght' 900;
+  letter-spacing:-.04em;line-height:.82;font-variant-numeric:tabular-nums}
+/* La bajada: dos o tres líneas, ancho normal, peso medio, caja baja. Es la
+   única voz de la marca que no grita. */
+.v-bajada{font-family:'Arch';font-variation-settings:'wdth' 100,'wght' 500;
+  letter-spacing:-.005em;line-height:1.3}
+/* Rótulos, badges y el pie: mayúsculas muy espaciadas y chicas. Es la voz de
+   «SOLUCIONES QUE TE MANTIENEN EN MOVIMIENTO» debajo del logo. Nunca un
+   titular: espaciada y a cuerpo grande no se lee, se descifra. */
+.v-seca{font-family:'Arch';font-variation-settings:'wdth' 92,'wght' 700;
+  letter-spacing:.16em;text-transform:uppercase;line-height:1.25}
+
+/* Los dos cuerpos de texto que usan los componentes del motor. */
+.body{font-family:'Arch';font-variation-settings:'wdth' 100,'wght' 500;
+  line-height:1.32}
+.legal{font-family:'Arch';font-variation-settings:'wdth' 100,'wght' 400;
+  line-height:1.3}
+.kicker{font-family:'Arch';font-variation-settings:'wdth' 92,'wght' 700;
+  letter-spacing:.16em;text-transform:uppercase}
+.precio{font-family:'Arch';font-variation-settings:'wdth' 104,'wght' 900;
+  line-height:.82;font-variant-numeric:tabular-nums}
+.disp-x{font-family:'Arch';font-variation-settings:'wdth' 100,'wght' 800}
+
+/* ── LA FOTO ────────────────────────────────────────────────────────────
+   Acá el tratamiento NO es un filtro de estilo como en un club: el manual
+   pide que el producto sea fiel —«forma, marca, empaque y detalles técnicos
+   deben coincidir con el producto real»— así que una foto de producto va
+   NATURAL. Lo que se oscurece es la foto de CONTEXTO que hace de fondo: el
+   depósito, el taller, el campo. Ahí el tratamiento no decora, deja leer. */
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.t-natural{}
+.t-oscuro{filter:brightness(.55) saturate(.88)}
+/* El look de las piezas de depósito: baja la luz, saca algo de color y sube
+   el contraste. Es lo que hace que una foto de galpón se vea técnica y no
+   simplemente mal iluminada. */
+.t-tecnico{filter:brightness(.58) saturate(.72) contrast(1.14)}
+/* Cuando la foto es sólo textura debajo de un titular enorme. */
+.t-fondo{filter:brightness(.46) saturate(.7) blur(7px)}
+.scrim{position:absolute;inset:0;pointer-events:none}
+
+/* ── LA DIAGONAL ────────────────────────────────────────────────────────
+   El recurso gráfico de la marca, y el que más trabaja. En las piezas reales
+   corta la pieza en dos: el bloque oscuro con el texto de un lado, el gris
+   claro con el producto del otro, y una franja fina del color de la marca
+   sobre el corte.
+
+   Va con `clip-path` y no con un `transform: rotate` de un rectángulo porque
+   rotar deja las esquinas fuera del lienzo y hay que agrandar el rectángulo a
+   ojo: a la primera pieza de otra proporción, se ve la punta. */
+.diag{position:absolute;inset:0;pointer-events:none}
+/* El bloque oscuro ocupa la izquierda; el corte baja de derecha a izquierda.
+   `--corte-arriba` y `--corte-abajo` son el porcentaje de ancho donde el
+   corte toca cada borde, y se pisan desde la plantilla o desde un retoque. */
+.diag-bloque{position:absolute;inset:0;
+  clip-path:polygon(0 0,var(--corte-arriba,62%) 0,var(--corte-abajo,30%) 100%,0 100%)}
+/* La franja del color sobre el corte. Es la misma figura corrida unos píxeles
+   a la derecha, así que sigue exactamente el mismo ángulo sin calcularlo. */
+.diag-filo{position:absolute;inset:0;
+  clip-path:polygon(var(--corte-arriba,62%) 0,calc(var(--corte-arriba,62%) + var(--filo,14px)) 0,
+    calc(var(--corte-abajo,30%) + var(--filo,14px)) 100%,var(--corte-abajo,30%) 100%)}
+
+/* La trama de rayas finas del fondo de la pieza de mazas: diagonales del
+   mismo azul, apenas más claras que el azul noche. Muy suave a propósito —
+   una trama que se nota compite con el producto. */
+.trama{position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(115deg,
+    rgba(255,255,255,.045) 0 3px,transparent 3px 26px)}
+
+/* ── LOS CHIPS DE BENEFICIO ─────────────────────────────────────────────
+   «ALTA CALIDAD Y DURABILIDAD», «TECNOLOGÍA ALEMANA», «ENVÍOS A TODO EL
+   PAÍS». En las piezas reales cada uno lleva un icono dentro de un círculo.
+
+   Acá el círculo es el ANILLO DEL PROPIO SÍMBOLO y no un icono descargado, y
+   eso no es una economía: un set de iconos de terceros mete un tercer estilo
+   de dibujo en una identidad que tiene el suyo, y el manual pide que cada
+   recurso refuerce «precisión, movimiento o tecnología». El anillo hace las
+   tres cosas y ya es de la marca. Si algún día mandan su set de iconos, se
+   dibuja adentro del anillo sin tocar nada más. */
+.chips{display:flex;flex-wrap:wrap}
+.chip{display:flex;align-items:center}
+.chip-aro{flex:none;display:flex;align-items:center;justify-content:center}
+.chip-texto{font-family:'Arch';font-variation-settings:'wdth' 92,'wght' 700;
+  text-transform:uppercase;letter-spacing:.05em;line-height:1.16}
+
+/* La cinta blanca del encabezado, con el borde derecho en diagonal. Es el
+   remate que tienen todas las piezas del sistema de contenidos: el logo en su
+   versión de color sobre blanco, arriba a la izquierda. */
+.cinta{position:absolute;top:0;left:0;display:flex;align-items:center;
+  background:#FFFFFF}
+
+/* El pie de contacto. Ocupa todo el ancho y va del color del acento: es lo
+   último que se lee y lo único que la pieza pide hacer. */
+.pie{width:100%;display:flex;align-items:center;justify-content:center}
