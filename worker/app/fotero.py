@@ -228,6 +228,26 @@ def _pedir(ruta: str, cuerpo: dict | None = None, metodo: str = "POST",
 
 # ═══ 1. Pedir la edición ═════════════════════════════════════════════════════
 
+#: Con qué se presenta el worker al bajar una foto de afuera.
+#:
+#: Sin esto `urllib` se anuncia como «Python-urllib/3.11», y hay CDN que a ese
+#: nombre le contestan 403 y a un navegador 200. El 8/9/2026 costó entender por
+#: qué una foto de producto de larrique.com.uy —que se abre perfecto en el
+#: navegador— hacía fallar el editor con «HTTP Error 403: Forbidden»: la foto
+#: estaba bien, el que no gustaba era el que la pedía.
+#:
+#: No es un disfraz para saltarse un bloqueo: es una petición normal de un
+#: cliente que va a mostrar la imagen, que es exactamente lo que hacemos.
+NAVEGADOR = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+
+
+def _abrir(url: str, timeout: int):
+    """`urlopen` presentándose como un navegador. Ver NAVEGADOR."""
+    pedido = urllib.request.Request(url, headers={"User-Agent": NAVEGADOR})
+    return urllib.request.urlopen(pedido, timeout=timeout)
+
+
 def medidas(url: str) -> tuple[int, int]:
     """El ancho y el alto de una foto, sin bajarla entera si se puede evitar.
 
@@ -236,7 +256,7 @@ def medidas(url: str) -> tuple[int, int]:
     cuántos agregar.
     """
     from PIL import Image
-    with urllib.request.urlopen(url, timeout=60) as r:
+    with _abrir(url, 60) as r:
         return Image.open(io.BytesIO(r.read())).size
 
 
@@ -423,8 +443,51 @@ def estado(fila: dict) -> tuple[str, str | None]:
     return est, url
 
 
+def _nuestra(url: str) -> bool:
+    """¿La foto ya vive en nuestro Storage?
+
+    Si sí, no hace falta copiarla: es pública, estable y Magnific la baja sin
+    problema. Es el caso de todo lo que sale de una edición anterior o del
+    banco de fotos.
+    """
+    return "/storage/v1/object/public/" in (url or "")
+
+
+def copiar_entrante(fila: dict, subir) -> str:
+    """Copia la foto de origen a NUESTRO bucket y devuelve esa URL.
+
+    Existe porque Magnific baja la foto por su cuenta: le pasamos una URL y va
+    a buscarla. Cuando esa URL es de un sitio ajeno, lo que llega es el error
+    de ELLOS bajándola —«Value cannot be null (Parameter 'pointer')»— que no
+    dice nada de lo que realmente pasó. El 8/9/2026 una foto de producto de
+    larrique.com.uy, que se abre perfecto en un navegador, hacía fallar el
+    recorte así.
+
+    Copiándola primero, Magnific siempre baja de un bucket público nuestro y el
+    único que puede fallar bajando es este worker —que sí sabe explicar por
+    qué—. Y de paso arregla el otro problema de siempre: la URL que da un chat
+    suele estar firmada por unos minutos y para cuando hay cola ya no existe.
+
+    Una foto que ya es nuestra no se copia: sería pagar dos veces el mismo
+    archivo por nada.
+    """
+    foto = (fila.get("foto") or "").strip()
+    if not foto or _nuestra(foto):
+        return foto
+    with tempfile.TemporaryDirectory() as tmp:
+        local = bajar(foto, pathlib.Path(tmp) / "entrante")
+        with open(local, "rb") as f:
+            cabeza = f.read(12)
+        ext = (".png" if cabeza[:4] == b"\x89PNG" else
+               ".webp" if cabeza[:4] == b"RIFF" and cabeza[8:12] == b"WEBP" else
+               ".jpg")
+        final = local.with_suffix(ext)
+        local.rename(final)
+        return subir(final, f"entrantes/{fila['id']}{ext}")
+
+
 def bajar(url: str, destino: pathlib.Path) -> pathlib.Path:
-    with urllib.request.urlopen(url, timeout=180) as r, open(destino, "wb") as f:
+    with _abrir(url, 180) as r, open(destino, "wb") as f:
         f.write(r.read())
     return destino
 
@@ -589,6 +652,11 @@ def atender_todos(cli, ficha: dict, subir) -> int:
         if not _tomar(cli, fila["id"], "pendiente", "trabajando"):
             continue
         try:
+            # La foto de origen se copia a nuestro bucket ANTES de pedir nada:
+            # Magnific la baja por su cuenta y un sitio ajeno le puede decir
+            # que no. Ver `copiar_entrante`.
+            if fila.get("foto"):
+                fila["foto"] = copiar_entrante(fila, subir)
             tarea, url = pedir(fila)
             if url:
                 # Sync: ya está. Se baja y se sube en la misma corrida porque

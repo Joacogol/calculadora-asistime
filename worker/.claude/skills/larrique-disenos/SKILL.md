@@ -178,6 +178,28 @@ camión saliendo, el taller — y siempre con la instrucción de no dibujar ning
 texto ni cartel. Para el producto está `montar_reel` con las fotos reales, que
 además no gasta un crédito.
 
+## Recortar el producto es el paso que más rinde
+
+Las fotos de catálogo de proveedor llegan casi todas **sobre fondo blanco**, y la
+composición `diagonal` de `producto` —el corte en dos con el repuesto sobre el
+gris claro— está hecha para un producto **recortado**. El verbo `fondo` de
+`editar_foto` es el puente entre las dos cosas: cuesta 3 créditos, tarda
+segundos, y es el único que no redibuja un solo píxel del producto.
+
+Los otros dos que este cliente va a usar todo el tiempo son `tamano` —una foto
+de celular o de una web vieja— y `formato`, para llevar una horizontal a story
+sin recortarle nada.
+
+⚠️ **`retoque`, `escena` y `formato` REDIBUJAN parte de la imagen.** Sobre una
+foto de contexto no hay problema; sobre un producto hay que mirar el resultado
+contra el real antes de publicarlo. `fondo` y `tamano` no tienen ese riesgo.
+
+**Y una foto de un sitio ajeno hay que copiarla antes de mandarla a Magnific.**
+Magnific la baja por su cuenta, y contra una URL de otro dominio devuelve un
+error suyo que no explica nada. Lo hace el worker solo desde el 8/9/2026 —ver
+`fotero.copiar_entrante`— y de paso se presenta como un navegador: larrique.com.uy
+le contestaba 403 al «Python-urllib» con el que `urlopen` se anuncia solo.
+
 ## Lo que todavía falta
 
 - **El banco de fotos.** Larrique todavía no lo mandó; se irá agregando. Las
@@ -203,5 +225,5 @@ En Asistime es el tenant **80**, que ya tenía un agente de atención en
 producción. El diseñador es el agente **605**, creado el 8/9/2026 sin pipeline
 por pedido de Joaquín. Tiene su prompt, los dos documentos —reglas de marca y
 catálogo de plantillas— y seis herramientas: `crear_diseno`, `estado_diseno`,
-`corregir_diseno`, `montar_reel`, `crear_video` y `estado_reel`. Ver
-`tools-asistime/LEEME.md`.
+`corregir_diseno`, `montar_reel`, `crear_video`, `estado_reel`, `editar_foto` y
+`estado_foto`. Ver `tools-asistime/LEEME.md`.

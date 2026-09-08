@@ -898,7 +898,15 @@ def _tiene_audio(clip: pathlib.Path) -> bool:
 
 def bajar(url: str, destino: pathlib.Path) -> pathlib.Path:
     """Baja el clip. Ojo: la URL de Magnific caduca a las 24 horas."""
-    with urllib.request.urlopen(url, timeout=180) as r, open(destino, "wb") as f:
+    # Con un User-Agent de navegador, no con el «Python-urllib/3.11» que pone
+    # `urlopen` solo: hay CDN que a ese nombre le contestan 403 y a un navegador
+    # 200, y entonces un clip que se abre perfecto en el navegador no se puede
+    # bajar acá. Le pasó al editor de fotos el 8/9/2026 con larrique.com.uy.
+    pedido = urllib.request.Request(
+        url, headers={"User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")})
+    with urllib.request.urlopen(pedido, timeout=180) as r, open(destino, "wb") as f:
         f.write(r.read())
     return destino
 

@@ -163,7 +163,7 @@ republica solo en cada despliegue.
 
 ## Larrique (tenant 80), 8/9/2026
 
-El agente **605** tiene seis herramientas y ninguna se copió tal cual:
+El agente **605** tiene ocho herramientas y ninguna se copió tal cual:
 
 | Tool | Id | De dónde salió |
 |---|---|---|
@@ -173,6 +173,8 @@ El agente **605** tiene seis herramientas y ninguna se copió tal cual:
 | `montar_reel` | 2258 | **escrita para este cliente** — ver `montar_reel-larrique.js` |
 | `estado_reel` | 2259 | la de Boss, sin la rama de `crear_reel` |
 | `crear_video` | 2278 | **escrita para este cliente** — ver `crear_video-larrique.js` |
+| `editar_foto` | 2279 | **escrita para este cliente** — ver `editar_foto-larrique.js` |
+| `estado_foto` | 2280 | la de Life, con la clave y una línea más cuando el verbo fue `fondo` |
 
 `montar_reel` es uno de los dos archivos que se guardan, y va contra la regla de
 arriba de no duplicar a propósito: **no es la misma tool con otra URL**. Acá el
@@ -206,6 +208,28 @@ expresión deja de compilar como se esperaba y nunca dispara. Ya pasó con la
 guarda de fotos de `crear_diseno`.
 
 Y hay una diferencia más chica con la de Asistime: cuando falta la foto de
-partida, la de Asistime ofrece armarla con `crear_foto`. Acá no, porque el 605
-no tiene esa tool y ofrecerla sería prometer algo que no existe — pide una foto
-del chat o el link de una que ya esté en larrique.com.uy.
+partida, la de Asistime ofrece armarla con `crear_foto`. Acá el equivalente es
+`editar_foto` en modo `crear`, y el prompt lo dice — además de la foto del chat
+o el link de una que ya esté en larrique.com.uy.
+
+`editar_foto` es el tercer archivo que se guarda, y también por dos diferencias
+de fondo con la de Life (2244):
+
+**Acá SÍ está el verbo `crear`.** En Life se dejó afuera porque sus fotos son de
+socios reales y una cara generada publicada como si fuera un socio es un
+problema distinto al de una pieza fea. Larrique no fotografía gente: fotografía
+repuestos, y lo que necesita inventar es AMBIENTE —el pasillo del depósito, el
+mostrador, el taller—, donde no hay nadie a quien suplantar. Con la misma guarda
+que `crear_video`: no dibuja productos, y frena antes de gastar.
+
+**`fondo` es el verbo estrella y la tool lo dice.** Las fotos de catálogo de
+proveedor llegan casi todas con fondo blanco, y la composición `diagonal` de la
+plantilla `producto` está hecha para un producto recortado sobre el gris claro.
+`fondo` es el paso que faltaba entre las dos cosas, cuesta 3 créditos, y es el
+único verbo que no redibuja un solo píxel del producto: lo recorta. `estado_foto`
+lo remata con una línea extra cuando el verbo fue ése.
+
+La tool además marca `retoque`, `escena` y `formato` como los que REDIBUJAN
+parte de la imagen, y hace que el agente avise que hay que mirar el resultado
+contra el producto real. No se prohíben —una foto de contexto se retoca
+tranquila— pero en este rubro el aviso no es opcional.
