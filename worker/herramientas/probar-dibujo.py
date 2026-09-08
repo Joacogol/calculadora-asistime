@@ -442,6 +442,39 @@ if puede_mirar:
     except Exception as e:
         ok("se pudo medir el isotipo", False, e)
 
+# ── `pad_lado` devuelve UN valor, y por eso existe ───────────────────────
+#
+# `pad_seguro` devuelve el atajo entero —«250px 60px 250px 60px»— y adentro de
+# otro atajo eso es CSS inválido: `padding: 0 20px 0 250px 60px 250px 60px` lo
+# tira el navegador entero y sin avisar. El 8/9/2026 salió publicada una story
+# de Larrique con el logotipo pegado al borde y la última letra comida por el
+# corte en diagonal de la cinta, por exactamente eso.
+#
+# Sólo se rompía en `story` y `reel`, que son los dos formatos con zona segura,
+# así que en `post` y `vert` —donde se prueba casi todo— no se veía.
+print("\n■ El margen lateral entra adentro de un atajo de padding")
+try:
+    from motor import componentes as _comp
+
+    class _Falsa:
+        ZONAS_SEGURAS = None
+
+    lado = _comp.pad_lado(_Falsa())
+    entero = _comp.pad_seguro(_Falsa())
+    for fmt in ("story", "reel", "post"):
+        uno = lado(fmt, 74)
+        ok(f"`pad_lado` en {fmt} es un solo valor", uno.count("px") == 1, uno)
+    ok("`pad_seguro` en story sigue devolviendo los cuatro",
+       entero("story", 74).count("px") == 4, entero("story", 74))
+    ok("y en story respeta la zona segura de Instagram",
+       lado("story", 10) == "60px", lado("story", 10))
+    ok("pero nunca achica lo que pidió la plantilla",
+       lado("story", 120) == "120px", lado("story", 120))
+    ok("`pad_lado` está publicado para las plantillas",
+       "pad_lado" in _comp.TODOS, sorted(_comp.TODOS)[:4])
+except Exception as e:                                           # noqa: BLE001
+    ok("se pudo probar pad_lado", False, e)
+
 print("\n  todo bien" if not fallos else f"\n  {len(fallos)} fallo(s): "
       + ", ".join(fallos))
 sys.exit(1 if fallos else 0)

@@ -63,6 +63,40 @@ manual y hay que corregirlos.
 foto con fondo oscuro, y `diagonal` —el corte en dos con el producto sobre gris
 claro— para las fotos de catálogo de proveedor, que vienen con fondo blanco.
 
+⚠️ **`diagonal` no va con la paleta `clara`.** El corte separa un lado oscuro de
+uno claro; con `clara` los dos lados quedan del mismo gris, el filo del acento
+no separa nada y el titular sale en tinta oscura sobre gris — una pieza del
+manual viejo con una raya encima. Salió publicada así el 8/9/2026 y no fue un
+error del agente: pidió «fondo claro» y `clara` es la paleta de fondo claro. La
+plantilla ahora lo corrige sola pasando a `noche` y conservando el acento. Si de
+verdad la quieren clara, la composición es `sobre_foto`.
+
+## Dos cosas que se rompieron en `story` y en ningún otro formato
+
+Las dos salieron de la misma pieza publicada, y las dos se veían sólo en story
+y reel — que son los formatos con zona segura de Instagram, y justo los que
+menos se prueban.
+
+**El logotipo salía cortado: «LARRIQU».** Las cinco plantillas escribían la
+cinta del encabezado como `padding: 0 Xpx 0 {{ pad_seguro(fmt, m.pad) }}`, y
+`pad_seguro` devuelve el atajo ENTERO —«250px 60px 250px 60px»—. Adentro de otro
+atajo eso es CSS inválido y el navegador lo tira completo, sin avisar: la cinta
+se quedaba sin margen, el logo se pegaba al borde izquierdo y el corte en
+diagonal de la propia cinta se comía la última letra. En `post` y `vert` no
+pasaba porque ahí no hay zona segura y `pad_seguro` devuelve un valor solo. Para
+eso está ahora `pad_lado`, que devuelve el lateral y nada más.
+
+**El titular se pasaba del corte.** El cuerpo se elegía contando las letras del
+titular entero, y eso no alcanza con UNA palabra larga: «AMORTIGUADORES» no se
+puede partir en dos renglones, así que el `max-width` no la achica —la deja
+pasar de largo— y terminaba en blanco sobre el gris claro del otro lado. Ahora
+se mide la palabra más larga y se achica hasta que entre.
+
+De paso se arregló algo que no era un error pero se veía mal: el titular usaba
+el ancho de los CHIPS, que van abajo del todo, donde el corte ya se comió medio
+lienzo. El titular vive arriba, donde el bloque llega al 70% y no al 34%, así
+que salía a la mitad del cuerpo que le entraba.
+
 ## El acento dice de qué habla la pieza
 
 No es una decisión de gusto y es lo más fácil de equivocar:

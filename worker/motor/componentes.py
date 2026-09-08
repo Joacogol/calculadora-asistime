@@ -303,6 +303,32 @@ ZONAS_SEGURAS = {
 }
 
 
+def pad_lado(ident):
+    """Sólo el margen LATERAL, para cuando el atajo de cuatro valores no sirve.
+
+    `pad_seguro` devuelve el `padding` entero —«250px 60px 250px 60px»— y eso
+    lo vuelve inservible ADENTRO de otro atajo. Escrito así:
+
+        padding: 0 20px 0 {{ pad_seguro(fmt, m.pad) }}
+
+    en una story sale `padding: 0 20px 0 250px 60px 250px 60px`, que el
+    navegador tira ENTERO y sin avisar: la caja se queda sin ningún margen.
+
+    Se descubrió el 8/9/2026 en una story publicada de Larrique: la cinta
+    blanca del encabezado usaba esa forma, quedó sin margen izquierdo, el
+    logotipo se pegó al borde y el corte en diagonal de la cinta se comió la
+    última letra —«LARRIQU»—. Las cinco plantillas del kit tenían la misma
+    línea, y sólo se rompía en `story` y `reel`, que son los dos formatos con
+    zona segura declarada.
+    """
+    zonas = ident.ZONAS_SEGURAS or ZONAS_SEGURAS
+
+    def _pad(fmt, pad):
+        z = zonas.get(fmt)
+        return f"{max(pad, z['izquierda']) if z else pad}px"
+    return _pad
+
+
 def pad_seguro(ident):
     """El `padding` de la pieza, respetando lo que Instagram tapa.
 
@@ -392,6 +418,6 @@ TODOS = {
     "logo": logo, "iso": iso, "firma": firma, "pastilla": pastilla, "descuento": descuento,
     "barra": barra, "paleta": paleta, "subrayado": subrayado,
     "etiqueta_persona": etiqueta_persona, "fila_logos": fila_logos,
-    "sombra_texto": sombra_texto, "pad_seguro": pad_seguro,
+    "sombra_texto": sombra_texto, "pad_seguro": pad_seguro, "pad_lado": pad_lado,
     "margen_seguro": margen_seguro,
 }

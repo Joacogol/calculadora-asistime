@@ -131,7 +131,7 @@
    "tipo": "texto",
    "etiqueta": "Badge de categoría",
    "default": "PRODUCTO",
-   "nota": "El rectangulito de arriba a la derecha. En las piezas del manual son tres: «PRODUCTO», «MARCA DESTACADA» y «SERVICIO». Vacío para que no salga."
+   "nota": "La unidad o la familia del producto: «AUTOMOTRIZ», «INDUSTRIAL», «AGRÍCOLA», «SUSPENSIÓN», «RODAMIENTOS». **No el nombre de la plantilla**: una pieza con el badge «PRODUCTO» no le dice nada a nadie y salió publicada así el 8/9/2026. Si no hay una categoría clara, dejalo vacío — la pieza se ve mejor sin badge que con uno que no informa."
   },
   {
    "id": "chips",
@@ -195,7 +195,7 @@
     "socia"
    ],
    "default": "noche",
-   "nota": "**Se elige por la unidad de negocio, no por gusto.** `noche` (azul Larrique) para automotriz y para todo lo que no sea claramente otra cosa. `industrial` para la División Industrial. `agro` para el campo. `socia` sólo cuando la pieza es de una marca proveedora con color propio — ahí además conviene fijar `acento`."
+   "nota": "`noche` es la de todos los días. `industrial` y `agro` cambian sólo el acento, para la División Industrial y para el campo. `socia` es para una pieza de un proveedor cuyo color no es el azul.\n\n**`clara` NO se combina con `composicion: diagonal`.** La diagonal corta la pieza en un lado oscuro y uno claro; con la paleta clara los dos lados quedan claros, la línea del acento no separa nada y la pieza se ve del manual viejo. Si la piden clara, la composición es `sobre_foto`. La plantilla lo corrige sola pasando a `noche`, pero es mejor pedirlo bien."
   },
   {
    "id": "acento",

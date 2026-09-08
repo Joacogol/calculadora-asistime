@@ -41,7 +41,7 @@
 {% endif %}
 
 <div class="cinta" style="height:{{ m.cinta }}px;
-  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_seguro(fmt, m.pad) }};
+  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_lado(fmt, m.pad) }};
   clip-path:polygon(0 0,100% 0,calc(100% - {{ m.cinta * 0.44 }}px) 100%,0 100%)">
   {{ firma('lockup', 1.0, none, m.logo / 300.0) }}
 </div>

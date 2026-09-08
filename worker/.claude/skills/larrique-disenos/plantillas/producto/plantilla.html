@@ -29,9 +29,28 @@
     el que manda y la pieza se vuelve un rótulo de góndola. -#}
 
 {%- set pal = paleta(d.estilo) -%}
+{%- set diag = d.composicion == 'diagonal' -%}
+
+{#- La diagonal NECESITA un lado oscuro. El corte separa un bloque de color
+    pleno —donde va el texto— del gris claro donde va el producto, y el filo
+    del acento marca el borde. Con la paleta `clara` el bloque también sale
+    claro: los dos lados quedan del mismo gris, la línea azul no separa nada,
+    y el titular sale en tinta oscura sobre gris. O sea una pieza del manual
+    VIEJO con una raya encima, que es exactamente lo que el kit vino a evitar.
+
+    Salió publicada así el 8/9/2026, en la primera story de promo. El agente no
+    hizo nada raro: pidió «fondo claro» y `clara` es la paleta de fondo claro.
+    El que tenía que saber que las dos cosas no se combinan es esta plantilla.
+
+    Se cambia por `noche` conservando el acento, así una pieza de Continental
+    en naranja sigue siendo naranja. Si de verdad la quieren clara, la
+    composición es `sobre_foto`. -#}
+{%- if diag and pal.fondo in (c.humo, c.blanco) -%}
+{%- set pal = paleta('noche', acento=pal.acento) -%}
+{%- endif -%}
+
 {%- set acento = c[d.acento] if d.acento else pal.acento -%}
 {%- set hay_foto = d.foto|length > 0 -%}
-{%- set diag = d.composicion == 'diagonal' -%}
 {%- set trat = d.tratamiento or ('natural' if diag else 'tecnico') -%}
 {%- set sombra = sombra_texto() if (hay_foto and not diag) else '' -%}
 {%- set sombra_chica = sombra_texto(1.5) if (hay_foto and not diag) else '' -%}
@@ -45,6 +64,33 @@
     una medida propia y el cuerpo baja. Medido: sin esto, «COMBUSTIBLE» y la
     bajada se cruzaban al lado claro. -#}
 {%- if diag %}{% set cuerpo = cuerpo * 0.66 %}{% endif -%}
+
+{#- Y además tiene que entrar A LO ANCHO. La cuenta de arriba mira cuántas
+    letras tiene el titular ENTERO, y eso no alcanza cuando es UNA SOLA palabra
+    larga: «AMORTIGUADORES» no se puede partir en dos renglones, así que el
+    `max-width` no la achica —la deja pasar de largo—. En `diagonal` eso la
+    manda del lado claro, donde el texto blanco cae sobre gris y no se lee. Se
+    publicó así el 8/9/2026.
+
+    Se mide la palabra MÁS LARGA, no el renglón: el renglón se puede cortar,
+    la palabra no. 0,56 es el ancho medio de una mayúscula de Archivo al ancho
+    76 —la voz de titular de esta marca—, MEDIDO sobre la pieza dibujada y no
+    estimado: con 0,46, que fue el primer intento, «AMORTIGUADORES» seguía
+    tocando el filo.
+
+    Los cuatro formatos de esta plantilla miden 1080 de ancho; si algún día
+    entra uno apaisado, esta cuenta hay que hacerla con el ancho real. -#}
+{#- El ancho que tiene el TITULAR no es `ancho_texto`. Ese número está medido
+    para los chips, que van abajo del todo, donde el corte ya se comió medio
+    lienzo. El titular vive arriba, y ahí el bloque oscuro llega casi hasta
+    `corte_arriba` —70% en story contra 34% abajo—. Usar el ancho de abajo para
+    el texto de arriba deja el titular a la mitad del cuerpo que le entra, y una
+    pieza de Larrique con el titular chico deja de ser una pieza de Larrique.
+    Los 8 puntos de margen son para no tocar el filo del acento. -#}
+{%- set ancho_tit = (m.corte_arriba - 8) if diag else 92 -%}
+{%- set palabra = d.titulo.replace('\n', ' ').split(' ') | map('length') | list | max -%}
+{%- set ancho_util = 1080 * ancho_tit / 100.0 - m.pad -%}
+{%- if palabra %}{% set cuerpo = [cuerpo, ancho_util / (0.56 * palabra)] | min %}{% endif -%}
 {%- set chips = d.chips.split('\n') | map('trim') | reject('equalto', '') | list -%}
 
 {#- El fondo. En `diagonal` la foto vive del lado claro y el fondo de la pieza
@@ -79,7 +125,7 @@
 {#- La cinta blanca del encabezado con el logo en color. La diagonal del borde
     derecho es la misma inclinación que la del resto del sistema. -#}
 <div class="cinta" style="height:{{ m.cinta }}px;
-  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_seguro(fmt, m.pad) }};
+  padding:0 {{ m.cinta * 0.62 }}px 0 {{ pad_lado(fmt, m.pad) }};
   clip-path:polygon(0 0,100% 0,calc(100% - {{ m.cinta * 0.44 }}px) 100%,0 100%)">
   {{ firma('lockup', 1.0, none, m.logo / 300.0) }}
 </div>
@@ -99,7 +145,11 @@
     margin-bottom:{{ m.rotulo * 0.9 }}px;{{ sombra_chica }}">{{ d.rotulo }}</div>
   {% endif %}
 
-  <div style="max-width:{{ m.ancho_texto if diag else 92 }}%">
+  {#- El bloque de texto va al ancho del TITULAR, no al de los chips. La bajada
+      se queda angosta igual: son dos o tres renglones y a todo el ancho del
+      bloque se leen mal. Su porcentaje es relativo al padre, así que hay que
+      convertirlo — si no, «40%» acá adentro serían 40% de 62%. -#}
+  <div style="max-width:{{ ancho_tit }}%">
     <div class="v-titulo" style="color:{{ tinta }};font-size:{{ cuerpo }}px;
       white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
     {% if d.marca %}
@@ -110,7 +160,8 @@
     {% if d.bajada %}
     <div class="v-bajada" style="color:{{ tinta }};opacity:.92;
       font-size:{{ m.bajada }}px;margin-top:{{ m.bajada * 0.95 }}px;
-      max-width:100%;{{ sombra_chica }}">{{ d.bajada }}</div>
+      max-width:{{ (100 * m.ancho_texto / ancho_tit)|round|int if diag else 100 }}%;
+      {{ sombra_chica }}">{{ d.bajada }}</div>
     {% endif %}
   </div>
 
