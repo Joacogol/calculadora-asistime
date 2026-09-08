@@ -28,6 +28,14 @@ from app import fotero                                                  # noqa: 
 fallos = []
 
 
+def ok(caso, condicion, visto=""):
+    """Una comprobación suelta, para lo que no es un prompt de `crear`."""
+    print(f"  {'✓' if condicion else '✗'} {caso}"
+          + ("" if condicion else f" — vi {visto!r}"))
+    if not condicion:
+        fallos.append(caso)
+
+
 def revisar(caso, texto, rechaza, dice=""):
     try:
         fotero._revisar_crear(texto)
@@ -67,6 +75,62 @@ revisar("un plato de comida",
         "ventana, desde arriba.", False)
 revisar("una textura",
         "Fondo de cemento gris con textura, iluminación pareja.", False)
+
+# ── La foto de entrada se copia a nuestro bucket ─────────────────────────
+#
+# Magnific baja la foto por su cuenta: le pasamos una URL y va a buscarla. Con
+# una URL ajena, lo que vuelve es el error de ELLOS bajándola —«Value cannot be
+# null (Parameter \'pointer\')»— que no dice nada de lo que pasó. El 8/9/2026 una
+# foto de producto de larrique.com.uy, que se abre perfecto en un navegador,
+# hacía fallar el recorte así, y el mismo sitio le contestaba 403 al
+# «Python-urllib» con el que `urlopen` se presenta solo.
+#
+# Copiándola primero, Magnific siempre baja de un bucket público nuestro. Lo
+# que se fija acá es que se copie la ajena y NO la que ya es nuestra: copiar la
+# propia sería pagar dos veces el mismo archivo por nada.
+print("\n■ La foto de entrada se copia antes de mandarla a Magnific")
+
+NUESTRA = ("https://qxjvtxumkljsroukpkny.supabase.co/storage/v1/object/public/"
+           "disenos-larrique/editadas/abc.jpg")
+subidas = []
+
+
+def _subir_falso(local, nombre):
+    subidas.append(nombre)
+    return f"https://ejemplo.test/storage/v1/object/public/bucket/{nombre}"
+
+
+def _bajar_falso(url, destino):
+    destino.write_bytes(b"\xff\xd8\xff" + b"\x00" * 20)   # cabecera de JPEG
+    return destino
+
+
+real_bajar = fotero.bajar
+fotero.bajar = _bajar_falso
+try:
+    salida = fotero.copiar_entrante({"id": "f1", "foto": "https://ajena.test/p.jpg"},
+                                    _subir_falso)
+    ok("una foto ajena se copia", subidas == ["entrantes/f1.jpg"], subidas)
+    ok("y lo que se manda es NUESTRA copia",
+       salida.startswith("https://ejemplo.test/"), salida)
+
+    subidas.clear()
+    igual = fotero.copiar_entrante({"id": "f2", "foto": NUESTRA}, _subir_falso)
+    ok("una que ya es nuestra no se copia", subidas == [], subidas)
+    ok("y se manda tal cual", igual == NUESTRA, igual)
+
+    subidas.clear()
+    vacio = fotero.copiar_entrante({"id": "f3", "foto": ""}, _subir_falso)
+    ok("sin foto no revienta (es el caso de `crear`)",
+       vacio == "" and subidas == [], (vacio, subidas))
+finally:
+    fotero.bajar = real_bajar
+
+# Y el User-Agent, que es la otra mitad del mismo problema: el que bajaba era
+# el worker y lo rechazaban por el nombre con que se presenta.
+ok("el worker se presenta como un navegador",
+   "Mozilla/" in fotero.NAVEGADOR and "urllib" not in fotero.NAVEGADOR,
+   fotero.NAVEGADOR[:40])
 
 print("\n  todo bien" if not fallos else f"\n  {len(fallos)} fallo(s): "
       + ", ".join(fallos))
