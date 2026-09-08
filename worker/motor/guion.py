@@ -314,6 +314,8 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
     acá y no en el guion: el agente escribe nombres de archivo, no rutas, y así
     el mismo guion sirve aunque el material se mueva de lugar.
     """
+    from . import analisis as _analisis
+
     g = normalizar(guion)
     base = Path(carpeta) if carpeta else None
 
@@ -321,16 +323,32 @@ def a_spec(guion: dict, nombre: str, carpeta=None, sonido: dict | None = None) -
     for t in g["tramos"]:
         arch = t["archivo"]
         ruta = str((base / arch)) if base else arch
-        tramos.append({
-            "tipo": "video",
-            "archivo": ruta,
-            "desde": round(float(t["desde"]), 3),
-            # El motor razona en duración final; el guion en punto de entrada y
-            # de salida del original. Esta línea es toda la traducción.
-            "dura": round(duracion_tramo(t), 3),
-            "velocidad": t["velocidad"],
-        })
+        # Una foto es otro tipo de tramo, y la diferencia no es cosmética:
+        # `video._segmento_foto` no tiene dónde entrar ni a qué velocidad ir —
+        # una foto no transcurre—, tiene un ACERCAMIENTO. Mandarle `desde` y
+        # `velocidad` no rompería nada, pero dejaría dos campos que no
+        # significan nada y que el día que alguien los lea van a mentir.
+        if _analisis.es_foto(arch):
+            tramos.append({
+                "tipo": "foto",
+                "archivo": ruta,
+                # El guion habla en entrada y salida aunque sea una foto: así
+                # una lista de fotos y una de clips se escriben igual. Acá se
+                # traduce a lo único que una foto entiende, que es cuánto dura.
+                "dura": round(duracion_tramo(t), 3),
+            })
+        else:
+            tramos.append({
+                "tipo": "video",
+                "archivo": ruta,
+                "desde": round(float(t["desde"]), 3),
+                # El motor razona en duración final; el guion en punto de entrada y
+                # de salida del original. Esta línea es toda la traducción.
+                "dura": round(duracion_tramo(t), 3),
+                "velocidad": t["velocidad"],
+            })
         for campo in ("texto", "emoji", "pos", "cuerpo", "recorte", "foco_x",
+                      "foco_y", "zoom",
                       "audio", "estilo", "encuadre", "fondo"):
             if campo in t:
                 tramos[-1][campo] = t[campo]

@@ -2054,7 +2054,14 @@ def _bajar_clips(clips: list, destino: pathlib.Path) -> dict:
         nombre = pathlib.Path(str(pedido or "")).name
         # Sin caracteres raros: esto termina en una línea de comando de ffmpeg.
         nombre = re.sub(r"[^A-Za-z0-9._-]", "_", nombre).lstrip(".")
-        if not nombre.lower().endswith((".mp4", ".mov", ".m4v", ".webm")):
+        # La extensión se respeta si es de video O de foto. Antes esto le
+        # ponía «.mp4» a todo lo que no fuera video, así que una foto de
+        # producto llegaba como `rodamiento.jpg.mp4` y ffmpeg no la entendía —
+        # el error salía cuatro minutos después y no nombraba la causa. El
+        # cliente que vende repuestos no filma: fotografía.
+        from motor import analisis as _an
+        if not (nombre.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
+                or _an.es_foto(nombre)):
             nombre = (nombre or f"clip{i}") + ".mp4"
         # Dos clips con el mismo nombre se pisarían y el segundo tramo mostraría
         # el primer video, sin ningún error.

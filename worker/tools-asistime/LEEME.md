@@ -45,6 +45,7 @@ una tool que ya esté corriendo en producción.
 | `publicar_reel-asistime.js` | `publicar_reel` | 1 (Asistime) | 2206 |
 | `publicar_archivo-asistime.js` | `publicar_archivo` | 1 (Asistime) | 2207 |
 | `estado_publicacion-asistime.js` | `estado_publicacion` | 1 (Asistime) | 2208 |
+| `montar_reel-larrique.js` | `montar_reel` | 80 (Larrique) | 2258 |
 
 Todas hablan con `funciones/api-reels`, con la clave `API_CLAVE` del proyecto
 de Supabase del cliente escrita en el código. Eso es a propósito y está
@@ -158,3 +159,30 @@ El prompt del 604 está escrito a mano y por eso `marca.json` NO declara
 `asistime.agente` — así `publicar-prompt.py` no lo pisa con el genérico, que
 prometería las herramientas que este agente no tiene. El catálogo sí se
 republica solo en cada despliegue.
+
+
+## Larrique (tenant 80), 8/9/2026
+
+El agente **605** tiene cinco herramientas y ninguna se copió tal cual:
+
+| Tool | Id | De dónde salió |
+|---|---|---|
+| `crear_diseno` | 2250 | la de Life, con el formato por defecto en `vertical` (1080×1350, el del feed de Larrique) en vez de `story` |
+| `estado_diseno` | 2251 | la de Life, sin cambios más que la clave |
+| `corregir_diseno` | 2252 | la de Life, sin cambios más que la clave |
+| `montar_reel` | 2258 | **escrita para este cliente** — ver `montar_reel-larrique.js` |
+| `estado_reel` | 2259 | la de Boss, sin la rama de `crear_reel`: acá no se genera video con IA, así que no hay nada que advertir sobre caras deformadas ni créditos gastados |
+
+`montar_reel` es el único archivo que se guarda, y va contra la regla de arriba
+de no duplicar a propósito: **no es la misma tool con otra URL**. Acá el
+material normal son FOTOS de producto, no clips filmados, y eso cambia lo que
+manda: un reel de fotos no tiene audio, así que pide `subtitulos: []` y
+`cortar_silencios: false`. Sin eso el worker se pone a escuchar tres imágenes.
+
+Faltan `ver_reel` y `retocar_reel`, y no por olvido: las dos existen para
+corregir SUBTÍTULOS, y un reel armado con fotos no tiene ninguno. Cuando
+Larrique empiece a mandar video filmado, se copian de Boss.
+
+**El primer campo se llama `material` y no `clips`.** El agente lee el nombre
+del parámetro antes que su descripción, y con «clips» mandaba a preguntar por
+videos a un cliente que sólo tiene fotos.

@@ -36,17 +36,51 @@
   },
   "_unidades": "Las tres unidades de negocio, cada una con su color. El color de unidad orienta; el azul Larrique sigue siendo el elemento de unión. Una pieza que no habla claramente de industria o de campo va en azul.",
   "categorias": [
-    "Rodamientos", "Retenes", "Crucetas", "Herramientas", "Lubricación",
-    "Agrícola", "Repuestos - Autopartes", "Amortiguadores", "Embrague",
-    "Distribución", "Suspensión", "Bombas de agua", "Bombas de combustible",
-    "Correas", "Accesorios de correas", "Soporte de cardán"
+    "Rodamientos",
+    "Retenes",
+    "Crucetas",
+    "Herramientas",
+    "Lubricación",
+    "Agrícola",
+    "Repuestos - Autopartes",
+    "Amortiguadores",
+    "Embrague",
+    "Distribución",
+    "Suspensión",
+    "Bombas de agua",
+    "Bombas de combustible",
+    "Correas",
+    "Accesorios de correas",
+    "Soporte de cardán"
   ],
   "_categorias": "Las familias tal como están en el menú de larrique.com.uy. Son las que puede nombrar una pieza. Si un pedido nombra una que no está acá, preguntá antes de dibujarla — el catálogo de la web es la fuente, no la memoria.",
   "marcas_representadas": [
-    "BRUGAROLAS", "CANTONI", "COFAP", "CONTINENTAL", "ENERPAC", "FAG", "INA",
-    "INDISA", "INGCO", "ITALVIBRAS", "KTR", "LARZEP", "LUK", "MECLUBE", "NAK",
-    "NBR", "NIS", "NTN", "REMIK", "ROCOL", "SIDEM", "SNR", "STAHL", "STM",
-    "TIMKEN", "VALEO"
+    "BRUGAROLAS",
+    "CANTONI",
+    "COFAP",
+    "CONTINENTAL",
+    "ENERPAC",
+    "FAG",
+    "INA",
+    "INDISA",
+    "INGCO",
+    "ITALVIBRAS",
+    "KTR",
+    "LARZEP",
+    "LUK",
+    "MECLUBE",
+    "NAK",
+    "NBR",
+    "NIS",
+    "NTN",
+    "REMIK",
+    "ROCOL",
+    "SIDEM",
+    "SNR",
+    "STAHL",
+    "STM",
+    "TIMKEN",
+    "VALEO"
   ],
   "_marcas": "Las 26 marcas destacadas de larrique.com.uy, con su logotipo oficial en `assets/marcas/`, bajados del propio sitio de Larrique. El nombre del archivo es el de la marca en minúsculas: `assets/marcas/continental.png`. **Si una marca no está en esta lista, su logo no se dibuja ni se saca de internet: va el nombre en texto.** El manual nombra además a Schaeffler, NKE, Koyo, GSP, Fied, BTE, A&S, Groz y Powerram — están en el catálogo pero no en la fila de destacadas del sitio, así que no tienen archivo acá.",
   "regla_cobranding": "**Larrique es el anfitrión.** El logo de la marca proveedora identifica el producto, no la pieza: va arriba o en la fila de marcas, nunca reemplazando al de Larrique. Su color entra como ACENTO —el naranja de Continental, el amarillo de Enerpac— y el resto del sistema sigue siendo el de Larrique. Y un logo de tercero jamás se estira: la fila los pone a todos al mismo alto de caja.",
@@ -57,7 +91,8 @@
     "clave_env": "ASISTIME_CLAVE_LARRIQUE",
     "clave_secreto": "asistime-api-larrique",
     "_agente": "El agente es el 605, «Diseñador Larrique», creado el 8/9/2026 APAGADO y sin pipeline por pedido de Joaquín. Falta `agente` acá a propósito, igual que en Life: mientras el prompt se escriba a mano, `publicar-prompt.py` no lo tiene que pisar.",
-    "_pendiente": "`documento` (Reglas de marca) y `catalogo` (catálogo de plantillas) se crean cuando el agente se prenda."
+    "_pendiente": "`documento` (Reglas de marca) y `catalogo` (catálogo de plantillas) se crean cuando el agente se prenda.",
+    "_herramientas": "El 605 tiene cinco: crear_diseno (2250), estado_diseno (2251), corregir_diseno (2252), montar_reel (2258) y estado_reel (2259). Ver tools-asistime/LEEME.md."
   },
   "_supabase": "Segundo cliente sin proyecto propio: sus tablas van en el esquema `larrique` del Supabase de la casa y sus archivos en el bucket `disenos-larrique`. Ver `alta/ESQUEMA-COMPARTIDO.md`.",
   "fotos": {
@@ -70,7 +105,7 @@
     "calidad": "normal",
     "duracion": 10,
     "creditos_maximos": 4500,
-    "_material": "Todavía sin banco. Cuando lo haya, lo normal acá es `montar_reel` con lo que filmen en el depósito y el mostrador.",
+    "_material": "Larrique NO filma: fotografía. El caso normal acá es `montar_reel` con dos o tres FOTOS de producto, que el motor dibuja con un acercamiento lento. No gasta créditos y no inventa nada, que para un repuesto es lo único aceptable. `crear_video` —el que inventa el clip con IA— está prohibido para producto por el propio manual: en un producto específico la forma, la marca y el empaque tienen que coincidir con el real.",
     "musica": [],
     "_musica": "Sin banco propio. Para este rubro pide algo con pulso y sin voz: electrónica industrial o rock instrumental de 110-125 BPM. Nada épico.",
     "_topes": "`creditos_maximos` es por pieza. Si algo no entra, el worker no rechaza de entrada: primero acorta, después baja calidad, y sólo si ni el más barato entra lo rechaza."
@@ -98,18 +133,45 @@
       "tinta": "tinta"
     },
     "formatos": {
-      "post": [1080, 1080],
-      "vert": [1080, 1350],
-      "story": [1080, 1920],
-      "reel": [1080, 1920],
-      "wide": [1920, 704],
-      "tira": [1500, 250]
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ],
+      "wide": [
+        1920,
+        704
+      ],
+      "tira": [
+        1500,
+        250
+      ]
     },
     "_formatos": "`vert` es el del feed y el que va por defecto. `story` es también el del estado de WhatsApp, que en esta marca es un canal de venta, no un extra. `post` cuadrado es LinkedIn y Mercado Libre. `wide` y `tira` son los banners de la web y de Mercado Libre: son los primeros formatos horizontales del motor y funcionan porque el `.canvas` de esta marca mide `width:100%` en vez de 1080 fijos — el ancho lo pone la ventana, que el motor arma con las medidas de `formatos`.",
     "_tipografias": "El manual declara Dongle como secundaria y «una sans operativa» para lo digital. Pero NINGUNA pieza real usa Dongle en un titular: los titulares son mayúsculas de un grotesco ANGOSTO, PESADO e ITÁLICO. Archivo tiene eje de ancho y una itálica de verdad, así que las voces de display y las de texto salen de dos archivos. Dongle no está empaquetada: cuando una pieza institucional la pida, se agrega.",
     "tipografias": [
-      {"familia": "Arch", "archivo": "fonts/Archivo-var.ttf", "pesos": "100 900"},
-      {"familia": "ArchIt", "archivo": "fonts/Archivo-Italic-var.ttf", "pesos": "100 900", "estilo": "italic"}
+      {
+        "familia": "Arch",
+        "archivo": "fonts/Archivo-var.ttf",
+        "pesos": "100 900"
+      },
+      {
+        "familia": "ArchIt",
+        "archivo": "fonts/Archivo-Italic-var.ttf",
+        "pesos": "100 900",
+        "estilo": "italic"
+      }
     ],
     "logo": {
       "archivo": "assets/larrique-lockup.png",
@@ -184,9 +246,13 @@
     },
     "acento_por_defecto": "azul",
     "reel": {
-      "tipografias": ["Archivo-var.ttf", "Archivo-Italic-var.ttf"],
+      "tipografias": [
+        "Archivo-Titulo.ttf",
+        "Archivo-Pie.ttf"
+      ],
       "animo_musica": "industrial",
-      "acento": "azul"
+      "acento": "azul",
+      "_tipografias": "Los rótulos de un reel los dibuja ffmpeg con freetype, y freetype NO entiende fuentes variables: toma la instancia por defecto y el título salía en SemiBold de ancho normal, un peso que la marca no usa en ningún lado. Estas dos son la MISMA Archivo congelada en las coordenadas exactas de las voces del kit —titulo (wdth 76, wght 800, itálica) y seca (wdth 92, wght 700)— así el reel y la placa escriben idéntico. Se generan con fontTools.varLib.instancer."
     },
     "carrusel": {
       "color_cromo": "blanco",
@@ -208,9 +274,25 @@
     "frase_paraguas": "LARRIQUE, TU ALIADO EN CADA MOVIMIENTO.",
     "posicionamiento": "Soluciones que te mantienen en movimiento.",
     "mensajes": {
-      "institucional": ["+50 años en el mercado", "Asesoramiento técnico", "Soluciones para Automotriz, Industrial y Agrícola", "Stock y respaldo"],
-      "comercial": ["Ya en stock", "Nueva reposición", "Encontralo en Larrique", "Consultá disponibilidad", "Envíos a todo el país"],
-      "relacional": ["Seguimos fortaleciendo vínculos", "Capacitación junto a clientes", "Visitas de proveedores", "Eventos y alianzas"]
+      "institucional": [
+        "+50 años en el mercado",
+        "Asesoramiento técnico",
+        "Soluciones para Automotriz, Industrial y Agrícola",
+        "Stock y respaldo"
+      ],
+      "comercial": [
+        "Ya en stock",
+        "Nueva reposición",
+        "Encontralo en Larrique",
+        "Consultá disponibilidad",
+        "Envíos a todo el país"
+      ],
+      "relacional": [
+        "Seguimos fortaleciendo vínculos",
+        "Capacitación junto a clientes",
+        "Visitas de proveedores",
+        "Eventos y alianzas"
+      ]
     }
   },
   "pilares": {

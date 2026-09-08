@@ -57,6 +57,14 @@ def configurar(raiz, titulo="Barlow-Black.ttf",
     freetype y no entiende fuentes variables — Archivo es variable y sale
     siempre en peso regular, por eso acá va Barlow Black.
     """
+    # `raiz` se resuelve a absoluta acá y no se confía en quien llama. Los
+    # rótulos los dibuja Chromium con `@font-face{src:url('file://…')}`, y una
+    # ruta relativa ahí no es un error: es un `file://` inválido que Chromium
+    # ignora en silencio y reemplaza por la `sans-serif` del sistema. El reel
+    # sale, dura lo que tiene que durar, y el título está escrito con una
+    # tipografía que no es de la marca. Nadie se entera hasta que alguien mira
+    # el video al lado de una placa.
+    raiz = Path(raiz).resolve()
     global RAIZ, FUENTES, SALIDA, TIPO_TITULO, TIPO_PIE, VELO_PNG, _BANCO, LIMA
     global ANIMO, LOGO_HTML, CSS_MARCA
     RAIZ = Path(raiz)
@@ -869,10 +877,22 @@ def _segmento_foto(t: dict, i: int, tmp: Path, codec=None) -> Path:
             cadena += "[base];" + _capa_rotulo("3:v", pos)
     cadena += ",format=yuv420p[v]"
 
+    # El rótulo es una SECUENCIA de PNG en una carpeta, no un PNG: `rotulos.
+    # secuencia` dibuja un cuadro por frase para que el texto entre animado.
+    # Se lee con `-framerate` y el patrón `%04d.png`, igual que en
+    # `_segmento_video`, y sin `-loop`/`-t` porque ya trae exactamente los
+    # cuadros que dura el tramo.
+    #
+    # Acá decía `-loop 1 -t dura -i <carpeta>` y ffmpeg contestaba «Is a
+    # directory». O sea que una foto CON texto no funcionó nunca: el camino
+    # existía, estaba escrito y no lo había corrido nadie, porque hasta ahora
+    # ningún cliente mandaba fotos a un reel. Es el mismo lugar donde ya se
+    # había arreglado un NameError por lo mismo — código copiado de
+    # `_segmento_video` y nunca ejecutado.
     _correr(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-t", str(dura), "-i", str(fuente),
              "-i", str(_velo(tmp)),
              "-f", "lavfi", "-t", str(dura), "-i", "anullsrc=r=48000:cl=stereo",
-             *(["-loop", "1", "-t", str(dura), "-i", str(rot)] if rot else []),
+             *(["-framerate", str(FPS), "-i", str(rot / "%04d.png")] if rot else []),
              "-filter_complex", cadena, "-map", "[v]", "-map", "2:a",
              *(codec or VIDEO_X264), *AUDIO_AAC,
              "-shortest", str(salida)], f"tramo {i} (foto)")
@@ -1176,7 +1196,17 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
         g["tramos"] = [dict(t0) for t0 in g["tramos"]]
         for t0 in g["tramos"]:
             if t0.get("hasta") is None:
-                ruta = base / (t0.get("archivo") or "")
+                arch = t0.get("archivo") or ""
+                ruta = base / arch
+                # Una foto no tiene final al que llegar: `sondear` le declara
+                # una duración nominal de veinte segundos y un tramo de veinte
+                # segundos sobre una imagen quieta es un reel muerto. Lo que
+                # corresponde acá es cuánto queremos que dure, no cuánto
+                # «mide»: `FOTO_DURA`.
+                if _an0.es_foto(arch):
+                    t0["hasta"] = t0.get("desde", 0.0) + _an0.FOTO_DURA
+                    t0.setdefault("desde", 0.0)
+                    continue
                 try:
                     t0["hasta"] = round(_an0.sondear(ruta)["duracion"], 2)
                     t0.setdefault("desde", 0.0)
@@ -1195,7 +1225,10 @@ def desde_guion(g: dict, nombre: str, carpeta_material, salida: Path,
         for t0 in (g.get("tramos") or []):
             arch = (t0.get("archivo") or "").strip()
             ruta = base / arch
-            if not arch or not ruta.exists():
+            # Una foto no tiene audio y por lo tanto no tiene silencios que
+            # sacar. Sin esto, `tramos_hablados` la abre en cero pedazos y la
+            # foto desaparece del reel sin que nada avise.
+            if not arch or not ruta.exists() or _an.es_foto(arch):
                 abiertos.append(t0)
                 continue
             try:

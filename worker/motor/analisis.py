@@ -54,6 +54,39 @@ MAX_ENTRADA = 300.0   # 5 minutos
 MAX_CUADROS = 15
 ANCHO_CUADRO = 480
 
+# ── Las fotos, que también son material de reel ──────────────────────────────
+#
+# Un cliente que vende repuestos no filma: fotografía. Sube dos o tres fotos de
+# un producto y quiere un video. El motor ya sabía dibujar una foto con
+# acercamiento (`video._segmento_foto`), pero todo el camino de análisis y de
+# guion suponía video: `sondear` mide duración, `analizar` busca cortes de toma
+# y silencios, y `desde_guion` completa un tramo sin `hasta` con la duración
+# del archivo. Sobre una foto eso da cero, y un tramo de cero segundos no es un
+# tramo.
+#
+# Una foto no tiene duración: la duración la elige quien edita. Así que acá se
+# le asigna una NOMINAL —para que la validación del guion no la rechace— y una
+# POR DEFECTO, que es lo que dura en el reel si nadie dijo otra cosa.
+EXT_FOTO = frozenset((".jpg", ".jpeg", ".png", ".webp", ".avif", ".heic"))
+
+#: Cuánto dura una foto en el reel cuando el guion no lo dice. Dos segundos y
+#: medio es lo que ya usaba `video._segmento_foto`, y es el tiempo en que un
+#: ojo lee un producto y su nombre sin aburrirse.
+FOTO_DURA = 2.5
+
+#: La duración NOMINAL que se le declara a una foto. No significa nada más que
+#: «pedí lo que quieras hasta acá»: `guion.verificar` rechaza un tramo que pida
+#: más segundos de los que tiene el archivo, y sin este tope una foto no
+#: aguantaría ni medio segundo.
+FOTO_TOPE = 20.0
+
+
+def es_foto(ruta) -> bool:
+    """¿Es una imagen y no un video? Por extensión, para que también sirva
+    sobre un nombre de archivo que todavía no está en disco — que es como lo
+    ve el guion."""
+    return Path(str(ruta)).suffix.lower() in EXT_FOTO
+
 
 class SinFFmpeg(RuntimeError):
     pass
@@ -72,9 +105,45 @@ def _correr(args: list[str], tiempo=TIEMPO) -> subprocess.CompletedProcess:
 
 # ────────────────────────────────────────────────────────────────── LA FICHA
 
+def _sondear_foto(ruta: Path) -> dict:
+    """La ficha de una imagen, con la misma forma que la de un video.
+
+    Devuelve la MISMA forma que `sondear` de un video —mismas llaves, mismos
+    tipos— y eso es todo el punto: de acá para arriba nadie tiene que preguntar
+    si el material es una foto salvo donde de verdad cambia algo. `duracion` es
+    nominal (ver `FOTO_TOPE`) y `es_foto` es la llave que lo delata.
+    """
+    r = _correr([_exe("ffprobe"), "-v", "error", "-print_format", "json",
+                 "-show_format", "-show_streams", str(ruta)], tiempo=60)
+    if r.returncode != 0:
+        raise RuntimeError(f"no pude leer «{ruta.name}»: {r.stderr[:200]}")
+    d = json.loads(r.stdout or "{}")
+    fmt = d.get("format", {})
+    img = next((s0 for s0 in d.get("streams", []) if s0.get("codec_type") == "video"), None)
+    if not img:
+        raise RuntimeError(f"«{ruta.name}» no parece una imagen que pueda leer")
+    ancho, alto = int(img.get("width", 0)), int(img.get("height", 0))
+    return {
+        "archivo": ruta.name,
+        "es_foto": True,
+        "duracion": FOTO_TOPE,
+        "ancho": ancho, "alto": alto,
+        "proporcion": round(ancho / alto, 3) if alto else 0,
+        "vertical": alto >= ancho,
+        "fps": 0.0,
+        "codec": img.get("codec_name", ""),
+        "tiene_audio": False,
+        "codec_audio": "",
+        "peso_mb": round(int(fmt.get("size") or 0) / 1048576, 1),
+        "muy_largo": False,
+    }
+
+
 def sondear(ruta) -> dict:
     """Los datos duros del archivo. Es lo primero y lo más barato."""
     ruta = Path(ruta)
+    if es_foto(ruta):
+        return _sondear_foto(ruta)
     r = _correr([_exe("ffprobe"), "-v", "error", "-print_format", "json",
                  "-show_format", "-show_streams", str(ruta)], tiempo=60)
     if r.returncode != 0:
@@ -107,6 +176,7 @@ def sondear(ruta) -> dict:
     dur = float(fmt.get("duration") or video.get("duration") or 0.0)
     return {
         "archivo": ruta.name,
+        "es_foto": False,
         "duracion": round(dur, 2),
         "ancho": ancho, "alto": alto,
         "proporcion": round(ancho / alto, 3) if alto else 0,
@@ -354,6 +424,27 @@ def analizar(ruta, destino, cuantos_cuadros=MAX_CUADROS) -> dict:
     ruta = Path(ruta)
     destino = Path(destino)
     ficha = sondear(ruta)
+
+    # Una foto se saltea todo lo de abajo, y no por ahorrar: `cortes_de_toma`
+    # y `energia_audio` sobre una imagen no fallan, devuelven vacío después de
+    # arrancar ffmpeg dos veces. El único cuadro que hay para mirar es la foto
+    # misma, así que se entrega ella.
+    if ficha.get("es_foto"):
+        avisos = []
+        if not ficha["vertical"]:
+            avisos.append(
+                f"Está apaisada ({ficha['ancho']}×{ficha['alto']}). En el reel "
+                f"se recorta a 9:16, así que lo de los costados se pierde: "
+                f"mirá que el producto esté centrado.")
+        return {
+            **ficha,
+            "avisos": avisos,
+            "cortes_de_toma": [],
+            "silencios": [],
+            "picos_de_audio": [],
+            "porcentaje_con_sonido": None,
+            "cuadros": sacar_cuadros(ruta, [0.0], destino),
+        }
 
     avisos = []
     if ficha["muy_largo"]:
