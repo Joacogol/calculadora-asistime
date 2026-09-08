@@ -112,3 +112,49 @@ que se ramifica con el `montado` que devuelve la API.
 Sin esa rama, a quien montó un video propio se le decía «miralo entero, la IA a
 veces deforma el producto»: lo mandaba a buscar un problema que no puede
 existir, sobre material que filmó él mismo.
+
+
+## Life Montevideo (8/9/2026)
+
+El tenant 48 ya existía con dos agentes de atención en WhatsApp —Nico [Socios]
+66 y Mara [No socios] 67— y siguen intactos. El diseñador entró como un agente
+APARTE: **604, «Diseñador Life Montevideo»**, con doce herramientas propias.
+
+| Tool | Id | Qué hace |
+|---|---|---|
+| `crear_diseno` | 2237 | encarga una pieza |
+| `estado_diseno` | 2238 | cómo va |
+| `corregir_diseno` | 2239 | cambia una cosa sin rehacerla |
+| `montar_reel` | 2240 | edita lo que filma el club |
+| `estado_reel` | 2241 | cómo va el montaje |
+| `ver_reel` | 2242 | qué dice cada subtítulo |
+| `retocar_reel` | 2243 | corrige sin volver a transcribir |
+| `editar_foto` | 2244 | los cinco verbos sobre una foto |
+| `estado_foto` | 2245 | cómo va la edición |
+| `crear_plantilla` | 2246 | un molde nuevo o un cambio |
+| `estado_plantilla` | 2247 | cómo va el molde |
+| `avisar_cambio_motor` | 2248 | lo que necesita código |
+
+**No se copiaron de Stadium, se escribieron de nuevo**, y es lo que recomienda
+el propio `herramientas/alta.py` cuando las marcas son distintas: las de
+Stadium hablan de championes, de precios en el epígrafe y de 34 tiendas.
+Copiadas con un buscar-y-reemplazar, un club de gimnasia habría quedado con un
+agente que razona sobre retail.
+
+Tres cosas quedaron fuera, y cada una por una razón escrita en el código:
+
+- **`crear_reel` y `crear_video`** — generar video con IA. Este club filma; un
+  reel de gente entrenando inventado por un modelo no es este club.
+- **`crear_foto`** — inventar una foto de cero. Por lo mismo: una cara generada
+  publicada como si fuera un socio es un problema distinto al de una pieza fea.
+- **`publicar_*`** — Instagram todavía no está conectado para esta cuenta. El
+  prompt del agente lo dice con todas las letras en vez de dejarlo fallar.
+
+Las doce apuntan al Supabase de la casa (`qxjvtxumkljsroukpkny`) con la clave de
+Life, que vive hasheada en `public.claves_api`. Es el primer cliente que no
+tiene proyecto propio: ver `alta/ESQUEMA-COMPARTIDO.md`.
+
+El prompt del 604 está escrito a mano y por eso `marca.json` NO declara
+`asistime.agente` — así `publicar-prompt.py` no lo pisa con el genérico, que
+prometería las herramientas que este agente no tiene. El catálogo sí se
+republica solo en cada despliegue.
