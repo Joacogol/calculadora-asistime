@@ -52,7 +52,20 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 #: Los archivos que arman un cliente, en orden. `cobro.sql` va último porque
 #: sus vistas leen tablas de los anteriores.
 ARCHIVOS = ["base-de-un-cliente.sql", "plantillas.sql", "plantilla-pedidos.sql",
-            "fotos-editadas.sql", "motor-pedidos.sql", "cobro.sql"]
+            "fotos-editadas.sql", "motor-pedidos.sql",
+            # Los reels van DESPUÉS de la base —usan sus dos funciones de
+            # trigger— y antes del cobro. Entraron acá el 8/9/2026: hasta ese
+            # día eran migraciones sueltas que se corrían a mano sobre los
+            # clientes que ya existían, así que un cliente NUEVO nacía sin
+            # tabla `reels` y sin que nada avisara. Life Montevideo y Larrique
+            # se dieron de alta así; se descubrió cuando el primero pidió un
+            # video y la API contestó «Could not find the table
+            # 'larrique.reels'». Un alta que no incluye una capacidad no la
+            # deshabilita: la rompe en silencio, meses después y en manos del
+            # cliente.
+            "migraciones/montaje-de-reels.sql",
+            "migraciones/retoque-de-reels.sql",
+            "cobro.sql"]
 
 
 def esquema_de(marca: str) -> str:
