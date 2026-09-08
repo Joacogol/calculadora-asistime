@@ -1,0 +1,101 @@
+{#- RÓTULO — el texto que va ENCIMA del video de un reel.
+
+    Existe por una razón concreta y vale contarla, porque el error costó un
+    pedido: el motor dibuja el rótulo de un reel con una plantilla de la
+    marca, y cuando la marca no declara cuál, busca una llamada `campana` —el
+    nombre que tienen Boss y Stadium—. Larrique no tiene ninguna que se llame
+    así, y el guardián de `reelero.puede_rotular` frenaba el pedido ANTES de
+    generar: «esta marca no tiene la plantilla campana». Bien frenado —el
+    rótulo se dibuja después de pagar el video—, pero el arreglo no es
+    inventarle a Larrique una plantilla con el nombre de otra marca: es
+    escribir la suya y declararla en `marca.json` → `reels.plantilla`.
+
+    ── Por qué es una plantilla y no un dibujo aparte ──────────────────
+
+    El texto que se monta encima del clip sale del MISMO molde que una pieza.
+    El día que cambie la itálica de Larrique, cambia también el rótulo de sus
+    reels sin que nadie se acuerde de venir hasta acá.
+
+    ── Con `sobre_video` la pieza NO tiene fondo ───────────────────────
+
+    Sale transparente para montarse encima del clip, con un degradado suave
+    nada más donde cae el texto. Un velo entero taparía el video que se pagó
+    —le pasó a Boss el 1/9/2026: ocho de diez segundos en negro— y por eso
+    acá no hay ni `scrim` de color pleno ni `trama` cuando `sobre_video` está
+    prendido. El fondo transparente lo termina de forzar `reelero.rotulo`,
+    que pisa `html`, `body` y `.canvas` desde afuera.
+
+    ── Y no lleva el pie de contacto ───────────────────────────────────
+
+    Es la segunda plantilla del kit sin la barra de abajo, junto con `banner`,
+    y por el mismo tipo de razón: esa franja cae justo donde Instagram pone su
+    interfaz de reel y no la ve nadie. El WhatsApp va en la placa de cierre. -#}
+
+{%- set sobre = d.sobre_video -%}
+{%- set pal = paleta(d.estilo or 'noche') -%}
+{%- set acento = c[d.acento] if d.acento else pal.acento -%}
+{%- set pos = d.posicion if d.posicion in ('arriba', 'centro', 'abajo') else 'arriba' -%}
+{%- set hay_foto = d.foto|length > 0 and not sobre -%}
+
+{#- El titular baja de cuerpo solo. Encima de un clip de cinco segundos lo
+    normal son dos palabras, pero «ENVÍOS A TODO EL PAÍS» son veintiuna
+    letras y al mismo cuerpo se parte en cuatro renglones. -#}
+{%- set largo = d.titulo|length -%}
+{%- set cuerpo = m.titulo if largo <= 14 else (m.titulo * 0.76 if largo <= 26 else m.titulo * 0.58) -%}
+
+{%- set sombra = sombra_texto() if (sobre or hay_foto) else '' -%}
+{%- set sombra_chica = sombra_texto(1.5) if (sobre or hay_foto) else '' -%}
+
+{% if sobre %}
+{#- El degradado sigue a la posición del texto: si el titular va arriba, se
+    oscurece arriba. Al revés taparía el video justo donde no hace falta. -#}
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(7,20,38,.66),rgba(7,20,38,.12) 44%,rgba(7,20,38,0) 60%)"></div>
+{#- Y una pizca abajo, sólo para que el logotipo blanco no se pierda contra
+    una caja de cartón clara. Va aparte para que los dos no se sumen al medio. -#}
+<div class="scrim" style="background:linear-gradient(0deg,
+  rgba(7,20,38,.50),rgba(7,20,38,0) 24%)"></div>
+{% elif hay_foto %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+<img class="bg t-tecnico" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(7,20,38,.78),rgba(7,20,38,.10) 52%,rgba(7,20,38,.42))"></div>
+{% else %}
+<div class="scrim" style="background:{{ pal.fondo }}"></div>
+<div class="trama"></div>
+{% endif %}
+
+<div class="pad" style="padding:{{ m.pad_top }}px {{ m.pad }}px {{ m.pad_bot }}px">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div>
+    {% if d.kicker %}
+    <div class="v-seca" style="color:{{ acento }};font-size:{{ m.kicker }}px;
+      margin-bottom:{{ m.kicker * 1.1 }}px;{{ sombra_chica }}">{{ d.kicker }}</div>
+    {% endif %}
+
+    {#- El titular va en BLANCO, no en el azul de la marca. El azul Larrique a
+        cuerpo grande sobre una imagen de depósito no llega a contraste y la
+        pieza sale lavada; el acento se queda para la volanta, que es chica y
+        va sobre el pedazo más oscuro del degradado.
+
+        El salto de línea que escribieron se respeta: quien pide la pieza sabe
+        mejor que el navegador dónde corta «ENVÍOS A TODO / EL PAÍS». -#}
+    <div class="v-titulo" style="color:#FFFFFF;font-size:{{ cuerpo }}px;
+      white-space:pre-line;{{ sombra }}">{{ d.titulo }}</div>
+
+    {% if d.bajada %}
+    <div class="v-bajada" style="color:#FFFFFF;opacity:.92;font-size:{{ m.bajada }}px;
+      margin-top:{{ m.bajada * 1.1 }}px;max-width:86%;{{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  {#- El logotipo va en su versión blanca y no sobre la cinta blanca del resto
+      del kit: una cinta opaca encima de un video es un rectángulo que tapa. -#}
+  <div>{{ firma('lockup', 1.0, c.blanco, m.logo / 300.0) }}</div>
+</div>

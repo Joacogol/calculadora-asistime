@@ -57,6 +57,7 @@ manual y hay que corregirlos.
 | **`dato`** | La que enseña: señales de cambio, diagnóstico, compatibilidad. Lleva lista | 03, 04 |
 | **`institucional`** | La empresa: trayectoria, depósito, equipo, locales. La foto manda | 05, 08 |
 | **`banner`** | Horizontal: `wide` 1920×704 de la web y `tira` 1500×250 de Mercado Libre | web / ML |
+| **`rotulo`** | Casi nunca a mano: es el texto que el motor monta ENCIMA del video de un reel | reels |
 
 `producto` tiene dos composiciones y son la misma pieza: `sobre_foto` para una
 foto con fondo oscuro, y `diagonal` —el corte en dos con el producto sobre gris
@@ -105,6 +106,26 @@ verticales o cuadradas. No hizo falta tocarlo: el lienzo de esta marca mide
 la ventana, que `render.py` ya abre con las medidas del formato. En vertical no
 cambia nada — la ventana mide 1080 y el lienzo también.
 
+## El rótulo de los reels es una plantilla, no un dibujo aparte
+
+El texto que va encima del video —«ENVÍOS A TODO EL PAÍS» sobre el pasillo del
+depósito— se dibuja con `rotulo`, que es una plantilla más del kit. Así, el día
+que cambie la itálica de Larrique cambia también el rótulo de sus reels sin que
+nadie se acuerde de venir a buscarlo.
+
+Cuál es, lo declara la marca en `identidad.reel.plantilla`. **Sin eso el motor
+busca una llamada `campana`** —el nombre que tienen Boss y Stadium— y frena el
+pedido antes de generar: «esta marca no tiene la plantilla campana». Frenar es
+lo correcto, porque el rótulo se dibuja DESPUÉS de pagar el video; lo que estaba
+mal era no tener la propia. Con la plantilla puesta, el guardián devuelve vacío
+y el pedido pasa.
+
+Dos cosas que `rotulo` no hace y son a propósito: **no lleva el pie de contacto**
+—esa franja cae justo donde Instagram pone su interfaz de reel— y **con
+`sobre_video` no pinta ningún fondo**, sólo un degradado donde cae el texto. Un
+velo entero taparía el video que se pagó, que es exactamente lo que le pasó a
+Boss el 1/9/2026: ocho de diez segundos en negro.
+
 ## Las voces
 
 | | |
@@ -149,9 +170,13 @@ pieza vieja no es fuente — el stock y los precios cambian todas las semanas.
 la forma, la marca, el empaque y los detalles técnicos tienen que coincidir con
 el producto real. Lo que se oscurece es la foto de contexto que hace de fondo.
 
-**`crear` no dibuja productos.** Ninguna IA acierta un rulemán NTN con su caja.
-Sirve para una textura, un ambiente, un fondo de taller — y siempre con la
-instrucción de no dibujar ningún texto, cartel ni logo.
+**Ni `crear` ni `crear_video` dibujan productos.** Ninguna IA acierta un rulemán
+NTN con su caja: sale el logotipo torcido y un número de parte inventado, y acá
+un número de parte inventado es alguien que compra la pieza que no era. Los dos
+sirven para lo mismo: una textura, un ambiente, el pasillo del depósito, un
+camión saliendo, el taller — y siempre con la instrucción de no dibujar ningún
+texto ni cartel. Para el producto está `montar_reel` con las fotos reales, que
+además no gasta un crédito.
 
 ## Lo que todavía falta
 
@@ -163,8 +188,9 @@ instrucción de no dibujar ningún texto, cartel ni logo.
 - **La huella del motor.** `herramientas/verificar-motor.py --grabar` necesita al
   menos una foto en `assets/`. Se graba cuando lleguen las reales.
 - **Publicar en Instagram.** Por ahora no: se prende cuando conecten la cuenta.
-- **La música de los reels.** Sin banco propio. Para este rubro pide algo con
-  pulso y sin voz: electrónica industrial o rock instrumental de 110-125 BPM.
+- **La música de los reels.** Sin banco propio, así que hoy salen mudos. Para
+  este rubro pide algo con pulso y sin voz: electrónica industrial o rock
+  instrumental de 110-125 BPM.
 - **Dongle**, si aparece una pieza institucional que la pida.
 
 ## Dónde vive
@@ -174,7 +200,8 @@ esquema `larrique` del proyecto de la casa y sus archivos en el bucket
 `disenos-larrique`. Ver `alta/ESQUEMA-COMPARTIDO.md`.
 
 En Asistime es el tenant **80**, que ya tenía un agente de atención en
-producción. El diseñador es el agente **605**, creado el 8/9/2026 **apagado y sin
-pipeline** por pedido de Joaquín: se prende cuando el cliente esté listo. Le
-faltan el prompt, las herramientas y los dos documentos —reglas de marca y
-catálogo de plantillas—.
+producción. El diseñador es el agente **605**, creado el 8/9/2026 sin pipeline
+por pedido de Joaquín. Tiene su prompt, los dos documentos —reglas de marca y
+catálogo de plantillas— y seis herramientas: `crear_diseno`, `estado_diseno`,
+`corregir_diseno`, `montar_reel`, `crear_video` y `estado_reel`. Ver
+`tools-asistime/LEEME.md`.
