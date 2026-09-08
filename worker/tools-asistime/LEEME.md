@@ -163,7 +163,7 @@ republica solo en cada despliegue.
 
 ## Larrique (tenant 80), 8/9/2026
 
-El agente **605** tiene cinco herramientas y ninguna se copió tal cual:
+El agente **605** tiene seis herramientas y ninguna se copió tal cual:
 
 | Tool | Id | De dónde salió |
 |---|---|---|
@@ -171,10 +171,11 @@ El agente **605** tiene cinco herramientas y ninguna se copió tal cual:
 | `estado_diseno` | 2251 | la de Life, sin cambios más que la clave |
 | `corregir_diseno` | 2252 | la de Life, sin cambios más que la clave |
 | `montar_reel` | 2258 | **escrita para este cliente** — ver `montar_reel-larrique.js` |
-| `estado_reel` | 2259 | la de Boss, sin la rama de `crear_reel`: acá no se genera video con IA, así que no hay nada que advertir sobre caras deformadas ni créditos gastados |
+| `estado_reel` | 2259 | la de Boss, sin la rama de `crear_reel` |
+| `crear_video` | 2278 | **escrita para este cliente** — ver `crear_video-larrique.js` |
 
-`montar_reel` es el único archivo que se guarda, y va contra la regla de arriba
-de no duplicar a propósito: **no es la misma tool con otra URL**. Acá el
+`montar_reel` es uno de los dos archivos que se guardan, y va contra la regla de
+arriba de no duplicar a propósito: **no es la misma tool con otra URL**. Acá el
 material normal son FOTOS de producto, no clips filmados, y eso cambia lo que
 manda: un reel de fotos no tiene audio, así que pide `subtitulos: []` y
 `cortar_silencios: false`. Sin eso el worker se pone a escuchar tres imágenes.
@@ -186,3 +187,25 @@ Larrique empiece a mandar video filmado, se copian de Boss.
 **El primer campo se llama `material` y no `clips`.** El agente lee el nombre
 del parámetro antes que su descripción, y con «clips» mandaba a preguntar por
 videos a un cliente que sólo tiene fotos.
+
+`crear_video` es el segundo archivo que se guarda, y también por no ser la misma
+tool con otra URL: **acá la IA no puede dibujar el producto.** El manual de
+Larrique exige que la forma, la marca, el empaque y los detalles técnicos
+coincidan con el producto real, y ninguna IA acierta un rulemán NTN con su caja
+—sale el logotipo torcido y un número de parte inventado, que en este rubro es
+alguien que compra la pieza que no era—. Así que la tool **frena sola antes de
+gastar** cuando el pedido nombra un producto o una marca, y en el mismo mensaje
+le da al agente las dos salidas: `montar_reel` con las fotos reales si lo que
+quieren mostrar es el producto, o el mismo pedido reescrito como AMBIENTE —el
+depósito, el mostrador, un camión saliendo, el taller— si lo que buscan es
+movimiento de fondo.
+
+La guarda es una expresión regular **sin `\b`**, y eso es deliberado: la tool
+viaja hasta Asistime como JSON y en el camino `\b` se escapa dos veces, la
+expresión deja de compilar como se esperaba y nunca dispara. Ya pasó con la
+guarda de fotos de `crear_diseno`.
+
+Y hay una diferencia más chica con la de Asistime: cuando falta la foto de
+partida, la de Asistime ofrece armarla con `crear_foto`. Acá no, porque el 605
+no tiene esa tool y ofrecerla sería prometer algo que no existe — pide una foto
+del chat o el link de una que ya esté en larrique.com.uy.

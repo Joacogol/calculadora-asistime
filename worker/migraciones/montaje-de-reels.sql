@@ -14,8 +14,23 @@
 --  Es IDEMPOTENTE: correrlo dos veces no hace nada la segunda. Sirve tanto
 --  para una base que ya tiene la tabla `reels` (le agrega las columnas) como
 --  para una que no la tiene (la crea entera).
+--
+--  ── Por qué todo está calificado con `public.` ──────────────────────
+--
+--  Esto empezó siendo una migración para los clientes que tenían proyecto
+--  propio, donde todo vive en `public` y escribir `reels` a secas alcanzaba.
+--  Desde que hay clientes de ESQUEMA COMPARTIDO, este archivo también lo
+--  compone `herramientas/esquema-de-cliente.py`, y esa herramienta traduce un
+--  alta a otro esquema reemplazando el texto `public.`. Sin la calificación,
+--  `create table reels` caía donde apuntara el `search_path` — en la práctica,
+--  en `public`, o sea en la base de otro cliente.
+--
+--  Se descubrió el 8/9/2026 y de la peor manera posible: no falló nada. Life
+--  Montevideo y Larrique se dieron de alta sin tabla `reels` y nadie se
+--  enteró hasta que alguien pidió el primer video, semanas después, y la API
+--  contestó «Could not find the table 'larrique.reels'».
 
-create table if not exists reels (
+create table if not exists public.reels (
   id                  uuid primary key default gen_random_uuid(),
   creado_en           timestamptz not null default now(),
   actualizado_en      timestamptz not null default now(),
@@ -43,25 +58,25 @@ create table if not exists reels (
 );
 
 -- Para una base que ya tenía la tabla del camino de IA.
-alter table reels add column if not exists clips jsonb;
-alter table reels add column if not exists guion jsonb;
-alter table reels alter column foto drop not null;
+alter table public.reels add column if not exists clips jsonb;
+alter table public.reels add column if not exists guion jsonb;
+alter table public.reels alter column foto drop not null;
 
-comment on column reels.clips is
+comment on column public.reels.clips is
   'Material propio: lista de URLs de video que manda el agente. Si esta columna '
   'tiene algo, el reel se MONTA con ese material y no interviene ningún modelo: '
   'no gasta créditos.';
-comment on column reels.guion is
+comment on column public.reels.guion is
   'El guion de edición: tramos (qué pedazo de cada clip), subtitulos (en la '
   'escala del reel montado, o "auto" para sacarlos del audio), cortar_silencios '
   'y musica. El contrato completo está en motor/guion.py.';
 
-create index if not exists reels_estado_creado on reels (estado, creado_en);
+create index if not exists reels_estado_creado on public.reels (estado, creado_en);
 
 -- El worker entra con la service_role, así que no necesita políticas. Se deja
 -- RLS prendida igual: sin políticas, la clave anónima no ve nada, que es lo
 -- que corresponde para una tabla que sólo tocan el worker y las funciones.
-alter table reels enable row level security;
+alter table public.reels enable row level security;
 
 
 -- ── Que `actualizado_en` se actualice de verdad ────────────────────────────
@@ -80,20 +95,20 @@ alter table reels enable row level security;
 -- triggers, y Boss y Stadium con los dos: los suyos se habían hecho a mano
 -- antes de que existiera esta migración, así que el agujero sólo lo veía un
 -- cliente nuevo. Se arreglaron a mano y se agregan acá para que no vuelva.
-create or replace function tocar_actualizado() returns trigger
+create or replace function public.tocar_actualizado() returns trigger
   language plpgsql set search_path to 'public', 'pg_temp'
   as $$ begin new.actualizado_en := now(); return new; end $$;
 
-create or replace function forzar_user_id() returns trigger
+create or replace function public.forzar_user_id() returns trigger
   language plpgsql security definer set search_path to 'public', 'pg_temp'
   as $$ begin new.user_id := auth.uid(); return new; end $$;
 
 -- `drop` + `create` porque Postgres no tiene `create trigger if not exists`, y
 -- correr esto dos veces tiene que ser inofensivo.
-drop trigger if exists reels_tocar on reels;
-create trigger reels_tocar before update on reels
-  for each row execute function tocar_actualizado();
+drop trigger if exists reels_tocar on public.reels;
+create trigger reels_tocar before update on public.reels
+  for each row execute function public.tocar_actualizado();
 
-drop trigger if exists reels_forzar_user on reels;
-create trigger reels_forzar_user before insert on reels
-  for each row execute function forzar_user_id();
+drop trigger if exists reels_forzar_user on public.reels;
+create trigger reels_forzar_user before insert on public.reels
+  for each row execute function public.forzar_user_id();

@@ -1,0 +1,34 @@
+{
+ "id": "rotulo",
+ "nombre": "Rótulo de reel",
+ "descripcion": "el texto que se monta ENCIMA de un video: volanta, titular y firma, sin fondo",
+ "cuando_usarla": "Casi nunca a mano: es la plantilla con la que el motor dibuja el RÓTULO de los reels de Larrique, y por eso existe. Cuando se arma un reel con `montar_reel` o se genera un clip con `crear_video`, el título que lleva encima sale de acá. Pedila suelta sólo si hace falta ver cómo va a quedar ese texto antes de armar el video. Para una pieza fija del feed no es ésta: es `producto`, `marca`, `servicio`, `dato` o `institucional`.",
+ "acento_por_defecto": "azul",
+ "medidas": {
+  "reel":  {"alto": 1920, "pad": 76, "logo": 230, "titulo": 118, "kicker": 30, "bajada": 36, "pad_top": 210, "pad_bot": 300},
+  "story": {"alto": 1920, "pad": 76, "logo": 230, "titulo": 118, "kicker": 30, "bajada": 36, "pad_top": 210, "pad_bot": 300},
+  "vert":  {"alto": 1350, "pad": 66, "logo": 220, "titulo": 104, "kicker": 27, "bajada": 33, "pad_top": 110, "pad_bot": 110},
+  "post":  {"alto": 1080, "pad": 62, "logo": 210, "titulo": 96,  "kicker": 25, "bajada": 31, "pad_top": 96,  "pad_bot": 96}
+ },
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "El titular", "requerido": true,
+   "ejemplo": "ENVÍOS A TODO\nEL PAÍS",
+   "nota": "Dos o tres palabras. Encima de un video que dura cinco segundos, un titular largo no se termina de leer. El salto de línea que escribas se respeta."},
+  {"id": "kicker", "tipo": "texto", "etiqueta": "Volanta", "default": "",
+   "nota": "La línea chica de arriba, en el color del acento: «NUEVO INGRESO», «DIVISIÓN INDUSTRIAL»."},
+  {"id": "bajada", "tipo": "texto", "etiqueta": "Bajada", "default": "",
+   "nota": "Una línea debajo del titular. No repitas lo que ya dice arriba."},
+  {"id": "sobre_video", "tipo": "si_no", "etiqueta": "¿Va encima de un video?", "default": false,
+   "nota": "Lo prende el motor solo cuando esto es el rótulo de un reel. La pieza sale SIN fondo —transparente, para montarse encima del clip— con un degradado suave nada más donde cae el texto: un velo entero taparía el video."},
+  {"id": "posicion", "tipo": "opcion", "etiqueta": "Dónde va el texto",
+   "opciones": ["arriba", "centro", "abajo"], "default": "arriba",
+   "nota": "Encima de un video va «arriba» casi siempre: abajo está la interfaz de Instagram y ahí el texto no se lee."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de fondo", "default": "",
+   "nota": "Sólo cuando se pide la pieza suelta, para ver cómo queda. Con `sobre_video` prendido se ignora: el fondo es el clip."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["noche", "industrial", "agro", "socia", "clara"], "default": "noche"},
+  {"id": "acento", "tipo": "texto", "etiqueta": "Acento a mano", "default": ""}
+ ],
+ "notas": "El titular va SIEMPRE en blanco, también encima del video. El acento se queda para la volanta: el azul Larrique sobre una imagen de depósito no llega a contraste a cuerpo grande y el titular saldría lavado.\n\nEncima de un video el texto lleva sombra además del degradado. El degradado está fijo y por eso no ve la mancha clara puntual —un reflejo, una caja blanca— que se come tres letras; la sombra es local y arregla justo ese punto sin ensuciar la imagen.\n\nAcá NO va el pie de contacto que llevan todas las otras plantillas. En una pieza fija el WhatsApp es la acción; encima de un reel esa franja cae justo donde Instagram pone su propia interfaz y se pierde. El contacto va en la placa de cierre del reel, que es otra pieza."
+}

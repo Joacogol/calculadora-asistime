@@ -70,6 +70,37 @@ for kit in kits:
         print(f"  ✗ {kit.name}: carga pero no cumple el contrato — {e}")
         fallos.append(kit.name)
 
+# ── Y que cada marca pueda DIBUJAR EL RÓTULO de un reel ──────────────────
+#
+# No es un fallo de despliegue —una marca que no hace reels vive perfecto sin
+# esto— pero sí es la clase de cosa que no se descubre hasta que alguien pide
+# un video y se lo rechazan. El rótulo se dibuja DESPUÉS de generar el clip,
+# así que `reelero.puede_rotular` lo pregunta antes de gastar: si la marca no
+# declara su plantilla en `identidad.reel.plantilla`, el motor busca una
+# llamada `campana` —como se llama en Boss y en Stadium— y frena el pedido.
+#
+# Esto lo deja a la vista acá, donde lo ve quien despliega, en vez de en un
+# error del chat de un cliente.
+print("\n■ Quién puede dibujar el rótulo de un reel")
+try:
+    from app.reelero import puede_rotular
+except Exception as e:                                       # noqa: BLE001
+    print(f"  (no pude comprobarlo: {e})")
+else:
+    sin_rotulo = []
+    for kit in kits:
+        if kit.name in fallos:
+            continue
+        motivo = puede_rotular(kit.name)
+        if motivo:
+            sin_rotulo.append(kit.name)
+        else:
+            print(f"  ✓ {kit.name}")
+    for nombre in sin_rotulo:
+        print(f"  ⚠ {nombre}: no declara `identidad.reel.plantilla` y no tiene "
+              f"una `campana`.\n    Sus reels y sus videos se rechazan al "
+              f"pedirlos. No frena el despliegue.")
+
 print()
 if fallos:
     print(f"  ✗ NO se puede desplegar: {', '.join(fallos)}")
