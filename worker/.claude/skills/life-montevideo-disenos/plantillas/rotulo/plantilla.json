@@ -1,0 +1,37 @@
+{
+ "id": "rotulo",
+ "nombre": "Rótulo de reel",
+ "descripcion": "el texto que se monta ENCIMA de un video: la frase, un remate y la firma, sin fondo",
+ "cuando_usarla": "Casi nunca a mano: es la plantilla con la que el motor dibuja el RÓTULO de los reels. Cuando se arma un reel o se genera un clip, el texto que lleva encima sale de acá. Pedila suelta sólo si hace falta ver cómo va a quedar ese texto antes de armar el video. Para una pieza fija del feed no es ésta: es `manifiesto`, `clase`, `evento`, `aviso` o `foto`.",
+ "acento_por_defecto": "frambuesa",
+ "medidas": {
+  "reel":  {"alto": 1920, "pad": 84, "titulo": 118, "kicker": 27, "bajada": 34, "iso": 1.0, "logo": 0.7, "pad_top": 210, "pad_bot": 300},
+  "story": {"alto": 1920, "pad": 84, "titulo": 118, "kicker": 27, "bajada": 34, "iso": 1.0, "logo": 0.7, "pad_top": 210, "pad_bot": 300},
+  "vert":  {"alto": 1350, "pad": 66, "titulo": 104, "kicker": 24, "bajada": 31, "iso": 0.85, "logo": 0.56, "pad_top": 110, "pad_bot": 110},
+  "post":  {"alto": 1080, "pad": 62, "titulo": 92,  "kicker": 22, "bajada": 29, "iso": 0.8,  "logo": 0.52, "pad_top": 96,  "pad_bot": 96}
+ },
+ "campos": [
+  {"id": "titulo", "tipo": "texto_largo", "etiqueta": "La frase", "requerido": true,
+   "ejemplo": "VIBRAR\nFUERTE",
+   "nota": "Dos o tres palabras. Encima de un video de cinco segundos, una frase larga no se termina de leer. El salto de línea que escribas se respeta."},
+  {"id": "kicker", "tipo": "texto", "etiqueta": "Volanta", "default": "",
+   "nota": "La línea chica de arriba, en el color del club: «CARRASCO», «HYBRID SESSION», «ESTE SÁBADO»."},
+  {"id": "bajada", "tipo": "texto", "etiqueta": "Bajada", "default": "",
+   "nota": "Una línea debajo de la frase, en la voz baja. No repitas lo que ya dice arriba."},
+  {"id": "sobre_video", "tipo": "si_no", "etiqueta": "¿Va encima de un video?", "default": false,
+   "nota": "Lo prende el motor solo cuando esto es el rótulo de un reel. La pieza sale SIN fondo —transparente, para montarse encima del clip— con un degradado suave nada más donde cae el texto: un velo entero taparía el video."},
+  {"id": "posicion", "tipo": "opcion", "etiqueta": "Dónde va el texto",
+   "opciones": ["arriba", "centro", "abajo"], "default": "arriba",
+   "nota": "Encima de un video va «arriba» casi siempre: abajo está la interfaz de Instagram y ahí el texto no se lee."},
+  {"id": "foto", "tipo": "imagen", "etiqueta": "Foto de fondo", "default": "",
+   "nota": "Sólo cuando se pide la pieza suelta, para ver cómo queda. Con `sobre_video` prendido se ignora: el fondo es el clip."},
+  {"id": "foco", "tipo": "texto", "etiqueta": "Foco de la foto", "default": "50% 50%"},
+  {"id": "estilo", "tipo": "opcion", "etiqueta": "Paleta",
+   "opciones": ["club", "piscina", "hybrid", "familia", "blanca"], "default": "club",
+   "nota": "La misma regla de siempre: club para todo, piscina para lo del agua, hybrid para outdoor. `blanca` acá no tiene sentido —un rótulo va sobre video— y sale igual que club."},
+  {"id": "firma", "tipo": "opcion", "etiqueta": "Firma",
+   "opciones": ["iso", "lockup", "ninguna"], "default": "iso",
+   "nota": "Encima de un reel alcanza con el isotipo: la cuenta ya dice de quién es."}
+ ],
+ "notas": "La frase va en BLANCO y la volanta en el color del club. Al revés —la frase en frambuesa sobre un video en color— no llega a contraste y se lava: el manifiesto se permite el color porque su foto está en blanco y negro, y un clip no lo está.\n\nEncima de un video el texto lleva sombra además del degradado. El degradado está fijo y por eso no ve la mancha clara puntual —un reflejo del agua, una remera blanca— que se come tres letras; la sombra es local y arregla justo ese punto sin ensuciar la imagen."
+}

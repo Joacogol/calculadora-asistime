@@ -206,6 +206,8 @@
     },
     "acento_por_defecto": "frambuesa",
     "reel": {
+      "plantilla": "rotulo",
+      "_plantilla": "Con qué plantilla se dibuja el texto que va ENCIMA del video de un reel. Sin esto el motor busca una llamada `campana` —el nombre que tienen Boss y Stadium—, no la encuentra y frena el pedido antes de generar. Frenar está bien (el rótulo se dibuja DESPUÉS de pagar el video), pero dejaba a Life sin reels y sin videos.",
       "tipografias": [
         "Montserrat-Black.ttf",
         "Montserrat-SemiBold.ttf"

@@ -1,0 +1,106 @@
+{#- RÓTULO — el texto que va ENCIMA del video de un reel.
+
+    Existe porque el motor dibuja el rótulo de un reel con una plantilla de la
+    marca, y cuando la marca no declara cuál busca una llamada `campana` —el
+    nombre que tienen Boss y Stadium—. Clínica no tiene ninguna así, y el
+    guardián de `reelero.puede_rotular` frenaba el pedido ANTES de generar.
+    Bien frenado —el rótulo se dibuja después de pagar el clip— pero dejaba a
+    Clínica sin reels, y nadie se había enterado porque todavía no los pidió.
+
+    El arreglo es escribirle la suya y declararla en `marca.py`
+    (`PLANTILLA_ROTULO`), no copiarle una con el nombre de otra marca.
+
+    ── El destacado va en BLOQUE rojo, no en texto rojo ────────────────
+
+    `sangre` mide la foto con `plan_titular` y recién ahí decide si el rojo se
+    lee encima o si conviene el bloque. Acá no hay nada que medir: el fondo es
+    un video y cambia en cada cuadro. Así que va siempre la versión que
+    funciona sobre cualquier cosa — bloque rojo, tinta blanca —, que es la
+    misma que `sangre` elige cuando la foto no le da contraste al rojo.
+
+    `box-decoration-break: clone` no es un adorno: sin eso una frase destacada
+    de dos renglones se dibuja con UN solo rectángulo que envuelve los dos y
+    tapa media pantalla.
+
+    ── Con `sobre_video` la pieza NO tiene fondo ───────────────────────
+
+    Sale transparente para montarse encima del clip, con un degradado suave
+    nada más donde cae el texto. Un velo entero taparía el video que se pagó
+    —le pasó a Boss el 1/9/2026: ocho de diez segundos en negro—. El fondo
+    transparente lo termina de forzar `reelero.rotulo`, que pisa `html`,
+    `body` y `.canvas` desde afuera.
+
+    ── Y no lleva el pie de contacto ───────────────────────────────────
+
+    Es la única plantilla de Clínica sin la barra de abajo. En una pieza fija
+    el teléfono es la conversión —esta clínica no tiene agenda previa— pero
+    encima de un reel esa franja cae donde Instagram pone su interfaz y no la
+    ve nadie. El número va en la placa de cierre. -#}
+
+{%- set sobre = d.sobre_video -%}
+{%- set pos = d.posicion if d.posicion in ('arriba', 'centro', 'abajo') else 'arriba' -%}
+{%- set hay_foto = d.foto|length > 0 and not sobre -%}
+{%- set cuerpo = achicar_titular(d.titulo, m.cuerpo, 14.0) -%}
+{%- set sombra = 'text-shadow:0 2px 14px rgba(0,0,0,.75)' -%}
+
+{% if sobre %}
+{#- El degradado sigue a la posición del texto: si el titular va arriba, se
+    oscurece arriba. Al revés taparía el video justo donde no hace falta. -#}
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(0,0,0,.60),rgba(0,0,0,.10) 44%,rgba(0,0,0,0) 60%)"></div>
+{#- Y una pizca abajo, para que el logo blanco no se pierda contra una pared
+    clara. Va aparte para que los dos no se sumen al medio. -#}
+<div class="scrim" style="background:linear-gradient(0deg,
+  rgba(0,0,0,.46),rgba(0,0,0,0) 22%)"></div>
+{% elif hay_foto %}
+<img class="bg" src="{{ d.foto }}" style="object-position:{{ d.foco }}">
+<div class="scrim" style="background:linear-gradient(
+  {{ '180deg' if pos != 'abajo' else '0deg' }},
+  rgba(0,0,0,.74),rgba(0,0,0,.06) 52%,rgba(0,0,0,.40))"></div>
+{% else %}
+<div class="scrim" style="background:{{ c.tinta }}"></div>
+{% endif %}
+
+{#- La línea roja de arriba, que tienen todas las piezas de esta marca. Es lo
+    único que sobrevive del sistema fijo en una pieza sin fondo. -#}
+<div style="position:absolute;left:0;right:0;top:0;height:10px;
+  background:{{ c.rojo }};z-index:4"></div>
+
+<div class="pad" style="padding:{{ m.pad_top }}px {{ m.pad }}px {{ m.pad_bottom }}px;z-index:2">
+
+  {% if pos != 'arriba' %}<div class="grow"></div>{% endif %}
+
+  <div>
+    {% if d.kicker %}
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="width:5px;height:{{ m.kicker }}px;background:{{ c.rojo }};flex:none"></div>
+      <div class="kicker" style="color:#FFFFFF;font-size:{{ m.kicker }}px;
+        {{ sombra }}">{{ d.kicker }}</div>
+    </div>
+    {% endif %}
+
+    <div class="disp" style="font-size:{{ cuerpo }}px;text-transform:none;{{ sombra }}">
+      <span style="color:#FFFFFF">{{ d.titulo }}</span>
+      {% if d.destacado %}<br>
+      <span style="color:#FFFFFF;background:{{ c.rojo }};
+        padding:.04em .18em;-webkit-box-decoration-break:clone;
+        box-decoration-break:clone">{{ d.destacado }}</span>
+      {% endif %}
+    </div>
+
+    {#- Se llama `bajada` y no `texto`, que era el nombre en el resto del kit:
+        el motor le pasa a esta plantilla los tres campos con los que arma un
+        rótulo —`titulo`, `kicker` y `bajada`— y un cuarto nombre acá dejaría
+        la línea sin dibujar cada vez que el rótulo sale del reel y no de una
+        persona. Ver `reelero.rotulo`. -#}
+    {% if d.bajada %}
+    <div class="body" style="font-size:{{ m.bajada }}px;color:rgba(255,255,255,.92);
+      margin-top:18px;max-width:840px;{{ sombra }}">{{ d.bajada }}</div>
+    {% endif %}
+  </div>
+
+  {% if pos != 'abajo' %}<div class="grow"></div>{% endif %}
+
+  {{ logo(m.logo, "#FFFFFF", "left") }}
+</div>
