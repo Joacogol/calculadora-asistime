@@ -1,0 +1,12 @@
+[Unit]
+Description=Disenos de Clinica Preventiva en Hetzner
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm --name asistime-clinica --cpus=1 --memory=3g --pids-limit=256 --log-opt max-size=10m --log-opt max-file=2 -v /opt/asistime-disenador/config/credenciales.json:/run/credenciales.json:ro -v /opt/asistime-disenador/config/clinica.json:/run/clinica.json:ro -v /opt/asistime-disenador/clinica.py:/run/clinica.py:ro -v /opt/asistime-disenador/modelos:/opt/modelos -v /opt/asistime-disenador/piezas:/tmp/piezas --entrypoint python asistime-disenador:flujo-v5 /run/clinica.py
+ExecStopPost=-/usr/bin/docker stop --time 30 asistime-clinica
+TimeoutStartSec=35min
+TimeoutStopSec=45s
+

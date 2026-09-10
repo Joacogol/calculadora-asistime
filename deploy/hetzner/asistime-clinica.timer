@@ -1,0 +1,10 @@
+[Unit]
+Description=Revisar disenos pendientes de Clinica Preventiva
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+Unit=asistime-clinica.service
+
+[Install]
+WantedBy=timers.target
