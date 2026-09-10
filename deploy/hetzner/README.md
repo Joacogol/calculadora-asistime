@@ -8,7 +8,7 @@ Estado al 10/9/2026: diseños y edición de fotos de **Larrique General** (tenan
 - `larrique.py` procesa como máximo un diseño y una foto nueva por ciclo; consulta también fotos asíncronas ya enviadas. No procesa otras marcas, vídeo ni publicación en redes.
 - `asistime-larrique.timer` inicia otro ciclo aproximadamente un minuto después de terminar el anterior. Límite de 1,5 CPU, 4 GiB y 256 procesos. No expone puertos.
 - `configurar_claves.py` y `configurar_fotos.py` solicitan claves con entrada oculta. Conservan el archivo privado `/opt/asistime-disenador/config/credenciales.json` con permisos 600. No poner valores en GitHub ni en mensajes.
-- El contenedor de producción actual es `asistime-disenador:flujo-v4`. El instalador crea etiquetas basadas en el commit para despliegues futuros.
+- El contenedor de producción actual es `asistime-disenador:flujo-v5`. El instalador crea etiquetas basadas en el commit para despliegues futuros.
 
 ## Instalación o actualización
 
@@ -45,4 +45,8 @@ El workflow `worker.yml` ejecuta pruebas; ya no autentica ni despliega a Google.
 Los cambios de este repositorio no se publican automáticamente en Hetzner. Instalar la revisión elegida con el procedimiento anterior y comprobar el resultado.
 
 
-Actualización de calidad: el motor carga prioridades por marca desde `instrucciones_diseno` y el agente de Asistime resuelve primero la decisión de fondo. Ver `../asistime/README.md`. Imagen activa `flujo-v4`, que conserva el encuadre v3.
+Actualización de calidad: el motor carga prioridades por marca desde `instrucciones_diseno` y el agente de Asistime resuelve primero la decisión de fondo. Ver `../asistime/README.md`. Imagen activa `flujo-v5`, que conserva el encuadre v3.
+
+El acceso `worker/render.py --marca larrique-disenos spec.json salida` evita que el agente improvise lanzadores o intente escribir dentro de la carpeta protegida de skills. Se verificó con un render real sin red.
+
+Prueba integrada del 10/9: el agente preguntó por el fondo antes de usar herramientas, reutilizó el recorte autorizado sin editarlo otra vez, y creó el pedido `d344de40-aec3-4787-9a9a-ac8e6bf069a0`. Terminó listo: producto completo, ambos precios, 25% OFF y sin marca agregada. La consulta de estado posterior usó `esperar=false`.

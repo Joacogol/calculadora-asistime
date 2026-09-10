@@ -30,7 +30,7 @@ cp -p "$install_dir/larrique.py" "$install_dir/larrique.anterior.py" 2>/dev/null
 cp -p /etc/systemd/system/asistime-larrique.service "$install_dir/servicio.anterior" 2>/dev/null || true
 install -m 644 "$repo_dir/deploy/hetzner/larrique.py" "$install_dir/larrique.py"
 install -m 700 "$repo_dir/deploy/hetzner/configurar_claves.py" "$repo_dir/deploy/hetzner/configurar_fotos.py" "$install_dir/"
-sed "s|asistime-disenador:flujo-v4|$image_tag|" "$repo_dir/deploy/hetzner/asistime-larrique.service" > /etc/systemd/system/asistime-larrique.service
+sed "s|asistime-disenador:flujo-v5|$image_tag|" "$repo_dir/deploy/hetzner/asistime-larrique.service" > /etc/systemd/system/asistime-larrique.service
 install -m 644 "$repo_dir/deploy/hetzner/asistime-larrique.timer" /etc/systemd/system/
 systemctl daemon-reload
 if [[ -f "$install_dir/config/credenciales.json" ]]; then
