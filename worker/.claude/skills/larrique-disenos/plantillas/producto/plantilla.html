@@ -65,9 +65,13 @@
     calcular nada. -#}
 <div class="diag" style="background:{{ c.humo }}"></div>
 {% if hay_foto %}
-<img class="bg t-{{ trat }}" src="{{ d.foto }}"
-  style="object-fit:contain;object-position:{{ d.foco_producto }};
-    padding:{{ m.pad * 0.5 }}px;left:{{ m.corte_producto }}%;width:{{ 100 - m.corte_producto }}%">
+{%- set enc = encuadrar_producto(d.foto, 1080, m.alto,
+    [m.cinta + m.pad, 250 if fmt in ('story', 'reel') else 0]|max,
+    [m.alto - m.pie - m.pad, m.alto - 250 if fmt in ('story', 'reel') else m.alto]|min, 1080 - m.pad * 0.65,
+    1080 * m.corte_arriba / 100, 1080 * m.corte_abajo / 100, m.pad * 0.5) -%}
+<img class="producto-encuadrado" src="{{ d.foto }}"
+  style="position:absolute;left:{{ enc.left }}px;top:{{ enc.top }}px;
+    width:{{ enc.width }}px;height:{{ enc.height }}px;max-width:none">
 {% endif %}
 <div class="diag diag-bloque" style="background:{{ pal.fondo }};
   --corte-arriba:{{ m.corte_arriba }}%;--corte-abajo:{{ m.corte_abajo }}%"></div>
@@ -111,6 +115,14 @@
     <div class="v-bajada" style="color:{{ tinta }};opacity:.92;
       font-size:{{ m.bajada }}px;margin-top:{{ m.bajada * 0.95 }}px;
       max-width:100%;{{ sombra_chica }}">{{ d.bajada }}</div>
+    {% endif %}
+    {% if d.precio_actual %}
+    <div class="precios-producto" style="margin-top:{{ m.bajada }}px;color:{{ tinta }}">
+      {% if d.precio_anterior %}
+      <div class="v-bajada precio-anterior" style="font-size:{{ m.bajada * 0.85 }}px">Antes <s>{{ d.precio_anterior }}</s></div>
+      {% endif %}
+      <div class="v-numero precio-actual" style="font-size:{{ m.bajada * 1.5 }}px;line-height:1.2;font-weight:900;white-space:nowrap">{{ d.precio_actual }}</div>
+    </div>
     {% endif %}
   </div>
 

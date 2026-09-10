@@ -25,7 +25,7 @@
 //  carpeta compartida como «cualquiera con el enlace».
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-disenos";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 const VALIDOS = ["post", "vertical", "story", "reel", "carrusel", "secuencia"];
 
 const mensaje = String(input.mensaje || "").trim();

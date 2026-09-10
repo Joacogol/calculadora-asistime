@@ -19,7 +19,7 @@
 // la nota larga en `estado_diseno`.
 
 const API = "https://ndulchsiqutxibiwzzlc.supabase.co/functions/v1/api-reels";
-const CLAVE = "705fdf8433d7cb33ffaba7e95333c664bf8fd904bbea4fc5c211cf52f01a7e94";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 try {
   const id = String(input.id || "").trim();

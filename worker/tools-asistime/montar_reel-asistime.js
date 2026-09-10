@@ -19,7 +19,7 @@
 //  lleve a los demás clientes, se copia ésta con su URL y su clave.
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-reels";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 const clips = Array.isArray(input.clips) ? input.clips.map(String).filter(Boolean) : [];
 if (!clips.length) {

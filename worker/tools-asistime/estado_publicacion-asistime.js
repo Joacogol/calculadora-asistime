@@ -13,7 +13,7 @@
 //  minuto, la mayoría de las veces contesta con el link ya puesto.
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-publicar";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 const diseno_id = String(input.diseno_id || "").trim();
 if (!diseno_id) {

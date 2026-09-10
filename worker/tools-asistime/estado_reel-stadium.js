@@ -23,7 +23,7 @@
 //  Function, que se queda hasta un minuto mirando la fila antes de contestar.
 
 const API = "https://heajbidxysjxxegqemka.supabase.co/functions/v1/api-reels";
-const CLAVE = "ea9aa1075970e01b40da429f393981443a831c4a606a0fe7c9cb1a66855238d7";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 /** El texto del motor, cerrado con punto. Sus notas vienen sin puntuación
  *  final, y pegadas a la frase siguiente quedaban «no se pudo bajar

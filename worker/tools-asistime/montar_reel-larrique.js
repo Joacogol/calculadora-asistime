@@ -22,7 +22,7 @@
 //  Es la tool 2258 del tenant 80. Su compañera es `estado_reel` (2259).
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-reels";
-const CLAVE = "e48ac1d2d7b17611fba71e4450eae31fe326a267c5f7052b72000c484991f1a1";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 const ES_FOTO = /\.(jpg|jpeg|png|webp|avif|heic)(\?|#|$)/i;
 

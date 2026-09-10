@@ -29,7 +29,7 @@
 //  Es la tool 2279 del tenant 80. Su compañera es `estado_foto` (2280).
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-fotos";
-const CLAVE = "e48ac1d2d7b17611fba71e4450eae31fe326a267c5f7052b72000c484991f1a1";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 const VERBOS = ["fondo", "tamano", "formato", "retoque", "escena", "crear"];
 const CON_INSTRUCCION = ["retoque", "escena", "crear"];

@@ -16,7 +16,7 @@
 //  distintas, y el que paga es el cliente.
 
 const API = "https://heajbidxysjxxegqemka.supabase.co/functions/v1/api-reels";
-const CLAVE = "ea9aa1075970e01b40da429f393981443a831c4a606a0fe7c9cb1a66855238d7";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 try {
   const mensaje = String(input.mensaje || "").trim();

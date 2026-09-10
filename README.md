@@ -31,3 +31,8 @@ la documentación en el proyecto de Claude **Boss Padel**:
 
 La deuda de seguridad de la sección 10 del traspaso sigue abierta: tres claves
 por rotar. Va antes que cualquier cosa de este repo.
+
+
+## Diseñador de Larrique en Hetzner
+
+El motor de Larrique procesa diseños y fotos en Hetzner. Ver [instalación, configuración y estado](deploy/hetzner/README.md). GitHub ejecuta pruebas del worker; el despliegue automático a Google está desactivado.

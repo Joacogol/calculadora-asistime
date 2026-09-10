@@ -14,7 +14,7 @@
 //  segundo. Es el error más fácil de cometer acá.
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-publicar/reel";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const reel_id = String(input.reel_id || "").trim();

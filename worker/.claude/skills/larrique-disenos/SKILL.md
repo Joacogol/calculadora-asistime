@@ -227,3 +227,7 @@ por pedido de Joaquín. Tiene su prompt, los dos documentos —reglas de marca y
 catálogo de plantillas— y seis herramientas: `crear_diseno`, `estado_diseno`,
 `corregir_diseno`, `montar_reel`, `crear_video`, `estado_reel`, `editar_foto` y
 `estado_foto`. Ver `tools-asistime/LEEME.md`.
+
+## Encuadre automático de productos
+
+En `producto` diagonal, el motor mide la silueta visible (alfa), mantiene proporciones y encaja el producto entre encabezado, diagonal y pie. No usar `foco_producto` ni retoques CSS para empujarlo hacia abajo. Si `editar_foto` ya quitó el fondo, usar su URL resultante como foto del diseño, no el original blanco. Las fotos opacas se preservan completas: el motor no identifica ni borra fondos por color. Revisar la pieza; este cálculo protege la geometría, no garantiza una composición perfecta para cualquier foto.

@@ -22,7 +22,7 @@
 //  deshace.
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-publicar/foto";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 
 const archivo = String(input.archivo || "").trim();
 if (!archivo) {

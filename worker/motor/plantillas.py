@@ -184,6 +184,16 @@ def _ayudas(marca, raiz):
         return silueta.ocupacion(str(ruta) if ruta else "", int(ancho),
                                  int(alto), tuple(zona), foco or "50% 50%")
 
+    def _encuadrar_producto(foto, ancho, alto, superior, inferior, derecha,
+                            corte_arriba, corte_abajo, margen=24):
+        from .encuadre_producto import encuadrar
+        ruta = pathlib.Path(foto)
+        if not ruta.is_absolute():
+            ruta = pathlib.Path(raiz) / ruta
+        return encuadrar(ruta, ancho, alto, superior, inferior, derecha,
+                        corte_arriba, corte_abajo, margen)
+
+    ayudas["encuadrar_producto"] = _encuadrar_producto
     ayudas["recortada"] = _recortada
     ayudas["ocupa"] = _ocupa
     ayudas["plan_titular"] = _plan_titular

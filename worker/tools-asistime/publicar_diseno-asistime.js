@@ -22,7 +22,7 @@
 //  Elegir por la persona sería adivinar cuál quería.
 
 const API = "https://qxjvtxumkljsroukpkny.supabase.co/functions/v1/api-publicar";
-const CLAVE = "26cfe17eee7b67d8292bcc52f1039ca105f03967c4a1667594b199c7d0b1700e";
+const CLAVE = "CONFIGURAR_EN_ASISTIME";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const diseno_id = String(input.diseno_id || "").trim();

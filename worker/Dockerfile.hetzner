@@ -1,0 +1,34 @@
+FROM python:3.12-slim
+
+# Chromium (motor de las placas y del PDF), ffmpeg (motor de los reels) y las
+# fuentes. La de emoji es imprescindible: los rótulos de los reels llevan
+# emoticones y sin ella salen como cuadraditos vacíos, que es peor que no
+# ponerlos. Acá se ve bien porque el contenedor de desarrollo la trae; en
+# Cloud Run hay que instalarla a mano.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ffmpeg \
+      fonts-noto-color-emoji \
+      fontconfig libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+      libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+      libgbm1 libasound2 libpango-1.0-0 libcairo2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    playwright install chromium
+
+# Caché persistente de transcripción, descargada sólo cuando se utiliza.
+ENV HF_HOME=/opt/modelos
+# El modelo se descarga al usar transcripción y se conserva en volumen.
+
+
+COPY . .
+# Las tipografías de TODAS las marcas, no las de una. Cada marca vive en su
+# carpeta bajo .claude/skills/ y trae las suyas; el glob evita tener que tocar
+# el Dockerfile cada vez que entra un cliente nuevo.
+RUN fc-cache -f /app/.claude/skills/*/fonts || true
+
+# El comando real lo fija el despliegue (`--command python --args=-m,app.chat`).
+# Este es el mismo, para que la imagen funcione sola si alguien la corre a mano.
+CMD ["python", "-m", "app.chat"]

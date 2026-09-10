@@ -1,0 +1,12 @@
+[Unit]
+Description=Disenos de Larrique en Hetzner
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm --name asistime-larrique --cpus=1.5 --memory=4g --pids-limit=256 --log-opt max-size=10m --log-opt max-file=2 -v /opt/asistime-disenador/config/credenciales.json:/run/credenciales.json:ro -v /opt/asistime-disenador/larrique.py:/run/larrique.py:ro -v /opt/asistime-disenador/modelos:/opt/modelos -v /opt/asistime-disenador/piezas:/tmp/piezas --entrypoint python asistime-disenador:encuadre-v3 /run/larrique.py
+ExecStopPost=-/usr/bin/docker stop --time 30 asistime-larrique
+TimeoutStartSec=35min
+TimeoutStopSec=45s
+

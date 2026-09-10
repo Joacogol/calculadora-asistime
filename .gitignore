@@ -11,3 +11,11 @@ worker/supabase/
 worker/.claude/skills/*/assets/banco/
 # Y lo que sube una persona para UNA pieza, que baja `_traer_adjuntos`.
 worker/.claude/skills/*/assets/subidas/
+
+# Secretos y artefactos de ejecución.
+.env
+.env.*
+!.env.example
+credenciales.json
+deploy/hetzner/config/
+*.log
