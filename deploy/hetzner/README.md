@@ -8,7 +8,7 @@ Estado al 10/9/2026: diseños y edición de fotos de **Larrique General** (tenan
 - `larrique.py` procesa como máximo un diseño y una foto nueva por ciclo; consulta también fotos asíncronas ya enviadas. No procesa otras marcas, vídeo ni publicación en redes.
 - `asistime-larrique.timer` inicia otro ciclo aproximadamente un minuto después de terminar el anterior. Límite de 1,5 CPU, 4 GiB y 256 procesos. No expone puertos.
 - `configurar_claves.py` y `configurar_fotos.py` solicitan claves con entrada oculta. Conservan el archivo privado `/opt/asistime-disenador/config/credenciales.json` con permisos 600. No poner valores en GitHub ni en mensajes.
-- El contenedor de producción actual es `asistime-disenador:encuadre-v3`. El instalador crea etiquetas basadas en el commit para despliegues futuros.
+- El contenedor de producción actual es `asistime-disenador:flujo-v4`. El instalador crea etiquetas basadas en el commit para despliegues futuros.
 
 ## Instalación o actualización
 
@@ -43,3 +43,6 @@ La plantilla incluye precio actual y precio anterior tachado. No depende de `foc
 El workflow `worker.yml` ejecuta pruebas; ya no autentica ni despliega a Google. Los scripts antiguos de Cloud Run permanecen como referencia, no deben usarse para actualizar Larrique. No se eliminaron los recursos de Google ni se reactivó su facturación. Antes de reactivarla deben revisarse los disparadores antiguos para evitar dos workers procesando las mismas colas.
 
 Los cambios de este repositorio no se publican automáticamente en Hetzner. Instalar la revisión elegida con el procedimiento anterior y comprobar el resultado.
+
+
+Actualización de calidad: el motor carga prioridades por marca desde `instrucciones_diseno` y el agente de Asistime resuelve primero la decisión de fondo. Ver `../asistime/README.md`. Imagen activa `flujo-v4`, que conserva el encuadre v3.

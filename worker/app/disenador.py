@@ -891,6 +891,11 @@ async def disenar(pedido: dict, salida: Path, cli=None) -> tuple[bool, str, dict
         salida=salida,
     )
 
+    # Las prioridades operativas son datos por marca, no condiciones por cliente.
+    prioridades = ficha.get("instrucciones_diseno")
+    if isinstance(prioridades, str) and prioridades.strip():
+        prompt = prioridades.strip() + "\n\n" + prompt
+
     modelo = _modelo(pedido)
     ultimo, met = await _correr(prompt, modelo, salida, marca)
 

@@ -231,3 +231,7 @@ catálogo de plantillas— y seis herramientas: `crear_diseno`, `estado_diseno`,
 ## Encuadre automático de productos
 
 En `producto` diagonal, el motor mide la silueta visible (alfa), mantiene proporciones y encaja el producto entre encabezado, diagonal y pie. No usar `foco_producto` ni retoques CSS para empujarlo hacia abajo. Si `editar_foto` ya quitó el fondo, usar su URL resultante como foto del diseño, no el original blanco. Las fotos opacas se preservan completas: el motor no identifica ni borra fondos por color. Revisar la pieza; este cálculo protege la geometría, no garantiza una composición perfecta para cualquier foto.
+
+## Fidelidad del brief
+
+No rellenar chips con beneficios inventados. Marca no confirmada implica `marca` y `logos` vacíos. Copiar los dos precios y mostrar el porcentaje solicitado en la imagen. Usar el recorte acordado y conservar su transparencia. Acortar texto redundante antes de reducir al producto. Las prioridades operativas se cargan también desde `marca.json` en cada pedido.

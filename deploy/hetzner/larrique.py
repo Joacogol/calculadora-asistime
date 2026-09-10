@@ -16,7 +16,7 @@ from app import chat, config, libro, fotero
 from app.supa import Cliente
 import requests
 
-config.VERSION = 'hetzner-encuadre-v3-20260910'
+config.VERSION = 'hetzner-flujo-v4-20260910'
 cli = Cliente(MARCA, os.environ['LIBRO_URL'], d['SUPABASE_KEY'],
               bucket='disenos-larrique', nombre='Larrique', esquema='larrique')
 
