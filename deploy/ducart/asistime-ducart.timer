@@ -1,0 +1,11 @@
+[Unit]
+Description=Revisar pedidos de Ducart
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=30s
+AccuracySec=5s
+Unit=asistime-ducart.service
+
+[Install]
+WantedBy=timers.target

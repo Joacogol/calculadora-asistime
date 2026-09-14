@@ -1,0 +1,142 @@
+{
+  "nombre": "Ducart Latin America",
+  "slug": "ducart",
+  "web": "www.dla.com.uy",
+  "instagram": "@ducartla",
+  "formato_por_defecto": "vert",
+  "telefono_por_defecto": false,
+  "sedes": {},
+  "asistime": {
+    "tenant": 189,
+    "clave_env": "ASISTIME_CLAVE_DUCART",
+    "documento": 911,
+    "catalogo": 912,
+    "aplicacion": 61
+  },
+  "regla_datos": "Precios, stock, fechas, dosificaciones y porcentajes requieren confirmación vigente. Las piezas aportadas y el folleto son referencia; no tomar eventos pasados como próximos. No inventar beneficios ni superioridad.",
+  "regla_foto": "Usar producto real sin deformar ni redibujar etiquetas. No presentar fotos de catálogo como clientes visitados. Fotos de eventos o personas identificables: sólo el material que el cliente autorice para ese contenido.",
+  "voz": {
+    "como_habla": "Profesional, técnica y cercana; español uruguayo con voseo. Explica con claridad y termina con una sola invitación a consultar.",
+    "frase_paraguas": "Soluciones integrales para el agro"
+  },
+  "fotos": {
+    "creditos_maximos": 600
+  },
+  "reels": {
+    "calidad": "normal",
+    "duracion": 10,
+    "creditos_maximos": 4500,
+    "musica": [
+      {
+        "clave": "campo-calmo",
+        "nombre": "Campo calmo",
+        "descripcion": "Base instrumental sintetizada por el motor compartido, sin voces; alternativa por defecto."
+      }
+    ]
+  },
+  "identidad": {
+    "colores": {
+      "verde": "#134E2E",
+      "hoja": "#7EAE57",
+      "amarillo": "#D4D430",
+      "blanco": "#FFFFFF",
+      "papel": "#F3F5EF",
+      "tinta": "#163725",
+      "azul": "#2073B8"
+    },
+    "roles": {
+      "acento": "verde",
+      "claro": "blanco",
+      "tinta": "tinta"
+    },
+    "formatos": {
+      "post": [
+        1080,
+        1080
+      ],
+      "vert": [
+        1080,
+        1350
+      ],
+      "story": [
+        1080,
+        1920
+      ],
+      "reel": [
+        1080,
+        1920
+      ]
+    },
+    "tipografias": [
+      {
+        "familia": "Mont",
+        "archivo": "fonts/Montserrat-Regular.ttf",
+        "pesos": "400"
+      },
+      {
+        "familia": "Mont",
+        "archivo": "fonts/Montserrat-SemiBold.ttf",
+        "pesos": "600"
+      },
+      {
+        "familia": "Mont",
+        "archivo": "fonts/Montserrat-Bold.ttf",
+        "pesos": "700"
+      }
+    ],
+    "logo": {
+      "archivo": "assets/logo-color.png",
+      "claro": "assets/logo-blanco.png",
+      "ratio": 1.8181818181818181,
+      "ancho": 240,
+      "color": "verde"
+    },
+    "iso": {
+      "archivo": "assets/logo-completo.png",
+      "ratio": 2.5,
+      "alto": 80,
+      "color": "verde"
+    },
+    "componentes": {
+      "barra": {
+        "texto": "www.dla.com.uy"
+      },
+      "pastilla": {
+        "radio": 12
+      }
+    },
+    "acento_por_defecto": "verde",
+    "voces": {
+      "titulo": "Montserrat Bold, bloques breves y legibles. El logotipo usa siempre el archivo original.",
+      "texto": "Montserrat Regular. Alternativa empaquetable presente en el folleto; Avenir del original no fue suministrada como fuente completa."
+    },
+    "paletas": {},
+    "reel": {
+      "plantilla": "rotulo",
+      "tipografias": [
+        "Montserrat-Bold.ttf",
+        "Montserrat-Regular.ttf"
+      ],
+      "animo_musica": "calmo",
+      "acento": "verde",
+      "encuadre": "caras"
+    },
+    "carrusel": {
+      "color_cromo": "verde",
+      "fuente_cromo": "'Mont',sans-serif",
+      "fuente_texto": "'Mont',sans-serif",
+      "diapos": {
+        "portada": "foto",
+        "foto": "foto",
+        "producto": "producto",
+        "dato": "tecnico",
+        "contenido": "tecnico",
+        "cierre": "cierre",
+        "cuadro": "tecnico",
+        "texto": "tecnico"
+      }
+    },
+    "vocabulario": "Ducart Latin America, DLA, forrajes, silo pack, silaje, ensilaje, RaniWrap, Silotrato, BioGrow, Tama, Ambic, Bekina, cama caliente, tambo, guacheras, Nueva Helvecia."
+  },
+  "instrucciones_diseno": "Usar python3 /app/render.py --marca ducart-disenos SPEC SALIDA. Spec es lista [{plantilla,formato,nombre,data}]. No crear otro renderizador. Leer SKILL.md y referencias/fotos.json. Para presentacion usar data.slides [{plantilla,data}]; para carrusel usar data.slides [{tipo,...campos}]. Nunca colocar dos logos. Precios/descuentos confirmados van visibles en imagen. Si una foto fue acordada, conservar exactamente ese archivo. Verificar PNG contra pedido antes de entregar."
+}

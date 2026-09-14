@@ -1,0 +1,129 @@
+{
+  "id": "rotulo",
+  "nombre": "Rótulo de video",
+  "descripcion": "Texto sobre el video: transparente cuando sobre_video=true. Mantener toda información dentro de la zona segura.",
+  "cuando_usarla": "Texto sobre el video: transparente cuando sobre_video=true. Mantener toda información dentro de la zona segura.",
+  "acento_por_defecto": "verde",
+  "medidas": {
+    "post": {
+      "alto": 1080,
+      "top": 60,
+      "bottom": 86,
+      "titulo": 76,
+      "body": 30,
+      "foto_alto": 410
+    },
+    "vert": {
+      "alto": 1350,
+      "top": 60,
+      "bottom": 86,
+      "titulo": 76,
+      "body": 30,
+      "foto_alto": 580
+    },
+    "story": {
+      "alto": 1920,
+      "top": 250,
+      "bottom": 280,
+      "titulo": 88,
+      "body": 34,
+      "foto_alto": 780
+    },
+    "reel": {
+      "alto": 1920,
+      "top": 250,
+      "bottom": 280,
+      "titulo": 88,
+      "body": 34,
+      "foto_alto": 780
+    }
+  },
+  "campos": [
+    {
+      "id": "titulo",
+      "tipo": "texto_largo",
+      "etiqueta": "Titular",
+      "requerido": true,
+      "nota": "Máximo 65 caracteres. Si es largo dividir en carrusel; no inventar información."
+    },
+    {
+      "id": "bajada",
+      "tipo": "texto_largo",
+      "etiqueta": "Bajada",
+      "default": ""
+    },
+    {
+      "id": "rotulo",
+      "tipo": "texto",
+      "etiqueta": "Categoría",
+      "default": ""
+    },
+    {
+      "id": "foto",
+      "tipo": "imagen",
+      "etiqueta": "Foto real",
+      "default": ""
+    },
+    {
+      "id": "foco",
+      "tipo": "texto",
+      "etiqueta": "Punto focal",
+      "default": "50% 50%"
+    },
+    {
+      "id": "cta",
+      "tipo": "texto",
+      "etiqueta": "Llamado a la acción",
+      "default": "Conocé más en www.dla.com.uy"
+    },
+    {
+      "id": "lista",
+      "tipo": "texto_largo",
+      "etiqueta": "Puntos, uno por línea",
+      "default": ""
+    },
+    {
+      "id": "fecha",
+      "tipo": "texto",
+      "etiqueta": "Fecha confirmada",
+      "default": ""
+    },
+    {
+      "id": "lugar",
+      "tipo": "texto",
+      "etiqueta": "Lugar confirmado",
+      "default": ""
+    },
+    {
+      "id": "precio_actual",
+      "tipo": "texto",
+      "etiqueta": "Precio vigente confirmado",
+      "default": ""
+    },
+    {
+      "id": "precio_anterior",
+      "tipo": "texto",
+      "etiqueta": "Precio anterior confirmado",
+      "default": ""
+    },
+    {
+      "id": "descuento",
+      "tipo": "texto",
+      "etiqueta": "Descuento confirmado",
+      "default": ""
+    },
+    {
+      "id": "sobre_video",
+      "tipo": "booleano",
+      "etiqueta": "Rótulo transparente",
+      "default": false
+    },
+    {
+      "id": "kicker",
+      "tipo": "texto",
+      "etiqueta": "Sobretítulo del reel",
+      "default": ""
+    }
+  ],
+  "cromo": "blanco"
+}

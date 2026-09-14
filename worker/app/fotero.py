@@ -696,10 +696,15 @@ def atender_todos(cli, ficha: dict, subir) -> int:
             if url:
                 # Sync: ya está. Se baja y se sube en la misma corrida porque
                 # la URL de Magnific caduca a los cinco minutos.
+                guardada = _guardar(cli, fila, url, subir)
                 _marcar(cli, fila["id"], "listo",
-                        url=_guardar(cli, fila, url, subir),
+                        url=guardada,
                         modelo=VERBOS[verbo]["modelo"],
                         creditos_estimados=cuesta, creditos_gastados=cuesta)
+                # La fila leída sigue sin estimación/modelo hasta el próximo
+                # ciclo. Pasar los valores de esta respuesta al registro.
+                _cobrar(cli, {**fila, "creditos_estimados": cuesta,
+                              "modelo": VERBOS[verbo]["modelo"]}, guardada)
             else:
                 _marcar(cli, fila["id"], "trabajando", tarea=tarea,
                         modelo=VERBOS[verbo]["modelo"], creditos_estimados=cuesta)

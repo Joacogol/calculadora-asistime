@@ -1,0 +1,9 @@
+[Unit]
+Description=Asistime Diseñador Ducart
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm --name asistime-ducart --cpus=1.5 --memory=4g --pids-limit=256 --log-opt max-size=10m --log-opt max-file=2 -v /opt/asistime-disenador/config/credenciales.json:/run/credenciales.json:ro -v /opt/asistime-disenador/config/ducart.json:/run/ducart.json:ro -v /opt/asistime-disenador/ducart-build/runner.py:/run/ducart.py:ro -v /opt/asistime-disenador/modelos:/opt/modelos -v /opt/asistime-disenador/piezas-ducart:/tmp/piezas --entrypoint python asistime-disenador:ducart-v5 /run/ducart.py
+TimeoutStartSec=1800

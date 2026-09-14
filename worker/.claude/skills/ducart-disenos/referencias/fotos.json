@@ -1,0 +1,345 @@
+{
+  "_nota": "Imágenes originales extraídas del folleto aportado; inspeccionadas visualmente. Verificar encuadre en cada pieza. No usar fotos de catálogo para afirmar que se visitó un cliente.",
+  "fotos": {
+    "campo-aereo": {
+      "archivo": "assets/banco/campo-aereo.png",
+      "descripcion": "Vista aérea de parcelas agrícolas verdes.",
+      "usar_para": "institucional, campo",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Vista aérea de parcelas agrícolas verdes."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        1024,
+        682
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p01-01. Referencia de catálogo, no prueba de stock actual."
+    },
+    "enfardado": {
+      "archivo": "assets/banco/enfardado.png",
+      "descripcion": "Tractor y fardo envuelto blanco en un campo.",
+      "usar_para": "forrajes, ensilaje",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Tractor y fardo envuelto blanco en un campo."
+      },
+      "foco": {
+        "post": "60% 50%",
+        "vert": "60% 50%",
+        "story": "60% 50%",
+        "reel": "60% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        790,
+        593
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p01-03. Referencia de catálogo, no prueba de stock actual."
+    },
+    "espiga": {
+      "archivo": "assets/banco/espiga.png",
+      "descripcion": "Mano con espiga dorada, fondo desenfocado.",
+      "usar_para": "agro, cosecha",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Mano con espiga dorada, fondo desenfocado."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        3264,
+        2448
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p02-02. Referencia de catálogo, no prueba de stock actual."
+    },
+    "fardo-red": {
+      "archivo": "assets/banco/fardo-red.png",
+      "descripcion": "Fardo redondo en rastrojo, cielo azul.",
+      "usar_para": "redes, heno",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Fardo redondo en rastrojo, cielo azul."
+      },
+      "foco": {
+        "post": "58% 55%",
+        "vert": "58% 55%",
+        "story": "58% 55%",
+        "reel": "58% 55%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        830,
+        723
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p06-02. Referencia de catálogo, no prueba de stock actual."
+    },
+    "fardos-film": {
+      "archivo": "assets/banco/fardos-film.png",
+      "descripcion": "Fila de fardos envueltos blancos en campo.",
+      "usar_para": "films, forrajes",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Fila de fardos envueltos blancos en campo."
+      },
+      "foco": {
+        "post": "50% 55%",
+        "vert": "50% 55%",
+        "story": "50% 55%",
+        "reel": "50% 55%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        940,
+        627
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p08-03. Referencia de catálogo, no prueba de stock actual."
+    },
+    "raniwrap": {
+      "archivo": "assets/banco/raniwrap.png",
+      "descripcion": "Envases de films Rani en fotografía de catálogo.",
+      "usar_para": "producto, Rani",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Envases de films Rani en fotografía de catálogo."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        800,
+        800
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p08-06. Referencia de catálogo, no prueba de stock actual."
+    },
+    "silo-cobertura": {
+      "archivo": "assets/banco/silo-cobertura.png",
+      "descripcion": "Silo cubierto con neumáticos para conservación del forraje.",
+      "usar_para": "silos, cobertura",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Silo cubierto con neumáticos para conservación del forraje."
+      },
+      "foco": {
+        "post": "50% 55%",
+        "vert": "50% 55%",
+        "story": "50% 55%",
+        "reel": "50% 55%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        940,
+        627
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p09-02. Referencia de catálogo, no prueba de stock actual."
+    },
+    "forraje-mano": {
+      "archivo": "assets/banco/forraje-mano.png",
+      "descripcion": "Mano sosteniendo forraje picado verde.",
+      "usar_para": "ensilaje, calidad",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Mano sosteniendo forraje picado verde."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        640,
+        427
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p10-00. Referencia de catálogo, no prueba de stock actual."
+    },
+    "cosecha-aerea": {
+      "archivo": "assets/banco/cosecha-aerea.png",
+      "descripcion": "Cosechadora y tractor trabajando vistos desde arriba.",
+      "usar_para": "cosecha, zafra",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Cosechadora y tractor trabajando vistos desde arriba."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        1024,
+        767
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p10-04. Referencia de catálogo, no prueba de stock actual."
+    },
+    "silotrato": {
+      "archivo": "assets/banco/silotrato.png",
+      "descripcion": "Envase real Silotrato de BioGrow, tapa verde.",
+      "usar_para": "producto, Silotrato",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Envase real Silotrato de BioGrow, tapa verde."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        671,
+        1007
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p10-05. Referencia de catálogo, no prueba de stock actual."
+    },
+    "trabajo-campo": {
+      "archivo": "assets/banco/trabajo-campo.png",
+      "descripcion": "Vehículo y personas pequeñas en el campo; identidades no confirmadas.",
+      "usar_para": "servicio técnico a campo",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Vehículo y personas pequeñas en el campo; identidades no confirmadas."
+      },
+      "foco": {
+        "post": "50% 55%",
+        "vert": "50% 55%",
+        "story": "50% 55%",
+        "reel": "50% 55%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        1024,
+        692
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p10-07. Referencia de catálogo, no prueba de stock actual."
+    },
+    "higiene-industrial": {
+      "archivo": "assets/banco/higiene-industrial.png",
+      "descripcion": "Persona con equipo de protección limpiando instalaciones industriales.",
+      "usar_para": "higiene, desinfección",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Persona con equipo de protección limpiando instalaciones industriales."
+      },
+      "foco": {
+        "post": "55% 45%",
+        "vert": "55% 45%",
+        "story": "55% 45%",
+        "reel": "55% 45%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        1080,
+        675
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p14-05. Referencia de catálogo, no prueba de stock actual."
+    },
+    "ambic-multifoamer": {
+      "archivo": "assets/banco/ambic-multifoamer.png",
+      "descripcion": "Vaso espumador Ambic de catálogo, azul y blanco.",
+      "usar_para": "producto, ordeñe",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Vaso espumador Ambic de catálogo, azul y blanco."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        500,
+        500
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p15-02. Referencia de catálogo, no prueba de stock actual."
+    },
+    "tambo": {
+      "archivo": "assets/banco/tambo.png",
+      "descripcion": "Vacas en instalaciones de un tambo.",
+      "usar_para": "tambo, instalaciones",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Vacas en instalaciones de un tambo."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        1920,
+        1275
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p19-02. Referencia de catálogo, no prueba de stock actual."
+    },
+    "guacheras": {
+      "archivo": "assets/banco/guacheras.png",
+      "descripcion": "Terneros en guacheras con baldes de alimentación.",
+      "usar_para": "guacheras, higiene",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Terneros en guacheras con baldes de alimentación."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        728,
+        505
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p19-04. Referencia de catálogo, no prueba de stock actual."
+    },
+    "botas-bekina": {
+      "archivo": "assets/banco/botas-bekina.png",
+      "descripcion": "Par de botas verdes Bekina: vista lateral y suela.",
+      "usar_para": "producto, botas",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Par de botas verdes Bekina: vista lateral y suela."
+      },
+      "foco": {
+        "post": "50% 50%",
+        "vert": "50% 50%",
+        "story": "50% 50%",
+        "reel": "50% 50%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        817,
+        939
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p21-01. Referencia de catálogo, no prueba de stock actual."
+    },
+    "botas-contexto": {
+      "archivo": "assets/banco/botas-contexto.png",
+      "descripcion": "Piernas con botas verdes en un tambo; sin rostro visible.",
+      "usar_para": "botas, trabajo rural",
+      "quien": {
+        "descripcion": "No atribuir identidad, establecimiento o testimonio. Piernas con botas verdes en un tambo; sin rostro visible."
+      },
+      "foco": {
+        "post": "60% 60%",
+        "vert": "60% 60%",
+        "story": "60% 60%",
+        "reel": "60% 60%"
+      },
+      "foco_confirmado": false,
+      "medidas": [
+        829,
+        464
+      ],
+      "origen": "Folleto agro aportado por el cliente, imagen p21-03. Referencia de catálogo, no prueba de stock actual."
+    }
+  }
+}

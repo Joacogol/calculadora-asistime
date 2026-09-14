@@ -1,0 +1,1 @@
+Campo calmo deriva del audio sintetizado en motor/assets/sfx/musica-calmo.wav, generado por motor/sonido.py. No es una canción comercial ni material extraído de Instagram. Se empaqueta en MP3 para la interfaz del montador compartido.
