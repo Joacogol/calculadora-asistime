@@ -1,6 +1,5 @@
 -- Permite al backend publicar las plantillas autorizadas de Larrique.
 -- No concede acceso a anon, authenticated ni PUBLIC.
-begin;
 grant execute on function larrique.guardar_plantilla(text,text,jsonb,text,text,boolean) to service_role;
 grant execute on function larrique.publicar_plantilla(text,integer) to service_role;
 do $$
@@ -14,4 +13,3 @@ begin
   raise exception 'Revisar: la publicación no debe estar disponible a usuarios públicos';
  end if;
 end $$;
-commit;
