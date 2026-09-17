@@ -331,6 +331,8 @@ function vCliente(marca) {
           <div class="fila-form"><label>Acento<input name="acento" type="color" value="${i.acento || '#4D90FF'}"></label><label>Tinta<input name="tinta" type="color" value="${i.tinta || '#0A0B14'}"></label><label>Fondo<input name="fondo" type="color" value="${i.fondo || '#F3F5FB'}"></label>
           <label>Activo<select name="activo"><option value="true" ${c.activo ? 'selected' : ''}>sí</option><option value="false" ${!c.activo ? 'selected' : ''}>no</option></select></label></div>
           <label>Logo (URL)<input name="logo" value="${esc(i.logo || '')}" placeholder="https://…/logo.png"></label>
+          <label style="display:flex;flex-direction:row;align-items:center;gap:10px"><input type="checkbox" name="firma_asistime" ${i.firma_asistime === true ? 'checked' : ''} style="width:auto"> Mostrar firma de Asistime</label>
+          <p class="nota">Agrega «Diseño realizado con» y el logo de Asistime al pie de los nuevos diseños, imágenes, PDF y videos. Útil para pruebas o demos. No cambia piezas anteriores ni el cobro. Desmarcada: sin firma.</p>
           <label>Notas<textarea name="notas" rows="2">${esc(c.notas || '')}</textarea></label>
           <div><button class="boton">Guardar</button> <span id="config-ok" class="nota"></span></div>
         </form>
@@ -466,8 +468,8 @@ function enganchar(vista, ruta) {
     const fila = { nombre: d.nombre, margen: +d.margen, cobra: d.cobra === 'true', moneda_factura: d.moneda_factura, activo: d.activo === 'true',
       tope_usd_mes: d.tope_usd_mes === '' ? null : +d.tope_usd_mes, precio_credito_usd: d.precio_credito_usd === '' ? null : +d.precio_credito_usd,
       cuenta_creditos: d.cuenta_creditos, notas: d.notas || null,
-      identidad: { ...(c.identidad || {}), acento: d.acento, tinta: d.tinta, fondo: d.fondo, logo: d.logo || undefined } };
-    accion(() => q(sb.from('clientes').update(fila).eq('marca', marca), 'clientes'), e.submitter); };
+      identidad: { ...(c.identidad || {}), acento: d.acento, tinta: d.tinta, fondo: d.fondo, logo: d.logo || undefined, firma_asistime: d.firma_asistime === 'on' } };
+    accion(async () => { await q(sb.from('clientes').update(fila).eq('marca', marca), 'clientes'); const check = await q(sb.from('clientes').select('identidad').eq('marca', marca).single(), 'verificar configuración'); if (check.identidad?.firma_asistime !== fila.identidad.firma_asistime) throw new Error('No se confirmó el guardado de la firma.'); }, e.submitter); };
   if (f('csv-mes')) f('csv-mes').onclick = () => csv(`${marca}-${mesSel.slice(0, 7)}.csv`, D.libro.filter(r => r.marca === marca && mesDeFecha(r.creado_en) === mesSel).map(filaCsv));
   if (f('csv-piezas')) f('csv-piezas').onclick = () => csv(`piezas-${mesSel.slice(0, 7)}.csv`, D.libro.filter(r => mesDeFecha(r.creado_en) === mesSel && (!filtro.marca || r.marca === filtro.marca) && (!filtro.tipo || r.tipo === filtro.tipo)).map(filaCsv));
   if (f('f-marca')) { f('f-marca').onchange = e => { filtro.marca = e.target.value; render(); }; f('f-tipo').onchange = e => { filtro.tipo = e.target.value; render(); };
